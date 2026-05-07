@@ -1,26 +1,205 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --cream: #FAF8F3;
+  --ink: #000000;
+  --mustard: #F5C518;
+  --red: #C8202A;
+  --olive: #5A6B3F;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-cream: var(--cream);
+  --color-ink: var(--ink);
+  --color-mustard: var(--mustard);
+  --color-red: var(--red);
+  --color-olive: var(--olive);
+  --font-display: var(--font-anton);
+  --font-sans: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html, body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@layer components {
+.font-display {
+  font-family: var(--font-anton), Impact, sans-serif;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.font-stencil {
+  font-family: var(--font-stencil), "Black Ops One", Impact, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Logo / título tipo "A-TEAM" — barras rojas atravesando texto stencil */
+.barred {
+  position: relative;
+  display: inline-block;
+  padding: 0.45em 0.55em 0.4em;
+  color: #fff;
+  background: #000;
+  line-height: 1;
+  font-style: italic;
+  transform: skewX(-6deg);
+}
+.barred > * { display: inline-block; transform: skewX(6deg); }
+.barred::before,
+.barred::after {
+  content: "";
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  height: 0.15em;
+  background: var(--red);
+}
+.barred::before { top: 0.08em; }
+.barred::after  { bottom: 0.08em; }
+.barred .sep {
+  color: var(--red);
+  margin: 0 0.05em;
+  font-style: normal;
+}
+
+/* Logo rojo italic con borde negro grueso (estilo retro 80s) */
+.outlined-red {
+  position: relative;
+  color: var(--red);
+  -webkit-text-stroke: 3px #000;
+  paint-order: stroke fill;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-shadow: 4px 4px 0 #000;
+  display: inline-block;
+}
+.outlined-red .top-tag {
+  position: absolute;
+  left: -0.1em;
+  top: -0.55em;
+  font-size: 0.32em;
+  color: #000;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+  font-style: italic;
+  transform: rotate(-8deg);
+  letter-spacing: 0.02em;
+  background: transparent;
+}
+
+/* Fondo ladrillo oscuro (CSS puro, sin imagen) */
+.brick {
+  background-color: #2a1612;
+  background-image:
+    linear-gradient(335deg, #1a0d0a 23%, transparent 23%),
+    linear-gradient(155deg, #1a0d0a 23%, transparent 23%),
+    linear-gradient(335deg, #1a0d0a 34%, transparent 34%),
+    linear-gradient(155deg, #1a0d0a 34%, transparent 34%);
+  background-size: 60px 30px;
+  background-position: 0 0, 0 0, 30px 15px, 30px 15px;
+}
+.brick::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none;
+}
+
+.sticker {
+  display: inline-block;
+  background: #fff;
+  border: 3px solid #000;
+  padding: 0.4rem 1rem;
+  box-shadow: 6px 6px 0 #000;
+  transform: rotate(-2deg);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.btn-mustard {
+  display: inline-block;
+  background: var(--mustard);
+  color: #000;
+  border: 3px solid #000;
+  box-shadow: 6px 6px 0 #000;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 0.9rem 1.6rem;
+  transition: transform .12s ease, box-shadow .12s ease;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.btn-mustard:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.card-hard {
+  background: #fff;
+  border: 3px solid #000;
+  box-shadow: 8px 8px 0 #000;
+}
+
+.marquee-track {
+  animation: marquee 28s linear infinite;
+  width: max-content;
+}
+
+/* Sello rojo rotado tipo "CLASIFICADO" */
+.stamp {
+  display: inline-block;
+  border: 4px double var(--red);
+  color: var(--red);
+  padding: 0.35rem 0.9rem;
+  font-family: var(--font-anton), Impact, sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: rotate(-6deg);
+  background: rgba(255,255,255,0.7);
+  font-weight: 800;
+}
+
+/* Cinta militar a rayas para separadores */
+.stripe-tape {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--ink) 0,
+    var(--ink) 14px,
+    var(--mustard) 14px,
+    var(--mustard) 28px
+  );
+}
+
+/* Carpeta de dossier */
+.dossier {
+  background: #fff;
+  border: 3px solid #000;
+  box-shadow: 8px 8px 0 #000;
+  position: relative;
+}
+.dossier::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  height: 36px;
+  background: var(--olive);
+  border: 3px solid #000;
+  border-bottom: none;
+}
 }
