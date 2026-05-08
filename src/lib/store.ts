@@ -25,6 +25,18 @@ export type LeadWidget = {
   welcomeBody: string;
 };
 
+export type ActivityEvent = {
+  ts: string;
+  type: "chat" | "email_sent" | "lead_captured" | "contact_added";
+  agent?: AgentSlug;
+  detail: string;
+};
+
+export type Stats = {
+  emailsSent: number;
+  lastChatAt: Partial<Record<AgentSlug, string>>;
+};
+
 export type UserData = {
   email: string;
   createdAt: string;
@@ -32,6 +44,8 @@ export type UserData = {
   chats: Record<AgentSlug, ChatMessage[]>;
   contacts?: Contact[];
   widget?: LeadWidget;
+  stats?: Stats;
+  activity?: ActivityEvent[];
 };
 
 function emptyChats(): Record<AgentSlug, ChatMessage[]> {
@@ -173,4 +187,34 @@ export async function findUserByWidgetToken(token: string): Promise<UserData | n
     if (u.widget?.token === token) return u;
   }
   return null;
+}
+
+export async function findEmailByWidgetToken(token: string): Promise<string | null> {
+  const all = await readAll();
+  for (const [email, u] of Object.entries(all)) {
+    if (u.widget?.token === token) return email;
+  }
+  return null;
+}
+
+const MAX_ACTIVITY = 50;
+
+export async function logActivity(email: string, event: Omit<ActivityEvent, "ts">) {
+  const all = await readAll();
+  if (!all[email]) await getUser(email);
+  const fresh = await readAll();
+  if (!fresh[email].activity) fresh[email].activity = [];
+  fresh[email].activity!.unshift({ ...event, ts: new Date().toISOString() });
+  fresh[email].activity = fresh[email].activity!.slice(0, MAX_ACTIVITY);
+  await writeAll(fresh);
+}
+
+export async function bumpStats(email: string, patch: { emailsSent?: number; lastChatAgent?: AgentSlug }) {
+  const all = await readAll();
+  if (!all[email]) await getUser(email);
+  const fresh = await readAll();
+  if (!fresh[email].stats) fresh[email].stats = { emailsSent: 0, lastChatAt: {} };
+  if (patch.emailsSent) fresh[email].stats!.emailsSent += patch.emailsSent;
+  if (patch.lastChatAgent) fresh[email].stats!.lastChatAt[patch.lastChatAgent] = new Date().toISOString();
+  await writeAll(fresh);
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
-import { getContacts, getUser } from "@/lib/store";
+import { getContacts, getUser, logActivity, bumpStats } from "@/lib/store";
 import { getResend, RESEND_FROM } from "@/lib/resend";
 
 const schema = z.object({
@@ -67,6 +67,14 @@ export async function POST(req: Request) {
 
     const sent = results.filter((r) => r.id).length;
     const failed = results.length - sent;
+    if (sent > 0) {
+      await bumpStats(email, { emailsSent: sent });
+      await logActivity(email, {
+        type: "email_sent",
+        agent: "eva",
+        detail: `${sent} email${sent === 1 ? "" : "s"} · "${parsed.data.subject.slice(0, 50)}"`,
+      });
+    }
     return NextResponse.json({ ok: true, sent, failed, results });
   } catch (err) {
     return NextResponse.json(

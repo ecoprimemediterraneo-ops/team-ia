@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { findUserByWidgetToken, addContact } from "@/lib/store";
+import { findUserByWidgetToken, addContact, logActivity, bumpStats } from "@/lib/store";
 import { getResend, RESEND_FROM } from "@/lib/resend";
 
 const schema = z.object({
@@ -51,6 +51,10 @@ export async function POST(
       email: parsed.data.email,
       name: fullName,
     });
+    await logActivity(user.email, {
+      type: "lead_captured",
+      detail: `${fullName || parsed.data.email}`,
+    });
 
     // Enviar welcome email si está configurado y hay key Resend
     if (user.widget.welcomeEmailEnabled && process.env.RESEND_API_KEY) {
@@ -64,6 +68,7 @@ export async function POST(
           subject: user.widget.welcomeSubject,
           html: htmlFromText(user.widget.welcomeBody, businessName),
         });
+        await bumpStats(user.email, { emailsSent: 1 });
       } catch (e) {
         console.error("welcome email failed", e);
       }

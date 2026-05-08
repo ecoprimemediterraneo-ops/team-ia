@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
-import { getUser, appendMessage } from "@/lib/store";
+import { getUser, appendMessage, logActivity, bumpStats } from "@/lib/store";
 import { anthropic, SYSTEM_BUILDERS, MODEL_BY_AGENT } from "@/lib/claude";
 import type { AgentSlug } from "@/lib/agents";
 
@@ -47,6 +47,12 @@ export async function POST(
       .join("\n");
 
     await appendMessage(email, key, { role: "assistant", content: text });
+    await bumpStats(email, { lastChatAgent: key });
+    await logActivity(email, {
+      type: "chat",
+      agent: key,
+      detail: message.length > 60 ? message.slice(0, 57) + "…" : message,
+    });
 
     return NextResponse.json({ reply: text });
   } catch (err) {
