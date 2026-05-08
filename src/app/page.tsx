@@ -3,6 +3,7 @@ import Hero from "@/components/Hero";
 import Pains from "@/components/Pains";
 import Team from "@/components/Team";
 import DayTimeline from "@/components/DayTimeline";
+import Packs from "@/components/Packs";
 import Compare from "@/components/Compare";
 import Testimonials from "@/components/Testimonials";
 import FAQ from "@/components/FAQ";
@@ -18,6 +19,7 @@ export default function Home() {
         <Pains />
         <Team />
         <DayTimeline />
+        <Packs />
         <Compare />
         <Testimonials />
         <FAQ />

@@ -1,12 +1,5 @@
 import { agents } from "@/lib/agents";
 
-const codenames: Record<string, string> = {
-  Lucía: "ALFA-01",
-  Marta: "BRAVO-02",
-  Diego: "CHARLIE-03",
-  Carmen: "DELTA-04",
-};
-
 const avatarOf = (name: string) => agents.find((a) => a.name === name);
 
 const moments = [
@@ -15,42 +8,42 @@ const moments = [
     name: "Lucía",
     emoji: "📬",
     title: "Tu bandeja ya está ordenada",
-    text: "Abres el correo esperando la avalancha. Está limpio. Lucía ha filtrado el ruido, ha marcado lo importante y te ha dejado borradores listos con tu tono. Solo tienes que decir sí.",
+    text: "Abres el correo esperando la avalancha. Está limpio. Lucía ha filtrado el ruido, ha marcado lo importante y te ha dejado borradores listos con tu tono.",
+  },
+  {
+    time: "09:30",
+    name: "Pablo",
+    emoji: "💬",
+    title: "Pablo cierra una cita por WhatsApp",
+    text: "Te llega un mensaje al móvil: 'Cita confirmada — Carmen López, jueves 18:00. Le he confirmado precios y enviado ubicación.' Tú no has tocado el WhatsApp.",
   },
   {
     time: "11:00",
     name: "Marta",
     emoji: "📱",
     title: "No has publicado, pero Marta sí",
-    text: "Mientras estás en una reunión, sale en Instagram un carrusel nuevo. «5 errores que cometen los autónomos al fichar a su primer empleado». Lo programó hace una hora. La semana siguiente ya está en cola.",
+    text: "Sale un carrusel en Instagram: «5 errores que cometen los autónomos al fichar a su primer empleado». Lo programó hace una hora. La semana siguiente ya está en cola.",
   },
   {
-    time: "14:00",
-    name: "Diego",
-    emoji: "🎯",
-    title: "Diego te llena el pipeline",
-    text: "Comes fuera. Diego trabaja. Encuentra prospectos, manda 60 correos personalizados y hace seguimiento. Vuelves al despacho y tienes tres respuestas calientes esperando.",
+    time: "13:30",
+    name: "Eva",
+    emoji: "✉️",
+    title: "Eva manda la newsletter del lunes",
+    text: "180 clientes reciben tu correo de la semana con un consejo y una promo. 12 abren en la primera media hora. 3 reservan cita esa misma tarde.",
   },
   {
     time: "17:30",
     name: "Carmen",
     emoji: "📞",
-    title: "Carmen contesta en español e inglés",
-    text: "Suena el teléfono mientras conduces. Carmen lo coge al segundo tono. Conoce tu horario, tus servicios y tus precios. Agenda una visita para el jueves y te manda el resumen al móvil.",
+    title: "Carmen contesta una llamada en directo",
+    text: "Suena el teléfono mientras conduces. Carmen lo coge al segundo tono. Conoce tus servicios y tus precios de memoria. Agenda visita y te manda el resumen al móvil.",
   },
   {
-    time: "21:00",
-    name: "Lucía",
-    emoji: "📝",
-    title: "Notas de la reunión, ya escritas",
-    text: "Cierras el portátil después de cenar. En el grupo aparecen las notas de la reunión de las 18:00: acuerdos, responsables y próximos pasos. Lucía estuvo escuchando.",
-  },
-  {
-    time: "23:00",
-    name: "Marta",
-    emoji: "🌙",
-    title: "El día acabó, tu marca no",
-    text: "Te vas a dormir. Tu cuenta de LinkedIn comenta posts del sector, agradece menciones y publica un thread programado a las 8:15 para pillar el café de la mañana.",
+    time: "20:00",
+    name: "Rocío",
+    emoji: "⭐",
+    title: "Rocío pide reseñas y sube tu Google",
+    text: "Después de cada cita del día, manda un WhatsApp pidiendo reseña. Llegan 4 nuevas. Rocío contesta a cada una con tu tono. Subes a 4,8★.",
   },
 ];
 
@@ -74,7 +67,7 @@ export default function DayTimeline() {
           <div className="flex flex-col gap-12">
             {moments.map((m, i) => {
               const agent = avatarOf(m.name);
-              const code = codenames[m.name] ?? "X-00";
+              const code = agent?.codename ?? "X-00";
               const reportNum = String(i + 1).padStart(2, "0");
               return (
                 <div
@@ -106,18 +99,14 @@ export default function DayTimeline() {
                       className="card-hard relative overflow-hidden"
                       style={{ transform: i % 2 === 1 ? "rotate(-1deg)" : "rotate(1deg)" }}
                     >
-                      {/* Cabecera tipo informe de campo */}
                       <header className="bg-[color:var(--olive)] text-white border-b-[3px] border-black px-4 py-2 flex items-center justify-between text-[11px] font-mono uppercase tracking-widest">
                         <span>Informe #{reportNum}</span>
                         <span className="hidden sm:inline">· CONFIDENCIAL ·</span>
                         <span>{m.time}H</span>
                       </header>
-
                       <div className="p-6 relative">
                         <h3 className="font-stencil text-2xl md:text-3xl mb-3 pr-20">{m.title}</h3>
                         <p className="text-sm md:text-base leading-relaxed font-mono text-black/85">{m.text}</p>
-
-                        {/* Sello rojo abajo a la derecha */}
                         <div className="absolute bottom-3 right-3 stamp text-[10px]" style={{ transform: "rotate(8deg)" }}>
                           Misión cumplida
                         </div>

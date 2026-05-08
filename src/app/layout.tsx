@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Anton, Inter, Black_Ops_One } from "next/font/google";
+import { Anton, Inter, Black_Ops_One, VT323 } from "next/font/google";
 import "./globals.css";
 
 const anton = Anton({
@@ -14,15 +14,21 @@ const stencil = Black_Ops_One({
   subsets: ["latin"],
 });
 
+const terminal = VT323({
+  weight: "400",
+  variable: "--font-terminal",
+  subsets: ["latin"],
+});
+
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Team IA — Tu unidad de élite para escalar tu negocio",
+  title: "AI-Team — Tu agencia de marketing con agentes de IA",
   description:
-    "Cuatro especialistas de IA que gestionan tu correo, redes, leads y llamadas. Para autónomos y PYMEs en España y LATAM.",
+    "6 especialistas de IA que se ocupan de tu WhatsApp, reseñas, email, redes, llamadas y correo. Tu agencia de marketing en una caja.",
 };
 
 export default function RootLayout({
@@ -31,7 +37,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${anton.variable} ${stencil.variable} ${inter.variable} h-full antialiased`}
+      className={`${anton.variable} ${stencil.variable} ${terminal.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[color:var(--cream)] text-[color:var(--ink)]">
         {children}

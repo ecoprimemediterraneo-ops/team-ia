@@ -3,10 +3,10 @@ export default function Logo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
     size === "lg" ? 320 : size === "sm" ? 110 : 170;
   return (
     <svg
-      viewBox="0 0 320 130"
+      viewBox="0 0 360 130"
       width={w}
-      height={(w * 130) / 320}
-      aria-label="Team IA"
+      height={(w * 130) / 360}
+      aria-label="AI-Team"
       role="img"
     >
       {/* "TU" tag arriba a la izquierda */}
@@ -23,8 +23,8 @@ export default function Logo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
         </text>
       </g>
 
-      {/* TEAM·IA con borde negro grueso y relleno rojo */}
-      <g transform="translate(160, 90) skewX(-10)">
+      {/* AI-TEAM con borde negro grueso y relleno rojo */}
+      <g transform="translate(180, 90) skewX(-10)">
         <text
           x="0"
           y="0"
@@ -39,9 +39,8 @@ export default function Logo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
           paintOrder="stroke"
           fill="#C8202A"
         >
-          TEAM·IA
+          AI-TEAM
         </text>
-        {/* Sombra dura por debajo */}
       </g>
     </svg>
   );

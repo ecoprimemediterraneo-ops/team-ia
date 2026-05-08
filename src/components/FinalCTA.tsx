@@ -37,9 +37,10 @@ export default function FinalCTA() {
           Recluta tu<br />unidad
         </h2>
         <p className="text-lg md:text-xl mb-10 text-white/80">
-          500 plazas fundadoras a <span className="font-bold text-[color:var(--mustard)]">29 €/mes para siempre</span>.
-          Cuando se llenen, el precio sube a 49 €.
-          <span className="block mt-2 text-white/60 text-sm">Sin tarjeta. Te avisamos cuando abramos.</span>
+          500 plazas fundadoras con <span className="font-bold text-[color:var(--mustard)]">precio para siempre</span>.
+          Pack Local desde <span className="font-bold text-[color:var(--mustard)]">29 €/mes</span>.
+          Cuando se llenen, los precios suben.
+          <span className="block mt-2 text-white/60 text-sm">14 días de prueba sin tarjeta. Cancelas cuando quieras.</span>
         </p>
 
         {status === "ok" ? (

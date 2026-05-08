@@ -35,21 +35,21 @@ export default function Hero() {
             <span className="bg-[color:var(--red)] text-white px-2 py-1 font-bold tracking-widest">MISIÓN ACTIVA</span>
           </div>
 
-          <h1 className="font-stencil text-4xl sm:text-6xl md:text-8xl leading-[1.05]">
-            <span className="block">UNA UNIDAD.</span>
-            <span className="block">CUATRO</span>
-            <span className="block">ESPECIALISTAS.</span>
-            <span className="inline-block barred mt-4 px-3 py-1">UN SUELDO.</span>
+          <h1 className="font-stencil text-5xl sm:text-7xl md:text-8xl leading-[1.05]">
+            <span className="block">UNA AGENCIA.</span>
+            <span className="block">SEIS ESPECIALISTAS.</span>
+            <span className="inline-block barred mt-3 px-3 py-0.5">UN SUELDO.</span>
           </h1>
 
           <p className="mt-10 font-display text-3xl md:text-5xl leading-tight">
-            Tu equipo de IA<br />
-            <span className="text-[color:var(--mustard)]">para escalar tu negocio</span>
+            Tu agencia de marketing<br />
+            <span className="text-[color:var(--mustard)]">en una caja</span>
           </p>
 
           <p className="mt-8 text-base md:text-lg max-w-2xl mx-auto text-white/85">
-            Mientras estás en una reunión, alguien contesta el teléfono.
-            Mientras tomas un café, salen tus posts. Mientras duermes, tu correo se ordena solo.
+            Mientras estás con un cliente, alguien contesta el WhatsApp.
+            Mientras tomas un café, salen tus posts.
+            Mientras duermes, llegan reseñas y se mandan correos.
             <span className="block mt-2 font-bold text-white">Tú dejas de hacerlo todo. Ellos lo hacen por ti.</span>
           </p>
 
@@ -59,9 +59,9 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Foto-strip de los 4 agentes al pie del hero */}
+        {/* Foto-strip de 6 agentes al pie */}
         <div className="relative z-10 max-w-6xl mx-auto px-5 pb-12">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-5">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 md:gap-4">
             {agents.map((a) => (
               <div
                 key={a.slug}
@@ -70,8 +70,9 @@ export default function Hero() {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={a.avatar} alt={a.name} className="w-full aspect-square object-cover" />
-                <div className="absolute bottom-0 left-0 right-0 bg-black/85 text-white px-2 py-1.5 font-stencil text-sm md:text-base text-center">
+                <div className="absolute bottom-0 left-0 right-0 bg-black/85 text-white px-2 py-1 font-stencil text-xs md:text-sm text-center leading-tight">
                   {a.name.toUpperCase()}
+                  <div className="text-[8px] tracking-widest text-white/60 font-sans normal-case">{a.role}</div>
                 </div>
               </div>
             ))}

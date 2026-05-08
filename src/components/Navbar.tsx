@@ -7,12 +7,16 @@ export default function Navbar() {
         <a href="#top" className="flex items-center">
           <Logo />
         </a>
-        <div className="hidden md:flex items-center gap-8 font-semibold text-sm uppercase tracking-wider">
+        <div className="hidden md:flex items-center gap-7 font-semibold text-sm uppercase tracking-wider">
           <a href="#equipo" className="hover:text-[color:var(--red)]">La unidad</a>
-          <a href="#dia" className="hover:text-[color:var(--red)]">Un día en misión</a>
+          <a href="#dia" className="hover:text-[color:var(--red)]">Un día</a>
+          <a href="#packs" className="hover:text-[color:var(--red)]">Packs</a>
           <a href="#faq" className="hover:text-[color:var(--red)]">FAQ</a>
         </div>
-        <a href="#waitlist" className="btn-mustard text-sm">Reclutar</a>
+        <div className="flex items-center gap-3">
+          <a href="/login" className="hidden sm:inline text-xs uppercase tracking-widest font-bold border-2 border-black px-3 py-2 hover:bg-black hover:text-white">Acceder</a>
+          <a href="#waitlist" className="btn-mustard text-sm">Reclutar</a>
+        </div>
       </nav>
     </header>
   );
