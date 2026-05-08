@@ -14,8 +14,9 @@ export type Agent = {
   avatar: string;
 };
 
-const avatar = (seed: string, bg: string) =>
-  `https://api.dicebear.com/9.x/personas/svg?seed=${encodeURIComponent(seed)}&backgroundColor=${bg.replace("#", "")}&radius=0&scale=110`;
+// Avatares ochenteros generados con Gemini (estilo cómic 80s).
+// Para regenerar: ver ROADMAP.md sección "Avatares".
+const avatar = (slug: string) => `/agentes/${slug}.png`;
 
 export const agents: Agent[] = [
   {
@@ -30,7 +31,7 @@ export const agents: Agent[] = [
     codename: "ALFA-W1",
     status: "soon",
     statusNote: "Activable con Twilio / 360dialog",
-    avatar: avatar("Pablo Whatsapp", "25D366"),
+    avatar: avatar("pablo"),
   },
   {
     slug: "rocio",
@@ -44,7 +45,7 @@ export const agents: Agent[] = [
     codename: "GOLF-R2",
     status: "soon",
     statusNote: "Activable con Google My Business API",
-    avatar: avatar("Rocio Resenas", "FBBF24"),
+    avatar: avatar("rocio"),
   },
   {
     slug: "eva",
@@ -58,7 +59,7 @@ export const agents: Agent[] = [
     codename: "ECHO-E3",
     status: "soon",
     statusNote: "Activable con Resend (gratis hasta 3.000 emails/mes)",
-    avatar: avatar("Eva Email", "60A5FA"),
+    avatar: avatar("eva"),
   },
   {
     slug: "lucia",
@@ -72,7 +73,7 @@ export const agents: Agent[] = [
     codename: "BRAVO-L4",
     status: "ready",
     statusNote: "Demo activa · Gmail real próximamente",
-    avatar: avatar("Lucia Tropa", "F5C518"),
+    avatar: avatar("lucia"),
   },
   {
     slug: "marta",
@@ -86,7 +87,7 @@ export const agents: Agent[] = [
     codename: "DELTA-M5",
     status: "ready",
     statusNote: "Demo activa · Publicación real con Ayrshare",
-    avatar: avatar("Marta Tropa Social", "FF7A59"),
+    avatar: avatar("marta"),
   },
   {
     slug: "carmen",
@@ -100,7 +101,7 @@ export const agents: Agent[] = [
     codename: "FOXTROT-C6",
     status: "soon",
     statusNote: "Demo activa · Teléfono real con Vapi",
-    avatar: avatar("Carmen Tropa Phone", "A88BE8"),
+    avatar: avatar("carmen"),
   },
 ];
 
