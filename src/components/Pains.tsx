@@ -35,28 +35,13 @@ export default function Pains() {
             }}
           />
 
-          {/* Silueta tipo cómic — usa una imagen colocada en /public/hero-pain.png cuando la tengas */}
-          {/* Mientras: silueta CSS con un emoji grande en el centro y "papeles volando" */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-[20vw] md:text-[14rem] leading-none select-none drop-shadow-[6px_6px_0_rgba(0,0,0,0.6)]">
-              😩
-            </div>
-          </div>
-          {/* Papeles volando (decorativos) */}
-          <div className="absolute top-6 left-8 w-16 h-20 bg-white/90 border-2 border-black rotate-[-12deg]" />
-          <div className="absolute top-12 right-12 w-14 h-18 bg-white/85 border-2 border-black rotate-[8deg]" />
-          <div className="absolute bottom-12 left-16 w-12 h-16 bg-white/80 border-2 border-black rotate-[15deg]" />
-          <div className="absolute bottom-20 right-20 w-16 h-20 bg-white/85 border-2 border-black rotate-[-6deg]" />
-
-          {/* Líneas de viñeta tipo cómic en las esquinas */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
-            <defs>
-              <pattern id="lines" width="6" height="6" patternUnits="userSpaceOnUse">
-                <path d="M-1 7 l8-8 M0 6 l6-6" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#lines)" />
-          </svg>
+          {/* Imagen cómic ochentera del equipo trabajando */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/agentes/team-action.png"
+            alt="AI-Team trabajando en la oficina ochentera"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
 
           {/* Etiquetas amarillas flotantes */}
           {labels.map((l, i) => (
