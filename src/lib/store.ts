@@ -11,11 +11,14 @@ const USERS_FILE = path.join(DATA_DIR, "users.json");
 
 const ALL_AGENTS: AgentSlug[] = ["lucia", "marta", "carmen", "pablo", "rocio", "eva"];
 
+export type Contact = { email: string; name?: string; addedAt: string };
+
 export type UserData = {
   email: string;
   createdAt: string;
   business?: BusinessProfile;
   chats: Record<AgentSlug, ChatMessage[]>;
+  contacts?: Contact[];
 };
 
 function emptyChats(): Record<AgentSlug, ChatMessage[]> {
@@ -80,5 +83,30 @@ export async function clearChat(email: string, agent: AgentSlug) {
   const all = await readAll();
   if (!all[email]) return;
   all[email].chats[agent] = [];
+  await writeAll(all);
+}
+
+export async function getContacts(email: string): Promise<Contact[]> {
+  const u = await getUser(email);
+  return u.contacts ?? [];
+}
+
+export async function addContact(email: string, contact: { email: string; name?: string }) {
+  const all = await readAll();
+  if (!all[email]) await getUser(email);
+  const fresh = await readAll();
+  fresh[email].contacts = fresh[email].contacts ?? [];
+  if (!fresh[email].contacts!.some((c) => c.email.toLowerCase() === contact.email.toLowerCase())) {
+    fresh[email].contacts!.push({ ...contact, addedAt: new Date().toISOString() });
+  }
+  await writeAll(fresh);
+}
+
+export async function removeContact(email: string, contactEmail: string) {
+  const all = await readAll();
+  if (!all[email]) return;
+  all[email].contacts = (all[email].contacts ?? []).filter(
+    (c) => c.email.toLowerCase() !== contactEmail.toLowerCase()
+  );
   await writeAll(all);
 }
