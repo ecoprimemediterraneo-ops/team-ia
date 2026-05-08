@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { getSession } from "@/lib/auth";
-import { getUser, getContacts } from "@/lib/store";
+import { getUser, getContacts, getOrCreateWidget } from "@/lib/store";
 import AgentChat from "@/components/AgentChat";
 import EvaTools from "@/components/EvaTools";
+import EvaWidget from "@/components/EvaWidget";
 import { agentBySlug } from "@/lib/agents";
 
 export default async function EvaPage() {
@@ -12,6 +14,12 @@ export default async function EvaPage() {
   if (!user.business) redirect("/onboarding");
   const a = agentBySlug.eva;
   const contacts = await getContacts(s.email);
+  const widget = await getOrCreateWidget(s.email);
+
+  const h = await headers();
+  const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
+  const proto = h.get("x-forwarded-proto") || "https";
+  const baseUrl = `${proto}://${host}`;
 
   return (
     <section>
@@ -28,7 +36,7 @@ export default async function EvaPage() {
           <p className="text-sm text-black/60 mt-1">{a.short}</p>
         </div>
         <p className="text-xs font-mono text-black/50 max-w-xs text-right">
-          ✓ Conectada a Resend. Manda correos de verdad a tu lista.
+          ✓ Conectada a Resend. Manda correos de verdad.
         </p>
       </div>
 
@@ -42,6 +50,8 @@ export default async function EvaPage() {
           "Email de reactivación para clientes que llevan 3 meses sin venir",
         ]}
       />
+
+      <EvaWidget initial={widget} baseUrl={baseUrl} />
 
       <EvaTools initialContacts={contacts} />
     </section>

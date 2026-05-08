@@ -11,7 +11,19 @@ const USERS_FILE = path.join(DATA_DIR, "users.json");
 
 const ALL_AGENTS: AgentSlug[] = ["lucia", "marta", "carmen", "pablo", "rocio", "eva"];
 
-export type Contact = { email: string; name?: string; addedAt: string };
+export type Contact = { email: string; name?: string; addedAt: string; source?: string };
+
+export type LeadWidget = {
+  token: string;
+  enabled: boolean;
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+  successMessage: string;
+  welcomeEmailEnabled: boolean;
+  welcomeSubject: string;
+  welcomeBody: string;
+};
 
 export type UserData = {
   email: string;
@@ -19,6 +31,7 @@ export type UserData = {
   business?: BusinessProfile;
   chats: Record<AgentSlug, ChatMessage[]>;
   contacts?: Contact[];
+  widget?: LeadWidget;
 };
 
 function emptyChats(): Record<AgentSlug, ChatMessage[]> {
@@ -109,4 +122,55 @@ export async function removeContact(email: string, contactEmail: string) {
     (c) => c.email.toLowerCase() !== contactEmail.toLowerCase()
   );
   await writeAll(all);
+}
+
+function makeToken(): string {
+  return [...crypto.getRandomValues(new Uint8Array(16))]
+    .map((b) => b.toString(36).padStart(2, "0"))
+    .join("")
+    .slice(0, 14);
+}
+
+function defaultWidget(business?: BusinessProfile): LeadWidget {
+  const nombre = business?.nombre || "nuestro equipo";
+  return {
+    token: makeToken(),
+    enabled: true,
+    title: `Hablemos`,
+    subtitle: `Déjanos tu correo y te respondemos en menos de 24 horas.`,
+    ctaLabel: `Quiero saber más`,
+    successMessage: `¡Gracias! Te hemos enviado un correo de bienvenida. Revisa tu bandeja.`,
+    welcomeEmailEnabled: true,
+    welcomeSubject: `Bienvenido a ${nombre}`,
+    welcomeBody: `Hola,\n\nGracias por dejarnos tus datos. Hemos guardado tu petición y nos pondremos en contacto contigo lo antes posible.\n\nMientras tanto, si tienes cualquier duda, contesta a este correo y te leemos.\n\nUn saludo,\n${nombre}`,
+  };
+}
+
+export async function getOrCreateWidget(email: string): Promise<LeadWidget> {
+  const all = await readAll();
+  if (!all[email]) await getUser(email);
+  const fresh = await readAll();
+  if (!fresh[email].widget) {
+    fresh[email].widget = defaultWidget(fresh[email].business);
+    await writeAll(fresh);
+  }
+  return fresh[email].widget!;
+}
+
+export async function updateWidget(email: string, patch: Partial<LeadWidget>): Promise<LeadWidget> {
+  const all = await readAll();
+  if (!all[email]) await getUser(email);
+  const fresh = await readAll();
+  const current = fresh[email].widget ?? defaultWidget(fresh[email].business);
+  fresh[email].widget = { ...current, ...patch, token: current.token };
+  await writeAll(fresh);
+  return fresh[email].widget!;
+}
+
+export async function findUserByWidgetToken(token: string): Promise<UserData | null> {
+  const all = await readAll();
+  for (const u of Object.values(all)) {
+    if (u.widget?.token === token) return u;
+  }
+  return null;
 }
