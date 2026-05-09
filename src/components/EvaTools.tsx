@@ -126,7 +126,7 @@ export default function EvaTools({ initialContacts }: { initialContacts: Contact
         </div>
         <p className="text-xs text-black/60 mb-3">
           Pídele a Eva el correo en el chat de arriba, copia su salida aquí abajo y le das a enviar.
-          Saldrá desde <code className="bg-black/5 px-1">onboarding@resend.dev</code> hasta que verifiques tu dominio.
+          Sale desde <code className="bg-black/5 px-1">eva@aiteam.marketing</code> ✓
         </p>
         <input
           type="text"

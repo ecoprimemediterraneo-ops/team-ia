@@ -11,19 +11,34 @@ export default function Team() {
         <h2 className="font-stencil text-5xl md:text-7xl mb-4">
           Conoce a tu<br />unidad de élite
         </h2>
-        <p className="text-lg max-w-2xl mb-14 text-black/70">
+        <p className="text-lg max-w-2xl mb-3 text-black/70">
           Seis especialistas, seis frentes. Trabajan en cadena, no se duermen y no te piden vacaciones.
+        </p>
+        <p className="text-sm max-w-2xl mb-14 text-black/60 font-mono">
+          ★ <strong>Eva</strong> ya está operativa enviando emails reales. El resto se incorpora durante 2026.
+          <br />Como fundador, los recibes todos al mismo precio cuando estén listos.
         </p>
 
         <div className="grid md:grid-cols-2 gap-10 mt-16">
           {agents.map((a) => (
-            <article key={a.slug} className="dossier pt-12 p-6 hover:-translate-y-1 transition relative">
+            <article key={a.slug} className="dossier pt-12 p-6 hover:-translate-y-1 transition relative overflow-hidden">
               {/* Etiqueta carpeta superior */}
               <div className="absolute top-1 left-4 right-4 flex items-center justify-between z-10 text-white text-[11px] font-mono tracking-widest">
                 <span>EXP. {a.codename}</span>
                 <span className="hidden sm:inline">· CONFIDENCIAL ·</span>
                 <span>{a.status === "ready" ? "OPERATIVO" : "EN ALTA"}</span>
               </div>
+
+              {a.status === "soon" && (
+                <div className="absolute top-10 -right-14 rotate-45 bg-[color:var(--red)] text-white text-[9px] sm:text-[10px] font-bold tracking-widest px-14 py-1 z-20 shadow-md">
+                  PRÓXIMAMENTE
+                </div>
+              )}
+              {a.status === "ready" && (
+                <div className="absolute top-10 -right-14 rotate-45 bg-green-600 text-white text-[9px] sm:text-[10px] font-bold tracking-widest px-14 py-1 z-20 shadow-md">
+                  OPERATIVA
+                </div>
+              )}
 
               <div className="flex items-start gap-5 relative">
                 <div
@@ -37,9 +52,8 @@ export default function Team() {
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <h3 className="font-stencil text-4xl">{a.name}</h3>
-                    <span className="stamp text-xs">EXPERTO</span>
+                  <div className="flex items-center gap-2 mb-1 pr-20 sm:pr-24">
+                    <h3 className="font-stencil text-3xl sm:text-4xl">{a.name}</h3>
                   </div>
                   <p className="text-sm uppercase tracking-wider font-semibold text-black/60">
                     {a.role}

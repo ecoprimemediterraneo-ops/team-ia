@@ -35,13 +35,14 @@ export default function Hero() {
             <span className="bg-[color:var(--red)] text-white px-2 py-1 font-bold tracking-widest">MISIÓN ACTIVA</span>
           </div>
 
-          <h1 className="font-stencil text-5xl sm:text-7xl md:text-8xl leading-[1.05]">
+          <h1 className="font-stencil text-3xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05]">
             <span className="block">UNA AGENCIA.</span>
-            <span className="block">SEIS ESPECIALISTAS.</span>
-            <span className="inline-block barred mt-3 px-3 py-0.5">UN SUELDO.</span>
+            <span className="block">SEIS</span>
+            <span className="block">ESPECIALISTAS.</span>
+            <span className="inline-block barred mt-4 px-3 py-1">UN SUELDO.</span>
           </h1>
 
-          <p className="mt-10 font-display text-3xl md:text-5xl leading-tight">
+          <p className="mt-8 font-display text-2xl sm:text-3xl md:text-5xl leading-tight">
             Tu agencia de marketing<br />
             <span className="text-[color:var(--mustard)]">en una caja</span>
           </p>

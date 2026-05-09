@@ -30,7 +30,7 @@ export const agents: Agent[] = [
     color: "#25D366",
     codename: "ALFA-W1",
     status: "soon",
-    statusNote: "Activable con Twilio / 360dialog",
+    statusNote: "Próximamente · activación Q2 2026",
     avatar: avatar("pablo"),
   },
   {
@@ -44,7 +44,7 @@ export const agents: Agent[] = [
     color: "#FBBF24",
     codename: "GOLF-R2",
     status: "soon",
-    statusNote: "Activable con Google My Business API",
+    statusNote: "Próximamente · activación Q2 2026",
     avatar: avatar("rocio"),
   },
   {
@@ -58,7 +58,7 @@ export const agents: Agent[] = [
     color: "#60A5FA",
     codename: "ECHO-E3",
     status: "soon",
-    statusNote: "Activable con Resend (gratis hasta 3.000 emails/mes)",
+    statusNote: "Operativa · envíos reales desde eva@aiteam.marketing",
     avatar: avatar("eva"),
   },
   {
@@ -71,8 +71,8 @@ export const agents: Agent[] = [
       "A las 8:00 tu bandeja ya está limpia. Te he respondido el spam, marcado lo importante y dejado borradores con tu tono. Tú solo dices «sí».",
     color: "#F5C518",
     codename: "BRAVO-L4",
-    status: "ready",
-    statusNote: "Demo activa · Gmail real próximamente",
+    status: "soon",
+    statusNote: "Próximamente · activación Q2 2026 (Gmail OAuth)",
     avatar: avatar("lucia"),
   },
   {
@@ -85,8 +85,8 @@ export const agents: Agent[] = [
       "Tres posts a la semana en Instagram y LinkedIn, con tu voz, sin que bailes delante de la cámara. Te los enseño, tú apruebas, salen solos.",
     color: "#FF7A59",
     codename: "DELTA-M5",
-    status: "ready",
-    statusNote: "Demo activa · Publicación real con Ayrshare",
+    status: "soon",
+    statusNote: "Próximamente · activación Q2 2026",
     avatar: avatar("marta"),
   },
   {
@@ -100,7 +100,7 @@ export const agents: Agent[] = [
     color: "#A88BE8",
     codename: "FOXTROT-C6",
     status: "soon",
-    statusNote: "Demo activa · Teléfono real con Vapi",
+    statusNote: "Próximamente · activación Q3 2026 (Vapi)",
     avatar: avatar("carmen"),
   },
 ];
