@@ -27,8 +27,7 @@ export default function Navbar() {
             {sectoresOpen && (
               <div className="absolute top-full left-0 mt-1 bg-white border-[3px] border-black shadow-[4px_4px_0_#000] min-w-[160px]">
                 <a href="/dentistas" className="flex items-center gap-2 px-4 py-2.5 text-xs hover:bg-[color:var(--mustard)] font-bold border-b border-black/10">🦷 Dentistas</a>
-                <a href="/peluquerias" className="flex items-center gap-2 px-4 py-2.5 text-xs hover:bg-[color:var(--mustard)] font-bold border-b border-black/10">💇 Salones</a>
-                <a href="/restaurantes" className="flex items-center gap-2 px-4 py-2.5 text-xs hover:bg-[color:var(--mustard)] font-bold">🍽️ Restaurantes</a>
+                <a href="/peluquerias" className="flex items-center gap-2 px-4 py-2.5 text-xs hover:bg-[color:var(--mustard)] font-bold">💇 Salones</a>
               </div>
             )}
           </div>
@@ -67,7 +66,6 @@ export default function Navbar() {
           <a href="/#packs" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>Precios</a>
           <a href="/dentistas" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>🦷 Dentistas</a>
           <a href="/peluquerias" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>💇 Salones</a>
-          <a href="/restaurantes" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>🍽️ Restaurantes</a>
           <a href="/casos" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>Casos</a>
           <a href="/#faq" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>FAQ</a>
           <a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" target="_blank" rel="noopener noreferrer" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]">Demo</a>

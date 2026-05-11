@@ -7,7 +7,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const ciudadPages = CIUDADES.flatMap((c) => [
     { url: `${BASE}/dentistas/${c.slug}`, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 0.75 },
     { url: `${BASE}/peluquerias/${c.slug}`, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 0.75 },
-    { url: `${BASE}/restaurantes/${c.slug}`, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 0.75 },
   ]);
 
   return [
@@ -16,7 +15,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/casos`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE}/dentistas`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/peluquerias`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/restaurantes`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     ...ciudadPages,
     { url: `${BASE}/legal/privacidad`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
     { url: `${BASE}/legal/terminos`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
