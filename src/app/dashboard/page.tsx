@@ -61,12 +61,33 @@ export default async function DashboardHome() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 mb-2 text-xs font-mono">
-        <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">CUARTEL GENERAL</span>
-        <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">UNIDAD OPERATIVA</span>
+      {/* Banner heroico con los 6 avatares */}
+      <div className="relative card-hard overflow-hidden">
+        <div className="brick absolute inset-0 opacity-30" />
+        <div className="relative p-5 flex items-center gap-5 flex-wrap">
+          <div className="flex -space-x-3">
+            {agents.map((a) => (
+              <div
+                key={a.slug}
+                className="relative w-14 h-14 border-[3px] border-black overflow-hidden shrink-0"
+                style={{ background: a.color }}
+                title={`${a.name} · ${a.role}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={a.avatar} alt={a.name} className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 text-xs font-mono">
+              <span className="bg-black text-[color:var(--mustard)] px-2 py-0.5 font-bold tracking-widest">CUARTEL GENERAL</span>
+              <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-0.5 font-bold tracking-widest hidden sm:inline">UNIDAD OPERATIVA</span>
+            </div>
+            <h1 className="font-stencil text-3xl md:text-5xl leading-[1]">Hola, jefe.</h1>
+            <p className="text-black/70 mt-1 text-sm">{user.business.nombre} · {user.business.sector}</p>
+          </div>
+        </div>
       </div>
-      <h1 className="font-stencil text-4xl md:text-6xl mb-1 leading-[1]">Hola, jefe.</h1>
-      <p className="text-black/70">{user.business.nombre} · {user.business.sector}</p>
 
       {/* STATS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

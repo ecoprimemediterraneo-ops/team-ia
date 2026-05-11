@@ -7,7 +7,7 @@ const items = [
   {
     name: "Javier R.",
     sector: "Agencia inmobiliaria · Málaga",
-    text: "Diego me ha conseguido más leads en un mes que el comercial que tenía contratado a media jornada. Y no se queja los lunes.",
+    text: "Pablo me contesta los WhatsApps de noche y los fines de semana. He cerrado 3 visitas que antes se me caían por no responder a tiempo.",
   },
   {
     name: "Sofía L.",

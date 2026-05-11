@@ -15,8 +15,8 @@ export default function Team() {
           Seis especialistas, seis frentes. Trabajan en cadena, no se duermen y no te piden vacaciones.
         </p>
         <p className="text-sm max-w-2xl mb-14 text-black/60 font-mono">
-          ★ <strong>Eva</strong> ya está operativa enviando emails reales. El resto se incorpora durante 2026.
-          <br />Como fundador, los recibes todos al mismo precio cuando estén listos.
+          ★ <strong>Los 6 agentes operativos hoy.</strong> Eva ya envía emails reales y Lucía ya lee tu Gmail con OAuth. El resto trabaja en modo asistido (genera el contenido, tú publicas) mientras se completan integraciones automáticas con Meta, Google Business y Vapi.
+          <br />Como fundador, te aseguras el precio actual de por vida.
         </p>
 
         <div className="grid md:grid-cols-2 gap-10 mt-16">

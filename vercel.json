@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/eval",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/lucia-daily-summary",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/eva-dispatcher",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}

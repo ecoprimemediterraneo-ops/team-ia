@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import type { Contact } from "@/lib/store";
+import type { Contact, EmailTemplate } from "@/lib/store";
 
 export default function EvaTools({ initialContacts }: { initialContacts: Contact[] }) {
   const [contacts, setContacts] = useState<Contact[]>(initialContacts);
@@ -10,6 +10,46 @@ export default function EvaTools({ initialContacts }: { initialContacts: Contact
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [tplName, setTplName] = useState("");
+  const [showSaveTpl, setShowSaveTpl] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/eva/templates").then((r) => r.json()).then((d) => setTemplates(d.templates || []));
+  }, []);
+
+  async function saveTemplate() {
+    if (!tplName.trim() || !subject.trim() || !body.trim()) {
+      setFeedback({ ok: false, msg: "Plantilla necesita nombre, asunto y cuerpo" });
+      return;
+    }
+    const res = await fetch("/api/eva/templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: tplName, subject, body }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setFeedback({ ok: false, msg: data.error || "Error" });
+      return;
+    }
+    setTemplates([data.template, ...templates]);
+    setTplName("");
+    setShowSaveTpl(false);
+    setFeedback({ ok: true, msg: "Plantilla guardada ✓" });
+  }
+
+  function loadTemplate(t: EmailTemplate) {
+    setSubject(t.subject);
+    setBody(t.body);
+    setFeedback({ ok: true, msg: `Plantilla "${t.name}" cargada` });
+  }
+
+  async function delTemplate(id: string) {
+    if (!confirm("¿Eliminar esta plantilla?")) return;
+    await fetch(`/api/eva/templates?id=${id}`, { method: "DELETE" });
+    setTemplates(templates.filter((t) => t.id !== id));
+  }
 
   useEffect(() => {
     const t = feedback ? setTimeout(() => setFeedback(null), 6000) : null;
@@ -128,6 +168,22 @@ export default function EvaTools({ initialContacts }: { initialContacts: Contact
           Pídele a Eva el correo en el chat de arriba, copia su salida aquí abajo y le das a enviar.
           Sale desde <code className="bg-black/5 px-1">eva@aiteam.marketing</code> ✓
         </p>
+
+        {/* Plantillas */}
+        {templates.length > 0 && (
+          <div className="mb-3 border-2 border-black bg-[color:var(--mustard)]/10 p-2">
+            <div className="text-[10px] font-bold tracking-widest text-black/60 mb-1">📋 PLANTILLAS GUARDADAS</div>
+            <div className="flex flex-wrap gap-1">
+              {templates.map((t) => (
+                <div key={t.id} className="flex items-center gap-1 bg-white border border-black/30 text-[11px]">
+                  <button onClick={() => loadTemplate(t)} className="px-2 py-0.5 hover:bg-[color:var(--mustard)]">{t.name}</button>
+                  <button onClick={() => delTemplate(t.id)} className="px-1 text-black/40 hover:text-[color:var(--red)]">×</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <input
           type="text"
           placeholder="Asunto del correo"
@@ -150,10 +206,33 @@ export default function EvaTools({ initialContacts }: { initialContacts: Contact
           >
             {sending ? "ENVIANDO…" : `📨 ENVIAR A LA LISTA (${contacts.length})`}
           </button>
+          <button
+            onClick={() => setShowSaveTpl(!showSaveTpl)}
+            disabled={!subject.trim() || !body.trim()}
+            className="text-xs font-mono border-2 border-black px-3 py-2 hover:bg-black hover:text-white disabled:opacity-40"
+          >
+            💾 GUARDAR COMO PLANTILLA
+          </button>
           <span className="text-xs font-mono text-black/50">
             Free tier Resend: 100 emails/día · 3.000/mes
           </span>
         </div>
+
+        {showSaveTpl && (
+          <div className="mt-3 p-3 border-2 border-black bg-[color:var(--cream)]">
+            <div className="flex items-center gap-2 flex-wrap">
+              <input
+                type="text"
+                placeholder='Nombre plantilla (ej: "Promo blanqueamiento")'
+                value={tplName}
+                onChange={(e) => setTplName(e.target.value)}
+                className="flex-1 border-2 border-black px-2 py-1.5 text-sm min-w-[200px]"
+              />
+              <button onClick={saveTemplate} className="btn-mustard text-xs">✓ GUARDAR</button>
+              <button onClick={() => setShowSaveTpl(false)} className="text-xs font-mono border-2 border-black px-2 py-1.5 hover:bg-black hover:text-white">CANCELAR</button>
+            </div>
+          </div>
+        )}
         {feedback && (
           <div className={`mt-3 px-3 py-2 border-2 border-black text-sm font-bold ${feedback.ok ? "bg-green-200" : "bg-red-200"}`}>
             {feedback.ok ? "✓" : "⚠"} {feedback.msg}

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
-import { getContacts, addContact, removeContact } from "@/lib/store";
+import { getContacts, addContact, removeContact, getWelcomeSeries, queueWelcomeSends } from "@/lib/store";
 
 const addSchema = z.object({
   email: z.string().email("Email no válido"),
@@ -27,6 +27,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
     await addContact(email, parsed.data);
+    // Si la welcome series está activa, encolar emails para este nuevo contacto
+    const series = await getWelcomeSeries(email);
+    if (series?.enabled && series.emails.length > 0) {
+      await queueWelcomeSends(email, parsed.data.email, series);
+    }
     const contacts = await getContacts(email);
     return NextResponse.json({ ok: true, contacts });
   } catch (err) {

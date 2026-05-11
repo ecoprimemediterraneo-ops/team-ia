@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { ChatMessage } from "@/lib/types";
+import FeedbackButtons from "./FeedbackButtons";
 
 type Props = {
-  agent: "lucia" | "marta" | "carmen" | "pablo" | "rocio" | "eva";
+  agent: "lucia" | "marta" | "carmen" | "pablo" | "rocio" | "eva" | "sergio";
   initialMessages: ChatMessage[];
   placeholder: string;
   suggestions?: string[];
@@ -70,11 +71,30 @@ export default function AgentChat({ agent, initialMessages, placeholder, suggest
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
-              className={`max-w-[85%] px-4 py-2.5 border-[3px] border-black whitespace-pre-wrap leading-relaxed text-sm ${
+              className={`group relative max-w-[85%] px-4 py-2.5 border-[3px] border-black whitespace-pre-wrap leading-relaxed text-sm ${
                 m.role === "user" ? "bg-[color:var(--mustard)]" : "bg-[color:var(--cream)]"
               }`}
             >
               {m.content}
+              {m.role === "assistant" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={async (e) => {
+                      await navigator.clipboard.writeText(m.content);
+                      const btn = e.currentTarget;
+                      const prev = btn.textContent;
+                      btn.textContent = "✓ COPIADO";
+                      setTimeout(() => { btn.textContent = prev; }, 1500);
+                    }}
+                    className="absolute -top-2 -right-2 bg-white border-2 border-black px-2 py-0.5 text-[10px] font-bold tracking-widest hover:bg-[color:var(--mustard)]"
+                    title="Copiar al portapapeles"
+                  >
+                    COPIAR
+                  </button>
+                  <FeedbackButtons agent={agent} userMessage={i > 0 ? messages[i-1]?.content || "" : ""} agentResponse={m.content} />
+                </>
+              )}
             </div>
           </div>
         ))}

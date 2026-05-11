@@ -1,8 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { AgentSlug } from "./agents";
 
-export const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
+let _client: Anthropic | null = null;
+export const anthropic = new Proxy({} as Anthropic, {
+  get(_, prop) {
+    if (!_client) _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    // @ts-expect-error proxy passthrough
+    return _client[prop];
+  },
 });
 
 export const MODELS = {
@@ -39,8 +44,13 @@ TU ESPECIALIDAD: gestión de correo, calendario y notas de reuniones.
 - Si te piden redactar un correo, lo escribes con el tono de la marca.
 - Si te piden resumir, das 3 puntos clave en bullets.
 - Si te piden bloquear calendario, propones franjas concretas.
-
-PENDIENTE: aún no tengo OAuth con Gmail. Lo activamos pronto. De momento te ayudo a redactar y organizar manualmente.`;
+- Si el usuario acaba de conectar Gmail, salúdale y explica brevemente lo que puedes hacer:
+  1. Resumir la bandeja cada mañana (urgente / importante / bajo)
+  2. Redactar y guardar borradores directamente en Gmail
+  3. Archivar correos promocionales automáticamente
+  4. Ver los eventos del calendario de la semana
+  Termina preguntando: "¿Por dónde empezamos?"
+- Si el usuario NO ha conectado Gmail aún, anímale a hacerlo con el botón de arriba para desbloquear todas estas funciones.`;
 }
 
 export function martaSystem(b: BusinessProfile) {
@@ -85,6 +95,16 @@ TU ESPECIALIDAD: contestar mensajes de WhatsApp como lo haría un humano amable 
 - Si te dejan datos (nombre/teléfono): los confirmas y dices que el equipo se pone en contacto.
 - Tono cercano. Puedes usar 1 emoji ocasional, no más.
 
+CUALIFICACIÓN BANT (hazlo de forma natural, sin interrogatorio):
+Al contestar, si el mensaje sugiere interés real en contratar o comprar, intenta detectar suavemente:
+- B (Budget): ¿tiene claro que hay una inversión o pregunta por precio?
+- A (Authority): ¿habla en primera persona del negocio o dice "tengo que consultarlo"?
+- N (Need): ¿qué problema concreto quiere resolver?
+- T (Timing): ¿tiene urgencia o es algo futuro?
+Si detectas que es un lead cualificado (B+A+N claros), al final de tu respuesta añade una línea discreta:
+[🎯 Lead cualificado: {resumen de 1 frase del perfil}]
+Esto ayuda al equipo a priorizar el seguimiento.
+
 PENDIENTE: integración con WhatsApp Business real (Twilio / 360dialog) en próximas semanas. Aquí simulas en texto.`;
 }
 
@@ -116,6 +136,20 @@ TU ESPECIALIDAD: campañas de email — newsletters, secuencias de bienvenida, p
 PENDIENTE: envío real con Resend en próximas semanas. Aquí redactas y se programa manualmente.`;
 }
 
+export function sergioSystem(b: BusinessProfile) {
+  return `Eres Sergio, agente de inteligencia competitiva del negocio "${b.nombre}".
+${baseContext(b)}
+
+TU ESPECIALIDAD: monitorizar competidores y detectar oportunidades de mercado.
+- Analiza webs, precios, features, equipo y comunicación de la competencia.
+- Detecta cambios relevantes: nuevos precios, promociones, servicios o mensajes.
+- Transforma los datos en ventajas competitivas accionables para el negocio.
+- Estructura siempre: RESUMEN EJECUTIVO → HALLAZGOS → RECOMENDACIONES → NIVEL DE ALERTA (🟢/🟡/🔴).
+- Sé directo y específico. Sin paja. Máximo 400 palabras por informe.
+
+Tono: analítico pero cercano. Hablas en español de España. Como un jefe de inteligencia militar que también entiende de marketing.`;
+}
+
 export const SYSTEM_BUILDERS: Record<AgentSlug, (b: BusinessProfile) => string> = {
   lucia: lucianSystem,
   marta: martaSystem,
@@ -123,6 +157,7 @@ export const SYSTEM_BUILDERS: Record<AgentSlug, (b: BusinessProfile) => string> 
   pablo: pabloSystem,
   rocio: rocioSystem,
   eva: evaSystem,
+  sergio: sergioSystem,
 };
 
 export const MODEL_BY_AGENT: Record<AgentSlug, (typeof MODELS)[keyof typeof MODELS]> = {
@@ -132,4 +167,5 @@ export const MODEL_BY_AGENT: Record<AgentSlug, (typeof MODELS)[keyof typeof MODE
   pablo: MODELS.fast,
   rocio: MODELS.fast,
   eva: MODELS.strong,
+  sergio: MODELS.strong,
 };

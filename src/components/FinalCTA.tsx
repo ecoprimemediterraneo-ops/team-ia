@@ -1,9 +1,23 @@
 "use client";
 import { useState } from "react";
 
+const SECTORS = [
+  "Clínica dental",
+  "Peluquería / estética",
+  "Fisio / nutrición",
+  "Restaurante / hostelería",
+  "Inmobiliaria",
+  "Gestoría / asesoría",
+  "Coach / consultor",
+  "E-commerce",
+  "Otro",
+];
+
 export default function FinalCTA() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [sector, setSector] = useState("");
+  const [city, setCity] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -14,12 +28,12 @@ export default function FinalCTA() {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name }),
+        body: JSON.stringify({ email, name, sector, city }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error");
       setStatus("ok");
-      setMessage("¡Estás dentro! Te avisamos en cuanto abramos.");
+      setMessage("¡Estás dentro! Te avisamos en cuanto abramos tu plaza fundadora.");
     } catch (err) {
       setStatus("error");
       setMessage(err instanceof Error ? err.message : "Algo falló. Inténtalo de nuevo.");
@@ -31,15 +45,15 @@ export default function FinalCTA() {
       <div className="max-w-3xl mx-auto px-5 text-center">
         <div className="flex flex-wrap justify-center items-center gap-3 text-xs font-mono mb-6">
           <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">RECLUTAMIENTO ABIERTO</span>
-          <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">PLAZAS LIMITADAS</span>
+          <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">100 PLAZAS</span>
         </div>
         <h2 className="font-display text-5xl md:text-8xl mb-6">
           Recluta tu<br />unidad
         </h2>
         <p className="text-lg md:text-xl mb-10 text-white/80">
-          500 plazas fundadoras con <span className="font-bold text-[color:var(--mustard)]">precio para siempre</span>.
-          Pack Local desde <span className="font-bold text-[color:var(--mustard)]">29 €/mes</span>.
-          Cuando se llenen, los precios suben.
+          100 plazas fundadoras con <span className="font-bold text-[color:var(--mustard)]">precio congelado de por vida</span>.
+          Pack Local desde <span className="font-bold text-[color:var(--mustard)]">39,90 €/mes</span>.
+          Cuando se llenen, los precios suben al normal.
           <span className="block mt-2 text-white/60 text-sm">14 días de prueba sin tarjeta. Cancelas cuando quieras.</span>
         </p>
 
@@ -49,9 +63,8 @@ export default function FinalCTA() {
             <p className="font-display text-3xl">{message}</p>
           </div>
         ) : (
-          <form onSubmit={onSubmit} className="flex flex-col gap-4 max-w-lg mx-auto">
+          <form onSubmit={onSubmit} className="flex flex-col gap-3 max-w-lg mx-auto text-left">
             <input
-              required
               type="text"
               placeholder="Tu nombre (opcional)"
               value={name}
@@ -61,20 +74,39 @@ export default function FinalCTA() {
             <input
               required
               type="email"
-              placeholder="tu@correo.com"
+              placeholder="tu@correo.com *"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="card-hard text-black px-4 py-3 text-base font-semibold focus:outline-none"
             />
-            <button type="submit" disabled={status === "loading"} className="btn-mustard text-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <select
+                required
+                value={sector}
+                onChange={(e) => setSector(e.target.value)}
+                className="card-hard text-black px-4 py-3 text-base font-semibold focus:outline-none bg-white"
+              >
+                <option value="">Tu tipo de negocio *</option>
+                {SECTORS.map((s) => (<option key={s} value={s}>{s}</option>))}
+              </select>
+              <input
+                required
+                type="text"
+                placeholder="Ciudad *"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="card-hard text-black px-4 py-3 text-base font-semibold focus:outline-none"
+              />
+            </div>
+            <button type="submit" disabled={status === "loading"} className="btn-mustard text-lg mt-2">
               {status === "loading" ? "RECLUTANDO..." : "ALÍSTAME"}
             </button>
-            {status === "error" && <p className="text-red-300">{message}</p>}
+            {status === "error" && <p className="text-red-300 text-center">{message}</p>}
           </form>
         )}
 
         <p className="text-xs text-white/50 mt-6">
-          Sin spam. Solo te escribimos cuando abramos plazas.
+          Sin spam. Solo te escribimos cuando abramos tu plaza.
         </p>
       </div>
     </section>

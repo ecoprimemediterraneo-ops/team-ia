@@ -4,7 +4,7 @@ import { getUser, appendMessage, logActivity, bumpStats } from "@/lib/store";
 import { anthropic, SYSTEM_BUILDERS, MODEL_BY_AGENT } from "@/lib/claude";
 import type { AgentSlug } from "@/lib/agents";
 
-const VALID = new Set<AgentSlug>(["lucia", "marta", "carmen", "pablo", "rocio", "eva"]);
+const VALID = new Set<AgentSlug>(["lucia", "marta", "carmen", "pablo", "rocio", "eva", "sergio"]);
 
 export async function POST(
   req: Request,
@@ -26,7 +26,25 @@ export async function POST(
       return NextResponse.json({ error: "Mensaje vacío" }, { status: 400 });
     }
 
-    const system = SYSTEM_BUILDERS[key](user.business);
+    let system = SYSTEM_BUILDERS[key](user.business);
+
+    // Skills dentales: si el negocio es clínica dental, enriquecer el prompt según contexto del mensaje.
+    const sectorLower = (user.business?.sector || "").toLowerCase();
+    if (sectorLower.includes("dental") || sectorLower.includes("dentista") || sectorLower.includes("odonto")) {
+      const { buildDentalSystemPrompt } = await import("@/lib/skills/dental");
+      system = buildDentalSystemPrompt(system, message);
+    }
+
+    // Inyectar lecciones aprendidas (gold standards) del usuario para este agente
+    const { getLearnedPatterns } = await import("@/lib/store");
+    const lessons = await getLearnedPatterns(email, key, 5);
+    if (lessons.length > 0) {
+      const lessonsBlock = lessons
+        .map((l, i) => `Lección ${i + 1}:\nContexto: "${l.context}"\nRespuesta correcta validada por el usuario: "${l.goldStandard}"`)
+        .join("\n\n");
+      system += `\n\n────────────────────────────\nLECCIONES APRENDIDAS DE ESTE USUARIO\n────────────────────────────\nEl usuario ha corregido respuestas anteriores. Sigue su estilo:\n\n${lessonsBlock}`;
+    }
+
     const history = user.chats[key];
 
     await appendMessage(email, key, { role: "user", content: message });

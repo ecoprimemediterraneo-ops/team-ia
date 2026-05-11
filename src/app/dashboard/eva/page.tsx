@@ -5,6 +5,7 @@ import { getUser, getContacts, getOrCreateWidget } from "@/lib/store";
 import AgentChat from "@/components/AgentChat";
 import EvaTools from "@/components/EvaTools";
 import EvaWidget from "@/components/EvaWidget";
+import EvaAutomation from "@/components/EvaAutomation";
 import { agentBySlug } from "@/lib/agents";
 
 export default async function EvaPage() {
@@ -54,6 +55,8 @@ export default async function EvaPage() {
       <EvaWidget initial={widget} baseUrl={baseUrl} />
 
       <EvaTools initialContacts={contacts} />
+
+      <EvaAutomation />
     </section>
   );
 }

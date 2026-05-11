@@ -1,23 +1,78 @@
+"use client";
+import { useState } from "react";
 import Logo from "./Logo";
 
 export default function Navbar() {
+  const [sectoresOpen, setSectoresOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
-    <header className="sticky top-0 z-40 bg-[color:var(--cream)]/90 backdrop-blur border-b-[3px] border-black">
+    <header className="sticky top-0 z-40 bg-[color:var(--cream)]/95 backdrop-blur border-b-[3px] border-black">
       <nav className="max-w-7xl mx-auto flex items-center justify-between gap-2 px-4 sm:px-5 py-3 sm:py-4">
-        <a href="#top" className="flex items-center shrink-0">
+        {/* Logo */}
+        <a href="/" className="flex items-center shrink-0">
           <Logo size="sm" />
         </a>
-        <div className="hidden md:flex items-center gap-7 font-semibold text-sm uppercase tracking-wider">
-          <a href="#equipo" className="hover:text-[color:var(--red)]">La unidad</a>
-          <a href="#dia" className="hover:text-[color:var(--red)]">Un día</a>
-          <a href="#packs" className="hover:text-[color:var(--red)]">Packs</a>
-          <a href="#faq" className="hover:text-[color:var(--red)]">FAQ</a>
+
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-6 font-semibold text-sm uppercase tracking-wider">
+          <a href="/#packs" className="hover:text-[color:var(--red)] transition-colors">Precios</a>
+
+          {/* Sectores dropdown */}
+          <div className="relative" onMouseEnter={() => setSectoresOpen(true)} onMouseLeave={() => setSectoresOpen(false)}>
+            <button className="flex items-center gap-1 hover:text-[color:var(--red)] transition-colors">
+              Sectores
+              <span className="text-[10px]">▾</span>
+            </button>
+            {sectoresOpen && (
+              <div className="absolute top-full left-0 mt-1 bg-white border-[3px] border-black shadow-[4px_4px_0_#000] min-w-[160px]">
+                <a href="/dentistas" className="flex items-center gap-2 px-4 py-2.5 text-xs hover:bg-[color:var(--mustard)] font-bold border-b border-black/10">🦷 Dentistas</a>
+                <a href="/peluquerias" className="flex items-center gap-2 px-4 py-2.5 text-xs hover:bg-[color:var(--mustard)] font-bold border-b border-black/10">💇 Salones</a>
+                <a href="/restaurantes" className="flex items-center gap-2 px-4 py-2.5 text-xs hover:bg-[color:var(--mustard)] font-bold">🍽️ Restaurantes</a>
+              </div>
+            )}
+          </div>
+
+          <a href="/casos" className="hover:text-[color:var(--red)] transition-colors">Casos</a>
+          <a href="/#faq" className="hover:text-[color:var(--red)] transition-colors">FAQ</a>
         </div>
+
+        {/* CTAs */}
         <div className="flex items-center gap-2">
-          <a href="/login" className="text-[10px] sm:text-xs uppercase tracking-widest font-bold border-2 border-black px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-black hover:text-white">Acceder</a>
-          <a href="#waitlist" className="btn-mustard text-xs sm:text-sm px-3 sm:px-4">Reclutar</a>
+          <a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" target="_blank" rel="noopener noreferrer" className="hidden sm:inline text-[10px] uppercase tracking-widest font-bold border-2 border-black px-3 py-2 hover:bg-[color:var(--mustard)] transition-colors">
+            Demo
+          </a>
+          <a href="/login" className="hidden sm:inline text-[10px] uppercase tracking-widest font-bold border-2 border-black px-3 py-2 hover:bg-black hover:text-white transition-colors">
+            Acceder
+          </a>
+          <a href="/#waitlist" className="btn-mustard text-xs sm:text-sm px-3 sm:px-4">
+            Reclutar
+          </a>
+
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="md:hidden border-2 border-black p-2 hover:bg-black hover:text-white transition-colors"
+          >
+            <span className="block w-4 h-0.5 bg-current mb-1"></span>
+            <span className="block w-4 h-0.5 bg-current mb-1"></span>
+            <span className="block w-4 h-0.5 bg-current"></span>
+          </button>
         </div>
       </nav>
+
+      {/* Mobile menu */}
+      {menuOpen && (
+        <div className="md:hidden border-t-[3px] border-black bg-[color:var(--cream)] px-4 py-4 space-y-3">
+          <a href="/#packs" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>Precios</a>
+          <a href="/dentistas" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>🦷 Dentistas</a>
+          <a href="/peluquerias" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>💇 Salones</a>
+          <a href="/restaurantes" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>🍽️ Restaurantes</a>
+          <a href="/casos" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>Casos</a>
+          <a href="/#faq" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>FAQ</a>
+          <a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" target="_blank" rel="noopener noreferrer" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]">Demo</a>
+        </div>
+      )}
     </header>
   );
 }

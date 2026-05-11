@@ -43,8 +43,8 @@ export default function Hero() {
           </h1>
 
           <p className="mt-8 font-display text-2xl sm:text-3xl md:text-5xl leading-tight">
-            Tu agencia de marketing<br />
-            <span className="text-[color:var(--mustard)]">en una caja</span>
+            Seis empleados digitales.<br />
+            <span className="text-[color:var(--mustard)]">Un sueldo.</span>
           </p>
 
           <p className="mt-8 text-base md:text-lg max-w-2xl mx-auto text-white/85">
@@ -54,8 +54,16 @@ export default function Hero() {
             <span className="block mt-2 font-bold text-white">Tú dejas de hacerlo todo. Ellos lo hacen por ti.</span>
           </p>
 
-          <div className="mt-10 flex flex-col items-center gap-3">
+          <div className="mt-10 flex flex-col items-center gap-4">
             <a href="#waitlist" className="btn-mustard text-lg">Reclutar mi equipo</a>
+            <div className="flex gap-3 flex-wrap justify-center">
+              <a href="/demo" className="text-sm font-mono border-2 border-white text-white px-5 py-2 hover:bg-white hover:text-black transition-colors">
+                👁 VER DEMO →
+              </a>
+              <a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" target="_blank" rel="noopener noreferrer" className="text-sm font-mono border-2 border-[color:var(--mustard)] text-[color:var(--mustard)] px-5 py-2 hover:bg-[color:var(--mustard)] hover:text-black transition-colors">
+                📅 RESERVAR DEMO →
+              </a>
+            </div>
             <p className="text-sm text-white/60">+1.200 negocios ya quieren entrar · Plazas fundadoras a 29 €/mes</p>
           </div>
         </div>

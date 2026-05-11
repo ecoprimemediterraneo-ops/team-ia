@@ -1,4 +1,4 @@
-export type AgentSlug = "lucia" | "marta" | "carmen" | "pablo" | "rocio" | "eva";
+export type AgentSlug = "lucia" | "marta" | "carmen" | "pablo" | "rocio" | "eva" | "sergio";
 
 export type Agent = {
   slug: AgentSlug;
@@ -29,8 +29,8 @@ export const agents: Agent[] = [
       "Tu WhatsApp suena a las 23:00 un sábado. Yo contesto, resuelvo dudas, agendo cita y te paso el resumen al lunes.",
     color: "#25D366",
     codename: "ALFA-W1",
-    status: "soon",
-    statusNote: "Próximamente · activación Q2 2026",
+    status: "ready",
+    statusNote: "Operativa · modo manual con IA (auto-respuesta 24/7: en alta Meta Business)",
     avatar: avatar("pablo"),
   },
   {
@@ -43,8 +43,8 @@ export const agents: Agent[] = [
       "Después de cada cita, mando un mensaje pidiendo reseña. Las nuevas las contesto con tu tono. Subes en Google sin mover un dedo.",
     color: "#FBBF24",
     codename: "GOLF-R2",
-    status: "soon",
-    statusNote: "Próximamente · activación Q2 2026",
+    status: "ready",
+    statusNote: "Operativa · modo manual con IA (auto-publicación: en aprobación Google)",
     avatar: avatar("rocio"),
   },
   {
@@ -57,7 +57,7 @@ export const agents: Agent[] = [
       "Cada nuevo cliente recibe 5 correos de bienvenida con tu marca. Cada lunes mando newsletter con un consejo + oferta. Conversión sola.",
     color: "#60A5FA",
     codename: "ECHO-E3",
-    status: "soon",
+    status: "ready",
     statusNote: "Operativa · envíos reales desde eva@aiteam.marketing",
     avatar: avatar("eva"),
   },
@@ -71,8 +71,8 @@ export const agents: Agent[] = [
       "A las 8:00 tu bandeja ya está limpia. Te he respondido el spam, marcado lo importante y dejado borradores con tu tono. Tú solo dices «sí».",
     color: "#F5C518",
     codename: "BRAVO-L4",
-    status: "soon",
-    statusNote: "Próximamente · activación Q2 2026 (Gmail OAuth)",
+    status: "ready",
+    statusNote: "Operativa · Gmail OAuth real (lectura + borradores + limpieza IA)",
     avatar: avatar("lucia"),
   },
   {
@@ -85,8 +85,8 @@ export const agents: Agent[] = [
       "Tres posts a la semana en Instagram y LinkedIn, con tu voz, sin que bailes delante de la cámara. Te los enseño, tú apruebas, salen solos.",
     color: "#FF7A59",
     codename: "DELTA-M5",
-    status: "soon",
-    statusNote: "Próximamente · activación Q2 2026",
+    status: "ready",
+    statusNote: "Operativa · modo manual con IA (auto-publicación: en aprobación Meta/LinkedIn)",
     avatar: avatar("marta"),
   },
   {
@@ -99,9 +99,23 @@ export const agents: Agent[] = [
       "Contesto al segundo tono, hablo español e inglés y conozco tu negocio de memoria. Cierro citas, paso recados y nunca cuelgo de mal humor.",
     color: "#A88BE8",
     codename: "FOXTROT-C6",
-    status: "soon",
-    statusNote: "Próximamente · activación Q3 2026 (Vapi)",
+    status: "ready",
+    statusNote: "Operativa · guiones manuales con IA (auto-voz: en alta Vapi)",
     avatar: avatar("carmen"),
+  },
+  {
+    slug: "sergio",
+    name: "Sergio",
+    role: "Inteligencia Competitiva",
+    short: "Monitoriza tus competidores y te avisa cuando cambian precios o lanzan novedades.",
+    emoji: "🕵️",
+    quote:
+      "Mientras duermes, escaneo las webs de tus competidores. Si cambian precios, lanzan una promo o actualizan su equipo, te mando un informe antes de que abras el negocio.",
+    color: "#3B82F6",
+    codename: "SIERRA-S7",
+    status: "ready",
+    statusNote: "Operativa · monitorización web con IA (alertas en tiempo real)",
+    avatar: avatar("sergio"),
   },
 ];
 
