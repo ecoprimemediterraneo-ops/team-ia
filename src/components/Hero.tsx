@@ -37,7 +37,7 @@ export default function Hero() {
 
           <h1 className="font-stencil text-3xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05]">
             <span className="block">UNA AGENCIA.</span>
-            <span className="block">SEIS</span>
+            <span className="block">SIETE</span>
             <span className="block">ESPECIALISTAS.</span>
             <span className="inline-block barred mt-4 px-3 py-1">UN SUELDO.</span>
           </h1>

@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     template: "%s | AI-Team",
   },
   description:
-    "6 especialistas de IA que se ocupan de tu WhatsApp, reseñas, email, redes, llamadas y correo. Tu agencia de marketing en una caja.",
+    "7 especialistas de IA que se ocupan de tu WhatsApp, reseñas, email, redes, llamadas y correo. Tu agencia de marketing en una caja.",
   metadataBase: new URL(SITE_URL),
   openGraph: {
     type: "website",

@@ -102,7 +102,7 @@ const peluPacks = [
     priceFounder: "199",
     priceRegular: "349",
     tagline: "Para salón premium o cadena con 3+ sillones",
-    agents: ["Los 6 especialistas", "+ Onboarding 1:1", "+ Setup con tu software (Treatwell, Booksy)", "+ WhatsApp directo conmigo"],
+    agents: ["Los 7 especialistas", "+ Onboarding 1:1", "+ Setup con tu software (Treatwell, Booksy)", "+ WhatsApp directo conmigo"],
     cta: "Hablar conmigo",
   },
 ];
@@ -144,7 +144,7 @@ export default function PeluqueriasPage() {
             </div>
             <h1 className="font-stencil text-3xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05]">
               <span className="block">UN SALÓN.</span>
-              <span className="block">SEIS</span>
+              <span className="block">SIETE</span>
               <span className="block">ESPECIALISTAS.</span>
               <span className="inline-block barred mt-4 px-3 py-1">UN SUELDO.</span>
             </h1>
@@ -198,7 +198,7 @@ export default function PeluqueriasPage() {
 
         <section className="py-24 border-t-[3px] border-black bg-[color:var(--cream)]">
           <div className="max-w-6xl mx-auto px-5">
-            <h2 className="font-stencil text-5xl md:text-7xl mb-4">Los 6 especialistas<br />de tu salón</h2>
+            <h2 className="font-stencil text-5xl md:text-7xl mb-4">Los 7 especialistas<br />de tu salón</h2>
             <p className="text-lg max-w-2xl mb-14 text-black/70">Cada uno con su misión, entrenado para peluquería y estética. No genérico.</p>
             <div className="grid md:grid-cols-2 gap-8">
               {agents.map((a) => {
