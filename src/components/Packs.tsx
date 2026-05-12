@@ -1,7 +1,7 @@
 const packs = [
   {
     name: "Local",
-    priceFounder: "39,90",
+    priceFounder: "39",
     priceRegular: "99",
     tagline: "Para negocio físico (peluquería, dental, gimnasio…)",
     agents: ["Pablo (WhatsApp)", "Carmen (Llamadas)", "Rocío (Reseñas)"],
@@ -20,7 +20,7 @@ const packs = [
     priceFounder: "149",
     priceRegular: "249",
     tagline: "Toda la unidad. Lo más vendido.",
-    agents: ["Los 6 especialistas"],
+    agents: ["Pablo (WhatsApp)", "Carmen (Llamadas)", "Rocío (Reseñas)", "Lucía (Correo)", "Marta (Redes)", "Eva (Email mkt)"],
     cta: "Quiero la unidad entera",
     featured: true,
   },
@@ -29,7 +29,7 @@ const packs = [
     priceFounder: "299",
     priceRegular: "499",
     tagline: "Élite + onboarding personal + soporte premium",
-    agents: ["Los 6 + setup 1:1 + WhatsApp directo"],
+    agents: ["Los 6 + Sergio (Inteligencia)", "Onboarding personal 1:1", "Soporte premium directo"],
     cta: "Hablar con ventas",
   },
 ];

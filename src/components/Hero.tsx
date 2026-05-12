@@ -64,7 +64,7 @@ export default function Hero() {
                 📅 RESERVAR DEMO →
               </a>
             </div>
-            <p className="text-sm text-white/60">+1.200 negocios ya quieren entrar · Plazas fundadoras a 29 €/mes</p>
+            <p className="text-sm text-white/60">+1.200 negocios ya quieren entrar · Plazas fundadoras desde 39 €/mes</p>
           </div>
         </div>
 

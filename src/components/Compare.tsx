@@ -5,7 +5,7 @@ const rows: [string, true | false | string, true | false | string][] = [
   ["Publica en redes sociales", true, "A medias"],
   ["Contesta llamadas en español", true, false],
   ["Gestiona tu correo y calendario", true, false],
-  ["Coste mensual", "29 €", "+2.500 €"],
+  ["Coste mensual", "39 €", "+2.500 €"],
   ["Necesita vacaciones", false, true],
 ];
 
