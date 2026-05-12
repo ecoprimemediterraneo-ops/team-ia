@@ -1,9 +1,3 @@
-const labels = [
-  { text: "100+ correos sin leer cada mañana", pos: "top-[8%] left-[3%] sm:top-[12%] sm:left-[4%]", rot: "-rotate-2" },
-  { text: "Redes sin publicar. Visibilidad cayendo.", pos: "top-[34%] right-[3%] sm:top-[38%] sm:right-[4%]", rot: "rotate-2" },
-  { text: "Llamada no contestada = cliente perdido", pos: "top-[58%] left-[3%] sm:top-[60%] sm:left-[6%]", rot: "-rotate-1" },
-  { text: "Tareas críticas acumuladas sin ejecutar", pos: "bottom-[6%] right-[3%] sm:bottom-[8%] sm:right-[5%]", rot: "rotate-1" },
-];
 
 export default function Pains() {
   return (
@@ -40,18 +34,9 @@ export default function Pains() {
           <img
             src="/agentes/team-action.png"
             alt="AI-Team trabajando en la oficina ochentera"
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover object-top"
           />
 
-          {/* Etiquetas amarillas flotantes */}
-          {labels.map((l, i) => (
-            <span
-              key={i}
-              className={`absolute ${l.pos} ${l.rot} bg-[color:var(--mustard)] text-black font-bold text-sm sm:text-base md:text-lg px-3 py-2 sm:px-4 sm:py-3 border-[3px] border-black shadow-[5px_5px_0_#000] max-w-[60%] sm:max-w-xs leading-tight`}
-            >
-              {l.text}
-            </span>
-          ))}
 
           {/* Sello rojo en esquina */}
           <div className="absolute top-4 right-4 stamp text-[10px] sm:text-xs">
