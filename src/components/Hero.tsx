@@ -53,7 +53,7 @@ export default function Hero() {
 
           {/* Descripción */}
           <p className="text-base md:text-lg max-w-xl mx-auto text-white/70 leading-relaxed font-sans">
-            Siete agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes sociales, email marketing e inteligencia competitiva.
+            El sistema operativo de empleados IA para tu negocio.
             <span className="block mt-2 text-white/90 font-semibold">Autónomo. Medible. Desde 39 €/mes.</span>
           </p>
 
