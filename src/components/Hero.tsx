@@ -30,6 +30,11 @@ export default function Hero() {
       <div className="brick relative overflow-hidden border-b-[3px] border-black/40">
         <div className="relative max-w-5xl mx-auto px-6 pt-24 md:pt-36 pb-16 md:pb-24 z-10 text-center text-white">
 
+          {/* Concepto en 3 segundos */}
+          <p className="text-[11px] font-mono tracking-[0.25em] text-white/40 mb-6 uppercase">
+            Sistema operativo de empleados IA · Para pequeñas y medianas empresas
+          </p>
+
           {/* Badges refinados */}
           <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] font-mono mb-10 tracking-[0.2em]">
             <span className="border border-white/30 text-white/60 px-3 py-1 rounded-full">INFRAESTRUCTURA IA</span>

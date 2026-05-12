@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import StatsBar from "@/components/StatsBar";
+import AgentOS from "@/components/AgentOS";
 import Pains from "@/components/Pains";
 import MockupShowcase from "@/components/MockupShowcase";
 import HowItWorks from "@/components/HowItWorks";
@@ -21,6 +22,7 @@ export default function Home() {
       <main className="flex-1">
         <Hero />
         <StatsBar />
+        <AgentOS />
         <Pains />
         <MockupShowcase />
         <HowItWorks />

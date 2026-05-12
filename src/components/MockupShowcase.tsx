@@ -163,6 +163,89 @@ export default function MockupShowcase() {
           </div>
 
         </div>
+
+        {/* Mockup 4: Sergio — Panel de coordinación */}
+        <div className="mt-6 border-[3px] border-black overflow-hidden">
+          <div className="bg-black px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 rounded-full bg-white/20" />
+                <div className="w-2 h-2 rounded-full bg-white/20" />
+                <div className="w-2 h-2 rounded-full bg-white/20" />
+              </div>
+              <span className="text-[10px] font-mono text-white/40 tracking-widest">SERGIO · COORDINADOR IA · SUPERVISIÓN DEL SISTEMA</span>
+            </div>
+            <div className="text-[10px] font-mono text-[color:var(--mustard)]">⬡ COORDINANDO</div>
+          </div>
+          <div className="bg-[#0a0a0a] p-5">
+            <div className="grid md:grid-cols-3 gap-4">
+
+              {/* Estado de agentes */}
+              <div className="md:col-span-1 border border-white/8 p-4 bg-white/3">
+                <div className="text-[10px] font-mono text-white/30 tracking-widest mb-3">ESTADO DEL SISTEMA</div>
+                <div className="space-y-2">
+                  {[
+                    { name: "Pablo", status: "Respondiendo WhatsApp", ok: true },
+                    { name: "Carmen", status: "En llamada activa", ok: true },
+                    { name: "Rocío", status: "Enviando 3 solicitudes", ok: true },
+                    { name: "Lucía", status: "Procesando bandeja", ok: true },
+                    { name: "Marta", status: "Post programado ✓", ok: true },
+                    { name: "Eva", status: "Secuencia activa", ok: true },
+                  ].map((a) => (
+                    <div key={a.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-1.5 h-1.5 rounded-full ${a.ok ? "bg-green-400" : "bg-red-400"}`} />
+                        <span className="text-[10px] font-mono text-white/60">{a.name}</span>
+                      </div>
+                      <span className="text-[9px] font-mono text-white/25">{a.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Log de actividad */}
+              <div className="md:col-span-1 border border-white/8 p-4 bg-white/3">
+                <div className="text-[10px] font-mono text-white/30 tracking-widest mb-3">LOG DE ACTIVIDAD</div>
+                <div className="space-y-2 text-[9px] font-mono">
+                  {[
+                    { time: "23:14", msg: "Pablo cerró cita: Clínica Moreno", color: "text-green-400" },
+                    { time: "23:09", msg: "Eva: 3 aperturas en campaña", color: "text-blue-400" },
+                    { time: "22:58", msg: "Rocío: reseña 5★ respondida", color: "text-yellow-400" },
+                    { time: "22:41", msg: "Competidor actualizó precios", color: "text-[color:var(--mustard)]" },
+                    { time: "22:30", msg: "Marta: post publicado Instagram", color: "text-orange-400" },
+                    { time: "22:15", msg: "Carmen: llamada gestionada", color: "text-purple-400" },
+                    { time: "21:58", msg: "Lucía: 12 correos procesados", color: "text-white/40" },
+                  ].map((l, i) => (
+                    <div key={i} className="flex gap-2">
+                      <span className="text-white/20 shrink-0">{l.time}</span>
+                      <span className={l.color}>{l.msg}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Alerta competidores */}
+              <div className="md:col-span-1 border border-[color:var(--mustard)]/30 p-4 bg-[color:var(--mustard)]/3">
+                <div className="text-[10px] font-mono text-[color:var(--mustard)] tracking-widest mb-3">⚠ ALERTA COMPETENCIA</div>
+                <div className="space-y-3">
+                  <div className="border border-white/8 p-2 bg-white/3">
+                    <div className="text-[9px] text-white/30 font-mono mb-1">Clínica Dental López · hace 47 min</div>
+                    <div className="text-[10px] text-white/70">Bajó precio limpieza dental de 60€ a 45€</div>
+                  </div>
+                  <div className="border border-white/8 p-2 bg-white/3">
+                    <div className="text-[9px] text-white/30 font-mono mb-1">Centro Estética Marbella · hace 2h</div>
+                    <div className="text-[10px] text-white/70">Lanzó promo: «2x1 en depilación láser»</div>
+                  </div>
+                  <div className="text-[9px] font-mono text-white/20 mt-2">
+                    Informe semanal: lunes 09:00 · próximo en 3 días
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
   );
