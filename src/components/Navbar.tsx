@@ -7,10 +7,10 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 bg-[color:var(--cream)]/95 backdrop-blur border-b-[3px] border-black">
-      <nav className="max-w-7xl mx-auto flex items-center justify-between gap-2 px-4 sm:px-5 py-3 sm:py-4">
+    <header className="sticky top-0 z-40 bg-[color:var(--cream)]/95 backdrop-blur border-b-[3px] border-black overflow-visible">
+      <nav className="max-w-7xl mx-auto flex items-center justify-between gap-2 px-4 sm:px-5 py-2 overflow-visible">
         {/* Logo */}
-        <a href="/" className="flex items-center shrink-0">
+        <a href="/" className="flex items-center shrink-0 relative z-10 overflow-hidden max-w-[55vw] sm:max-w-none" style={{ marginBottom: "-28px" }}>
           <Logo size="sm" />
         </a>
 

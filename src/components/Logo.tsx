@@ -1,5 +1,5 @@
 export default function Logo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const w = size === "lg" ? 380 : size === "sm" ? 160 : 260;
+  const w = size === "lg" ? 380 : size === "sm" ? 260 : 380;
   const h = (w * 110) / 380;
   return (
     <svg
