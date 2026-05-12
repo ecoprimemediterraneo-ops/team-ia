@@ -30,41 +30,32 @@ export default function Hero() {
       <div className="brick relative overflow-hidden border-b-[6px] border-[color:var(--red)]">
         <div className="relative max-w-6xl mx-auto px-5 py-20 md:py-28 z-10 text-center text-white">
           <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-mono mb-8">
-            <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">EXPEDIENTE M-001</span>
             <span className="border-2 border-white text-white px-2 py-1 font-bold tracking-widest">CLASIFICADO</span>
             <span className="bg-[color:var(--red)] text-white px-2 py-1 font-bold tracking-widest">MISIÓN ACTIVA</span>
           </div>
 
           <h1 className="font-stencil text-3xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05]">
-            <span className="block">UNA AGENCIA.</span>
-            <span className="block">SIETE</span>
-            <span className="block">ESPECIALISTAS.</span>
+            <span className="block">TU NEGOCIO.</span>
+            <span className="block">SIETE AGENTES.</span>
             <span className="inline-block barred mt-4 px-3 py-1">UN SUELDO.</span>
           </h1>
 
-          <p className="mt-8 font-display text-2xl sm:text-3xl md:text-5xl leading-tight">
-            Seis empleados digitales.<br />
-            <span className="text-[color:var(--mustard)]">Un sueldo.</span>
-          </p>
-
-          <p className="mt-8 text-base md:text-lg max-w-2xl mx-auto text-white/85">
-            Mientras estás con un cliente, alguien contesta el WhatsApp.
-            Mientras tomas un café, salen tus posts.
-            Mientras duermes, llegan reseñas y se mandan correos.
-            <span className="block mt-2 font-bold text-white">Tú dejas de hacerlo todo. Ellos lo hacen por ti.</span>
+          <p className="mt-8 text-base md:text-xl max-w-2xl mx-auto text-white/85 leading-relaxed">
+            WhatsApp contestado. Reseñas respondidas. Posts publicados. Correos gestionados. Competidores vigilados.
+            <span className="block mt-3 font-bold text-white text-lg md:text-2xl">Todo automático. Tú solo apruebas.</span>
           </p>
 
           <div className="mt-10 flex flex-col items-center gap-4">
-            <a href="#waitlist" className="btn-mustard text-lg">Reclutar mi equipo</a>
             <div className="flex gap-3 flex-wrap justify-center">
-              <a href="/demo" className="text-sm font-mono border-2 border-white text-white px-5 py-2 hover:bg-white hover:text-black transition-colors">
+              <a href="/demo" className="btn-mustard text-lg">
                 👁 VER DEMO →
               </a>
-              <a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" target="_blank" rel="noopener noreferrer" className="text-sm font-mono border-2 border-[color:var(--mustard)] text-[color:var(--mustard)] px-5 py-2 hover:bg-[color:var(--mustard)] hover:text-black transition-colors">
+              <a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" target="_blank" rel="noopener noreferrer" className="text-sm font-mono border-2 border-white text-white px-5 py-2 hover:bg-white hover:text-black transition-colors">
                 📅 RESERVAR DEMO →
               </a>
             </div>
-            <p className="text-sm text-white/60">+1.200 negocios ya quieren entrar · Plazas fundadoras desde 39 €/mes</p>
+            <a href="/#packs" className="text-sm font-mono text-white/60 hover:text-white transition-colors underline underline-offset-4">Ver precios →</a>
+            <p className="text-sm text-white/50">+1.200 negocios en lista de espera · desde 39 €/mes · 14 días gratis</p>
           </div>
         </div>
 
