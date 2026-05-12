@@ -4,7 +4,7 @@ import { useState } from "react";
 const faqs = [
   {
     q: "¿Cuánto cuesta?",
-    a: "Cuatro packs: Local 39,90 €/mes fundador (WhatsApp + llamadas + reseñas), Digital 89 €/mes (correo + redes + email mkt), Élite 149 €/mes con los 6 especialistas, y Pro 299 €/mes (Élite + setup 1:1 + WhatsApp directo). Solo 100 plazas fundador con precio congelado de por vida. Después suben a precio normal.",
+    a: "Cuatro packs: Local 39 €/mes (WhatsApp + llamadas + reseñas), Digital 89 €/mes (correo + redes + email mkt), Élite 149 €/mes con los 6 especialistas, y Pro 299 €/mes (los 7 agentes + Sergio + onboarding 1:1). Solo 100 plazas fundador con precio congelado de por vida.",
   },
   {
     q: "¿Necesito instalar algo o saber de tecnología?",
@@ -41,21 +41,21 @@ export default function FAQ() {
   return (
     <section id="faq" className="py-24 border-t-[3px] border-black bg-white">
       <div className="max-w-3xl mx-auto px-5">
-        <h2 className="font-stencil text-5xl md:text-7xl text-center mb-12">¿Preguntas?</h2>
-        <div className="flex flex-col gap-4">
+        <h2 className="font-stencil text-5xl md:text-6xl text-center mb-16 leading-tight">Preguntas frecuentes</h2>
+        <div className="flex flex-col divide-y divide-black/10 border-y border-black/10">
           {faqs.map((f, i) => {
             const isOpen = open === i;
             return (
-              <div key={i} className="card-hard overflow-hidden">
+              <div key={i}>
                 <button
                   onClick={() => setOpen(isOpen ? null : i)}
-                  className="w-full flex items-center justify-between p-5 text-left font-display text-xl md:text-2xl"
+                  className="w-full flex items-center justify-between py-5 text-left font-semibold text-base md:text-lg gap-4"
                 >
                   <span>{f.q}</span>
-                  <span className="text-3xl">{isOpen ? "−" : "+"}</span>
+                  <span className="text-black/30 text-xl shrink-0">{isOpen ? "−" : "+"}</span>
                 </button>
                 {isOpen && (
-                  <div className="px-5 pb-5 border-t-2 border-black pt-4 text-black/80 leading-relaxed">
+                  <div className="pb-5 text-sm text-black/60 leading-relaxed">
                     {f.a}
                   </div>
                 )}
