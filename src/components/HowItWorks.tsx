@@ -2,47 +2,41 @@ const steps = [
   {
     n: "01",
     title: "Conectas",
-    text: "Te das de alta en 1 minuto, conectas tu Gmail (OAuth) y tu WhatsApp Business. Sin código, sin instalar nada. La unidad ya está dentro.",
-    icon: "🔌",
+    text: "Alta en 1 minuto. Conectas Gmail y WhatsApp Business. Sin código, sin instalaciones.",
   },
   {
     n: "02",
-    title: "Entrenas",
-    text: "Le cuentas a tu unidad cómo es tu negocio: tono, servicios, precios, horarios, FAQ. Te lleva 5 minutos en una pantalla guiada. Lo aprenden al instante.",
-    icon: "🧠",
+    title: "Briefing",
+    text: "5 minutos en una pantalla guiada. Tu tono, servicios, precios y FAQ. Los agentes aprenden al instante.",
   },
   {
     n: "03",
-    title: "Trabajan",
-    text: "Tú vuelves a lo tuyo. Pablo contesta WhatsApps, Lucía limpia tu correo, Eva manda newsletters, Rocío responde reseñas, Marta publica, Carmen coge llamadas. Tú apruebas con un click.",
-    icon: "⚡",
+    title: "Operativo",
+    text: "WhatsApp contestado. Correo gestionado. Posts publicados. Reseñas respondidas. Tú solo apruebas.",
   },
 ];
 
 export default function HowItWorks() {
   return (
     <section className="py-24 border-t-[3px] border-black bg-[color:var(--cream)]">
-      <div className="max-w-6xl mx-auto px-5">
-        <div className="flex items-center gap-3 mb-6 text-xs font-mono">
-          <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">PROTOCOLO DE DESPLIEGUE</span>
-          <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">3 PASOS</span>
+      <div className="max-w-5xl mx-auto px-6">
+        <div className="flex items-center gap-2 mb-8 text-[10px] font-mono tracking-[0.2em]">
+          <span className="bg-black text-[color:var(--mustard)] px-3 py-1 font-bold">PROTOCOLO DE DESPLIEGUE</span>
+          <span className="border border-black/30 px-3 py-1 text-black/50">3 PASOS</span>
         </div>
-        <h2 className="font-stencil text-5xl md:text-7xl mb-4">
-          Cómo funciona<br />en 3 pasos
+        <h2 className="font-stencil text-5xl md:text-6xl mb-4 leading-tight">
+          Operativo en<br />10 minutos
         </h2>
-        <p className="text-lg max-w-2xl mb-14 text-black/70">
-          De 0 a unidad operativa en menos de 10 minutos. Sin tutoriales largos, sin tecnicismos.
+        <p className="text-base max-w-xl mb-16 text-black/50">
+          Sin tutoriales. Sin código. Sin consultor de implementación.
         </p>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-3 gap-px bg-black border-[3px] border-black">
           {steps.map((s) => (
-            <article key={s.n} className="card-hard p-6 relative bg-white">
-              <div className="absolute -top-4 -left-4 bg-[color:var(--mustard)] border-[3px] border-black w-14 h-14 flex items-center justify-center font-stencil text-xl shadow-[3px_3px_0_#000]">
-                {s.n}
-              </div>
-              <div className="text-5xl mb-3 mt-3">{s.icon}</div>
-              <h3 className="font-stencil text-3xl mb-2">{s.title}</h3>
-              <p className="text-black/70 leading-relaxed">{s.text}</p>
+            <article key={s.n} className="p-8 bg-[color:var(--cream)] relative">
+              <div className="font-stencil text-5xl text-black/10 mb-6">{s.n}</div>
+              <h3 className="font-stencil text-2xl mb-3 text-black">{s.title}</h3>
+              <p className="text-sm text-black/60 leading-relaxed">{s.text}</p>
             </article>
           ))}
         </div>

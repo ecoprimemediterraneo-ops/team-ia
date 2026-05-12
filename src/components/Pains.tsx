@@ -59,9 +59,9 @@ export default function Pains() {
           </div>
         </div>
 
-        <p className="mt-8 text-center text-lg md:text-xl max-w-2xl mx-auto">
-          Eres el CEO, el comercial, el de marketing y el que coge el teléfono.
-          A las 23:00 sigues con el portátil. <span className="font-bold">Esto se acaba hoy.</span>
+        <p className="mt-8 text-center text-base md:text-lg max-w-xl mx-auto text-black/60">
+          Un negocio no debería depender de que su dueño lo haga todo.
+          <span className="block mt-2 font-semibold text-black">AI-Team lo cambia.</span>
         </p>
       </div>
     </section>

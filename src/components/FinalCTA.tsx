@@ -43,18 +43,15 @@ export default function FinalCTA() {
   return (
     <section id="waitlist" className="py-24 border-t-[3px] border-black bg-black text-[color:var(--cream)]">
       <div className="max-w-3xl mx-auto px-5 text-center">
-        <div className="flex flex-wrap justify-center items-center gap-3 text-xs font-mono mb-6">
-          <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">RECLUTAMIENTO ABIERTO</span>
-          <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">100 PLAZAS</span>
+        <div className="flex flex-wrap justify-center items-center gap-2 text-[10px] font-mono mb-8 tracking-[0.2em]">
+          <span className="border border-[color:var(--mustard)]/40 text-[color:var(--mustard)] px-3 py-1">ACCESO FUNDADOR</span>
+          <span className="border border-white/20 text-white/40 px-3 py-1">100 PLAZAS</span>
         </div>
-        <h2 className="font-display text-5xl md:text-8xl mb-6">
-          Recluta tu<br />unidad
+        <h2 className="font-stencil text-5xl md:text-7xl mb-6 leading-tight">
+          Empieza hoy.<br />Precio fijo<br />para siempre.
         </h2>
-        <p className="text-lg md:text-xl mb-10 text-white/80">
-          100 plazas fundadoras con <span className="font-bold text-[color:var(--mustard)]">precio congelado de por vida</span>.
-          Pack Local desde <span className="font-bold text-[color:var(--mustard)]">39,90 €/mes</span>.
-          Cuando se llenen, los precios suben al normal.
-          <span className="block mt-2 text-white/60 text-sm">14 días de prueba sin tarjeta. Cancelas cuando quieras.</span>
+        <p className="text-base md:text-lg mb-10 text-white/50 max-w-md mx-auto">
+          Precio fundador congelado de por vida desde <span className="text-white font-semibold">39 €/mes</span>. 14 días gratis, sin tarjeta.
         </p>
 
         {status === "ok" ? (
@@ -98,8 +95,8 @@ export default function FinalCTA() {
                 className="card-hard text-black px-4 py-3 text-base font-semibold focus:outline-none"
               />
             </div>
-            <button type="submit" disabled={status === "loading"} className="btn-mustard text-lg mt-2">
-              {status === "loading" ? "RECLUTANDO..." : "ALÍSTAME"}
+            <button type="submit" disabled={status === "loading"} className="btn-mustard text-base mt-2">
+              {status === "loading" ? "Enviando..." : "Reservar plaza fundadora →"}
             </button>
             {status === "error" && <p className="text-red-300 text-center">{message}</p>}
           </form>
