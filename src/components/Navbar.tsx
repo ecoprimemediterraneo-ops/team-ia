@@ -19,15 +19,21 @@ export default function Navbar() {
           <a href="/#packs" className="hover:text-[color:var(--red)] transition-colors">Precios</a>
 
           {/* Sectores dropdown */}
-          <div className="relative" onMouseEnter={() => setSectoresOpen(true)} onMouseLeave={() => setSectoresOpen(false)}>
-            <button className="flex items-center gap-1 hover:text-[color:var(--red)] transition-colors">
+          <div className="relative">
+            <button
+              onClick={() => setSectoresOpen(!sectoresOpen)}
+              className="flex items-center gap-1 hover:text-[color:var(--red)] transition-colors"
+            >
               Sectores
               <span className="text-[10px]">▾</span>
             </button>
             {sectoresOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-white border-[3px] border-black shadow-[4px_4px_0_#000] min-w-[160px]">
-                <a href="/dentistas" className="flex items-center gap-2 px-4 py-2.5 text-xs hover:bg-[color:var(--mustard)] font-bold">🦷 Dentistas</a>
-              </div>
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setSectoresOpen(false)} />
+                <div className="absolute top-full left-0 mt-1 bg-white border-[3px] border-black shadow-[4px_4px_0_#000] min-w-[160px] z-20">
+                  <a href="/dentistas" className="flex items-center gap-2 px-4 py-2.5 text-xs hover:bg-[color:var(--mustard)] font-bold" onClick={() => setSectoresOpen(false)}>🦷 Dentistas</a>
+                </div>
+              </>
             )}
           </div>
 
