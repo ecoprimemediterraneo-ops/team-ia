@@ -1,4 +1,11 @@
 
+const labels = [
+  { text: "100+ correos sin leer cada mañana", pos: "top-[8%] left-[3%] sm:top-[12%] sm:left-[4%]", rot: "-rotate-2" },
+  { text: "Redes sin publicar. Visibilidad cayendo.", pos: "top-[34%] right-[3%] sm:top-[38%] sm:right-[4%]", rot: "rotate-2" },
+  { text: "Llamada no contestada = cliente perdido", pos: "top-[58%] left-[3%] sm:top-[60%] sm:left-[6%]", rot: "-rotate-1" },
+  { text: "Tareas críticas acumuladas sin ejecutar", pos: "bottom-[6%] right-[3%] sm:bottom-[8%] sm:right-[5%]", rot: "rotate-1" },
+];
+
 export default function Pains() {
   return (
     <section className="py-20 border-t-[3px] border-black bg-[color:var(--cream)]">
@@ -37,6 +44,17 @@ export default function Pains() {
             className="absolute inset-0 w-full h-full object-cover object-top"
           />
 
+
+          {/* Frases flotantes sin cartel */}
+          {labels.map((l, i) => (
+            <span
+              key={i}
+              className={`absolute ${l.pos} ${l.rot} text-white font-bold text-sm sm:text-base md:text-lg max-w-[55%] sm:max-w-xs leading-tight`}
+              style={{ textShadow: "2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000" }}
+            >
+              {l.text}
+            </span>
+          ))}
 
           {/* Sello rojo en esquina */}
           <div className="absolute top-4 right-4 stamp text-[10px] sm:text-xs">
