@@ -68,9 +68,9 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Foto-strip de 6 agentes al pie */}
+        {/* Foto-strip de 7 agentes al pie */}
         <div className="relative z-10 max-w-6xl mx-auto px-5 pb-12">
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 md:gap-4">
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 md:gap-3">
             {agents.map((a) => (
               <div
                 key={a.slug}
