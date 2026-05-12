@@ -36,26 +36,26 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "AI-Team — Tu agencia de marketing con agentes de IA",
+    default: "AI-Team — El sistema operativo de empleados IA para tu negocio",
     template: "%s | AI-Team",
   },
   description:
-    "7 especialistas de IA que se ocupan de tu WhatsApp, reseñas, email, redes, llamadas y correo. Tu agencia de marketing en una caja.",
+    "Siete agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes sociales, email marketing e inteligencia competitiva. Autónomo. Medible. Desde 39€/mes.",
   metadataBase: new URL(SITE_URL),
   openGraph: {
     type: "website",
     locale: "es_ES",
     url: SITE_URL,
     siteName: "AI-Team",
-    title: "AI-Team — 6 agentes IA para tu negocio local",
+    title: "AI-Team — Siete agentes IA para tu negocio",
     description:
-      "WhatsApp 24/7, reseñas Google, email marketing, redes sociales, recepcionista y asistente. Todo automático desde 59€/mes.",
+      "Siete agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Desde 39€/mes.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI-Team — 6 agentes IA para tu negocio local",
+    title: "AI-Team — Siete agentes IA para tu negocio",
     description:
-      "WhatsApp 24/7, reseñas Google, email marketing, redes sociales, recepcionista y asistente. Todo automático desde 59€/mes.",
+      "Siete agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Desde 39€/mes.",
   },
   alternates: { canonical: SITE_URL },
   robots: { index: true, follow: true },
