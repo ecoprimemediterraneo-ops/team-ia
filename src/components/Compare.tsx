@@ -21,9 +21,9 @@ export default function Compare() {
           <span className="bg-black text-[color:var(--mustard)] px-3 py-1 font-bold">ANÁLISIS COMPARATIVO</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-6xl mb-4 leading-tight">
-          AI-Team vs<br />contratar gente
+          AI-Team vs<br />equipo interno
         </h2>
-        <p className="text-base text-black/40 mb-12 font-mono">Mismas tareas. 10× más barato. 24/7.</p>
+        <p className="text-base text-black/40 mb-12 font-mono">Misma capacidad operativa. Fracción del coste. Sin gestión de personas.</p>
 
         <div className="border-[3px] border-black overflow-hidden">
           <div className="grid grid-cols-3 text-xs font-mono tracking-widest bg-black text-white">

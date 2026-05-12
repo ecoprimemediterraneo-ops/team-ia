@@ -1,8 +1,8 @@
 const stats = [
-  { value: "< 10 seg", label: "Tiempo de respuesta medio" },
-  { value: "0", label: "Llamadas sin contestar" },
-  { value: "−73%", label: "Tareas admin manuales" },
-  { value: "24/7", label: "Operativo sin interrupciones" },
+  { value: "< 10 seg", label: "Respuesta media por canal" },
+  { value: "0", label: "Contactos sin atender" },
+  { value: "−73%", label: "Reducción de carga operativa" },
+  { value: "24/7", label: "Disponibilidad garantizada" },
 ];
 
 export default function StatsBar() {

@@ -5,14 +5,14 @@ export default function Team() {
     <section id="equipo" className="py-24 border-t-[3px] border-black bg-[color:var(--cream)]">
       <div className="max-w-6xl mx-auto px-5">
         <div className="flex items-center gap-2 mb-8 text-[10px] font-mono tracking-[0.2em]">
-          <span className="bg-black text-[color:var(--mustard)] px-3 py-1 font-bold">DOSSIER 01</span>
-          <span className="border border-black/30 px-3 py-1 text-black/50">EXPEDIENTES PERSONALES</span>
+          <span className="bg-black text-[color:var(--mustard)] px-3 py-1 font-bold">MÓDULO 01</span>
+          <span className="border border-black/30 px-3 py-1 text-black/50">AGENTES ESPECIALIZADOS</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-6xl mb-4 leading-tight">
-          Tu unidad de élite
+          Siete agentes.<br />Un sistema.
         </h2>
         <p className="text-base max-w-xl mb-16 text-black/50">
-          Siete agentes especializados. Trabajan en paralelo, 24/7, sin bajas ni vacaciones.
+          Cada agente gestiona un canal de forma autónoma. Operan en paralelo, sin supervisión, sin interrupciones.
         </p>
 
         <div className="grid md:grid-cols-2 gap-10 mt-16">

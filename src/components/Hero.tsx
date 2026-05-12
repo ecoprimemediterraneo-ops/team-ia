@@ -32,8 +32,8 @@ export default function Hero() {
 
           {/* Badges refinados */}
           <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] font-mono mb-10 tracking-[0.2em]">
-            <span className="border border-white/30 text-white/60 px-3 py-1 rounded-full">CLASIFICADO</span>
-            <span className="border border-[color:var(--red)]/60 text-[color:var(--red)] px-3 py-1 rounded-full">● MISIÓN ACTIVA</span>
+            <span className="border border-white/30 text-white/60 px-3 py-1 rounded-full">INFRAESTRUCTURA IA</span>
+            <span className="border border-[color:var(--red)]/60 text-[color:var(--red)] px-3 py-1 rounded-full">● SISTEMA ACTIVO</span>
           </div>
 
           {/* H1 principal */}
@@ -48,8 +48,8 @@ export default function Hero() {
 
           {/* Descripción */}
           <p className="text-base md:text-lg max-w-xl mx-auto text-white/70 leading-relaxed font-sans">
-            WhatsApp, reseñas, redes, correo, llamadas, email marketing e inteligencia competitiva.
-            <span className="block mt-2 text-white/90 font-semibold">Todo funcionando. Tú solo apruebas.</span>
+            Siete agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes sociales, email marketing e inteligencia competitiva.
+            <span className="block mt-2 text-white/90 font-semibold">Autónomo. Medible. Desde 39 €/mes.</span>
           </p>
 
           {/* CTAs */}
@@ -69,7 +69,7 @@ export default function Hero() {
 
           {/* Social proof */}
           <p className="mt-6 text-xs text-white/35 tracking-widest font-mono">
-            +1.200 EN LISTA DE ESPERA · DESDE 39 €/MES · 14 DÍAS GRATIS
+            +1.200 NEGOCIOS EN LISTA · OPERATIVO EN 24H · 14 DÍAS SIN TARJETA
           </p>
         </div>
 

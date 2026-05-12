@@ -3,33 +3,33 @@ const packs = [
     name: "Local",
     priceFounder: "39",
     priceRegular: "99",
-    tagline: "Para clínica dental o estética",
-    agents: ["Pablo (WhatsApp)", "Carmen (Llamadas)", "Rocío (Reseñas)"],
-    cta: "Empezar local",
+    tagline: "Automatización de canales presenciales",
+    agents: ["Pablo — WhatsApp 24/7", "Carmen — Llamadas entrantes", "Rocío — Reseñas Google"],
+    cta: "Activar plan Local",
   },
   {
     name: "Digital",
     priceFounder: "89",
     priceRegular: "149",
-    tagline: "Para e-commerce, coach, consultor, agencia",
-    agents: ["Lucía (Correo)", "Marta (Redes)", "Eva (Email mkt)"],
-    cta: "Empezar digital",
+    tagline: "Automatización de canales digitales",
+    agents: ["Lucía — Correo y calendario", "Marta — Redes sociales", "Eva — Email marketing"],
+    cta: "Activar plan Digital",
   },
   {
     name: "Élite",
     priceFounder: "149",
     priceRegular: "249",
-    tagline: "Toda la unidad. Lo más vendido.",
-    agents: ["Pablo (WhatsApp)", "Carmen (Llamadas)", "Rocío (Reseñas)", "Lucía (Correo)", "Marta (Redes)", "Eva (Email mkt)"],
-    cta: "Quiero la unidad entera",
+    tagline: "Operación completa. Los 6 canales.",
+    agents: ["Pablo — WhatsApp 24/7", "Carmen — Llamadas entrantes", "Rocío — Reseñas Google", "Lucía — Correo y calendario", "Marta — Redes sociales", "Eva — Email marketing"],
+    cta: "Activar plan Élite",
     featured: true,
   },
   {
     name: "Pro",
     priceFounder: "299",
     priceRegular: "499",
-    tagline: "Élite + onboarding personal + soporte premium",
-    agents: ["Los 6 + Sergio (Inteligencia)", "Onboarding personal 1:1", "Soporte premium directo"],
+    tagline: "Élite + inteligencia competitiva + soporte directo",
+    agents: ["Los 6 agentes operativos", "Sergio — Monitorización de competidores", "Onboarding 1:1 con setup incluido", "Soporte prioritario directo"],
     cta: "Hablar con ventas",
   },
 ];
@@ -44,10 +44,10 @@ export default function Packs() {
           <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">SOLO 100 PLAZAS</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-7xl mb-4">
-          Elige tu pack
+          Nivel de<br />automatización
         </h2>
         <p className="text-lg max-w-2xl mb-12 text-black/70">
-          Reemplazas un equipo de marketing de 2.000-5.000 €/mes. Sin nóminas, sin contratos, sin lunes flojos.
+          La misma operación que un equipo de 2.000–5.000 €/mes. Sin nóminas, sin contratos, sin fricciones de gestión.
         </p>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">

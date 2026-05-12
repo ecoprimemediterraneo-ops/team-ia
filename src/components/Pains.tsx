@@ -1,8 +1,8 @@
 const labels = [
-  { text: "Empiezas el día con 100+ correos sin leer", pos: "top-[8%] left-[3%] sm:top-[12%] sm:left-[4%]", rot: "-rotate-2" },
-  { text: "Tus redes sociales no se actualizan hace semanas", pos: "top-[34%] right-[3%] sm:top-[38%] sm:right-[4%]", rot: "rotate-2" },
-  { text: "Llamadas perdidas = clientes perdidos", pos: "top-[58%] left-[3%] sm:top-[60%] sm:left-[6%]", rot: "-rotate-1" },
-  { text: "Todo se pospone para «la próxima semana»", pos: "bottom-[6%] right-[3%] sm:bottom-[8%] sm:right-[5%]", rot: "rotate-1" },
+  { text: "100+ correos sin leer cada mañana", pos: "top-[8%] left-[3%] sm:top-[12%] sm:left-[4%]", rot: "-rotate-2" },
+  { text: "Redes sin publicar. Visibilidad cayendo.", pos: "top-[34%] right-[3%] sm:top-[38%] sm:right-[4%]", rot: "rotate-2" },
+  { text: "Llamada no contestada = cliente perdido", pos: "top-[58%] left-[3%] sm:top-[60%] sm:left-[6%]", rot: "-rotate-1" },
+  { text: "Tareas críticas acumuladas sin ejecutar", pos: "bottom-[6%] right-[3%] sm:bottom-[8%] sm:right-[5%]", rot: "rotate-1" },
 ];
 
 export default function Pains() {
@@ -11,10 +11,10 @@ export default function Pains() {
       <div className="max-w-6xl mx-auto px-5">
         <div className="flex items-center gap-3 mb-8 text-xs font-mono">
           <span className="bg-[color:var(--red)] text-white px-2 py-1 font-bold tracking-widest">SITUACIÓN ACTUAL</span>
-          <span className="border-2 border-black px-2 py-1 font-bold tracking-widest">CIVIL EN APUROS</span>
+          <span className="border-2 border-black px-2 py-1 font-bold tracking-widest">COSTE OPERATIVO</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-7xl mb-10 leading-[0.95]">
-          Quieres crecer,<br />pero estás solo
+          La operación<br />te come el tiempo
         </h2>
 
         {/* Viñeta cómic */}
@@ -55,13 +55,13 @@ export default function Pains() {
 
           {/* Sello rojo en esquina */}
           <div className="absolute top-4 right-4 stamp text-[10px] sm:text-xs">
-            Misión: rescatarte
+            Problema resuelto
           </div>
         </div>
 
         <p className="mt-8 text-center text-base md:text-lg max-w-xl mx-auto text-black/60">
-          Un negocio no debería depender de que su dueño lo haga todo.
-          <span className="block mt-2 font-semibold text-black">AI-Team lo cambia.</span>
+          La operación diaria no debería depender del fundador. Cada hora gestionando correos, llamadas o redes es una hora que no va a crecimiento.
+          <span className="block mt-2 font-semibold text-black">AI-Team automatiza esa carga.</span>
         </p>
       </div>
     </section>

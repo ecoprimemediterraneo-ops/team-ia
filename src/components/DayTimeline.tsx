@@ -7,43 +7,43 @@ const moments = [
     time: "07:00",
     name: "Lucía",
     emoji: "📬",
-    title: "Tu bandeja ya está ordenada",
-    text: "Abres el correo esperando la avalancha. Está limpio. Lucía ha filtrado el ruido, ha marcado lo importante y te ha dejado borradores listos con tu tono.",
+    title: "Bandeja procesada antes de que abras el negocio",
+    text: "Lucía ha clasificado 47 correos, marcado 3 como urgentes y generado borradores de respuesta con tu tono. Abres el correo para aprobar, no para gestionar.",
   },
   {
     time: "09:30",
     name: "Pablo",
     emoji: "💬",
-    title: "Pablo cierra una cita por WhatsApp",
-    text: "Te llega un mensaje al móvil: 'Cita confirmada — Carmen López, jueves 18:00. Le he confirmado precios y enviado ubicación.' Tú no has tocado el WhatsApp.",
+    title: "Cita cerrada sin intervención",
+    text: "Notificación en el móvil: «Cita confirmada — Carmen López, jueves 18:00. Precios enviados. Ubicación confirmada.» El cliente llevaba esperando desde las 23:12 del día anterior.",
   },
   {
     time: "11:00",
     name: "Marta",
     emoji: "📱",
-    title: "No has publicado, pero Marta sí",
-    text: "Sale un carrusel en Instagram: «5 errores que cometen los autónomos al fichar a su primer empleado». Lo programó hace una hora. La semana siguiente ya está en cola.",
+    title: "Contenido publicado. Pipeline de la semana en cola.",
+    text: "Marta ha publicado un carrusel en Instagram y tiene los tres posts de la semana programados. La presencia en redes no depende de tu disponibilidad.",
   },
   {
     time: "13:30",
     name: "Eva",
     emoji: "✉️",
-    title: "Eva manda la newsletter del lunes",
-    text: "180 clientes reciben tu correo de la semana con un consejo y una promo. 12 abren en la primera media hora. 3 reservan cita esa misma tarde.",
+    title: "Newsletter enviada a 180 contactos",
+    text: "Tasa de apertura del 34%. 3 reservas directas en las primeras dos horas. La secuencia de nurturing sigue activa para los que no abrieron.",
   },
   {
     time: "17:30",
     name: "Carmen",
     emoji: "📞",
-    title: "Carmen contesta una llamada en directo",
-    text: "Suena el teléfono mientras conduces. Carmen lo coge al segundo tono. Conoce tus servicios y tus precios de memoria. Agenda visita y te manda el resumen al móvil.",
+    title: "Llamada atendida al segundo tono",
+    text: "Carmen tiene cargado el catálogo completo de servicios y precios. Agenda la visita, genera el resumen y te lo envía. Sin desvíos, sin llamadas perdidas.",
   },
   {
     time: "20:00",
     name: "Rocío",
     emoji: "⭐",
-    title: "Rocío pide reseñas y sube tu Google",
-    text: "Después de cada cita del día, manda un WhatsApp pidiendo reseña. Llegan 4 nuevas. Rocío contesta a cada una con tu tono. Subes a 4,8★.",
+    title: "4 reseñas nuevas. Valoración media: 4.9★",
+    text: "Rocío ha enviado solicitudes de reseña tras cada cita del día y ha respondido las nuevas con el tono de tu negocio. Tu posición en Google mejora sin gestión manual.",
   },
 ];
 
@@ -59,7 +59,7 @@ export default function DayTimeline() {
           <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] bg-white px-2 py-1 font-bold tracking-widest">24H · TURNO COMPLETO</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-7xl mb-16 leading-[1]">
-          Un día<br />en misión
+          El sistema<br />en operación
         </h2>
 
         <div className="relative">
