@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import StatsBar from "@/components/StatsBar";
 import Pains from "@/components/Pains";
 import MockupShowcase from "@/components/MockupShowcase";
 import HowItWorks from "@/components/HowItWorks";
@@ -7,6 +8,7 @@ import Team from "@/components/Team";
 import DayTimeline from "@/components/DayTimeline";
 import Packs from "@/components/Packs";
 import Compare from "@/components/Compare";
+import CaseStudy from "@/components/CaseStudy";
 import Testimonials from "@/components/Testimonials";
 import FAQ from "@/components/FAQ";
 import FinalCTA from "@/components/FinalCTA";
@@ -18,6 +20,7 @@ export default function Home() {
       <Navbar />
       <main className="flex-1">
         <Hero />
+        <StatsBar />
         <Pains />
         <MockupShowcase />
         <HowItWorks />
@@ -25,6 +28,7 @@ export default function Home() {
         <DayTimeline />
         <Packs />
         <Compare />
+        <CaseStudy />
         <Testimonials />
         <FAQ />
         <FinalCTA />
