@@ -10,7 +10,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 bg-[color:var(--cream)]/95 backdrop-blur border-b-[3px] border-black overflow-visible">
       <nav className="max-w-7xl mx-auto flex items-center justify-between gap-2 px-4 sm:px-5 py-2 overflow-visible">
         {/* Logo */}
-        <a href="/" className="flex items-center shrink-0 relative z-10 overflow-hidden max-w-[55vw] sm:max-w-none" style={{ marginBottom: "-28px" }}>
+        <a href="/" className="flex items-center shrink-0 relative z-10 overflow-hidden max-w-[55vw] sm:max-w-none" style={{ marginBottom: "-38px" }}>
           <Logo size="sm" />
         </a>
 
