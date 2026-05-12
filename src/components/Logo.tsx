@@ -1,43 +1,49 @@
 export default function Logo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const w =
-    size === "lg" ? 320 : size === "sm" ? 110 : 170;
+  const w = size === "lg" ? 380 : size === "sm" ? 160 : 260;
+  const h = (w * 110) / 380;
   return (
     <svg
-      viewBox="0 0 360 130"
+      viewBox="0 0 380 110"
       width={w}
-      height={(w * 130) / 360}
+      height={h}
       aria-label="AI-Team"
       role="img"
+      style={{ transform: "rotate(-2deg)" }}
     >
-      {/* "TU" tag arriba a la izquierda */}
-      <g transform="translate(8, 28) rotate(-10)">
-        <text
-          x="0"
-          y="0"
-          fontFamily="var(--font-anton), Impact, sans-serif"
-          fontSize="34"
-          fontStyle="italic"
-          fill="#000"
-        >
-          TU
-        </text>
-      </g>
+      {/* Borde exterior del sello */}
+      <rect x="2" y="2" width="376" height="106" rx="4"
+        fill="none" stroke="#000" strokeWidth="4" />
+      {/* Borde interior del sello */}
+      <rect x="9" y="9" width="362" height="92" rx="2"
+        fill="none" stroke="#000" strokeWidth="1.5" />
 
-      {/* AI-TEAM con borde negro grueso y relleno rojo */}
-      <g transform="translate(180, 90) skewX(-10)">
+      {/* "TU" pequeño arriba izquierda */}
+      <text
+        x="22" y="38"
+        fontFamily="var(--font-anton), Impact, sans-serif"
+        fontSize="22"
+        fontStyle="italic"
+        fill="#000"
+        letterSpacing="2"
+      >
+        TU
+      </text>
+
+      {/* AI-TEAM grande, centrado */}
+      <g transform="translate(190, 86) skewX(-8)">
         <text
-          x="0"
-          y="0"
+          x="0" y="0"
           textAnchor="middle"
           fontFamily="var(--font-anton), Impact, sans-serif"
-          fontSize="92"
+          fontSize="76"
           fontStyle="italic"
           fontWeight="900"
           stroke="#000"
-          strokeWidth="9"
+          strokeWidth="7"
           strokeLinejoin="round"
           paintOrder="stroke"
           fill="#C8202A"
+          letterSpacing="-1"
         >
           AI-TEAM
         </text>
