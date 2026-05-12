@@ -4,7 +4,7 @@ import { useState } from "react";
 const faqs = [
   {
     q: "¿Cuánto cuesta?",
-    a: "Cuatro packs: Local 39 €/mes (WhatsApp + llamadas + reseñas), Digital 89 €/mes (correo + redes + email mkt), Élite 149 €/mes con los 6 especialistas, y Pro 299 €/mes (los 7 agentes + Sergio + onboarding 1:1). Solo 100 plazas fundador con precio congelado de por vida.",
+    a: "Cuatro planes: Local 39 €/mes (WhatsApp + llamadas + reseñas), Digital 89 €/mes (correo + redes + email marketing), Élite 149 €/mes con los 6 agentes operativos, y Pro 299 €/mes (los 6 agentes + Sergio de inteligencia competitiva + onboarding 1:1 + soporte prioritario). Solo 100 plazas fundador con precio congelado de por vida.",
   },
   {
     q: "¿Necesito instalar algo o saber de tecnología?",
