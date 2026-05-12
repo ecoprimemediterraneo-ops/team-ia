@@ -12,7 +12,7 @@ const faqs = [
   },
   {
     q: "¿Y si quiero solo 1 o 2 agentes en vez de los packs?",
-    a: "Sí, puedes empezar con cualquier agente suelto desde 19 €/mes y ampliar cuando quieras. Mismo precio fundador, mismas plazas limitadas.",
+    a: "Sí, puedes empezar con el plan Local (39 €/mes) y ampliar cuando quieras. El precio fundador se congela desde el primer día, independientemente del plan que elijas.",
   },
   {
     q: "¿Va de verdad a publicar y contestar, o solo es chat con IA?",
