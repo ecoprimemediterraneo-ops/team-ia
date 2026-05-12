@@ -1,12 +1,16 @@
 const rows: [string, true | false | string, true | false | string][] = [
   ["Contesta WhatsApp 24/7", true, false],
-  ["Pide reseñas a tus clientes y responde", true, false],
+  ["Pide reseñas a clientes y responde", true, false],
   ["Manda newsletters y secuencias de bienvenida", true, "A medias"],
   ["Publica en redes sociales", true, "A medias"],
   ["Contesta llamadas en español", true, false],
-  ["Gestiona tu correo y calendario", true, false],
-  ["Coste mensual", "39 €", "+2.500 €"],
-  ["Necesita vacaciones", false, true],
+  ["Gestiona correo y calendario", true, false],
+  ["Monitoriza competidores 24/7 (Sergio)", true, false],
+  ["Alerta si un competidor cambia precios", true, false],
+  ["Disponible a las 3 de la madrugada", true, false],
+  ["Aprende y mejora con cada corrección", true, false],
+  ["Necesita vacaciones o bajas", false, true],
+  ["Coste mensual (plan Pro completo)", "299 €", "+3.500 €"],
 ];
 
 export default function Compare() {
