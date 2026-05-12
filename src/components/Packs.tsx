@@ -3,7 +3,7 @@ const packs = [
     name: "Local",
     priceFounder: "39",
     priceRegular: "99",
-    tagline: "Para negocio físico (peluquería, dental, gimnasio…)",
+    tagline: "Para clínica dental o estética",
     agents: ["Pablo (WhatsApp)", "Carmen (Llamadas)", "Rocío (Reseñas)"],
     cta: "Empezar local",
   },
