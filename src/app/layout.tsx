@@ -1,29 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Inter, Black_Ops_One, VT323 } from "next/font/google";
 import "./globals.css";
-
-const anton = Anton({
-  weight: "400",
-  variable: "--font-anton",
-  subsets: ["latin"],
-});
-
-const stencil = Black_Ops_One({
-  weight: "400",
-  variable: "--font-stencil",
-  subsets: ["latin"],
-});
-
-const terminal = VT323({
-  weight: "400",
-  variable: "--font-terminal",
-  subsets: ["latin"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
+import CookieBanner from "@/components/CookieBanner";
 
 const SITE_URL = "https://aiteam.marketing";
 
@@ -67,10 +44,55 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${anton.variable} ${stencil.variable} ${terminal.variable} ${inter.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "AI-Team",
+              url: SITE_URL,
+              logo: `${SITE_URL}/logo.png`,
+              description:
+                "Sistema operativo de empleados IA para PYMES: WhatsApp, llamadas, reseñas, correo, redes sociales, email marketing e inteligencia competitiva.",
+              contactPoint: [
+                {
+                  "@type": "ContactPoint",
+                  contactType: "sales",
+                  email: "hola@aiteam.marketing",
+                  areaServed: "ES",
+                  availableLanguage: ["Spanish"],
+                },
+              ],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              name: "AI-Team",
+              applicationCategory: "BusinessApplication",
+              operatingSystem: "Web",
+              offers: {
+                "@type": "AggregateOffer",
+                priceCurrency: "EUR",
+                lowPrice: "39",
+                highPrice: "299",
+                offerCount: "4",
+              },
+            }),
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-[color:var(--cream)] text-[color:var(--ink)]">
         {children}
+        <CookieBanner />
       </body>
     </html>
   );

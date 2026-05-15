@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import PromoVideo from "@/components/PromoVideo";
 import StatsBar from "@/components/StatsBar";
 import AgentOS from "@/components/AgentOS";
 import Pains from "@/components/Pains";
@@ -21,6 +22,7 @@ export default function Home() {
       <Navbar />
       <main className="flex-1">
         <Hero />
+        <PromoVideo />
         <StatsBar />
         <AgentOS />
         <Pains />

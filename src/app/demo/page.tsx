@@ -4,8 +4,8 @@ import Footer from "@/components/Footer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Demo — Prueba los 6 agentes IA | AI-Team",
-  description: "Prueba gratis cómo trabajan Pablo, Rocío, Eva, Lucía, Marta y Carmen. Sin registro, sin tarjeta.",
+  title: "Demo — Prueba los 7 agentes IA | AI-Team",
+  description: "Prueba gratis cómo trabajan Pablo, Rocío, Eva, Lucía, Marta, Carmen y Sergio. Sin registro, sin tarjeta.",
 };
 
 const demos: { slug: string; scenario: string; input: string; output: string }[] = [
@@ -44,6 +44,12 @@ const demos: { slug: string; scenario: string; input: string; output: string }[]
     scenario: "Llamada de un paciente nuevo pidiendo información",
     input: "Hola, buenos días, llamaba para preguntar cuánto cuesta una limpieza dental",
     output: "¡Buenos días! Gracias por llamar a Clínica Dental Sonrisa. La limpieza dental tiene un precio de 60 euros e incluye revisión completa con el doctor. Dura unos 45 minutos. ¿Le gustaría que le agende una cita? Tenemos hueco el miércoles por la mañana o el jueves por la tarde.",
+  },
+  {
+    slug: "sergio",
+    scenario: "Escaneo nocturno de la web de un competidor",
+    input: "(Automático — 03:00 AM, lunes)",
+    output: "🕵️ ALERTA · Clínica Dental Vecina\n\n· Precio limpieza: 60€ → 45€ (-25%)\n· Nueva landing: 'Implantes desde 599€'\n· Reseñas Google: 4,3 → 4,5 (+12 reseñas en 7 días)\n\nRecomendación: revisa tu promo de limpiezas esta semana y plantea un mensaje de Pablo con descuento de bienvenida.",
   },
 ];
 

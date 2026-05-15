@@ -1,0 +1,79 @@
+AI-Team - Prompts para video promocional
+
+Formato recomendado:
+- Duracion total: 35-45 segundos.
+- Ratio principal: 16:9 horizontal, 1920x1080.
+- Version recortable: mantener accion y texto importante en zona central 9:16.
+- Estilo: SaaS premium con energia militar-comic, homenaje sutil al Equipo A, sin copiar personajes ni marcas registradas.
+- Paleta: cream #FAF7F0, mustard #F5C518, rojo, negro, acentos por agente.
+- Tipografia en motion graphics: Anton / Black Ops One para titulares, VT323 para datos/codenames, Inter para microcopy.
+- Tratamiento visual: bordes negros duros, sombras tipo comic, textura impresa muy sutil, interfaz moderna de producto real.
+- Evitar: fantasia generica de robots, stock corporativo gris, exceso de neones, armas, violencia, uniformes militares reales.
+
+Prompt base comun:
+Crear una escena cinematografica para un anuncio de SaaS llamado AI-Team, un sistema operativo de empleados IA para PYMES y autonomos en Espana y LATAM. Estetica militar-comic premium, energia de equipo tactico de marketing, colores cream, mustard, rojo y negro, bordes negros duros, sombras tipo comic, interfaz SaaS creible, composicion limpia para anuncio web. Iluminacion editorial, alto contraste, detalles nitidos, sin texto ilegible, sin logos de terceros, sin marcas registradas, sin armas.
+
+Escena 01 - Chaos clinic
+Objetivo: abrir con el dolor real de una PYME saturada.
+Duracion sugerida: 6 segundos.
+Visual: clinica dental pequena en hora punta, recepcionista con llamadas acumuladas, WhatsApps entrando, reseñas pendientes, emails sin responder, agenda abierta, papeles y pantalla con notificaciones. Tono de caos controlado, no caricatura infantil. La escena debe dejar espacio superior izquierdo para titular: "TU NEGOCIO NO PARA".
+Movimiento: travelling lento desde mostrador hacia pantalla llena de tareas, con pequenas vibraciones comic en las notificaciones.
+Prompt:
+Clinica dental espanola pequena en hora punta, mostrador realista con agenda, telefono sonando, WhatsApp, reseñas Google, emails y redes sociales acumulados en pantallas, dueno del negocio agotado pero profesional, ambiente cream y negro con acentos mustard y rojo, estilo militar-comic premium, bordes negros duros, sombras editoriales, interfaz SaaS moderna superpuesta, alto contraste, cinematografico, 16:9, zona central limpia para recorte vertical, sin logos de terceros, sin armas.
+
+Escena 02 - Pablo WhatsApp
+Objetivo: presentar a Pablo como empleado IA que recupera ventas por WhatsApp.
+Duracion sugerida: 7 segundos.
+Visual: avatar/operador IA Pablo en una pantalla tactica, conversacion de WhatsApp con cliente realista, pedido confirmado, respuesta rapida, calendario o carrito actualizado. Acento verde #25D366 sin dominar toda la escena.
+Movimiento: zoom a interfaz, burbujas entrando, sello "ALFA-W1" en estilo VT323.
+Prompt:
+Empleado IA llamado Pablo dentro de un panel tactico de SaaS, resolviendo conversaciones de WhatsApp para una PYME, mensajes entrantes, pedido confirmado, respuesta rapida y clara, interfaz premium en cream, negro y mustard con acento verde WhatsApp #25D366, estetica militar-comic, sombras duras, borde negro, codigo ALFA-W1 en pantalla, energia de agencia de marketing en una caja, realista, cinematografico, sin logos de terceros, sin texto pequeno ilegible.
+
+Escena 03 - Sergio central
+Objetivo: mostrar inteligencia competitiva accionable.
+Duracion sugerida: 7 segundos.
+Visual: Sergio analiza competidores en un centro de mando SaaS, mapas locales, graficas de precios, alertas de cambios en Google, redes y webs de competidores. Acento azul #3B82F6.
+Movimiento: pantallas convergen hacia un insight claro: "3 oportunidades detectadas".
+Prompt:
+Centro de mando SaaS premium para inteligencia competitiva local, agente IA Sergio analizando competidores, mapas de ciudad espanola, graficas de precios, alertas de cambios en webs y redes, paneles con insights accionables, estetica militar-comic premium con cream, negro, mustard y acento azul #3B82F6, codigo SIERRA-S7 en VT323, bordes negros, sombras duras, composicion limpia, cinematografico, sin logos reales de terceros.
+
+Escena 04 - AI-Team dashboard
+Objetivo: revelar que no es un bot suelto, es un sistema operativo con 7 empleados IA.
+Duracion sugerida: 8 segundos.
+Visual: dashboard de AI-Team con los 7 agentes: Pablo, Rocio, Eva, Lucia, Marta, Carmen, Sergio. Tarjetas de tareas, estado "activo", metricas de leads, reseñas, emails, llamadas, publicaciones, alertas. Estetica de producto real, no mockup vacio.
+Movimiento: paneo horizontal por las tarjetas, cada agente se ilumina un instante con su color.
+Prompt:
+Dashboard realista de AI-Team, SaaS para PYMES con 7 empleados IA activos, tarjetas de Pablo WhatsApp, Rocio reseñas Google, Eva email marketing, Lucia asistente ejecutiva, Marta community manager, Carmen recepcionista, Sergio inteligencia competitiva, metricas de leads, reseñas, emails, llamadas, publicaciones y alertas, estilo militar-comic premium, cream #FAF7F0, mustard #F5C518, rojo y negro, bordes negros duros, sombras tipo comic, tipografia bold, interfaz limpia y creible, 16:9, sin texto ilegible.
+
+Escena 05 - Results
+Objetivo: cerrar con resultados de negocio creibles y concretos.
+Duracion sugerida: 7 segundos.
+Visual: propietario de PYME mirando dashboard con mejoras: respuestas mas rapidas, citas recuperadas, reseñas nuevas, campanas enviadas, competidores monitorizados. Ambiente mas calmado que la escena 01.
+Movimiento: antes/despues visual, de ruido a claridad, contadores suben de forma sobria.
+Prompt:
+Propietario de pequena empresa espanola viendo un dashboard de AI-Team con resultados concretos, citas recuperadas, respuestas WhatsApp en minutos, nuevas reseñas, campanas enviadas y competidores monitorizados, ambiente calmado y profesional, estetica SaaS premium militar-comic, cream, mustard, rojo y negro, bordes negros, sombras duras, composicion aspiracional pero realista, alto contraste, cinematografico, sin claims exagerados, sin logos de terceros.
+
+Escena 06 - Final CTA
+Objetivo: llamada a la accion directa.
+Duracion sugerida: 5 segundos.
+Visual: formacion de los 7 agentes con fondo cream, marca AI-Team grande, boton mustard "Recluta tu empleado IA", dominio aiteam.marketing. Debe funcionar como cierre y thumbnail.
+Movimiento: entrada rapida de tarjetas/agentes, golpe final de sombra comic, CTA estable 2 segundos.
+Prompt:
+Plano final de anuncio para AI-Team, los 7 empleados IA en formacion tactica de marketing, fondo cream #FAF7F0 con negro y mustard #F5C518, marca AI-Team grande, boton estilo SaaS premium "Recluta tu empleado IA", dominio aiteam.marketing, estetica militar-comic elegante, sombras negras duras, composicion limpia para thumbnail, energia premium, sin armas, sin copiar personajes famosos, 16:9.
+
+Guion de voz sugerido:
+"Tu negocio no necesita mas horas. Necesita equipo. AI-Team recluta empleados IA que contestan WhatsApp, recuperan reseñas, envian emails, atienden llamadas, publican en redes y vigilan a tu competencia. Siete especialistas trabajando para que tu PYME parezca una agencia completa. Recluta tu empleado IA en aiteam.marketing."
+
+Textos en pantalla:
+01 TU NEGOCIO NO PARA
+02 PABLO RESPONDE WHATSAPP
+03 SERGIO VIGILA TU MERCADO
+04 7 EMPLEADOS IA, UN SOLO PANEL
+05 MAS RESPUESTAS. MAS CITAS. MAS CONTROL.
+06 RECLUTA TU EMPLEADO IA
+
+Notas de montaje:
+- Ritmo rapido, cortes cada 5-8 segundos.
+- Sonido: percusion seca, bass hits suaves, clicks de interfaz, radio tactica muy sutil.
+- Subtitulos grandes, maximo 6 palabras por golpe.
+- Mantener datos realistas: evitar promesas de ingresos garantizados.

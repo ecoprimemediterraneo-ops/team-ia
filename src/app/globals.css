@@ -12,6 +12,10 @@
   --term-bright: #86efac;
   --term-amber: #fbbf24;
   --term-red: #f87171;
+  --font-anton: Impact, "Arial Black", sans-serif;
+  --font-stencil: Impact, "Arial Black", sans-serif;
+  --font-terminal: "Courier New", monospace;
+  --font-inter: Arial, Helvetica, sans-serif;
 }
 
 @theme inline {

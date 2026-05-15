@@ -42,10 +42,11 @@ export default function Hero() {
           </div>
 
           {/* H1 principal */}
-          <h1 className="font-stencil text-4xl sm:text-6xl md:text-7xl lg:text-[88px] leading-[1.0] tracking-tight">
-            <span className="block text-white">TU NEGOCIO.</span>
-            <span className="block text-white">SIETE AGENTES.</span>
-            <span className="block text-[color:var(--mustard)] mt-2">UN SUELDO.</span>
+          <h1 className="font-stencil text-4xl sm:text-6xl md:text-7xl lg:text-[80px] leading-[1.0] tracking-tight">
+            <span className="block text-white">TU COMPETENCIA</span>
+            <span className="block text-white">YA CONTESTA</span>
+            <span className="block text-[color:var(--mustard)] mt-2">A LAS 23:00.</span>
+            <span className="block text-white mt-2">TÚ DECIDES.</span>
           </h1>
 
           {/* Separador */}
@@ -53,8 +54,8 @@ export default function Hero() {
 
           {/* Descripción */}
           <p className="text-base md:text-lg max-w-xl mx-auto text-white/70 leading-relaxed font-sans">
-            El sistema operativo de empleados IA para tu negocio.
-            <span className="block mt-2 text-white/90 font-semibold">Autónomo. Medible. Desde 39 €/mes.</span>
+            Siete empleados IA cubren WhatsApp, llamadas, reseñas, correo, redes y vigilan a tu competencia mientras duermes.
+            <span className="block mt-2 text-white/90 font-semibold">Desde 39 €/mes. Operativo en 24 horas.</span>
           </p>
 
           {/* CTAs */}

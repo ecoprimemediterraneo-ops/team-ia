@@ -16,7 +16,7 @@ export default function Navbar() {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-6 font-semibold text-sm uppercase tracking-wider">
-          <a href="/#packs" className="hover:text-[color:var(--red)] transition-colors">Precios</a>
+          <a href="/precios" className="hover:text-[color:var(--red)] transition-colors">Precios</a>
 
           {/* Sectores dropdown */}
           <div className="relative">
@@ -39,6 +39,7 @@ export default function Navbar() {
           </div>
 
           <a href="/casos" className="hover:text-[color:var(--red)] transition-colors">Casos</a>
+          <a href="/blog" className="hover:text-[color:var(--red)] transition-colors">Blog</a>
           <a href="/#faq" className="hover:text-[color:var(--red)] transition-colors">FAQ</a>
         </div>
 
@@ -50,7 +51,7 @@ export default function Navbar() {
           <a href="/login" className="hidden sm:inline text-[10px] uppercase tracking-widest font-bold border-2 border-black px-3 py-2 hover:bg-black hover:text-white transition-colors">
             Acceder
           </a>
-          <a href="/#waitlist" className="btn-mustard text-xs sm:text-sm px-3 sm:px-4">
+          <a href="/reclutar" className="btn-mustard text-xs sm:text-sm px-3 sm:px-4">
             Reclutar
           </a>
 
@@ -69,7 +70,9 @@ export default function Navbar() {
       {/* Mobile menu */}
       {menuOpen && (
         <div className="md:hidden border-t-[3px] border-black bg-[color:var(--cream)] px-4 py-4 space-y-3">
-          <a href="/#packs" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>Precios</a>
+          <a href="/precios" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>Precios</a>
+          <a href="/blog" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>Blog</a>
+          <a href="/reclutar" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>Reclutar</a>
           <a href="/dentistas" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>🦷 Dentistas</a>
           <a href="/estetica" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>✨ Clínicas Estéticas</a>
           <a href="/casos" className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]" onClick={() => setMenuOpen(false)}>Casos</a>
