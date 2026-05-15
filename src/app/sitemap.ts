@@ -24,6 +24,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/precios`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE}/reclutar`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE}/blog`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
+    { url: `${BASE}/diagnostico`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.95 },
     { url: `${BASE}/agentes`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.85 },
     ...agents.map((a) => ({
       url: `${BASE}/agentes/${a.slug}`,

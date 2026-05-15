@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     template: "%s | AI-Team",
   },
   description:
-    "Siete agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes sociales, email marketing e inteligencia competitiva. Autónomo. Medible. Desde 39€/mes.",
+    "Siete agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes sociales, email marketing e inteligencia competitiva. Autónomo. Medible. Desde 79€/mes.",
   metadataBase: new URL(SITE_URL),
   openGraph: {
     type: "website",
@@ -26,13 +26,13 @@ export const metadata: Metadata = {
     siteName: "AI-Team",
     title: "AI-Team — Siete agentes IA para tu negocio",
     description:
-      "Siete agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Desde 39€/mes.",
+      "Siete agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Desde 79€/mes.",
   },
   twitter: {
     card: "summary_large_image",
     title: "AI-Team — Siete agentes IA para tu negocio",
     description:
-      "Siete agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Desde 39€/mes.",
+      "Siete agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Desde 79€/mes.",
   },
   alternates: { canonical: SITE_URL },
   robots: { index: true, follow: true },

@@ -9,7 +9,7 @@ export default function Footer() {
           <div>
             <Logo size="sm" />
             <p className="text-sm text-black/70 mt-4 max-w-xs">
-              Sistema operativo de empleados IA para PYMES. Desde 39€/mes.
+              Sistema operativo de empleados IA para PYMES. Desde 79€/mes.
             </p>
           </div>
 

@@ -4,7 +4,7 @@ import Packs from "@/components/Packs";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Precios — Desde 39€/mes",
+  title: "Precios — Desde 79€/mes",
   description:
     "Planes Local, Digital, Élite y Pro. Precio fundador para siempre. 14 días gratis, sin tarjeta, sin permanencia.",
   alternates: { canonical: "https://aiteam.marketing/precios" },
@@ -18,6 +18,7 @@ const features: { label: string; local: string | boolean; digital: string | bool
   { label: "Marta — Redes sociales", local: false, digital: true, elite: true, pro: true },
   { label: "Eva — Email marketing", local: false, digital: true, elite: true, pro: true },
   { label: "Sergio — Inteligencia competitiva", local: false, digital: false, elite: false, pro: true },
+  { label: "Diana — Diagnóstico continuo", local: false, digital: false, elite: false, pro: true },
   { label: "Onboarding 1:1", local: false, digital: false, elite: false, pro: true },
   { label: "Soporte", local: "Email", digital: "Email", elite: "Prioritario", pro: "Directo" },
   { label: "Período de prueba", local: "14 días", digital: "14 días", elite: "14 días", pro: "14 días" },
@@ -59,7 +60,7 @@ export default function PreciosPage() {
             </span>
             <h1 className="font-stencil text-4xl md:text-6xl mb-4">Precios sin sorpresas</h1>
             <p className="text-lg text-black/70 max-w-2xl mx-auto">
-              Desde 39€/mes. 14 días gratis. Sin tarjeta para empezar. Sin permanencia. Cambia de plan cuando quieras.
+              Desde 79€/mes. 14 días gratis. Sin tarjeta para empezar. Sin permanencia. Cambia de plan cuando quieras.
             </p>
           </div>
         </section>

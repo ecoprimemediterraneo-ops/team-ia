@@ -1,7 +1,8 @@
 import { agents } from "@/lib/agents";
 
 export default function Hero() {
-  const items = [...agents, ...agents, ...agents];
+  const team = agents.filter((a) => a.slug !== "diana");
+  const items = [...team, ...team, ...team];
   return (
     <section id="top" className="relative">
       {/* Cinta militar superior */}
@@ -55,21 +56,19 @@ export default function Hero() {
           {/* Descripción */}
           <p className="text-base md:text-lg max-w-xl mx-auto text-white/70 leading-relaxed font-sans">
             Siete empleados IA cubren WhatsApp, llamadas, reseñas, correo, redes y vigilan a tu competencia mientras duermes.
-            <span className="block mt-2 text-white/90 font-semibold">Desde 39 €/mes. Operativo en 24 horas.</span>
+            <span className="block mt-2 text-white/90 font-semibold">Desde 79 €/mes. Operativo en 24 horas.</span>
           </p>
 
           {/* CTAs */}
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <a href="/demo" className="btn-mustard text-sm px-8 py-3">
-              Ver demo en vivo →
+            <a href="/diagnostico" className="btn-mustard text-sm px-8 py-3">
+              Diagnóstico gratis (2 min) →
             </a>
             <a
-              href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/demo"
               className="text-sm font-mono border border-white/30 text-white/80 px-8 py-3 hover:border-white hover:text-white transition-all duration-200"
             >
-              Reservar llamada →
+              Ver demo →
             </a>
           </div>
 
@@ -82,7 +81,7 @@ export default function Hero() {
         {/* Foto-strip de 7 agentes */}
         <div className="relative z-10 max-w-5xl mx-auto px-6 pb-16">
           <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 md:gap-3">
-            {agents.map((a) => (
+            {team.map((a) => (
               <div
                 key={a.slug}
                 className="relative border-2 border-white/20 overflow-hidden group hover:border-white/60 transition-all duration-200"

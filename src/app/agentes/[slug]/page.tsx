@@ -135,6 +135,26 @@ const details: Record<AgentSlug, Detail> = {
       { label: "Coste vs recepcionista", value: "-87%" },
     ],
   },
+  diana: {
+    hook: "Diagnostica el estado digital de tu clínica en 2 minutos. Encuentra exactamente dónde pierdes dinero cada semana — y cómo recuperarlo.",
+    capabilities: [
+      "Analiza web, Google Business, Instagram y WhatsApp",
+      "Detecta cuellos de botella en comunicación y reputación",
+      "Calcula pérdida estimada anual en €",
+      "Entrega informe PDF personalizado en 2 minutos",
+    ],
+    whenToUse: [
+      "Antes de contratar AI-Team (gratis, sin compromiso)",
+      "Clínicas que sospechan que pierden citas pero no saben dónde",
+      "Negocios que quieren saber qué hace la competencia",
+    ],
+    integrations: ["Google PageSpeed", "Google Business API", "Análisis web propio"],
+    metrics: [
+      { label: "Tiempo del informe", value: "2 min" },
+      { label: "Áreas auditadas", value: "7" },
+      { label: "Coste", value: "0€" },
+    ],
+  },
   sergio: {
     hook: "Tus competidores no descansan. Sergio tampoco. Escaneo nocturno de webs, redes y reseñas — informe en tu bandeja a las 7:00.",
     capabilities: [

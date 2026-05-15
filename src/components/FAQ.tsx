@@ -4,7 +4,7 @@ import { useState } from "react";
 const faqs = [
   {
     q: "¿Cuánto cuesta?",
-    a: "Cuatro planes: Local 39 €/mes (WhatsApp + llamadas + reseñas), Digital 89 €/mes (correo + redes + email marketing), Élite 149 €/mes con los 6 agentes operativos, y Pro 299 €/mes (los 6 agentes + Sergio de inteligencia competitiva + onboarding 1:1 + soporte prioritario). Solo 100 plazas fundador con precio congelado de por vida.",
+    a: "Cuatro planes: Local 79 €/mes (WhatsApp + llamadas + reseñas), Digital 89 €/mes (correo + redes + email marketing), Élite 149 €/mes con los 6 agentes operativos, y Pro 299 €/mes (los 6 agentes + Sergio de inteligencia competitiva + onboarding 1:1 + soporte prioritario). Solo 100 plazas fundador con precio congelado de por vida.",
   },
   {
     q: "¿Necesito instalar algo o saber de tecnología?",
@@ -12,7 +12,7 @@ const faqs = [
   },
   {
     q: "¿Y si quiero solo 1 o 2 agentes en vez de los packs?",
-    a: "Sí, puedes empezar con el plan Local (39 €/mes) y ampliar cuando quieras. El precio fundador se congela desde el primer día, independientemente del plan que elijas.",
+    a: "Sí, puedes empezar con el plan Local (79 €/mes) y ampliar cuando quieras. El precio fundador se congela desde el primer día, independientemente del plan que elijas.",
   },
   {
     q: "¿Va de verdad a publicar y contestar, o solo es chat con IA?",

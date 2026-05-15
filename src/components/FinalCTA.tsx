@@ -78,7 +78,7 @@ export default function FinalCTA() {
         </h2>
 
         <p className="text-base md:text-lg mb-4 text-white/50 max-w-md mx-auto">
-          Desde <span className="text-white font-semibold">39 €/mes</span>, precio fundador congelado de por vida.
+          Desde <span className="text-white font-semibold">79 €/mes</span>, precio fundador congelado de por vida.
         </p>
         <p className="text-sm mb-10 text-white/30 max-w-sm mx-auto">
           14 días gratis, sin tarjeta. Si en dos semanas no ves el valor, te vas en un click. Sin penalización.

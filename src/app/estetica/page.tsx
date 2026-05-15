@@ -6,7 +6,7 @@ import EsteticaCTA from "@/components/estetica/EsteticaCTA";
 export const metadata = {
   title: "AI-Team para Clínicas Estéticas — Automatiza WhatsApp, reseñas, Instagram y email",
   description:
-    "El equipo de IA para centros de estética. Responde consultas 24/7, sube tu Google, publica antes/después y reactiva clientes con bonos sin usar. Desde 39€/mes.",
+    "El equipo de IA para centros de estética. Responde consultas 24/7, sube tu Google, publica antes/después y reactiva clientes con bonos sin usar. Desde 79€/mes.",
 };
 
 const esteticaPains = [
@@ -188,7 +188,7 @@ export default function EsteticaPage() {
               </a>
             </div>
             <p className="mt-4 text-xs text-white/35 tracking-widest font-mono">
-              DESDE 39 €/MES · OPERATIVO EN 24H · 14 DÍAS SIN TARJETA
+              DESDE 79 €/MES · OPERATIVO EN 24H · 14 DÍAS SIN TARJETA
             </p>
           </div>
 

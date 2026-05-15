@@ -38,6 +38,7 @@ export default function Navbar() {
             )}
           </div>
 
+          <a href="/diagnostico" className="hover:text-[color:var(--red)] transition-colors">Diagnóstico</a>
           <a href="/casos" className="hover:text-[color:var(--red)] transition-colors">Casos</a>
           <a href="/blog" className="hover:text-[color:var(--red)] transition-colors">Blog</a>
           <a href="/#faq" className="hover:text-[color:var(--red)] transition-colors">FAQ</a>

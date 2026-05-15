@@ -12,7 +12,7 @@ const DATA_DIR = path.join(process.cwd(), "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const USE_SUPABASE = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
 
-const ALL_AGENTS: AgentSlug[] = ["lucia", "marta", "carmen", "pablo", "rocio", "eva", "sergio"];
+const ALL_AGENTS: AgentSlug[] = ["lucia", "marta", "carmen", "pablo", "rocio", "eva", "sergio", "diana"];
 
 export type Contact = { email: string; name?: string; addedAt: string; source?: string };
 

@@ -1,4 +1,4 @@
-export type AgentSlug = "lucia" | "marta" | "carmen" | "pablo" | "rocio" | "eva" | "sergio";
+export type AgentSlug = "lucia" | "marta" | "carmen" | "pablo" | "rocio" | "eva" | "sergio" | "diana";
 
 export type Agent = {
   slug: AgentSlug;
@@ -102,6 +102,21 @@ export const agents: Agent[] = [
     status: "ready",
     statusNote: "Operativa · guiones manuales con IA (auto-voz: en alta Vapi)",
     avatar: avatar("carmen"),
+  },
+  {
+    slug: "diana",
+    name: "Diana",
+    role: "Auditora de Clínicas",
+    short:
+      "Diagnostica el estado digital de tu clínica en 2 minutos. Web, reseñas, WhatsApp, redes, competencia. Encuentra dónde pierdes dinero cada semana.",
+    emoji: "🔍",
+    quote:
+      "Veo lo que tus pacientes ven en Google. Veo lo que tu competencia hace mejor. Te digo en euros exactos cuánto te cuesta cada semana sin equipo IA.",
+    color: "#14B8A6",
+    codename: "HOTEL-D8",
+    status: "ready",
+    statusNote: "Operativa · diagnóstico gratuito, 2 minutos, sin tarjeta",
+    avatar: avatar("diana"),
   },
   {
     slug: "sergio",

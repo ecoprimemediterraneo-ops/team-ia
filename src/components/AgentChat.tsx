@@ -4,7 +4,7 @@ import type { ChatMessage } from "@/lib/types";
 import FeedbackButtons from "./FeedbackButtons";
 
 type Props = {
-  agent: "lucia" | "marta" | "carmen" | "pablo" | "rocio" | "eva" | "sergio";
+  agent: "lucia" | "marta" | "carmen" | "pablo" | "rocio" | "eva" | "sergio" | "diana";
   initialMessages: ChatMessage[];
   placeholder: string;
   suggestions?: string[];
