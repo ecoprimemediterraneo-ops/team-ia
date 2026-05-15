@@ -10,7 +10,7 @@ const rows: [string, true | false | string, true | false | string][] = [
   ["Disponible a las 3 de la madrugada", true, false],
   ["Aprende y mejora con cada corrección", true, false],
   ["Necesita vacaciones o bajas", false, true],
-  ["Coste mensual (plan Pro completo)", "299 €", "+3.500 €"],
+  ["Coste mensual (plan Pro completo)", "449 €", "+3.500 €"],
 ];
 
 export default function Compare() {

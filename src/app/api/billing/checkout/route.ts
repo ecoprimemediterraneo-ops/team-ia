@@ -3,7 +3,7 @@
  *
  * Configurar:
  *  1. Crear cuenta en stripe.com
- *  2. Crear 4 productos: Local 39,90 / Digital 89 / Élite 149 / Pro 299 €/mes
+ *  2. Crear 4 productos: Local 79 / Digital 149 / Élite 249 / Pro 449 €/mes
  *  3. Para cada producto, crear un Price recurring monthly
  *  4. Copiar los price IDs y ponerlos en STRIPE_PRICES env var:
  *     STRIPE_PRICES=local:price_xxx,digital:price_yyy,elite:price_zzz,pro:price_www

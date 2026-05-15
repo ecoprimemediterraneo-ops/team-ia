@@ -132,7 +132,7 @@ Un empleado a jornada completa en España con salario bruto de 1.800€/mes le c
 
 Y eso es por **una persona, cubriendo 8h, 5 días a la semana**.
 
-## Lo que cubre un equipo IA por 149€/mes (plan Élite)
+## Lo que cubre un equipo IA por 249€/mes (plan Élite)
 
 - WhatsApp 24/7 (Pablo)
 - Llamadas entrantes (Carmen)
@@ -158,7 +158,7 @@ La PYME bien montada en 2026 tiene **un equipo humano más pequeño, mejor pagad
 
 | Concepto | Empleado | AI-Team Élite |
 |---|---|---|
-| Coste mensual | 3.200€ | 149€ |
+| Coste mensual | 3.200€ | 249€ |
 | Horas cubiertas | 40h/sem | 168h/sem |
 | Canales atendidos | 1-2 | 6 |
 | Vacaciones / bajas | Sí | No |

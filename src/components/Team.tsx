@@ -9,7 +9,7 @@ export default function Team() {
           <span className="border border-black/30 px-3 py-1 text-black/50">AGENTES ESPECIALIZADOS</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-6xl mb-4 leading-tight">
-          Siete agentes.<br />Un sistema.
+          Ocho agentes.<br />Un sistema.
         </h2>
         <p className="text-base max-w-xl mb-16 text-black/50">
           Cada agente gestiona un canal de forma autónoma. Operan en paralelo, sin supervisión, sin interrupciones.

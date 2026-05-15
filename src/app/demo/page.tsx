@@ -4,8 +4,8 @@ import Footer from "@/components/Footer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Demo — Prueba los 7 agentes IA | AI-Team",
-  description: "Prueba gratis cómo trabajan Pablo, Rocío, Eva, Lucía, Marta, Carmen y Sergio. Sin registro, sin tarjeta.",
+  title: "Demo — Prueba los 8 agentes IA | AI-Team",
+  description: "Prueba gratis cómo trabajan Pablo, Rocío, Eva, Lucía, Marta, Carmen, Sergio y Diana. Sin registro, sin tarjeta.",
 };
 
 const demos: { slug: string; scenario: string; input: string; output: string }[] = [

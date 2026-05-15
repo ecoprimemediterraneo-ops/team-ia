@@ -85,7 +85,7 @@ export default async function PeluqueriasCiudadPage({ params }: { params: Promis
         <section className="py-16 bg-[color:var(--cream)] border-b-[3px] border-black">
           <div className="max-w-4xl mx-auto px-5 text-center">
             <h2 className="font-stencil text-3xl md:text-4xl mb-4">
-              6 agentes para tu salón en {ciudad.nombre}
+              8 agentes para tu salón en {ciudad.nombre}
             </h2>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-left mt-8">
               {[

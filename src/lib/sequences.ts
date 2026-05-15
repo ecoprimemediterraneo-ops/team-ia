@@ -35,7 +35,7 @@ export const SEQUENCES: Sequence[] = [
 <p>Soy Eva, del equipo de AI-Team.</p>
 <p>Veo que <strong>${v(vars, "businessName")}</strong> tiene ${v(vars, "reviewCount", "buenas")} reseñas en Google — eso es una clínica que cuida a sus pacientes. Por eso me permito escribir.</p>
 <p>El problema que veo en la mayoría de clínicas como la vuestra: <strong>WhatsApp sin contestar por las noches, no-shows que no avisan, y presupuestos que se pierden sin seguimiento.</strong></p>
-<p>Nosotros tenemos 6 agentes IA que se ocupan de todo eso: Pablo contesta WhatsApp 24/7, Carmen coge las llamadas cuando el dentista está con un paciente, Rocío pide reseñas tras cada visita.</p>
+<p>Nosotros tenemos 8 agentes IA que se ocupan de todo eso: Pablo contesta WhatsApp 24/7, Carmen coge las llamadas cuando el dentista está con un paciente, Rocío pide reseñas tras cada visita.</p>
 <p>¿Tiene sentido hablar 15 minutos esta semana?</p>
 <p><a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" style="background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block">→ Reservar demo gratis</a></p>
 <p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,

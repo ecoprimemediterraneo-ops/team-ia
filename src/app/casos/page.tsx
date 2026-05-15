@@ -105,7 +105,7 @@ export default function CasosPage() {
               CASOS DE ÉXITO
             </h1>
             <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto">
-              Negocios como el tuyo que ya tienen a los 6 agentes trabajando.
+              Negocios como el tuyo que ya tienen a los 8 agentes trabajando.
               Métricas reales, nombres cambiados por privacidad.
             </p>
           </div>

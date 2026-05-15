@@ -85,11 +85,11 @@ export default async function DentistasCiudadPage({ params }: { params: Promise<
           </div>
         </section>
 
-        {/* Los 6 agentes */}
+        {/* Los 6 agentes operativos */}
         <section className="py-16 bg-[color:var(--cream)] border-b-[3px] border-black">
           <div className="max-w-4xl mx-auto px-5 text-center">
             <h2 className="font-stencil text-3xl md:text-4xl mb-4">
-              6 agentes trabajando por tu clínica en {ciudad.nombre}
+              8 agentes trabajando por tu clínica en {ciudad.nombre}
             </h2>
             <p className="text-black/70 mb-10 max-w-2xl mx-auto">
               Cada uno especializado en una tarea. Trabajan en cadena, 24/7, sin vacaciones.

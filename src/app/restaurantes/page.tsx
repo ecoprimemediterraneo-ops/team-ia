@@ -102,7 +102,7 @@ const restoPacks = [
     priceFounder: "229",
     priceRegular: "399",
     tagline: "Para restaurante con eventos privados, catering, varios locales",
-    agents: ["Los 7 especialistas", "+ Onboarding 1:1", "+ Setup con The Fork / OpenTable / Covermanager", "+ WhatsApp directo conmigo"],
+    agents: ["Los 8 especialistas", "+ Onboarding 1:1", "+ Setup con The Fork / OpenTable / Covermanager", "+ WhatsApp directo conmigo"],
     cta: "Hablar conmigo",
   },
 ];
@@ -140,7 +140,7 @@ export default function RestaurantesPage() {
             </div>
             <h1 className="font-stencil text-3xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05]">
               <span className="block">UN RESTAURANTE.</span>
-              <span className="block">SIETE</span>
+              <span className="block">OCHO</span>
               <span className="block">ESPECIALISTAS.</span>
               <span className="inline-block barred mt-4 px-3 py-1">UN SUELDO.</span>
             </h1>

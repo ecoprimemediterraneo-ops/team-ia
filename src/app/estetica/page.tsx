@@ -82,33 +82,33 @@ const esteticaDay = [
 const esteticaPacks = [
   {
     name: "Esencial",
-    priceFounder: "39",
-    priceRegular: "99",
+    priceFounder: "79",
+    priceRegular: "199",
     tagline: "Automatización de canales de atención",
     agents: ["Pablo — WhatsApp 24/7", "Carmen — Llamadas entrantes", "Rocío — Reseñas Google"],
     cta: "Activar Esencial",
   },
   {
     name: "Crecimiento",
-    priceFounder: "89",
-    priceRegular: "149",
+    priceFounder: "249",
+    priceRegular: "349",
     tagline: "Atención + marketing digital automatizado",
     agents: ["Lucía — Correo y administración", "Marta — Instagram y TikTok", "Eva — Email y reactivación"],
     cta: "Activar Crecimiento",
   },
   {
     name: "Élite",
-    priceFounder: "149",
-    priceRegular: "249",
-    tagline: "Operación completa. Los 6 canales.",
+    priceFounder: "249",
+    priceRegular: "549",
+    tagline: "Operación completa. Los 6 canales operativos.",
     agents: ["Pablo — WhatsApp 24/7", "Carmen — Llamadas entrantes", "Rocío — Reseñas Google", "Lucía — Correo", "Marta — Redes sociales", "Eva — Email marketing"],
     cta: "Activar Élite",
     featured: true,
   },
   {
     name: "Pro",
-    priceFounder: "299",
-    priceRegular: "499",
+    priceFounder: "449",
+    priceRegular: "899",
     tagline: "Élite + inteligencia competitiva + soporte directo",
     agents: ["Los 6 agentes operativos", "Sergio — Monitorización de competidores", "Onboarding 1:1 con setup incluido", "Soporte prioritario directo"],
     cta: "Hablar con ventas",
@@ -163,7 +163,7 @@ export default function EsteticaPage() {
 
             <h1 className="font-stencil text-3xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05]">
               <span className="block">UN CENTRO.</span>
-              <span className="block">SIETE</span>
+              <span className="block">OCHO</span>
               <span className="block">ESPECIALISTAS.</span>
               <span className="inline-block barred mt-4 px-3 py-1">UN SUELDO.</span>
             </h1>
@@ -239,7 +239,7 @@ export default function EsteticaPage() {
               <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">AGENTES ESPECIALIZADOS</span>
             </div>
             <h2 className="font-stencil text-5xl md:text-7xl mb-4">
-              Siete agentes.<br />Un sistema.
+              Ocho agentes.<br />Un sistema.
             </h2>
             <p className="text-lg max-w-2xl mb-14 text-black/70">
               Cada agente gestiona un canal de forma autónoma, entrenado específicamente para centros de estética.
@@ -323,7 +323,7 @@ export default function EsteticaPage() {
                 <div className="p-4 text-center text-white/50">RECEP. + CM</div>
               </div>
               {[
-                ["Coste mensual", "39–149 €", "1.400–2.200 €"],
+                ["Coste mensual", "79–449 €", "1.400–2.200 €"],
                 ["Horario", "24/7 inc. fines de semana", "Lun-Vie 9-18h"],
                 ["WhatsApp fuera de horario", "Responde siempre", "Sin cobertura"],
                 ["Llamadas en cabina", "Carmen lo gestiona", "Buzón o pérdida"],

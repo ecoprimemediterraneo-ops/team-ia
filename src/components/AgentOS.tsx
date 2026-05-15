@@ -49,7 +49,7 @@ export default function AgentOS() {
         </div>
 
         <h2 className="font-stencil text-5xl md:text-6xl mb-4 leading-tight">
-          Cuatro módulos.<br />Siete agentes.
+          Cuatro módulos.<br />Ocho agentes.
         </h2>
         <p className="text-base text-white/40 mb-16 max-w-xl font-mono">
           Cada agente es un proceso autónomo. Cada módulo cubre una función crítica del negocio. El sistema opera en paralelo, sin supervisión.

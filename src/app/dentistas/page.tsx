@@ -103,7 +103,7 @@ const dentalPacks = [
     priceFounder: "249",
     priceRegular: "449",
     tagline: "Para clínica 2-3 dentistas que quiere escalar",
-    agents: ["Los 7 especialistas", "+ Onboarding personal 1:1", "+ Setup Gesden / Clinic Cloud / Dentalink", "+ WhatsApp directo conmigo"],
+    agents: ["Los 8 especialistas", "+ Onboarding personal 1:1", "+ Setup Gesden / Clinic Cloud / Dentalink", "+ WhatsApp directo conmigo"],
     cta: "Hablar conmigo",
   },
 ];
@@ -155,7 +155,7 @@ export default function DentistasPage() {
 
             <h1 className="font-stencil text-3xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05]">
               <span className="block">UNA CLÍNICA.</span>
-              <span className="block">SIETE</span>
+              <span className="block">OCHO</span>
               <span className="block">ESPECIALISTAS.</span>
               <span className="inline-block barred mt-4 px-3 py-1">UN SUELDO.</span>
             </h1>
@@ -229,7 +229,7 @@ export default function DentistasPage() {
               <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">UNIDAD ASIGNADA</span>
             </div>
             <h2 className="font-stencil text-5xl md:text-7xl mb-4">
-              Los 7 especialistas<br />de tu clínica
+              Los 8 especialistas<br />de tu clínica
             </h2>
             <p className="text-lg max-w-2xl mb-14 text-black/70">
               Cada uno con su misión, entrenado para clínica dental de 1-3 dentistas. No genérico.

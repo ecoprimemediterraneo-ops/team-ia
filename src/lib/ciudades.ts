@@ -50,7 +50,7 @@ export const VERTICALS: Record<string, VerticalCiudad> = {
     sector: "Clínica Dental",
     titulo: (ciudad) => `IA para Clínicas Dentales en ${ciudad}`,
     descripcion: (ciudad, demonym) =>
-      `El equipo de 6 agentes IA que las clínicas dentales de ${ciudad} necesitan. Reduce no-shows, contesta WhatsApp 24/7 y sube tu Google sin contratar a nadie.`,
+      `El equipo de 8 agentes IA que las clínicas dentales de ${ciudad} necesitan. Reduce no-shows, contesta WhatsApp 24/7 y sube tu Google sin contratar a nadie.`,
     pains: [
       "WhatsApp sin contestar a las 22h un viernes",
       "3 de cada 10 citas se caen sin avisar",
