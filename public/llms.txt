@@ -6,7 +6,7 @@ AI-Team es una plataforma de agentes de inteligencia artificial diseñada para p
 
 La plataforma opera 24/7, responde en menos de 10 segundos, y está disponible desde 39 €/mes.
 
-## Los 7 agentes
+## Los 8 agentes
 
 - **Pablo** — Atiende WhatsApp Business. Responde consultas, agenda citas, califica leads.
 - **Carmen** — Gestiona llamadas telefónicas entrantes en español. Recibe mensajes, agenda y filtra llamadas.
@@ -20,8 +20,8 @@ La plataforma opera 24/7, responde en menos de 10 segundos, y está disponible d
 
 - **Local** — 39 €/mes. WhatsApp (Pablo) + Llamadas (Carmen) + Reseñas (Rocío). Para clínicas dentales y centros de estética.
 - **Digital** — 89 €/mes. Correo (Lucía) + Redes sociales (Marta) + Email marketing (Eva).
-- **Élite** — 149 €/mes. Los 6 agentes anteriores juntos.
-- **Pro** — 299 €/mes. Los 6 agentes + Sergio (inteligencia competitiva) + onboarding personal 1:1.
+- **Élite** — 149 €/mes. Los 6 agentes operativos + Diana auditora.
+- **Pro** — 299 €/mes. Los 6 agentes operativos + Sergio (inteligencia competitiva) + Diana (diagnóstico continuo) + onboarding personal 1:1.
 
 Precio fundador congelado de por vida. 14 días gratis sin tarjeta. Sin permanencia.
 

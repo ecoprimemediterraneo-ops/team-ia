@@ -87,7 +87,7 @@ export default function MockupShowcase() {
               <div className="flex justify-start gap-2">
                 <div className="w-6 h-6 border border-white/20 overflow-hidden shrink-0 mt-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/agentes/pablo.png" alt="Pablo" className="w-full h-full object-cover" />
+                  <img src="/agentes/pablo.webp" alt="Pablo" className="w-full h-full object-cover" />
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-sm px-3 py-2 max-w-[75%]">
                   <p className="text-[9px] text-[color:var(--mustard)] font-mono mb-1">PABLO · AI-TEAM</p>
@@ -106,7 +106,7 @@ export default function MockupShowcase() {
               <div className="flex justify-start gap-2">
                 <div className="w-6 h-6 border border-white/20 overflow-hidden shrink-0 mt-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/agentes/pablo.png" alt="Pablo" className="w-full h-full object-cover" />
+                  <img src="/agentes/pablo.webp" alt="Pablo" className="w-full h-full object-cover" />
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-sm px-3 py-2 max-w-[75%]">
                   <p className="text-[9px] text-[color:var(--mustard)] font-mono mb-1">PABLO · AI-TEAM</p>

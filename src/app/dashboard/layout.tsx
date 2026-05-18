@@ -25,7 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
       <div className="max-w-7xl mx-auto grid md:grid-cols-[260px_1fr] gap-6 px-5 py-6">
         <aside className="space-y-2">
-          <div className="text-xs font-mono uppercase tracking-widest text-black/50 px-1 mb-2">Tu unidad · 7 especialistas</div>
+          <div className="text-xs font-mono uppercase tracking-widest text-black/50 px-1 mb-2">Tu unidad · 8 especialistas</div>
           {agents.map((a) => (
             <a
               key={a.slug}
@@ -71,6 +71,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
           >
             <div className="font-bold mb-0.5">📚 Lecciones aprendidas</div>
             <div className="text-black/60">Cómo evolucionan tus agentes</div>
+          </a>
+          <a
+            href="/dashboard/redes"
+            className="block mt-2 p-3 border-2 border-dashed border-black text-xs hover:bg-[color:var(--mustard)]/30"
+          >
+            <div className="font-bold mb-0.5">📱 Redes Sociales</div>
+            <div className="text-black/60">IG + LinkedIn + TikTok · 80 piezas</div>
           </a>
           {!user.business && (
             <div className="mt-4 p-3 border-2 border-dashed border-black text-xs">

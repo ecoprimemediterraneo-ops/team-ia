@@ -46,9 +46,19 @@ export default function Packs() {
         <h2 className="font-stencil text-5xl md:text-7xl mb-4">
           Nivel de<br />automatización
         </h2>
-        <p className="text-lg max-w-2xl mb-12 text-black/70">
+        <p className="text-lg max-w-2xl mb-8 text-black/70">
           La misma operación que un equipo de 2.000–5.000 €/mes. Sin nóminas, sin contratos, sin fricciones de gestión.
         </p>
+
+        {/* Banner Diana incluida en todos los packs */}
+        <div className="card-hard p-4 bg-[#14B8A6]/10 border-[#14B8A6] mb-8 flex items-center gap-4 flex-wrap">
+          <span className="text-3xl">🔍</span>
+          <div className="flex-1 min-w-[200px]">
+            <div className="font-bold">Diana — Auditora — incluida en todos los packs</div>
+            <div className="text-xs text-black/60">Diagnóstico inicial gratis + revisión mensual continua de tu clínica. HOTEL-D8.</div>
+          </div>
+          <a href="/diagnostico" className="text-xs font-mono font-bold tracking-widest border-2 border-black px-3 py-2 hover:bg-black hover:text-white">PROBAR GRATIS →</a>
+        </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {packs.map((p) => (

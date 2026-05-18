@@ -118,6 +118,193 @@ Eva está operativa con envíos reales desde \`eva@aiteam.marketing\` o desde tu
 
 posts.push(
   {
+    slug: "auditoria-digital-clinica-dental",
+    title: "Auditoría digital de una clínica dental: las 7 áreas que mueven la aguja",
+    excerpt:
+      "El 78% de las clínicas dentales españolas tiene fugas detectables en menos de 10 min de auditoría. Te contamos las áreas y cómo medirlas.",
+    date: "2026-05-14",
+    author: "AI-Team",
+    category: "Auditoría",
+    readingTime: "6 min",
+    body: `## Por qué auditar antes de invertir en marketing
+
+Tirar 800€/mes a Google Ads sin tener WhatsApp contestado en menos de 10 min es como llenar una bañera con el tapón abierto. Antes de captar, asegura que no pierdes a quien ya tienes.
+
+## Las 7 áreas que debes auditar
+
+1. **Web (LCP, SEO local, conversión).** Si tu web tarda más de 3s, pierdes el 40% del tráfico antes de que vea tu primera foto.
+2. **Google Business.** Reseñas/mes, nota agregada, tasa de respuesta. <5 reseñas/mes y bajas en ranking.
+3. **WhatsApp.** Tiempo medio de respuesta + % mensajes fuera de horario sin contestar. Cada lead frío te cuesta 47-120€.
+4. **Llamadas entrantes.** Tasa de atención. Una clínica media pierde 3-7 llamadas/día.
+5. **Redes sociales.** Frecuencia, engagement, ratio educativo/promo (ideal 70/30).
+6. **Email marketing.** ¿Tienes BBDD? ¿Mandas newsletter? ¿Tienes SPF/DKIM/DMARC?
+7. **Competencia local.** ¿Qué precios, promos y reseñas mueven en tu zona en los últimos 90 días?
+
+## Lo que automáticamente hace Diana
+
+Diana (HOTEL-D8) ejecuta esta auditoría en 2 minutos y te devuelve un PDF con semáforo por área + **pérdida estimada anual en euros** + plan de acción. Sin tarjeta, sin compromiso.
+
+[Probar diagnóstico gratis](https://aiteam.marketing/diagnostico)`,
+  },
+  {
+    slug: "cold-email-b2b-pyme",
+    title: "Cold email B2B para PYMES: la guía honesta de lo que funciona en 2026",
+    excerpt:
+      "Olvida los GIFs y las plantillas de LinkedIn. Cold email B2B sigue siendo el canal más barato si lo haces bien — datos y estructura que sí convierten.",
+    date: "2026-05-09",
+    author: "AI-Team",
+    category: "Cold Email",
+    readingTime: "6 min",
+    body: `## Cold email no está muerto, está mal hecho
+
+Tasa de respuesta media B2B en 2026: 8-12% si lo haces bien, 0,3% si copias plantillas de internet. La diferencia no es la herramienta — es la investigación previa.
+
+## Estructura que sí convierte
+
+1. **Asunto sin "REGALO" ni mayúsculas.** Cortos (3-5 palabras), específicos al destinatario.
+2. **Primera línea con referencia real.** "Vi que abristeis nueva sede en Marbella en marzo" > "Espero que te encuentres bien".
+3. **Una sola idea por correo.** Una pregunta o un hook. No 3.
+4. **CTA suave.** "¿Tendría sentido una llamada de 15 min la próxima semana?" mejor que "Reserva aquí: link".
+5. **Firma humana.** Nombre real, foto, móvil. Sin "Director Estratégico de Crecimiento Senior".
+
+## Volumen realista
+
+50-100 emails personalizados/día (no 1.000 masivos). Calidad sobre cantidad. La tasa de respuesta sube del 0,3% al 11% cuando bajas el volumen y subes la personalización.
+
+## Cuándo NO usar cold email
+
+- Si vendes <50€/cliente → no compensa el coste de adquisición
+- Si tu pipeline ya tiene >40 leads inbound/mes → enfoca ahí
+- Si no tienes proceso de venta claro → vas a quemar leads
+
+En AI-Team estamos preparando "Diego" — el agente especializado en cold email B2B. Saldrá tras estabilizar Pablo y Carmen.`,
+  },
+  {
+    slug: "retencion-clientes-pyme-clinicas",
+    title: "Retención de clientes en clínicas: por qué cuesta 5x más captar uno nuevo",
+    excerpt:
+      "Un paciente recurrente vale ~600€ a 5 años en clínica dental. Captarlo cuesta 47-120€. Mantenerlo, 8€. La matemática es brutal — aquí está el sistema.",
+    date: "2026-05-02",
+    author: "AI-Team",
+    category: "Retención",
+    readingTime: "5 min",
+    body: `## La matemática que cambia cómo gastas tu marketing
+
+Coste medio captación paciente dental España 2026: 47-120€ (Meta Ads, Doctoralia, SEO local).
+Valor a 5 años de un paciente recurrente: ~600€.
+Coste anual de mantenerlo activo: ~8€ (recordatorios + un par de comunicaciones bien hechas).
+
+**ROI captación**: 5-12x.
+**ROI retención**: 75x.
+
+Pero la mayoría de clínicas gasta 90% de su presupuesto en captación y 10% en retención. Es al revés que la matemática.
+
+## Sistema de retención mínimo viable
+
+1. **Recordatorio cita -48h** (WhatsApp + email). Reduce no-shows del 28% al 6%.
+2. **Mensaje post-tratamiento +24h.** "¿Cómo te encuentras hoy?". Sube satisfacción + dispara reseñas.
+3. **Recordatorio revisión semestral.** Automático según tu calendario. Es el momento donde más se cae el LTV.
+4. **Newsletter mensual breve.** Un tip útil + una promo si toca. Sin spam.
+5. **Mensaje de cumpleaños.** Cliché pero funciona: 38% de los pacientes responden.
+
+## Cómo lo automatiza AI-Team
+
+- Pablo (WhatsApp): recordatorios + mensajes post-tratamiento
+- Eva (email marketing): newsletter + cumpleaños + secuencias
+- Lucía (correo): clasifica respuestas para que tú solo veas las importantes
+- Rocío (reseñas): dispara solicitud justo después de la cita
+
+Activación en 24h con plan **Élite** (249€/mes) o **Pro** (449€/mes).`,
+  },
+  {
+    slug: "automatizacion-restaurante-zona-turistica",
+    title: "Automatizar un restaurante en zona turística: el sistema mínimo viable",
+    excerpt:
+      "Reservas en 5 idiomas, no-shows del 20%+, picos en hora punta, presión de Google y TripAdvisor. Te enseñamos el stack que funciona para hostelería real.",
+    date: "2026-04-25",
+    author: "AI-Team",
+    category: "Restaurantes",
+    readingTime: "5 min",
+    body: `## El restaurante medio de zona turística
+
+Datos reales de pilotos en Marbella/Málaga:
+- 60-120 mensajes/día (WhatsApp + Instagram DM + Google Maps)
+- 25-35% no-shows en temporada alta
+- 4-7 reseñas/semana (mix Google + TripAdvisor)
+- Personal cambiante con poca formación digital
+
+## Stack mínimo viable
+
+1. **Pablo (WhatsApp).** Reservas + traducción ES/EN/FR/DE/IT. Confirmación + recordatorio -3h.
+2. **Carmen (llamadas).** Atiende las que se pierden en hora de servicio. Cierra reserva o avisa al humano.
+3. **Rocío (reseñas).** Solicita post-comida (+2h, no antes). Responde en menos de 24h en idioma original.
+4. **Marta (redes).** Reels semanales con plato del día + stories diarios. Coherencia visual que multiplica seguidores 3-4x en 3 meses.
+
+## Lo que NO automatices
+
+- Reservas de grupos +8 personas (necesitan trato humano)
+- Quejas serias (alérgenos, mala experiencia)
+- Solicitudes de prensa o colaboraciones
+
+Los agentes detectan y derivan a humano. No intentes que la IA cierre todo.
+
+## Resultado típico
+
+- Tasa de respuesta mensajes: 100% (vs 60% manual)
+- No-shows: 25% → 9%
+- Reseñas/semana: 4 → 11
+- Tiempo del propietario en gestión digital: 6h/sem → 30 min revisión
+
+Plan recomendado para restaurantes medianos: **Élite** (249€/mes).`,
+  },
+  {
+    slug: "peluquerias-instagram-treatwell",
+    title: "Peluquerías: cómo dejar de pelear con Treatwell, Instagram y WhatsApp a la vez",
+    excerpt:
+      "Una peluquería media gestiona 5-8 canales digitales. El 90% del tiempo del propietario se va en eso, no en cortar pelo. Sistema para recuperar tu tiempo.",
+    date: "2026-04-18",
+    author: "AI-Team",
+    category: "Peluquerías",
+    readingTime: "5 min",
+    body: `## Los 8 canales que toda peluquería gestiona (mal)
+
+1. WhatsApp Business
+2. Instagram DM
+3. Treatwell / Booksy / Fresha
+4. Llamadas
+5. Google Business (reseñas + mensajes)
+6. Email
+7. Walk-ins
+8. Recomendaciones boca a boca
+
+El propietario medio dedica **3-5 horas al día** a estos canales. No al pelo.
+
+## Por dónde empezar
+
+**Mes 1: WhatsApp + reseñas.** Pablo + Rocío. Solo eso ya recupera ~10h/semana y sube nota Google 0.2 puntos en 60 días.
+
+**Mes 2: Redes + email.** Marta + Eva. Sube tu Instagram y empieza a fidelizar BBDD.
+
+**Mes 3: Llamadas + diagnóstico continuo.** Carmen + Diana. Cierras el círculo: ya no hay canal sin cobertura.
+
+## Lo que NO funciona
+
+- Contratar community manager freelance → coste 600-1.200€/mes con resultados inconsistentes.
+- "Mi sobrina nos lleva Instagram" → 3 meses bien, después abandono.
+- "Yo contesto WhatsApp por la noche" → quemas al propietario.
+
+## La diferencia real
+
+| Antes | Después |
+|---|---|
+| 3-5h/día gestionando canales | 30 min de revisión |
+| Reseñas: 2-3/mes | Reseñas: 12-18/mes |
+| WhatsApp: respuesta en 1-3h | Respuesta en 8 seg |
+| Instagram: 1 post/semana | 4-5 posts/semana + reels |
+
+Pack recomendado para peluquerías: **Élite** (249€/mes) o **Local** (79€) si solo quieres WhatsApp + llamadas + reseñas para empezar.`,
+  },
+  {
     slug: "agentes-ia-vs-empleados-pyme",
     title: "Agentes IA vs. empleados: cuánto cuesta de verdad cada opción para una PYME",
     excerpt:

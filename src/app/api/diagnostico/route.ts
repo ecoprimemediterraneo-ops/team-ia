@@ -25,7 +25,8 @@ const schema = z.object({
 
 type Input = z.infer<typeof schema>;
 
-const FILE = path.join(process.cwd(), "data", "diagnosticos.json");
+const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
+const FILE = path.join(DATA_DIR, "diagnosticos.json");
 
 async function loadAll(): Promise<unknown[]> {
   try {

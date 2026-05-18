@@ -16,7 +16,7 @@ export type Agent = {
 
 // Avatares ochenteros generados con Gemini (estilo cómic 80s).
 // Para regenerar: ver ROADMAP.md sección "Avatares".
-const avatar = (slug: string) => `/agentes/${slug}.png`;
+const avatar = (slug: string) => `/agentes/${slug}.webp`;
 
 export const agents: Agent[] = [
   {
