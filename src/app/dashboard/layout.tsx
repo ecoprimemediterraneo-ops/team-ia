@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import Logo from "@/components/Logo";
 import { agents } from "@/lib/agents";
+import TomasDashboardWidget from "@/components/TomasDashboardWidget";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -25,6 +26,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
       <div className="max-w-7xl mx-auto grid md:grid-cols-[260px_1fr] gap-6 px-5 py-6">
         <aside className="space-y-2">
+          <a href="/dashboard/onboarding" className="card-hard flex items-center gap-2 p-2.5 bg-[color:var(--mustard)] hover:-translate-y-0.5 transition mb-2">
+            <span className="text-xl">🚀</span>
+            <div className="flex-1">
+              <div className="font-stencil text-sm leading-none">Onboarding</div>
+              <div className="text-[10px] uppercase tracking-widest text-black/70">Configura tu equipo</div>
+            </div>
+          </a>
+          <a href="/dashboard/aprobaciones" className="card-hard flex items-center gap-2 p-2.5 bg-white hover:-translate-y-0.5 transition mb-3">
+            <span className="text-xl">📋</span>
+            <div className="flex-1">
+              <div className="font-stencil text-sm leading-none">Aprobaciones</div>
+              <div className="text-[10px] uppercase tracking-widest text-black/70">Bandeja unificada</div>
+            </div>
+          </a>
           <div className="text-xs font-mono uppercase tracking-widest text-black/50 px-1 mb-2">Tu unidad · 8 especialistas</div>
           {agents.map((a) => (
             <a
@@ -89,6 +104,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
         <main>{children}</main>
       </div>
+      <TomasDashboardWidget />
     </div>
   );
 }

@@ -1,19 +1,20 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import AgentsForSector from "@/components/AgentsForSector";
 import { agents } from "@/lib/agents";
 import DentalCTA from "@/components/dental/DentalCTA";
 import ROICalc from "@/components/dental/ROICalc";
 
 export const metadata = {
-  title: "AI-Team para Clínicas Dentales — Pablo agenda, Carmen llama, Rocío sube tu Google",
+  title: "AI-Team para Clínicas Dentales — Pablo agenda, Rocío sube tu Google",
   description:
-    "El equipo de IA que tu clínica dental necesita y no puedes contratar. Reduce no-shows, contesta WhatsApps 24/7, sube reseñas. Para clínicas de 1-3 dentistas.",
+    "El equipo de IA que tu clínica dental necesita y no puedes contratar. Reduce no-shows, contesta WhatsApps 24/7, sube reseñas. Para negocios de 1-3 dentistas.",
 };
 
 const dentalPains = [
   { stat: "30%", text: "no-shows: 3 de cada 10 citas se caen sin avisar", icon: "📅" },
   { stat: "40%", text: "de presupuestos sin cerrar por falta de seguimiento", icon: "💸" },
-  { stat: "6 meses", text: "tiempo medio que un paciente lleva sin volver a tu clínica", icon: "👋" },
+  { stat: "6 meses", text: "tiempo medio que un paciente lleva sin volver a tu negocio", icon: "👋" },
   { stat: "WhatsApp", text: "saturado: 50+ mensajes sin contestar al final del día", icon: "📱" },
   { stat: "Google", text: "reseñas nuevas sin responder durante semanas", icon: "⭐" },
   { stat: "Recepción", text: "no da abasto entre llamadas, citas y caja", icon: "📞" },
@@ -85,15 +86,15 @@ const dentalPacks = [
     name: "Esencial Dental",
     priceFounder: "79",
     priceRegular: "129",
-    tagline: "Para clínica de 1 dentista, sin recepcionista",
-    agents: ["Pablo (WhatsApp urgencias)", "Carmen (llamadas)", "Rocío (reseñas Google)"],
+    tagline: "Para negocio de 1 dentista, sin recepcionista",
+    agents: ["Pablo (WhatsApp urgencias)", "Rocío (reseñas Google)", "Diana (diagnóstico)"],
     cta: "Empezar Esencial",
   },
   {
     name: "Crecimiento",
     priceFounder: "149",
     priceRegular: "249",
-    tagline: "Para clínica de 1-2 dentistas con recepcionista saturada",
+    tagline: "Para negocio de 1-2 dentistas con recepcionista saturada",
     agents: ["Los 3 anteriores", "+ Eva (recuperar pacientes inactivos)", "+ Lucía (limpiar correo)"],
     cta: "Quiero crecer",
     featured: true,
@@ -102,7 +103,7 @@ const dentalPacks = [
     name: "Élite Dental",
     priceFounder: "249",
     priceRegular: "449",
-    tagline: "Para clínica 2-3 dentistas que quiere escalar",
+    tagline: "Para negocio 2-3 dentistas que quiere escalar",
     agents: ["Los 8 especialistas", "+ Onboarding personal 1:1", "+ Setup Gesden / Clinic Cloud / Dentalink", "+ WhatsApp directo conmigo"],
     cta: "Hablar conmigo",
   },
@@ -131,11 +132,11 @@ const dentalFAQ = [
   },
   {
     q: "¿Necesito tener WhatsApp Business para que funcione Pablo?",
-    a: "Sí, gratis (lo descargas en el móvil). Idealmente con un número dedicado a la clínica (no tu personal) — te ayudamos a montarlo en el setup. Para auto-respuesta 24/7 oficial sin riesgo, vamos a verificarte como WhatsApp Business API con Meta (1-3 días de papeleo, lo hacemos juntos).",
+    a: "Sí, gratis (lo descargas en el móvil). Idealmente con un número dedicado a el negocio (no tu personal) — te ayudamos a montarlo en el setup. Para auto-respuesta 24/7 oficial sin riesgo, vamos a verificarte como WhatsApp Business API con Meta (1-3 días de papeleo, lo hacemos juntos).",
   },
   {
     q: "¿En cuánto tiempo veo resultados?",
-    a: "Semana 1: Pablo y Carmen ya contestan. Semana 2-3: las primeras reseñas de Rocío empiezan a llegar. Mes 1: 5-15 pacientes inactivos vuelven gracias a Eva. Mes 2-3: tu Google sube 0.3-0.5★ y la agenda se llena con menos hueco. Caso real piloto: clínica en Málaga recuperó 3.200€ el primer mes.",
+    a: "Semana 1: Pablo ya contesta WhatsApp. Semana 2-3: las primeras reseñas de Rocío empiezan a llegar. Mes 1: 5-15 pacientes inactivos vuelven gracias a Eva. Mes 2-3: tu Google sube 0.3-0.5★ y la agenda se llena con menos hueco. Caso real piloto: negocio en Málaga recuperó 3.200€ el primer mes.",
   },
 ];
 
@@ -168,7 +169,7 @@ export default function DentistasPage() {
             <p className="mt-8 text-base md:text-lg max-w-2xl mx-auto text-white/85">
               Mientras tú estás operando, alguien contesta el WhatsApp del paciente con dolor.
               Mientras revisas radiografías, alguien coge la llamada del nuevo paciente.
-              Mientras cierras la clínica, alguien recupera al paciente que llevaba 6 meses sin venir.
+              Mientras cierras el negocio, alguien recupera al paciente que llevaba 6 meses sin venir.
               <span className="block mt-2 font-bold text-white">Tú vuelves a operar tranquilo. Ellos hacen lo demás.</span>
             </p>
 
@@ -229,7 +230,7 @@ export default function DentistasPage() {
               <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">UNIDAD ASIGNADA</span>
             </div>
             <h2 className="font-stencil text-5xl md:text-7xl mb-4">
-              Los 8 especialistas<br />de tu clínica
+              Los 8 especialistas<br />de tu negocio
             </h2>
             <p className="text-lg max-w-2xl mb-14 text-black/70">
               Cada uno con su misión, entrenado para clínica dental de 1-3 dentistas. No genérico.
@@ -366,7 +367,7 @@ export default function DentistasPage() {
             </div>
             <h2 className="font-stencil text-5xl md:text-7xl mb-4">Elige tu pack dental</h2>
             <p className="text-lg max-w-2xl mb-12 text-black/70">
-              Una clínica media de Málaga pierde 2.000-5.000€/mes en citas que se caen, presupuestos no cerrados y pacientes que no vuelven. AI-Team cuesta una fracción.
+              Un negocio media de Málaga pierde 2.000-5.000€/mes en citas que se caen, presupuestos no cerrados y pacientes que no vuelven. AI-Team cuesta una fracción.
             </p>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -402,7 +403,7 @@ export default function DentistasPage() {
               ))}
             </div>
             <p className="text-center text-xs text-black/50 mt-8 font-mono uppercase tracking-widest">
-              30 días gratis para 5 clínicas piloto · cancelas en un click · sin permanencia
+              30 días gratis para 5 negocios piloto · cancelas en un click · sin permanencia
             </p>
           </div>
         </section>
@@ -435,6 +436,7 @@ export default function DentistasPage() {
         {/* CTA FINAL DENTAL */}
         <DentalCTA />
       </main>
+      <AgentsForSector sector="dental" />
       <Footer />
     </>
   );

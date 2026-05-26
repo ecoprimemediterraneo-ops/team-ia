@@ -9,7 +9,7 @@ export default function Team() {
           <span className="border border-black/30 px-3 py-1 text-black/50">AGENTES ESPECIALIZADOS</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-6xl mb-4 leading-tight">
-          Ocho agentes.<br />Un sistema.
+          Nueve agentes.<br />Un sistema.
         </h2>
         <p className="text-base max-w-xl mb-16 text-black/50">
           Cada agente gestiona un canal de forma autónoma. Operan en paralelo, sin supervisión, sin interrupciones.
@@ -51,10 +51,13 @@ export default function Team() {
                   <div className="flex items-center gap-2 mb-1 pr-20 sm:pr-24">
                     <h3 className="font-stencil text-3xl sm:text-4xl">{a.name}</h3>
                   </div>
-                  <p className="text-sm uppercase tracking-wider font-semibold text-black/60">
+                  <p className="text-xs uppercase tracking-wider font-semibold text-black/50">
                     {a.role}
                   </p>
-                  <p className="text-sm text-black/70 mt-2">{a.short}</p>
+                  <p className="text-base font-bold text-[color:var(--red)] mt-2 mb-1">
+                    {a.tagline}
+                  </p>
+                  <p className="text-sm text-black/70">{a.short}</p>
                 </div>
               </div>
 

@@ -34,7 +34,7 @@ const planes: Plan[] = [
     archivo: "assets/linkedin/",
     emoji: "💼",
     color: "#0A66C2",
-    bio: "Sistema operativo de 8 empleados IA para clínicas y PYMES en España",
+    bio: "Sistema operativo de 8 empleados IA para negocios y PYMES en España",
   },
   {
     red: "TikTok",
@@ -45,7 +45,7 @@ const planes: Plan[] = [
     archivo: "assets/tiktok/",
     emoji: "🎵",
     color: "#000000",
-    bio: "Automatiza tu clínica en 24h. 8 empleados IA.",
+    bio: "Automatiza tu negocio en 24h. 8 empleados IA.",
   },
 ];
 

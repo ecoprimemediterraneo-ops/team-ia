@@ -7,13 +7,11 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireSession } from "@/lib/auth";
+import { requireSession, isFounder } from "@/lib/auth";
 import { listLeads, addLeadActivity, moveLead } from "@/lib/pipeline";
 import { addScheduledEmail } from "@/lib/store";
 import { fillLeadVars, OUTREACH_TEMPLATES } from "@/lib/email-personalization";
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
-const isFounder = (e: string) => e === FOUNDER_EMAIL || e === "crisasky@gmail.com";
 
 const schema = z.object({
   templateId: z.string(),
@@ -90,7 +88,7 @@ export async function POST(req: Request) {
       sequence: template.name,
     });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
@@ -106,6 +104,6 @@ export async function GET() {
     }));
     return NextResponse.json({ templates });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

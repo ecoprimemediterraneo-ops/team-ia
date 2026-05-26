@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     const pub = await crear(parsed.data);
     return NextResponse.json({ ok: true, publicacion: pub });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
@@ -48,7 +48,7 @@ export async function PATCH(req: Request) {
     if (!pub) return NextResponse.json({ error: "no encontrada" }, { status: 404 });
     return NextResponse.json({ ok: true, publicacion: pub });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 

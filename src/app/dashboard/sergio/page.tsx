@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import AgentChat from "@/components/AgentChat";
 import SergioTools from "@/components/SergioTools";
+import SergioCompetidores from "@/components/SergioCompetidores";
 import { agentBySlug } from "@/lib/agents";
 
 export default async function SergioPage() {
@@ -31,16 +32,21 @@ export default async function SergioPage() {
         </p>
       </div>
 
-      <AgentChat
-        agent="sergio"
-        initialMessages={user.chats.sergio}
-        placeholder="Pregunta a Sergio sobre tus competidores…"
-        suggestions={[
-          "¿Qué cambios han detectado esta semana?",
-          "¿Cuál es el precio de mi competidor principal?",
-          "Dame un resumen de inteligencia de mercado",
-        ]}
-      />
+      <SergioCompetidores />
+
+      <div className="mt-10">
+        <h2 className="font-stencil text-3xl mb-3">Pregunta a Sergio</h2>
+        <AgentChat
+          agent="sergio"
+          initialMessages={user.chats.sergio}
+          placeholder="Pregunta a Sergio sobre tus competidores…"
+          suggestions={[
+            "¿Qué cambios han detectado esta semana?",
+            "¿Cuál es el precio de mi competidor principal?",
+            "Dame un resumen de inteligencia de mercado",
+          ]}
+        />
+      </div>
 
       <SergioTools />
     </section>

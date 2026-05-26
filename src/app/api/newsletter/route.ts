@@ -2,11 +2,21 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { kvGet, kvSet } from "@/lib/supabase";
 
 const schema = z.object({ email: z.string().email() });
-const FILE = path.join(process.cwd(), "data", "newsletter.json");
+const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
+const FILE = path.join(DATA_DIR, "newsletter.json");
+const KV_KEY = "newsletter:subscribers";
+const USE_SUPABASE = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
 
-async function load(): Promise<{ email: string; date: string }[]> {
+type Sub = { email: string; date: string };
+
+async function load(): Promise<Sub[]> {
+  if (USE_SUPABASE) {
+    const data = await kvGet<Sub[]>(KV_KEY);
+    return data || [];
+  }
   try {
     const raw = await fs.readFile(FILE, "utf-8");
     return JSON.parse(raw);
@@ -15,7 +25,11 @@ async function load(): Promise<{ email: string; date: string }[]> {
   }
 }
 
-async function save(list: { email: string; date: string }[]) {
+async function save(list: Sub[]) {
+  if (USE_SUPABASE) {
+    await kvSet(KV_KEY, list);
+    return;
+  }
   await fs.mkdir(path.dirname(FILE), { recursive: true });
   await fs.writeFile(FILE, JSON.stringify(list, null, 2));
 }
@@ -35,6 +49,6 @@ export async function POST(req: Request) {
     await save(list);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

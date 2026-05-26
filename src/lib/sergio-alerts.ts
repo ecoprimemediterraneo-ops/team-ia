@@ -12,6 +12,10 @@ function getResend() {
 }
 
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
+/** Si la source tiene owner_email, prefiérelo. Si no, cae al founder (legacy). */
+function resolveRecipient(ownerEmail?: string | null): string {
+  return ownerEmail || FOUNDER_EMAIL;
+}
 const FROM = process.env.RESEND_FROM || "Sergio (AI-Team) <eva@aiteam.marketing>";
 
 function relevanceBadge(r: string) {
@@ -24,11 +28,11 @@ function relevanceBadge(r: string) {
   return map[r] ?? map.low;
 }
 
-export async function sendCriticalAlert(change: Change, competitorName: string): Promise<void> {
+export async function sendCriticalAlert(change: Change, competitorName: string, ownerEmail?: string | null): Promise<void> {
   const resend = getResend();
   await resend.emails.send({
     from: FROM,
-    to: FOUNDER_EMAIL,
+    to: resolveRecipient(ownerEmail),
     subject: `🔴 SERGIO · ALERTA CRÍTICA: ${competitorName}`,
     html: `
 <div style="font-family:monospace;max-width:600px;background:#000;color:#fff;padding:24px">
@@ -51,9 +55,10 @@ export async function sendCriticalAlert(change: Change, competitorName: string):
   });
 }
 
-export async function sendDailyDigest(changes: Change[], competitorNames: Record<string, string>): Promise<void> {
+export async function sendDailyDigest(changes: Change[], competitorNames: Record<string, string>, ownerEmail?: string | null): Promise<void> {
   if (changes.length === 0) return;
   const resend = getResend();
+  const to = resolveRecipient(ownerEmail);
 
   const rows = changes
     .map((c) => `
@@ -72,7 +77,7 @@ export async function sendDailyDigest(changes: Change[], competitorNames: Record
 
   await resend.emails.send({
     from: FROM,
-    to: FOUNDER_EMAIL,
+    to,
     subject: `🕵️ SERGIO · Digest diario — ${changes.length} cambios detectados`,
     html: `
 <div style="font-family:monospace;max-width:700px;background:#000;color:#fff;padding:24px">
@@ -98,13 +103,13 @@ export async function sendDailyDigest(changes: Change[], competitorNames: Record
   });
 }
 
-export async function sendWeeklyReport(reportContent: string, highlights: string[]): Promise<void> {
+export async function sendWeeklyReport(reportContent: string, highlights: string[], ownerEmail?: string | null): Promise<void> {
   const resend = getResend();
   const highlightHtml = highlights.map((h) => `<li style="color:#ccc;margin-bottom:6px">${h}</li>`).join("");
 
   await resend.emails.send({
     from: FROM,
-    to: FOUNDER_EMAIL,
+    to: resolveRecipient(ownerEmail),
     subject: `🕵️ SERGIO · Informe semanal — ${new Date().toLocaleDateString("es-ES")}`,
     html: `
 <div style="font-family:monospace;max-width:700px;background:#000;color:#fff;padding:24px">

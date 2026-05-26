@@ -52,7 +52,7 @@ export default function ROICalc() {
         </div>
         <h2 className="font-stencil text-5xl md:text-7xl mb-4">¿Cuánto pierdes hoy?</h2>
         <p className="text-lg max-w-2xl mb-12 text-black/70">
-          Pon los números de tu clínica. Te decimos lo que estás dejando sobre la mesa al mes (y lo que recuperarías con AI-Team).
+          Pon los números de tu negocio. Te decimos lo que estás dejando sobre la mesa al mes (y lo que recuperarías con AI-Team).
         </p>
 
         <div className="grid lg:grid-cols-2 gap-8">

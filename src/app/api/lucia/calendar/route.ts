@@ -13,6 +13,6 @@ export async function GET() {
     if (!events) return NextResponse.json({ connected: false }, { status: 200 });
     return NextResponse.json({ connected: true, events });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

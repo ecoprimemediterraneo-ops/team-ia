@@ -15,6 +15,7 @@ const modules = [
     agents: [
       { name: "Rocío", role: "Reseñas Google", status: "active", color: "#FBBF24" },
       { name: "Lucía", role: "Correo y calendario", status: "active", color: "#F5C518" },
+      { name: "Tomás", role: "Soporte IA 24/7", status: "active", color: "#06B6D4" },
     ],
   },
   {
@@ -32,6 +33,7 @@ const modules = [
     desc: "Monitoriza el mercado, analiza competidores y genera informes automáticos.",
     agents: [
       { name: "Sergio", role: "Coordinador IA", status: "active", color: "#3B82F6" },
+      { name: "Diana", role: "Auditora digital", status: "active", color: "#14B8A6" },
     ],
     highlight: true,
   },
@@ -45,11 +47,11 @@ export default function AgentOS() {
         {/* Header */}
         <div className="flex items-center gap-2 mb-8 text-[10px] font-mono tracking-[0.2em]">
           <span className="border border-[color:var(--mustard)]/40 text-[color:var(--mustard)] px-3 py-1">SISTEMA OPERATIVO</span>
-          <span className="border border-white/10 text-white/30 px-3 py-1">v1.0 · 7 MÓDULOS ACTIVOS</span>
+          <span className="border border-white/10 text-white/30 px-3 py-1">v1.0 · 9 AGENTES ACTIVOS</span>
         </div>
 
         <h2 className="font-stencil text-5xl md:text-6xl mb-4 leading-tight">
-          Cuatro módulos.<br />Ocho agentes.
+          Cuatro módulos.<br />Nueve agentes.
         </h2>
         <p className="text-base text-white/40 mb-16 max-w-xl font-mono">
           Cada agente es un proceso autónomo. Cada módulo cubre una función crítica del negocio. El sistema opera en paralelo, sin supervisión.

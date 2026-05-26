@@ -13,7 +13,7 @@ const after = [
 ];
 
 const timeline = [
-  { week: "Día 1", event: "Alta y briefing completado. Pablo y Carmen operativos." },
+  { week: "Día 1", event: "Alta y briefing completado. Pablo operativo." },
   { week: "Semana 1", event: "23 WhatsApps contestados automáticamente. 0 citas perdidas." },
   { week: "Semana 3", event: "Eva lanza secuencia de bienvenida a 60 pacientes. 14 reactivaciones." },
   { week: "Mes 2", event: "Rocío consigue 31 reseñas nuevas. Media Google sube de 3.8 a 4.9." },
@@ -40,7 +40,7 @@ export default function CaseStudy() {
                 "Antes perdía entre 8 y 10 citas a la semana porque nadie contestaba el WhatsApp fuera de horario. Ahora Pablo lo gestiona solo. El mes pasado no perdí ninguna."
               </p>
               <footer className="text-xs font-mono text-black/40 uppercase tracking-widest">
-                Dr. A. Moreno · Clínica Moreno Dental · Valencia
+                Dr. A. Moreno · Negocio Moreno Dental · Valencia
               </footer>
             </blockquote>
             <div className="flex items-center gap-3 text-xs font-mono text-black/40">

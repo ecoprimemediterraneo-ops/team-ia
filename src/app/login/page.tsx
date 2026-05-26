@@ -107,7 +107,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             +1.200 negocios en lista de espera
           </p>
           <p className="text-[10px] text-black/40 mt-1">
-            Clínicas dentales · estéticas · peluquerías · restaurantes
+            Clínicas · despachos · peluquerías · fisios · gimnasios
           </p>
         </div>
 

@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireSession } from "@/lib/auth";
+import { requireSession, isFounder } from "@/lib/auth";
 import { getLead, updateLead, moveLead, deleteLead, addLeadActivity, STAGE_ORDER } from "@/lib/pipeline";
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
-const isFounder = (e: string) => e === FOUNDER_EMAIL || e === "crisasky@gmail.com";
 
 const patchSchema = z.object({
   stage: z.enum(STAGE_ORDER as [string, ...string[]]).optional(),
@@ -24,7 +22,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     if (!lead) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
     return NextResponse.json({ lead });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
@@ -49,7 +47,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (!lead) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
     return NextResponse.json({ ok: true, lead });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
@@ -70,7 +68,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!lead) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
     return NextResponse.json({ ok: true, lead });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
@@ -82,6 +80,6 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     const ok = await deleteLead(id);
     return NextResponse.json({ ok });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

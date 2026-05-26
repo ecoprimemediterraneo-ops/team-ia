@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Recluta tu equipo IA",
   description:
-    "Elige los agentes IA que necesita tu negocio. Activación en 24h. 14 días gratis sin tarjeta. Precio fundador para siempre.",
+    "Elige los agentes IA que necesita tu negocio. Activación en 24h. 14 días gratis cancela cuando quieras. Precio fundador para siempre.",
   alternates: { canonical: "https://aiteam.marketing/reclutar" },
 };
 
@@ -31,7 +31,7 @@ export default function ReclutarPage() {
               Recluta a tu equipo IA
             </h1>
             <p className="text-lg text-black/70 max-w-2xl mx-auto">
-              Ocho agentes especializados. Activa los que necesites. Operan en 24h.
+              Nueve agentes especializados. Activa los que necesites. Operan en 24h.
             </p>
           </div>
         </section>

@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import AgentsForSector from "@/components/AgentsForSector";
 import { agents } from "@/lib/agents";
 import VerticalCTA from "@/components/dental/VerticalCTA";
 
@@ -85,7 +86,7 @@ const peluPacks = [
     priceFounder: "59",
     priceRegular: "99",
     tagline: "Para peluquería de 1 estilista, sin recepción",
-    agents: ["Pablo (WhatsApp)", "Carmen (llamadas)", "Rocío (reseñas)"],
+    agents: ["Pablo (WhatsApp)", "Rocío (reseñas)", "Diana (diagnóstico)"],
     cta: "Empezar Esencial",
   },
   {
@@ -310,6 +311,7 @@ export default function PeluqueriasPage() {
           ctaLabel="Salón"
         />
       </main>
+      <AgentsForSector sector="peluqueria" />
       <Footer />
     </>
   );

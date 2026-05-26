@@ -4,7 +4,7 @@ import { useState } from "react";
 const faqs = [
   {
     q: "¿Cuánto cuesta?",
-    a: "Cuatro planes: Local 79 €/mes (WhatsApp + llamadas + reseñas), Digital 149 €/mes (correo + redes + email marketing), Élite 249 €/mes con los 6 agentes operativos, y Pro 449 €/mes (los 6 agentes + Sergio (inteligencia competitiva) + Diana (diagnóstico continuo) + onboarding 1:1 + soporte prioritario). Solo 100 plazas fundador con precio congelado de por vida.",
+    a: "Cuatro planes: Local 79 €/mes (Pablo WhatsApp + Rocío reseñas + Diana diagnóstico), Digital 149 €/mes (Lucía correo + Marta redes + Eva email + Diana), Élite 249 €/mes (los 5 digitales + Pablo + Rocío), Pro 449 €/mes (Élite + Sergio inteligencia competitiva + onboarding 1:1 + soporte prioritario). Carmen (llamadas voz) se factura aparte como add-on desde 99€/mes según volumen de llamadas — la telefonía real cuesta dinero y por eso va separada. Solo 100 plazas fundador con precio congelado de por vida.",
   },
   {
     q: "¿Necesito instalar algo o saber de tecnología?",
@@ -24,7 +24,7 @@ const faqs = [
   },
   {
     q: "¿Puedo cancelar cuando quiera?",
-    a: "Sí, sin penalización. 14 días de prueba sin tarjeta. Después, mes a mes. Si no te aporta, te vas. Tus datos se borran a los 30 días tras la cancelación.",
+    a: "Sí, sin penalización. 14 días de prueba cancela cuando quieras. Después, mes a mes. Si no te aporta, te vas. Tus datos se borran a los 30 días tras la cancelación.",
   },
   {
     q: "¿Mis datos están seguros?",
@@ -32,7 +32,7 @@ const faqs = [
   },
   {
     q: "¿Funciona con mi software actual (Gesden, ClinicCloud, etc.)?",
-    a: "AI-Team vive 'al lado', no 'dentro' de tu software. Trabajamos con tu calendario (Google Calendar o Cal.com), tu WhatsApp Business y tu Gmail. La sincronización con software vertical (clínicas, peluquerías) la hace tu recepcionista en 30 segundos al confirmar cada cita. Estamos preparando integraciones directas con los más populares.",
+    a: "AI-Team vive 'al lado', no 'dentro' de tu software. Trabajamos con tu calendario (Google Calendar o Cal.com), tu WhatsApp Business y tu Gmail. La sincronización con software vertical (negocios, peluquerías) la hace tu recepcionista en 30 segundos al confirmar cada cita. Estamos preparando integraciones directas con los más populares.",
   },
 ];
 

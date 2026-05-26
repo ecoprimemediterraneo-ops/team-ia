@@ -64,6 +64,6 @@ Devuelve SOLO el texto del mensaje WhatsApp. Sin meta-comentarios. Listo para en
 
     return NextResponse.json({ reply: text });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

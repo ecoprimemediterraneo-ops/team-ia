@@ -1,14 +1,13 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSession, isFounder } from "@/lib/auth";
 import { listChanges, acknowledgeChange } from "@/lib/sergio-db";
 import SergioCambiosPanel from "@/components/admin/SergioCambiosPanel";
 
-const ALLOWED = ["ecoprimemediterraneo@gmail.com", "crisasky@gmail.com"];
 
 export default async function SergioCambiosPage() {
   const s = await getSession();
   if (!s) redirect("/login");
-  if (!ALLOWED.includes(s.email)) redirect("/admin");
+  if (!isFounder(s.email)) redirect("/admin");
 
   const changes = await listChanges({ limit: 50 }).catch(() => []);
   const pending = changes.filter((c) => !c.acknowledged).length;

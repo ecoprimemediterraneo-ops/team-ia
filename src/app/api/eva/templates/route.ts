@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     const t = await saveEmailTemplate(email, parsed.data);
     return NextResponse.json({ ok: true, template: t });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
@@ -40,6 +40,6 @@ export async function DELETE(req: Request) {
     await deleteEmailTemplate(email, id);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

@@ -4,6 +4,10 @@ import { anthropic, MODELS } from "@/lib/claude";
 import { getResend, RESEND_FROM } from "@/lib/resend";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { kvGet, kvSet } from "@/lib/supabase";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { getFitForSector } from "@/lib/sector-fit";
+import { agentBySlug } from "@/lib/agents";
 
 const schema = z.object({
   nombre: z.string().min(1),
@@ -27,8 +31,14 @@ type Input = z.infer<typeof schema>;
 
 const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
 const FILE = path.join(DATA_DIR, "diagnosticos.json");
+const KV_KEY = "diagnosticos:all";
+const USE_SUPABASE = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
 
 async function loadAll(): Promise<unknown[]> {
+  if (USE_SUPABASE) {
+    const data = await kvGet<unknown[]>(KV_KEY);
+    return data || [];
+  }
   try {
     return JSON.parse(await fs.readFile(FILE, "utf-8"));
   } catch {
@@ -37,6 +47,10 @@ async function loadAll(): Promise<unknown[]> {
 }
 
 async function saveAll(items: unknown[]) {
+  if (USE_SUPABASE) {
+    await kvSet(KV_KEY, items);
+    return;
+  }
   await fs.mkdir(path.dirname(FILE), { recursive: true });
   await fs.writeFile(FILE, JSON.stringify(items, null, 2));
 }
@@ -55,7 +69,7 @@ REGLAS:
   * Negocio sin email mkt: pierde 20-35% de retorno cliente.
 - Sé específico con los cuellos de botella. Cita los datos del cliente.
 - Cierra recomendando un pack específico de AI-Team:
-  * Local 79€/mes: Pablo + Carmen + Rocío (problemas de comunicación + reseñas)
+  * Local 79€/mes: Pablo (WhatsApp) + Rocío (reseñas) + Diana (diagnóstico). Carmen llamadas se vende aparte como add-on (99€-349€/mes según volumen).
   * Digital 149€/mes: Lucía + Marta + Eva (problemas de redes + email + correo)
   * Élite 249€/mes: los 6 (operación 360)
   * Pro 449€/mes: Élite + Sergio + Diana (con inteligencia competitiva)
@@ -103,9 +117,14 @@ Activa tu equipo en 24h con 14 días gratis. Plaza fundador limitada: precio con
 }
 
 function userPrompt(d: Input) {
+  const sectorLabel = d.sector === "dental" ? "Clínica dental" : d.sector === "estetica" ? "Clínica estética" : "Otro";
+  const fit = getFitForSector(sectorLabel);
+  const topNames = fit.top.map((s) => `${agentBySlug[s].name} (${agentBySlug[s].role})`).join(", ");
+  const utilNames = fit.util.map((s) => agentBySlug[s].name).join(", ");
+
   return `DATOS DEL CLIENTE:
 - Negocio: ${d.negocio}
-- Sector: ${d.sector === "dental" ? "Clínica dental" : d.sector === "estetica" ? "Clínica estética" : "Otro"}
+- Sector: ${sectorLabel}
 - Ciudad: ${d.ciudad}
 - Web: ${d.web || "no facilitada"}
 - Instagram: ${d.instagram || "no facilitado"}
@@ -117,11 +136,25 @@ function userPrompt(d: Input) {
 - Email marketing: ${d.emailMkt || "no especificado"}
 - Cuello de botella percibido: ${d.cuelloBotella || "no especificado"}
 
+GUÍA PARA TU SECTOR (úsala al recomendar Plan):
+- Agentes TOP para este sector: ${topNames}
+- También útiles: ${utilNames}
+- Razón: ${fit.porQue}
+
+En la sección "Plan recomendado" prioriza estos agentes top. No mezcles con agentes que no encajan para este sector.
+
 Genera el informe de diagnóstico para ${d.nombre} (propietario/a de ${d.negocio}) siguiendo el formato.`;
 }
 
 export async function POST(req: Request) {
   try {
+    const rl = rateLimit({ key: "diagnostico", ip: getClientIp(req), limit: 3, windowMs: 60_000 });
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: `Demasiadas peticiones. Inténtalo en ${Math.ceil(rl.resetIn / 1000)}s` },
+        { status: 429 },
+      );
+    }
     const body = await req.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
@@ -160,6 +193,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, informe });
   } catch (e) {
     console.error("[diagnostico]", e);
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

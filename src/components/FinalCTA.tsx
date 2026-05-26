@@ -81,7 +81,7 @@ export default function FinalCTA() {
           Desde <span className="text-white font-semibold">79 €/mes</span>, precio fundador congelado de por vida.
         </p>
         <p className="text-sm mb-10 text-white/30 max-w-sm mx-auto">
-          14 días gratis, sin tarjeta. Si en dos semanas no ves el valor, te vas en un click. Sin penalización.
+          14 días gratis, cancela cuando quieras. Si en dos semanas no ves el valor, te vas en un click. Sin penalización.
         </p>
 
         {status === "ok" ? (

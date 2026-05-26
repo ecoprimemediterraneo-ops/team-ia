@@ -10,6 +10,7 @@ import path from "node:path";
 import { Resend } from "resend";
 import type { UserData } from "@/lib/store";
 import { fetchInbox, getRedirectUri } from "@/lib/gmail";
+import { checkCronAuth } from "@/lib/cron-auth";
 import { anthropic } from "@/lib/claude";
 
 const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
@@ -22,11 +23,8 @@ async function readUsers(): Promise<Record<string, UserData>> {
 }
 
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization") || "";
-  const expected = process.env.CRON_SECRET;
-  if (expected && !auth.includes(expected)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const a = checkCronAuth(req);
+  if (!a.ok) return NextResponse.json({ error: a.reason }, { status: 401 });
 
   const users = await readUsers();
   const apiKey = process.env.RESEND_API_KEY;

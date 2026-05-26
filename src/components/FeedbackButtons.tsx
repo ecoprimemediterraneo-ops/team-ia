@@ -2,7 +2,7 @@
 import { useState } from "react";
 
 type Props = {
-  agent: "lucia" | "marta" | "carmen" | "pablo" | "rocio" | "eva" | "sergio" | "diana";
+  agent: "lucia" | "marta" | "carmen" | "pablo" | "rocio" | "eva" | "sergio" | "diana" | "tomas";
   userMessage: string;
   agentResponse: string;
 };

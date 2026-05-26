@@ -66,7 +66,7 @@ export default function DentalCTA() {
             <input
               required
               type="text"
-              placeholder="Nombre de tu clínica *"
+              placeholder="Nombre de tu negocio *"
               value={clinic}
               onChange={(e) => setClinic(e.target.value)}
               className="card-hard text-black px-4 py-3 text-base font-semibold focus:outline-none"

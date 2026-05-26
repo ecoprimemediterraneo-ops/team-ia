@@ -8,6 +8,7 @@ import { Resend } from "resend";
 import { kvGet, kvSet } from "@/lib/supabase";
 import { getSequence, getSequenceForSector } from "@/lib/sequences";
 import { listLeads, getLead, addLeadActivity as addActivity, updateLead } from "@/lib/pipeline";
+import { checkCronAuth } from "@/lib/cron-auth";
 import type { SequenceEnrollment } from "@/app/api/eva/sequences/route";
 
 export const runtime = "nodejs";
@@ -20,11 +21,8 @@ async function writeEnrollments(data: SequenceEnrollment[]) {
 }
 
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization") ?? "";
-  const secret = process.env.CRON_SECRET;
-  if (secret && !auth.includes(secret)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const a = checkCronAuth(req);
+  if (!a.ok) return NextResponse.json({ error: a.reason }, { status: 401 });
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return NextResponse.json({ skipped: "no resend key" });

@@ -2,7 +2,7 @@
  * Hiperpersonalización de emails con variables del lead.
  *
  * Variables soportadas:
- *  {{businessName}}  - nombre de la clínica/negocio
+ *  {{businessName}}  - nombre de el negocio/negocio
  *  {{contactName}}   - nombre del contacto principal
  *  {{firstName}}     - primer nombre del contacto
  *  {{city}}          - ciudad del lead
@@ -58,7 +58,7 @@ export const OUTREACH_TEMPLATES: Record<string, { name: string; sequence: { dela
         subject: "{{firstName}}, una idea rápida para {{businessName}}",
         body: `Hola {{firstName}},
 
-He visto que tu clínica {{businessName}} en {{city}} tiene {{rating}} en Google con {{reviewCount}} reseñas — buen punto de partida.
+He visto que tu negocio {{businessName}} en {{city}} tiene {{rating}} en Google con {{reviewCount}} reseñas — buen punto de partida.
 
 Te escribo porque he montado un equipo de 6 asistentes IA específico para clínicas dentales de tu tamaño. Reducen no-shows un 50%, contestan WhatsApps 24/7 y suben tu Google con campañas automáticas de reseñas.
 
@@ -88,7 +88,7 @@ Cristóbal`,
         subject: "Última: cerramos las plazas piloto el viernes",
         body: `Hola {{firstName}},
 
-Solo aviso de cierre. El viernes confirmo las 5 clínicas piloto que se llevan 30 días gratis con precio fundador 79€/mes después.
+Solo aviso de cierre. El viernes confirmo las 5 negocios piloto que se llevan 30 días gratis con precio fundador 79€/mes después.
 
 Si te interesa, contesta SÍ y te llamo personalmente.
 Si no, te dejo en paz — palabra.

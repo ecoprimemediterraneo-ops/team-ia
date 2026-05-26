@@ -1,8 +1,8 @@
 const stats = [
-  { value: "< 10 seg", label: "Respuesta media por canal" },
-  { value: "0", label: "Contactos sin atender" },
-  { value: "−73%", label: "Reducción de carga operativa" },
-  { value: "24/7", label: "Disponibilidad garantizada" },
+  { value: "Segundos", label: "Objetivo de respuesta por canal" },
+  { value: "Cero", label: "Leads tirados por no contestar" },
+  { value: "Horas", label: "Tiempo que recuperas cada semana (objetivo)" },
+  { value: "24/7", label: "Tu equipo IA no descansa" },
 ];
 
 export default function StatsBar() {

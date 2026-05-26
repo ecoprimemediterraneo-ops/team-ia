@@ -56,9 +56,9 @@ Pablo, nuestro agente de WhatsApp, está operativo en modo asistido. Activación
     readingTime: "6 min",
     body: `## Por qué las reseñas mueven la aguja (en serio)
 
-El 93% de los pacientes leen reseñas antes de elegir clínica. El segundo factor de decisión, después del precio, es el número de reseñas recientes (últimos 90 días) por encima de 4 estrellas.
+El 93% de los pacientes leen reseñas antes de elegir negocio. El segundo factor de decisión, después del precio, es el número de reseñas recientes (últimos 90 días) por encima de 4 estrellas.
 
-Una clínica con 80 reseñas y 4,7 estrellas recibe **3 veces más visitas a su ficha de Google** que una con 20 reseñas y 4,9 — porque Google premia volumen + recencia, no solo nota.
+Un negocio con 80 reseñas y 4,7 estrellas recibe **3 veces más visitas a su ficha de Google** que una con 20 reseñas y 4,9 — porque Google premia volumen + recencia, no solo nota.
 
 ## El error típico
 
@@ -73,7 +73,7 @@ El sistema que multiplica eso por 4:
 
 ## Cómo lo automatiza Rocío
 
-Rocío conecta con tu agenda (Google Calendar / Doctoralia / Apple Calendar) y dispara la solicitud automáticamente. Las respuestas a reseñas las genera con el tono de tu clínica y te las propone para aprobar (o aprobación automática si activas modo autónomo).
+Rocío conecta con tu agenda (Google Calendar / Doctoralia / Apple Calendar) y dispara la solicitud automáticamente. Las respuestas a reseñas las genera con el tono de tu negocio y te las propone para aprobar (o aprobación automática si activas modo autónomo).
 
 Resultado medio en los pilotos: de 4-6 reseñas/mes → 18-24 reseñas/mes en el segundo mes.`,
   },
@@ -121,7 +121,7 @@ posts.push(
     slug: "auditoria-digital-clinica-dental",
     title: "Auditoría digital de una clínica dental: las 7 áreas que mueven la aguja",
     excerpt:
-      "El 78% de las clínicas dentales españolas tiene fugas detectables en menos de 10 min de auditoría. Te contamos las áreas y cómo medirlas.",
+      "El 78% de los clínicas dentales españolas tiene fugas detectables en menos de 10 min de auditoría. Te contamos las áreas y cómo medirlas.",
     date: "2026-05-14",
     author: "AI-Team",
     category: "Auditoría",
@@ -135,7 +135,7 @@ Tirar 800€/mes a Google Ads sin tener WhatsApp contestado en menos de 10 min e
 1. **Web (LCP, SEO local, conversión).** Si tu web tarda más de 3s, pierdes el 40% del tráfico antes de que vea tu primera foto.
 2. **Google Business.** Reseñas/mes, nota agregada, tasa de respuesta. <5 reseñas/mes y bajas en ranking.
 3. **WhatsApp.** Tiempo medio de respuesta + % mensajes fuera de horario sin contestar. Cada lead frío te cuesta 47-120€.
-4. **Llamadas entrantes.** Tasa de atención. Una clínica media pierde 3-7 llamadas/día.
+4. **Llamadas entrantes.** Tasa de atención. Un negocio media pierde 3-7 llamadas/día.
 5. **Redes sociales.** Frecuencia, engagement, ratio educativo/promo (ideal 70/30).
 6. **Email marketing.** ¿Tienes BBDD? ¿Mandas newsletter? ¿Tienes SPF/DKIM/DMARC?
 7. **Competencia local.** ¿Qué precios, promos y reseñas mueven en tu zona en los últimos 90 días?
@@ -181,7 +181,7 @@ En AI-Team estamos preparando "Diego" — el agente especializado en cold email 
   },
   {
     slug: "retencion-clientes-pyme-clinicas",
-    title: "Retención de clientes en clínicas: por qué cuesta 5x más captar uno nuevo",
+    title: "Retención de clientes en negocios: por qué cuesta 5x más captar uno nuevo",
     excerpt:
       "Un paciente recurrente vale ~600€ a 5 años en clínica dental. Captarlo cuesta 47-120€. Mantenerlo, 8€. La matemática es brutal — aquí está el sistema.",
     date: "2026-05-02",
@@ -197,7 +197,7 @@ Coste anual de mantenerlo activo: ~8€ (recordatorios + un par de comunicacione
 **ROI captación**: 5-12x.
 **ROI retención**: 75x.
 
-Pero la mayoría de clínicas gasta 90% de su presupuesto en captación y 10% en retención. Es al revés que la matemática.
+Pero la mayoría de negocios gasta 90% de su presupuesto en captación y 10% en retención. Es al revés que la matemática.
 
 ## Sistema de retención mínimo viable
 
@@ -395,7 +395,7 @@ La mayoría de las herramientas que prometen automatizar IG generan contenido ge
     readingTime: "5 min",
     body: `## Por qué la mayoría de PYMES no vigila a su competencia
 
-Por tiempo. Punto. No por filosofía ni por miedo. Simplemente, cuando llevas una clínica, no tienes 2h al día para mirar webs ajenas.
+Por tiempo. Punto. No por filosofía ni por miedo. Simplemente, cuando llevas un negocio, no tienes 2h al día para mirar webs ajenas.
 
 El resultado: te enteras de que el competidor de al lado bajó precios cuando un cliente te lo dice en la silla.
 

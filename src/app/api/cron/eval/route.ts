@@ -13,6 +13,7 @@ import { Resend } from "resend";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { UserData } from "@/lib/store";
+import { checkCronAuth } from "@/lib/cron-auth";
 import { anthropic } from "@/lib/claude";
 
 const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
@@ -88,12 +89,8 @@ Devuelve SOLO JSON: {"score": 1-10, "reasoning": "1 frase corta"}.`,
 }
 
 export async function GET(req: Request) {
-  // Protección básica
-  const auth = req.headers.get("authorization") || "";
-  const expected = process.env.CRON_SECRET;
-  if (expected && !auth.includes(expected)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const a = checkCronAuth(req);
+  if (!a.ok) return NextResponse.json({ error: a.reason }, { status: 401 });
 
   const users = await readUsers();
   const results: EvalResult[] = [];

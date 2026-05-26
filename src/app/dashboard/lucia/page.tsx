@@ -4,6 +4,11 @@ import { getUser } from "@/lib/store";
 import AgentChat from "@/components/AgentChat";
 import LuciaTools from "@/components/LuciaTools";
 import LuciaCalendar from "@/components/LuciaCalendar";
+import LuciaDashboard from "@/components/LuciaDashboard";
+import LuciaBrief from "@/components/LuciaBrief";
+import LuciaCompromisos from "@/components/LuciaCompromisos";
+import LuciaMeetingBrief from "@/components/LuciaMeetingBrief";
+import LuciaReportes from "@/components/LuciaReportes";
 import { agentBySlug } from "@/lib/agents";
 
 export default async function LuciaPage({ searchParams }: { searchParams: Promise<{ gmail?: string; gmail_error?: string }> }) {
@@ -44,6 +49,11 @@ export default async function LuciaPage({ searchParams }: { searchParams: Promis
         </div>
       )}
 
+      <LuciaDashboard />
+
+      <div className="mt-10 mb-4">
+        <h2 className="font-stencil text-3xl">💬 Pregunta a Lucía</h2>
+      </div>
       <AgentChat
         agent="lucia"
         initialMessages={user.chats.lucia}
@@ -57,6 +67,18 @@ export default async function LuciaPage({ searchParams }: { searchParams: Promis
 
       <LuciaTools initialFlash={{ ok: sp.gmail, error: sp.gmail_error }} />
       <LuciaCalendar />
+
+      <div className="mt-10 mb-4">
+        <h2 className="font-stencil text-3xl">📊 Inteligencia (Tanda 2)</h2>
+        <p className="text-xs font-mono text-black/60 mt-1">Brief diario, compromisos, briefs de reunión y reportes ejecutivos.</p>
+      </div>
+      <LuciaBrief />
+      <div className="mt-6" />
+      <LuciaCompromisos />
+      <div className="mt-6" />
+      <LuciaMeetingBrief />
+      <div className="mt-6" />
+      <LuciaReportes />
     </section>
   );
 }

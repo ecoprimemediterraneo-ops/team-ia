@@ -32,6 +32,8 @@ export type Source = {
   config: Record<string, unknown>;
   created_at: string;
   last_scraped_at: string | null;
+  /** Email del cliente que añadió la fuente. Null = legacy founder-global. */
+  owner_email: string | null;
 };
 
 export type Snapshot = {
@@ -75,6 +77,31 @@ export async function listSources(activeOnly = false): Promise<Source[]> {
   if (activeOnly) q = q.eq("active", true);
   const { data } = await q;
   return data ?? [];
+}
+
+/** Lista solo las fuentes propiedad de `ownerEmail`. Multi-tenant. */
+export async function listSourcesByOwner(ownerEmail: string, activeOnly = false): Promise<Source[]> {
+  const db = getClient();
+  let q = (db as Row)
+    .from("sergio_sources")
+    .select("*")
+    .eq("owner_email", ownerEmail)
+    .order("created_at", { ascending: false });
+  if (activeOnly) q = q.eq("active", true);
+  const { data } = await q;
+  return data ?? [];
+}
+
+/** Devuelve la fuente solo si pertenece al owner indicado, si no devuelve null. */
+export async function getSourceForOwner(id: string, ownerEmail: string): Promise<Source | null> {
+  const db = getClient();
+  const { data } = await (db as Row)
+    .from("sergio_sources")
+    .select("*")
+    .eq("id", id)
+    .eq("owner_email", ownerEmail)
+    .single();
+  return data ?? null;
 }
 
 export async function createSource(input: Omit<Source, "id" | "created_at" | "last_scraped_at">): Promise<Source> {
@@ -135,11 +162,15 @@ export async function createChange(input: Omit<Change, "id">): Promise<Change> {
   return data;
 }
 
-export async function listChanges(opts?: { relevance?: Relevance; acknowledged?: boolean; limit?: number }): Promise<Change[]> {
+export async function listChanges(opts?: { relevance?: Relevance; acknowledged?: boolean; limit?: number; ownerEmail?: string }): Promise<Change[]> {
   const db = getClient();
-  let q = (db as Row).from("sergio_changes").select("*, sergio_sources(competitor_name, url, type)").order("detected_at", { ascending: false });
+  let q = (db as Row)
+    .from("sergio_changes")
+    .select("*, sergio_sources!inner(competitor_name, url, type, owner_email)")
+    .order("detected_at", { ascending: false });
   if (opts?.relevance) q = q.eq("relevance", opts.relevance);
   if (opts?.acknowledged !== undefined) q = q.eq("acknowledged", opts.acknowledged);
+  if (opts?.ownerEmail) q = q.eq("sergio_sources.owner_email", opts.ownerEmail);
   q = q.limit(opts?.limit ?? 50);
   const { data } = await q;
   return data ?? [];

@@ -1,13 +1,12 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSession, isFounder } from "@/lib/auth";
 import NewLeadForm from "@/components/admin/NewLeadForm";
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
 
 export default async function NewLeadPage() {
   const s = await getSession();
   if (!s) redirect("/login");
-  if (s.email !== FOUNDER_EMAIL && s.email !== "crisasky@gmail.com") {
+  if (!isFounder(s.email)) {
     return <div className="p-8 text-center">🔒 Solo founder</div>;
   }
 

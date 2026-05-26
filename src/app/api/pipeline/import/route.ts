@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireSession } from "@/lib/auth";
+import { requireSession, isFounder } from "@/lib/auth";
 import { bulkCreateLeads } from "@/lib/pipeline";
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
-const isFounder = (e: string) => e === FOUNDER_EMAIL || e === "crisasky@gmail.com";
 
 const schema = z.object({
   csv: z.string().min(3).max(5_000_000),
@@ -25,11 +23,11 @@ function parseCSV(csv: string, defaults: { sector: string; source: string }, own
   }
 
   const has = headerCols.some((c) =>
-    c.includes("nombre") || c.includes("name") || c.includes("clínica") || c.includes("clinic") || c.includes("empresa") || c.includes("business")
+    c.includes("nombre") || c.includes("name") || c.includes("negocio") || c.includes("clinic") || c.includes("empresa") || c.includes("business")
   );
   if (has) lines.shift();
 
-  const businessNameCol = findCol("nombre negocio", "business", "clínica", "clinica", "clinic", "empresa", "company");
+  const businessNameCol = findCol("nombre negocio", "business", "negocio", "clinica", "clinic", "empresa", "company");
   const contactNameCol = findCol("contacto", "contact name", "dueño", "owner", "responsable");
   const emailCol = findCol("email", "correo");
   const phoneCol = findCol("phone", "telefono", "teléfono", "móvil", "movil");
@@ -79,6 +77,6 @@ export async function POST(req: Request) {
     const result = await bulkCreateLeads(leads);
     return NextResponse.json({ ...result, parsed: leads.length });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

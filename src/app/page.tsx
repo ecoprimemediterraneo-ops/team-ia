@@ -1,17 +1,15 @@
 import Navbar from "@/components/Navbar";
 import HeroSwitcher from "@/components/HeroSwitcher";
-import PromoVideo from "@/components/PromoVideo";
-import StatsBar from "@/components/StatsBar";
+import QuickActions from "@/components/QuickActions";
+import AlreadyWorks from "@/components/AlreadyWorks";
+import BetaCallout from "@/components/BetaCallout";
 import AgentOS from "@/components/AgentOS";
 import Pains from "@/components/Pains";
-import MockupShowcase from "@/components/MockupShowcase";
 import HowItWorks from "@/components/HowItWorks";
 import Team from "@/components/Team";
-import DayTimeline from "@/components/DayTimeline";
+import SectorExamples from "@/components/SectorExamples";
 import Packs from "@/components/Packs";
 import Compare from "@/components/Compare";
-import CaseStudy from "@/components/CaseStudy";
-import Testimonials from "@/components/Testimonials";
 import FAQ from "@/components/FAQ";
 import FinalCTA from "@/components/FinalCTA";
 import Footer from "@/components/Footer";
@@ -22,18 +20,16 @@ export default function Home() {
       <Navbar />
       <main className="flex-1">
         <HeroSwitcher />
-        <PromoVideo />
-        <StatsBar />
+        <QuickActions />
+        <AlreadyWorks />
+        <BetaCallout />
         <AgentOS />
         <Pains />
-        <MockupShowcase />
         <HowItWorks />
         <Team />
-        <DayTimeline />
+        <SectorExamples />
         <Packs />
         <Compare />
-        <CaseStudy />
-        <Testimonials />
         <FAQ />
         <FinalCTA />
       </main>

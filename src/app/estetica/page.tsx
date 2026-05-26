@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import AgentsForSector from "@/components/AgentsForSector";
 import { agents } from "@/lib/agents";
 import EsteticaCTA from "@/components/estetica/EsteticaCTA";
 
@@ -40,7 +41,7 @@ const esteticaAgents: Record<string, { titulo: string; bullets: string[] }> = {
     bullets: [
       "Tras cada sesión, envía WhatsApp personalizado pidiendo reseña",
       "Responde cada nueva reseña con el tono de tu centro en menos de 1 minuto",
-      "Clínicas piloto: de 3.6★ a 4.8★ en 8 semanas con Rocío activa",
+      "Negocios piloto: de 3.6★ a 4.8★ en 8 semanas con Rocío activa",
     ],
   },
   lucia: {
@@ -85,7 +86,7 @@ const esteticaPacks = [
     priceFounder: "79",
     priceRegular: "199",
     tagline: "Automatización de canales de atención",
-    agents: ["Pablo — WhatsApp 24/7", "Carmen — Llamadas entrantes", "Rocío — Reseñas Google"],
+    agents: ["Pablo — WhatsApp 24/7", "Rocío — Reseñas Google", "Diana — Diagnóstico continuo"],
     cta: "Activar Esencial",
   },
   {
@@ -101,7 +102,7 @@ const esteticaPacks = [
     priceFounder: "249",
     priceRegular: "549",
     tagline: "Operación completa. Los 6 canales operativos.",
-    agents: ["Pablo — WhatsApp 24/7", "Carmen — Llamadas entrantes", "Rocío — Reseñas Google", "Lucía — Correo", "Marta — Redes sociales", "Eva — Email marketing"],
+    agents: ["Pablo — WhatsApp 24/7", "Rocío — Reseñas Google", "Diana — Diagnóstico continuo", "Lucía — Correo", "Marta — Redes sociales", "Eva — Email marketing"],
     cta: "Activar Élite",
     featured: true,
   },
@@ -134,7 +135,7 @@ const esteticaFAQ = [
   },
   {
     q: "¿Qué pasa con la RGPD y los datos de mis clientes?",
-    a: "Los datos sensibles de salud (historial, tratamientos, fotos clínicas) nunca salen de tu software de gestión. AI-Team gestiona solo el canal de comunicación. Servidores en la UE, cifrado en tránsito, contrato de encargado de tratamiento RGPD firmado al alta.",
+    a: "Los datos sensibles de salud (historial, tratamientos, fotos negocios) nunca salen de tu software de gestión. AI-Team gestiona solo el canal de comunicación. Servidores en la UE, cifrado en tránsito, contrato de encargado de tratamiento RGPD firmado al alta.",
   },
   {
     q: "¿Cuánto tiempo tarda en estar operativo?",
@@ -142,7 +143,7 @@ const esteticaFAQ = [
   },
   {
     q: "¿En cuánto tiempo se notan resultados?",
-    a: "Semana 1: Pablo y Carmen operativos, 0 consultas sin contestar. Semana 2-3: primeras reseñas nuevas de Rocío. Mes 1: Eva reactiva los primeros clientes inactivos. Mes 2-3: tu Google sube 0.4-0.8★ y la agenda se llena con menos huecos vacíos.",
+    a: "Semana 1: Pablo operativo, 0 WhatsApps sin contestar. Semana 2-3: primeras reseñas nuevas de Rocío. Mes 1: Eva reactiva los primeros clientes inactivos. Mes 2-3: tu Google sube 0.4-0.8★ y la agenda se llena con menos huecos vacíos.",
   },
 ];
 
@@ -239,7 +240,7 @@ export default function EsteticaPage() {
               <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">AGENTES ESPECIALIZADOS</span>
             </div>
             <h2 className="font-stencil text-5xl md:text-7xl mb-4">
-              Ocho agentes.<br />Un sistema.
+              Nueve agentes.<br />Un sistema.
             </h2>
             <p className="text-lg max-w-2xl mb-14 text-black/70">
               Cada agente gestiona un canal de forma autónoma, entrenado específicamente para centros de estética.
@@ -412,6 +413,7 @@ export default function EsteticaPage() {
 
         <EsteticaCTA />
       </main>
+      <AgentsForSector sector="estetica" />
       <Footer />
     </>
   );

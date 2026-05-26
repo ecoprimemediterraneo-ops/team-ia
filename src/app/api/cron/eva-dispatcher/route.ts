@@ -10,6 +10,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { Resend } from "resend";
 import type { UserData } from "@/lib/store";
+import { checkCronAuth } from "@/lib/cron-auth";
 
 const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
@@ -33,11 +34,8 @@ function fillVars(text: string, vars: Record<string, string>): string {
 }
 
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization") || "";
-  const expected = process.env.CRON_SECRET;
-  if (expected && !auth.includes(expected)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const a = checkCronAuth(req);
+  if (!a.ok) return NextResponse.json({ error: a.reason }, { status: 401 });
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "No Resend key" }, { status: 200 });

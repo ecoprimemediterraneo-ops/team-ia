@@ -79,6 +79,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, type, leadId: lead.id });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

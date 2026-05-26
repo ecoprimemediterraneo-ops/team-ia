@@ -34,7 +34,7 @@ export function getCiudad(slug: string): CiudadData | null {
 }
 
 export type VerticalCiudad = {
-  vertical: "dentistas" | "peluquerias" | "restaurantes";
+  vertical: "dentistas" | "peluquerias" | "restaurantes" | "fisioterapeutas" | "abogados" | "asesorias" | "gimnasios" | "podologos";
   emoji: string;
   sector: string;
   titulo: (ciudad: string) => string;
@@ -50,14 +50,14 @@ export const VERTICALS: Record<string, VerticalCiudad> = {
     sector: "Clínica Dental",
     titulo: (ciudad) => `IA para Clínicas Dentales en ${ciudad}`,
     descripcion: (ciudad, demonym) =>
-      `El equipo de 8 agentes IA que las clínicas dentales de ${ciudad} necesitan. Reduce no-shows, contesta WhatsApp 24/7 y sube tu Google sin contratar a nadie.`,
+      `El equipo de 8 agentes IA que los clínicas dentales de ${ciudad} necesitan. Reduce no-shows, contesta WhatsApp 24/7 y sube tu Google sin contratar a nadie.`,
     pains: [
       "WhatsApp sin contestar a las 22h un viernes",
       "3 de cada 10 citas se caen sin avisar",
       "Presupuestos que quedan en el aire sin seguimiento",
       "Reseñas Google sin responder desde hace semanas",
     ],
-    cta: "Quiero probarlo gratis en mi clínica",
+    cta: "Quiero probarlo gratis en mi negocio",
   },
   peluquerias: {
     vertical: "peluquerias",
@@ -88,5 +88,80 @@ export const VERTICALS: Record<string, VerticalCiudad> = {
       "Instagram con fotos de los platos sin publicar",
     ],
     cta: "Quiero gestionar mejor mis reservas",
+  },
+  fisioterapeutas: {
+    vertical: "fisioterapeutas",
+    emoji: "🦴",
+    sector: "Negocio de Fisioterapia",
+    titulo: (ciudad) => `IA para Negocios de Fisioterapia en ${ciudad}`,
+    descripcion: (ciudad) =>
+      `Recordatorios automáticos, reseñas Google y WhatsApp 24/7 para negocios de fisioterapia en ${ciudad}. Reduce no-shows del 28% al 8%.`,
+    pains: [
+      "Pacientes que cancelan a última hora dejando hueco vacío",
+      "WhatsApp con dudas sobre dolor lumbar fuera de horario",
+      "Sin recordatorios automáticos = no-shows altos",
+      "Reseñas Google estancadas mientras tu vecino sube",
+    ],
+    cta: "Reduce mis no-shows",
+  },
+  abogados: {
+    vertical: "abogados",
+    emoji: "⚖️",
+    sector: "Despacho de Abogados",
+    titulo: (ciudad) => `IA para Despachos de Abogados en ${ciudad}`,
+    descripcion: (ciudad) =>
+      `Lucía gestiona tu bandeja, Pablo cualifica leads por WhatsApp y Eva envía secuencias a contactos. Despachos en ${ciudad}.`,
+    pains: [
+      "Bandeja de correo saturada con consultas no cualificadas",
+      "Leads que llegan por web sin seguimiento estructurado",
+      "Pierdes 5h/semana en filtrar consultas básicas",
+      "Sin email marketing = clientes inactivos que olvidan que existes",
+    ],
+    cta: "Automatizar mi despacho",
+  },
+  asesorias: {
+    vertical: "asesorias",
+    emoji: "📊",
+    sector: "Asesoría / Gestoría",
+    titulo: (ciudad) => `IA para Asesorías y Gestorías en ${ciudad}`,
+    descripcion: (ciudad) =>
+      `Atención automatizada de dudas frecuentes (modelo 130, autónomos, IVA) por WhatsApp y email. Asesorías en ${ciudad}.`,
+    pains: [
+      "Mismas 20 preguntas cada trimestre vía WhatsApp",
+      "Plazos olvidados por clientes (recordatorios manuales agotadores)",
+      "Sin email marketing = no captas nuevos autónomos",
+      "Tiempo del titular consumido en consultas básicas",
+    ],
+    cta: "Automatizar mi gestoría",
+  },
+  gimnasios: {
+    vertical: "gimnasios",
+    emoji: "💪",
+    sector: "Gimnasio / Centro deportivo",
+    titulo: (ciudad) => `IA para Gimnasios y Centros Deportivos en ${ciudad}`,
+    descripcion: (ciudad) =>
+      `Reservas de clases, reactivación de socios inactivos y reseñas Google automatizadas para gimnasios en ${ciudad}.`,
+    pains: [
+      "Socios inactivos que no se reactivan (churn alto)",
+      "WhatsApp explotado pidiendo reservas de clases",
+      "Sin email marketing = no comunicas eventos ni promos",
+      "Reseñas Google bajas vs cadenas grandes",
+    ],
+    cta: "Reactivar a mis socios",
+  },
+  podologos: {
+    vertical: "podologos",
+    emoji: "🦶",
+    sector: "Negocio de Podología",
+    titulo: (ciudad) => `IA para Negocios de Podología en ${ciudad}`,
+    descripcion: (ciudad) =>
+      `WhatsApp 24/7, reseñas Google y email marketing para negocios de podología en ${ciudad}. Pack desde 79€/mes.`,
+    pains: [
+      "Pacientes mayores que llaman fuera de horario sin respuesta",
+      "Recordatorios manuales agotan a la recepcionista",
+      "Sin sistema de captación de plantillas a medida",
+      "Reseñas Google estancadas — pierdes ranking local",
+    ],
+    cta: "Cubrir todos mis canales",
   },
 };

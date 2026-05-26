@@ -51,6 +51,6 @@ Sé conciso, directo, sin paja. El jefe está ocupado.`,
 
     return NextResponse.json({ summary: text, count: result.messages.length });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

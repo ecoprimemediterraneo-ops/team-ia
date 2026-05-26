@@ -42,6 +42,6 @@ export async function POST() {
     const archived = await archiveMessages(email, redirect, ids);
     return NextResponse.json({ archived, identified });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

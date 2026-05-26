@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({ ok: true, scheduled: s });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
@@ -50,6 +50,6 @@ export async function DELETE(req: Request) {
     await deleteScheduledEmail(email, id);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

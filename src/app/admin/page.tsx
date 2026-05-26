@@ -3,11 +3,10 @@
  * Protegida por: el email del founder en la sesión.
  */
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSession, isFounder } from "@/lib/auth";
 import fs from "node:fs/promises";
 import path from "node:path";
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
 const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
 
 async function readJson<T>(file: string, fallback: T): Promise<T> {
@@ -21,7 +20,7 @@ async function readJson<T>(file: string, fallback: T): Promise<T> {
 export default async function AdminPage() {
   const s = await getSession();
   if (!s) redirect("/login");
-  if (s.email !== FOUNDER_EMAIL && s.email !== "crisasky@gmail.com") {
+  if (!isFounder(s.email)) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8">
         <div className="card-hard p-8 max-w-md text-center">

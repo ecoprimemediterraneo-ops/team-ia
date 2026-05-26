@@ -35,17 +35,24 @@ export type Publicacion = {
 
 const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
 const FILE = path.join(DATA_DIR, "queue.json");
+const KV_KEY = "redes:queue";
+const USE_SUPABASE = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
 
 // Seed bundled (commiteado en src/data/queue-seed.json) — siempre disponible incluso si /tmp se borra
 import seedJson from "@/data/queue-seed.json";
+import { kvGet, kvSet } from "./supabase";
 const SEED: Publicacion[] = seedJson as Publicacion[];
 
 async function load(): Promise<Publicacion[]> {
   let runtime: Publicacion[] = [];
-  try {
-    runtime = JSON.parse(await fs.readFile(FILE, "utf-8")) as Publicacion[];
-  } catch {
-    runtime = [];
+  if (USE_SUPABASE) {
+    runtime = (await kvGet<Publicacion[]>(KV_KEY)) || [];
+  } else {
+    try {
+      runtime = JSON.parse(await fs.readFile(FILE, "utf-8")) as Publicacion[];
+    } catch {
+      runtime = [];
+    }
   }
   // Mezclar: el runtime tiene prioridad si hay mismo id (porque pueden tener estados modificados)
   const runtimeIds = new Set(runtime.map((p) => p.id));
@@ -54,6 +61,12 @@ async function load(): Promise<Publicacion[]> {
 }
 
 async function save(items: Publicacion[]) {
+  if (USE_SUPABASE) {
+    // Solo guarda lo que no es seed inmutable (los que tienen estado != seed inicial)
+    // Para simplicidad: guardamos todo el merge, kvSet sobreescribe la clave entera
+    await kvSet(KV_KEY, items);
+    return;
+  }
   await fs.mkdir(path.dirname(FILE), { recursive: true });
   await fs.writeFile(FILE, JSON.stringify(items, null, 2));
 }

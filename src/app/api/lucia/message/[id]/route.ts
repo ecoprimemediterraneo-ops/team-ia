@@ -14,6 +14,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     if (!m) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
     return NextResponse.json(m);
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

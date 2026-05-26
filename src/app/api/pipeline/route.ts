@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireSession } from "@/lib/auth";
+import { requireSession, isFounder } from "@/lib/auth";
 import { listLeads, createLead, pipelineStats, STAGE_ORDER } from "@/lib/pipeline";
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
 
 const createSchema = z.object({
   businessName: z.string().min(1).max(200),
@@ -26,9 +25,6 @@ const createSchema = z.object({
   tags: z.array(z.string().max(50)).max(20).optional(),
 });
 
-function isFounder(email: string) {
-  return email === FOUNDER_EMAIL || email === "crisasky@gmail.com";
-}
 
 export async function GET() {
   try {
@@ -38,7 +34,7 @@ export async function GET() {
     const stats = await pipelineStats();
     return NextResponse.json({ leads, stats });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
@@ -56,6 +52,6 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({ ok: true, lead });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

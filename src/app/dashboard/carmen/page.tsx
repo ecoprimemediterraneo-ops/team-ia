@@ -3,6 +3,11 @@ import { getSession } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import AgentChat from "@/components/AgentChat";
 import CarmenTools from "@/components/CarmenTools";
+import CarmenEditor from "@/components/CarmenEditor";
+import CarmenCalls from "@/components/CarmenCalls";
+import CarmenSandbox from "@/components/CarmenSandbox";
+import CarmenWizard from "@/components/CarmenWizard";
+import { getCarmenProfile } from "@/lib/carmen";
 import { agentBySlug } from "@/lib/agents";
 
 export default async function CarmenPage() {
@@ -11,6 +16,7 @@ export default async function CarmenPage() {
   const user = await getUser(s.email);
   if (!user.business) redirect("/onboarding");
   const a = agentBySlug.carmen;
+  const profile = await getCarmenProfile(s.email);
 
   return (
     <section>
@@ -19,7 +25,6 @@ export default async function CarmenPage() {
           {a.codename}
         </span>
         <span className="border-2 border-black px-2 py-1 font-bold tracking-widest">{a.role.toUpperCase()}</span>
-        <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">★ MODO MANUAL OPERATIVO</span>
       </div>
       <div className="flex items-end justify-between mb-4 flex-wrap gap-2">
         <div>
@@ -27,10 +32,24 @@ export default async function CarmenPage() {
           <p className="text-sm text-black/60 mt-1">{a.short}</p>
         </div>
         <p className="text-xs font-mono text-black/50 max-w-xs text-right">
-          ✓ Guiones de llamada con IA. Auto-respuesta por voz: en alta Vapi.
+          ✓ Contestador inteligente: voz natural ElevenLabs + transcripción Whisper + clasificación Claude + WhatsApp instantáneo al dueño.
         </p>
       </div>
 
+      <CarmenWizard currentNumber={profile.twilio_phone_number} />
+
+      <div className="mt-6" />
+      <CarmenEditor />
+
+      <div className="mt-6" />
+      <CarmenSandbox />
+
+      <div className="mt-6" />
+      <CarmenCalls />
+
+      <div className="mt-10 mb-4">
+        <h2 className="font-stencil text-3xl">💬 Pregunta a Carmen</h2>
+      </div>
       <AgentChat
         agent="carmen"
         initialMessages={user.chats.carmen}

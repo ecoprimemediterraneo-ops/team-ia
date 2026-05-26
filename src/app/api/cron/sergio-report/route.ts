@@ -7,16 +7,14 @@ import { NextResponse } from "next/server";
 import { listChanges, listSources, createInsight } from "@/lib/sergio-db";
 import { generateWeeklyReport } from "@/lib/sergio-analysis";
 import { sendWeeklyReport } from "@/lib/sergio-alerts";
+import { checkCronAuth } from "@/lib/cron-auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization") ?? "";
-  const secret = process.env.CRON_SECRET;
-  if (secret && !auth.includes(secret)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const a = checkCronAuth(req);
+  if (!a.ok) return NextResponse.json({ error: a.reason }, { status: 401 });
 
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 86400000);
@@ -26,26 +24,45 @@ export async function GET(req: Request) {
 
   const sources = await listSources();
   const nameMap: Record<string, string> = {};
-  for (const s of sources) nameMap[s.id] = s.competitor_name;
+  const ownerMap: Record<string, string | null> = {};
+  for (const s of sources) {
+    nameMap[s.id] = s.competitor_name;
+    ownerMap[s.id] = s.owner_email;
+  }
 
-  const { content, highlights, recommendations } = await generateWeeklyReport(weekChanges, nameMap);
+  // Agrupar cambios por owner — un informe semanal por cliente
+  const byOwner = new Map<string | null, typeof weekChanges>();
+  for (const c of weekChanges) {
+    const owner = ownerMap[c.source_id] ?? null;
+    const arr = byOwner.get(owner) ?? [];
+    arr.push(c);
+    byOwner.set(owner, arr);
+  }
 
-  // Save insight
-  await createInsight({
-    period_start: weekAgo.toISOString().split("T")[0],
-    period_end: now.toISOString().split("T")[0],
-    content,
-    highlights,
-    recommendations,
-    generated_at: now.toISOString(),
-  });
+  let sent = 0;
+  for (const [owner, ownerChanges] of byOwner.entries()) {
+    if (ownerChanges.length === 0) continue;
+    const { content, highlights, recommendations } = await generateWeeklyReport(ownerChanges, nameMap);
 
-  // Send email
-  await sendWeeklyReport(content, highlights);
+    await createInsight({
+      period_start: weekAgo.toISOString().split("T")[0],
+      period_end: now.toISOString().split("T")[0],
+      content,
+      highlights,
+      recommendations,
+      generated_at: now.toISOString(),
+    });
+
+    try {
+      await sendWeeklyReport(content, highlights, owner);
+      sent++;
+    } catch { /* continue with next owner */ }
+  }
 
   return NextResponse.json({
     ok: true,
     changesAnalyzed: weekChanges.length,
+    reportsSent: sent,
     ts: now.toISOString(),
   });
 }

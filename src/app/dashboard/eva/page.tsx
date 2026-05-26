@@ -6,6 +6,7 @@ import AgentChat from "@/components/AgentChat";
 import EvaTools from "@/components/EvaTools";
 import EvaWidget from "@/components/EvaWidget";
 import EvaAutomation from "@/components/EvaAutomation";
+import EvaDashboard from "@/components/EvaDashboard";
 import { agentBySlug } from "@/lib/agents";
 
 export default async function EvaPage() {
@@ -37,10 +38,15 @@ export default async function EvaPage() {
           <p className="text-sm text-black/60 mt-1">{a.short}</p>
         </div>
         <p className="text-xs font-mono text-black/50 max-w-xs text-right">
-          ✓ Conectada a Resend. Manda correos de verdad.
+          ✓ Conectada a Resend. Manda correos de verdad. Editor personalidad + sandbox + métricas.
         </p>
       </div>
 
+      <EvaDashboard />
+
+      <div className="mt-10 mb-4">
+        <h2 className="font-stencil text-3xl">💬 Pregunta a Eva</h2>
+      </div>
       <AgentChat
         agent="eva"
         initialMessages={user.chats.eva}

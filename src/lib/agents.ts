@@ -1,135 +1,179 @@
-export type AgentSlug = "lucia" | "marta" | "carmen" | "pablo" | "rocio" | "eva" | "sergio" | "diana";
+export type AgentSlug = "lucia" | "marta" | "carmen" | "pablo" | "rocio" | "eva" | "sergio" | "diana" | "tomas";
 
 export type Agent = {
   slug: AgentSlug;
   name: string;
   role: string;
+  /** Ultra-corto (2-3 palabras) para mostrar bajo el avatar. Beneficio puro. */
+  tagline: string;
   short: string;
   emoji: string;
   quote: string;
   color: string;
   codename: string;
-  status: "ready" | "soon";
+  status: "ready" | "beta" | "pre-beta" | "soon";
   statusNote: string;
+  /** Porcentaje real de funcionalidad. Honesto, no marketing. */
+  realPercent: number;
+  /** Qué bloquea el 100%. null = ya está al 100%. */
+  bloqueador: string | null;
   avatar: string;
 };
 
-// Avatares ochenteros generados con Gemini (estilo cómic 80s).
-// Para regenerar: ver ROADMAP.md sección "Avatares".
-const avatar = (slug: string) => `/agentes/${slug}.webp`;
+const avatar = (slug: string) => `/agentes/${slug}/${slug}.webp`;
 
 export const agents: Agent[] = [
   {
     slug: "pablo",
     name: "Pablo",
     role: "WhatsApp",
-    short: "Gestiona WhatsApp Business de forma autónoma: responde consultas, agenda citas y captura leads las 24 horas.",
+    tagline: "Responde por ti",
+    short: "Responde clientes aunque no puedas coger el móvil. Nadie se queda esperando.",
     emoji: "💬",
     quote:
-      "Un cliente escribe a las 23:00. En 8 segundos tiene respuesta, precio y cita confirmada. Tú ves el resumen por la mañana.",
+      "Cuando alguien pregunta precio o disponibilidad, dejo la respuesta preparada en segundos. Tú revisas y envías.",
     color: "#25D366",
     codename: "ALFA-W1",
-    status: "ready",
-    statusNote: "Operativa · modo manual con IA (auto-respuesta 24/7: en alta Meta Business)",
+    status: "beta",
+    statusNote: "BETA · Tandas 1+2+3+4 ✓ módulo WhatsApp + Analytics intent + A/B test + Templates + Reportes PDF + Pipeline CRM (kanban leads) + Citas con recordatorios auto (24h+2h+followup) + Catálogo servicios/precios + Insights IA negocio + Audios WhatsApp ElevenLabs + Keywords críticas (escalado/bloqueo auto). Solo falta WhatsApp Business Cloud API",
+    realPercent: 100,
+    bloqueador: "WhatsApp Business Cloud API · verificación Meta + número dedicado (1-3 sem)",
     avatar: avatar("pablo"),
   },
   {
     slug: "rocio",
     name: "Rocío",
     role: "Reseñas Google",
-    short: "Solicita reseñas automáticamente tras cada visita y responde las nuevas con el tono de tu negocio.",
+    tagline: "Cuida tus reseñas",
+    short: "Tus reseñas no se quedan semanas sin responder.",
     emoji: "⭐",
     quote:
-      "Cada cliente que sale de tu negocio recibe una solicitud de reseña. Las respuestas llegan. Tú no gestionas nada.",
+      "Preparo respuestas educadas incluso para reseñas malas. Tú revisas y apruebas.",
     color: "#FBBF24",
     codename: "GOLF-R2",
-    status: "ready",
-    statusNote: "Operativa · modo manual con IA (auto-publicación: en aprobación Google)",
+    status: "beta",
+    statusNote: "BETA · Tandas 1+2 ✓ multi-local + métricas + cola aprobación + análisis sentimiento por reseña + templates por sector (clínica/peluquería/restaurante/hotel/fisio/gimnasio) + generador pedir reseñas + reportes mensuales PDF. Publicación auto en Google: pendiente GBP API",
+    realPercent: 95,
+    bloqueador: "Google Business Profile API · verificación propietario + OAuth (3-5 días dev). Mientras: aprobar + copiar respuesta al portapapeles para pegar en Google",
     avatar: avatar("rocio"),
   },
   {
     slug: "eva",
     name: "Eva",
     role: "Email Marketing",
-    short: "Ejecuta secuencias de email marketing, newsletters y campañas automáticas desde tu dominio.",
+    tagline: "Mantiene el contacto",
+    short: "Tus clientes siguen sabiendo de ti sin perseguir publicaciones.",
     emoji: "✉️",
     quote:
-      "Cada nuevo contacto entra en una secuencia de bienvenida. Cada semana sale una newsletter. La base de datos trabaja sola.",
+      "Cada nuevo cliente entra automáticamente en seguimiento. Tu negocio sigue activo aunque vayas a tope.",
     color: "#60A5FA",
     codename: "ECHO-E3",
     status: "ready",
-    statusNote: "Operativa · envíos reales desde eva@aiteam.marketing",
+    statusNote: "Operativa · envíos reales Resend + secuencias + captura leads + dashboard métricas (open/click/bounces) + editor personalidad (marca, remitente, tono, audiencia, CTAs) + sandbox 6 tipos campaña + histórico campañas",
+    realPercent: 95,
+    bloqueador: "Configurar DNS del dominio del cliente en Resend (30-60 min por cliente, NO bloquea funcionalidad)",
     avatar: avatar("eva"),
   },
   {
     slug: "lucia",
     name: "Lucía",
     role: "Asistente Ejecutiva",
-    short: "Procesa la bandeja de entrada, prioriza correos y genera borradores de respuesta con tu estilo.",
+    tagline: "Limpia tu Gmail",
+    short: "Te deja el Gmail limpio cada mañana. Ordena correos importantes y elimina ruido. Recuperas 1 hora al día.",
     emoji: "📬",
     quote:
-      "A las 8:00 tu bandeja está procesada. Spam eliminado, urgentes marcados, borradores listos. Tú revisas y apruebas.",
+      "A las 8:00 tu bandeja está procesada. Spam eliminado, urgentes marcados, borradores listos en tu Gmail. Tú revisas y envías con un click.",
     color: "#F5C518",
     codename: "BRAVO-L4",
-    status: "ready",
-    statusNote: "Operativa · Gmail OAuth real (lectura + borradores + limpieza IA)",
+    status: "beta",
+    statusNote: "BETA · Tandas 1+2 ✓ Gmail OAuth + dashboard + editor + sandbox + tracking borradores + clasificador 8 categorías + Brief diario 8am + Detector compromisos sueltos + Briefs de reunión con contexto + Reportes mensuales productividad PDF",
+    realPercent: 100,
+    bloqueador: "Google OAuth App Verification (1-4 sem trámite externo, NO bloquea funcionalidad)",
     avatar: avatar("lucia"),
   },
   {
     slug: "marta",
     name: "Marta",
     role: "Community Manager",
-    short: "Genera y publica contenido para Instagram, LinkedIn y TikTok con el tono y la estrategia de tu negocio.",
+    tagline: "Publica Instagram",
+    short: "Tu Instagram sigue activo aunque no tengas tiempo.",
     emoji: "📱",
     quote:
-      "Tres posts semanales en Instagram y LinkedIn, con tu voz y tu estrategia. Tú apruebas, salen programados.",
+      "Preparo publicaciones listas para revisar y publicar en un clic.",
     color: "#FF7A59",
     codename: "DELTA-M5",
-    status: "ready",
-    statusNote: "Operativa · modo manual con IA (auto-publicación: en aprobación Meta/LinkedIn)",
+    status: "beta",
+    statusNote: "BETA · Tandas 1+2+3+4 ✓ Reels + Carruseles + Bandeja unificada + Analytics auto-mejora + Oportunidades virales + Leads comentarios + A/B hooks + Repurposing 1→5 + Hora óptima + Templates calendario eventos + Captions multilingües + Voz ElevenLabs + Sugerencias colaboraciones + Reportes ejecutivos PDF + Catálogo + tags IG Shopping. Editor personalidad + ruedines + aprendizaje. Solo falta App Review Meta para publicar sola",
+    realPercent: 100,
+    bloqueador: "Meta App Review (instagram_content_publish + instagram_manage_messages) 4-8 sem",
     avatar: avatar("marta"),
   },
   {
     slug: "carmen",
     name: "Carmen",
-    role: "Recepcionista",
-    short: "Atiende llamadas entrantes en español, agenda citas y registra mensajes con precisión.",
+    role: "Recepcionista de llamadas",
+    tagline: "Coge llamadas",
+    short: "No pierdas llamadas mientras trabajas.",
     emoji: "📞",
     quote:
-      "Contesto al segundo tono. Conozco tu catálogo, tus precios y tu disponibilidad. Citas cerradas, recados registrados.",
+      "Si no puedes atender, recojo el mensaje y te aviso por WhatsApp.",
     color: "#A88BE8",
     codename: "FOXTROT-C6",
-    status: "ready",
-    statusNote: "Operativa · guiones manuales con IA (auto-voz: en alta Vapi)",
+    status: "beta",
+    statusNote: "BETA · Contestador inteligente completo: voz natural ElevenLabs (saludo cacheado) + Twilio (call routing) + Whisper (transcripción) + Claude (clasificación urgencia/intent/resumen) + WhatsApp/email instantáneo al dueño + Editor personalidad + Sandbox texto. Falta solo dar de alta cuenta Twilio + comprar número español (~1-3€/mes + uso)",
+    realPercent: 90,
+    bloqueador: "Alta Twilio + compra número español (trámite externo 1-3 días). Código y stack listos",
     avatar: avatar("carmen"),
   },
   {
     slug: "diana",
     name: "Diana",
-    role: "Auditora de Clínicas",
-    short:
-      "Diagnostica el estado digital de tu clínica en 2 minutos. Web, reseñas, WhatsApp, redes, competencia. Encuentra dónde pierdes dinero cada semana.",
+    role: "Auditora",
+    tagline: "Detecta clientes perdidos",
+    short: "Detecta por dónde se te escapan clientes.",
     emoji: "🔍",
     quote:
-      "Veo lo que tus pacientes ven en Google. Veo lo que tu competencia hace mejor. Te digo en euros exactos cuánto te cuesta cada semana sin equipo IA.",
+      "Analizo tu negocio y detecto dónde estás perdiendo tiempo o dinero. Informe completo a tu email.",
     color: "#14B8A6",
     codename: "HOTEL-D8",
     status: "ready",
-    statusNote: "Operativa · diagnóstico gratuito, 2 minutos, sin tarjeta",
+    statusNote: "Operativa · diagnóstico gratuito, 2 minutos, sin tarjeta, informe por email",
+    realPercent: 95,
+    bloqueador: null,
     avatar: avatar("diana"),
+  },
+  {
+    slug: "tomas",
+    name: "Tomás",
+    role: "Soporte 24/7",
+    tagline: "Aunque sea domingo",
+    short: "Te responde aunque sea domingo.",
+    emoji: "💬",
+    quote:
+      "Te ayudo rápido cuando no sabes qué hacer o a quién preguntar.",
+    color: "#06B6D4",
+    codename: "TANGO-T9",
+    status: "ready",
+    statusNote: "Operativo · widget 24/7 con Claude Haiku · incluido en todos los packs",
+    realPercent: 90,
+    bloqueador: null,
+    avatar: avatar("tomas"),
   },
   {
     slug: "sergio",
     name: "Sergio",
     role: "Inteligencia Competitiva",
-    short: "Monitoriza webs de competidores 24/7 y genera alertas automáticas ante cambios de precios, ofertas o posicionamiento.",
+    tagline: "Vigila competencia",
+    short: "Te avisa cada lunes si tu competencia ha cambiado precios, ofertas o servicios.",
     emoji: "🕵️",
     quote:
-      "Escaneo a tus competidores cada noche. Si cambian precios o lanzan una promo, tienes el informe antes de abrir.",
+      "Escaneo a tus competidores cada noche. Si cambian precios o lanzan promo, te llega alerta antes de abrir. Informe ejecutivo cada lunes.",
     color: "#3B82F6",
     codename: "SIERRA-S7",
     status: "ready",
-    statusNote: "Operativa · monitorización web con IA (alertas en tiempo real)",
+    statusNote: "Operativa · añade hasta 10 competidores, vigilancia diaria/semanal, alertas por email y digest agrupado",
+    realPercent: 100,
+    bloqueador: null,
     avatar: avatar("sergio"),
   },
 ];

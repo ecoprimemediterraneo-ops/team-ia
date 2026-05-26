@@ -21,7 +21,7 @@ const STEPS: {
   {
     key: "sector",
     title: "¿A qué te dedicas exactamente?",
-    hint: "Sé específico. Si pones &quot;dental&quot;, &quot;peluquería&quot; o &quot;restaurante&quot; tus agentes activan skills específicas.",
+    hint: "Sé específico. Si pones &quot;dental&quot;, &quot;peluquería&quot; o &quot;despacho&quot; tus agentes activan skills específicas.",
     placeholder: "Clínica dental en Marbella",
     examples: ["Clínica dental en Málaga centro", "Peluquería y estética en Marbella", "Restaurante mediterráneo Costa del Sol"],
   },

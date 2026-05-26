@@ -24,7 +24,7 @@ const details: Record<AgentSlug, Detail> = {
       "Deriva al humano cuando el caso lo requiere",
     ],
     whenToUse: [
-      "Clínicas, peluquerías, restaurantes y comercios con WhatsApp como canal principal",
+      "Clínicas, peluquerías, despachos y comercios con WhatsApp como canal principal",
       "Negocios que pierden citas por no contestar fuera de horario",
       "Equipos pequeños que reciben más de 30 mensajes al día",
     ],
@@ -65,7 +65,7 @@ const details: Record<AgentSlug, Detail> = {
     ],
     whenToUse: [
       "Negocios con base de contactos >300",
-      "E-commerce, SaaS, clínicas con seguimientos",
+      "E-commerce, SaaS, negocios con seguimientos",
       "Equipos que pagan Mailchimp y no usan el 90% de las features",
     ],
     integrations: ["Resend", "Tu propio dominio", "CSV / Google Sheets / Supabase"],
@@ -96,12 +96,15 @@ const details: Record<AgentSlug, Detail> = {
     ],
   },
   marta: {
-    hook: "Tres posts por semana en Instagram y LinkedIn, con tu voz, tu estrategia y tu calendario. Tú apruebas, salen programados.",
+    hook: "Marta aprende de ti. Cada vez que editas una respuesta, lo registra. Cada noche te sugiere reglas nuevas basadas en cómo prefieres comunicarte. Tu Marta es única — la versión que tienes la semana 4 ya no se parece a la del día 1. Y no has tocado nada de código.",
     capabilities: [
-      "Generación de copy + imagen IA",
-      "Calendario editorial mensual",
-      "Adaptación por canal (IG, LinkedIn, TikTok)",
-      "Análisis post a post de rendimiento",
+      "Contesta DMs de Instagram 24/7 con voz natural en español de España",
+      "Detecta intent (precio, cita, queja, spam) con clasificador IA",
+      "Captura leads cualificados automáticamente y te avisa por email",
+      "Modo ruedines: aprueba/edita cada respuesta los primeros 30 días",
+      "Aprendizaje semi-automático: detecta tus patrones de edición y sugiere reglas",
+      "Genera posts + imagen IA + calendario editorial para IG y LinkedIn",
+      "Editor de personalidad: tono, horario, servicios, reglas custom",
     ],
     whenToUse: [
       "Negocios sin community manager dedicado",
@@ -136,7 +139,7 @@ const details: Record<AgentSlug, Detail> = {
     ],
   },
   diana: {
-    hook: "Diagnostica el estado digital de tu clínica en 2 minutos. Encuentra exactamente dónde pierdes dinero cada semana — y cómo recuperarlo.",
+    hook: "Diagnostica el estado digital de tu negocio en 2 minutos. Encuentra exactamente dónde pierdes dinero cada semana — y cómo recuperarlo.",
     capabilities: [
       "Analiza web, Google Business, Instagram y WhatsApp",
       "Detecta cuellos de botella en comunicación y reputación",
@@ -145,7 +148,7 @@ const details: Record<AgentSlug, Detail> = {
     ],
     whenToUse: [
       "Antes de contratar AI-Team (gratis, sin compromiso)",
-      "Clínicas que sospechan que pierden citas pero no saben dónde",
+      "Negocios que sospechan que pierden citas pero no saben dónde",
       "Negocios que quieren saber qué hace la competencia",
     ],
     integrations: ["Google PageSpeed", "Google Business API", "Análisis web propio"],
@@ -153,6 +156,26 @@ const details: Record<AgentSlug, Detail> = {
       { label: "Tiempo del informe", value: "2 min" },
       { label: "Áreas auditadas", value: "7" },
       { label: "Coste", value: "0€" },
+    ],
+  },
+  tomas: {
+    hook: "Soporte 24/7 con IA dentro de AI-Team. Resuelve dudas, te guía paso a paso y deriva al equipo humano cuando algo se atasca.",
+    capabilities: [
+      "Conoce cada pack, cada agente, cada flujo",
+      "Responde en segundos a cualquier hora",
+      "Te guía paso a paso si te atascas",
+      "Deriva al equipo humano cuando hace falta",
+    ],
+    whenToUse: [
+      "Cualquier cliente AI-Team con dudas operativas",
+      "Onboarding asistido sin esperar a humano",
+      "Resolver el 80% de consultas frecuentes",
+    ],
+    integrations: ["Claude Haiku 4.5", "Conocimiento completo AI-Team", "Escalada a soporte humano"],
+    metrics: [
+      { label: "Tiempo respuesta", value: "<2s" },
+      { label: "Coste por consulta", value: "~0,001€" },
+      { label: "Disponibilidad", value: "24/7" },
     ],
   },
   sergio: {
@@ -164,7 +187,7 @@ const details: Record<AgentSlug, Detail> = {
       "Informe semanal con recomendaciones",
     ],
     whenToUse: [
-      "Sectores con competencia activa (clínicas, restaurantes, e-commerce)",
+      "Sectores con competencia activa (clínicas, despachos, e-commerce)",
       "Negocios que toman decisiones de precio reactivas",
       "Equipos que quieren anticiparse, no reaccionar",
     ],

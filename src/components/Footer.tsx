@@ -19,6 +19,8 @@ export default function Footer() {
               <li><a href="/agentes" className="hover:text-[color:var(--red)]">Agentes</a></li>
               <li><a href="/precios" className="hover:text-[color:var(--red)]">Precios</a></li>
               <li><a href="/demo" className="hover:text-[color:var(--red)]">Demo</a></li>
+              <li><a href="/diagnostico" className="hover:text-[color:var(--red)]">Diagnóstico gratis</a></li>
+              <li><a href="/calculadora" className="hover:text-[color:var(--red)]">Calculadora ROI</a></li>
               <li><a href="/reclutar" className="hover:text-[color:var(--red)]">Reclutar</a></li>
             </ul>
           </div>
@@ -28,8 +30,9 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li><a href="/blog" className="hover:text-[color:var(--red)]">Blog</a></li>
               <li><a href="/casos" className="hover:text-[color:var(--red)]">Casos</a></li>
-              <li><a href="/dentistas" className="hover:text-[color:var(--red)]">Dentistas</a></li>
-              <li><a href="/estetica" className="hover:text-[color:var(--red)]">Estética</a></li>
+              <li><a href="/equipo" className="hover:text-[color:var(--red)]">Equipo</a></li>
+              <li><a href="/roadmap" className="hover:text-[color:var(--red)]">Roadmap</a></li>
+              <li><a href="/beta" className="hover:text-[color:var(--red)]">Beta privada</a></li>
             </ul>
           </div>
 
@@ -41,12 +44,18 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-black/20 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-black/60">© {new Date().getFullYear()} AI-Team · Hecho desde España, para todo el mundo hispano</p>
-          <div className="flex gap-5 text-xs font-semibold uppercase tracking-wider">
+          <p className="text-xs text-black/60">© {new Date().getFullYear()} AI-Team · Hecho desde Marbella (Málaga) para todo el mundo hispano</p>
+          <div className="flex flex-wrap gap-5 text-xs font-semibold uppercase tracking-wider">
+            <a href="/roadmap" className="hover:text-[color:var(--red)]">Roadmap</a>
+            <a href="/legal/aviso-legal" className="hover:text-[color:var(--red)]">Aviso legal</a>
             <a href="/legal/privacidad" className="hover:text-[color:var(--red)]">Privacidad</a>
+            <a href="/legal/cookies" className="hover:text-[color:var(--red)]">Cookies</a>
             <a href="/legal/terminos" className="hover:text-[color:var(--red)]">Términos</a>
-            <a href="mailto:ecoprimemediterraneo@gmail.com" className="hover:text-[color:var(--red)]">Contacto</a>
+            <a href="mailto:hola@aiteam.marketing" className="hover:text-[color:var(--red)]">Contacto</a>
           </div>
+        </div>
+        <div className="mt-3 text-[10px] text-black/40 text-center md:text-left">
+          AI-Team es una marca independiente operada por Cristóbal Serrano (Marbella, España). No estamos afiliados con ai.marketing ni con ninguna empresa de nombre similar.
         </div>
       </div>
     </footer>

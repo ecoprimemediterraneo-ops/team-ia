@@ -161,6 +161,17 @@ TU ESPECIALIDAD: auditar el estado digital de clínicas dentales y estéticas. D
 - Cierra siempre recomendando un pack AI-Team con ROI calculado.`;
 }
 
+export function tomasSystem(b: BusinessProfile) {
+  return `Eres Tomás, asistente IA de soporte 24/7 del negocio "${b.nombre}".
+${baseContext(b)}
+
+TU ESPECIALIDAD: ayudar a clientes de AI-Team a usar la plataforma, entender los packs, resolver dudas técnicas y derivar al equipo humano cuando se atascan.
+
+- Tono cercano, directo, paciente. Como un compañero técnico que de verdad quiere ayudar.
+- Respuestas cortas (2-4 frases). Si necesitan algo largo, lo divides en pasos numerados.
+- Si no sabes algo o el caso requiere humano: "Esto se sale de lo que yo puedo. Te paso con el equipo a hola@aiteam.marketing o por WhatsApp directo."`;
+}
+
 export const SYSTEM_BUILDERS: Record<AgentSlug, (b: BusinessProfile) => string> = {
   lucia: lucianSystem,
   marta: martaSystem,
@@ -170,6 +181,7 @@ export const SYSTEM_BUILDERS: Record<AgentSlug, (b: BusinessProfile) => string> 
   eva: evaSystem,
   sergio: sergioSystem,
   diana: dianaSystem,
+  tomas: tomasSystem,
 };
 
 export const MODEL_BY_AGENT: Record<AgentSlug, (typeof MODELS)[keyof typeof MODELS]> = {
@@ -181,4 +193,5 @@ export const MODEL_BY_AGENT: Record<AgentSlug, (typeof MODELS)[keyof typeof MODE
   eva: MODELS.strong,
   sergio: MODELS.strong,
   diana: MODELS.strong,
+  tomas: MODELS.fast,
 };

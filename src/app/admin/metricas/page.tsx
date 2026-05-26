@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSession, isFounder } from "@/lib/auth";
 import { listLeads } from "@/lib/pipeline";
 import { kvGet } from "@/lib/supabase";
 import type { SequenceEnrollment } from "@/app/api/eva/sequences/route";
 import type { LeadActivity } from "@/lib/pipeline-constants";
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
 
 function statCard(label: string, value: string | number, sub?: string, accent = false) {
   return (
@@ -20,7 +19,7 @@ function statCard(label: string, value: string | number, sub?: string, accent = 
 export default async function MetricasPage() {
   const s = await getSession();
   if (!s) redirect("/login");
-  if (s.email !== FOUNDER_EMAIL && s.email !== "crisasky@gmail.com") redirect("/admin");
+  if (!isFounder(s.email)) redirect("/admin");
 
   const leads = await listLeads();
   const enrollments: SequenceEnrollment[] = (await kvGet("seq_enrollments")) ?? [];

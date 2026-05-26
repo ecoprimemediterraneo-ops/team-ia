@@ -39,7 +39,7 @@ export default function Pains() {
           {/* Imagen cómic ochentera del equipo trabajando */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/agentes/team-action.webp"
+            src="/agentes/equipo/team-action.webp"
             alt="AI-Team trabajando en la oficina ochentera"
             className="absolute inset-0 w-full h-full object-cover object-top"
           />

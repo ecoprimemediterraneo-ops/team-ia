@@ -33,9 +33,9 @@ export const SEQUENCES: Sequence[] = [
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")} 👋</p>
 <p>Soy Eva, del equipo de AI-Team.</p>
-<p>Veo que <strong>${v(vars, "businessName")}</strong> tiene ${v(vars, "reviewCount", "buenas")} reseñas en Google — eso es una clínica que cuida a sus pacientes. Por eso me permito escribir.</p>
-<p>El problema que veo en la mayoría de clínicas como la vuestra: <strong>WhatsApp sin contestar por las noches, no-shows que no avisan, y presupuestos que se pierden sin seguimiento.</strong></p>
-<p>Nosotros tenemos 8 agentes IA que se ocupan de todo eso: Pablo contesta WhatsApp 24/7, Carmen coge las llamadas cuando el dentista está con un paciente, Rocío pide reseñas tras cada visita.</p>
+<p>Veo que <strong>${v(vars, "businessName")}</strong> tiene ${v(vars, "reviewCount", "buenas")} reseñas en Google — eso es un negocio que cuida a sus pacientes. Por eso me permito escribir.</p>
+<p>El problema que veo en la mayoría de negocios como la vuestra: <strong>WhatsApp sin contestar por las noches, no-shows que no avisan, y presupuestos que se pierden sin seguimiento.</strong></p>
+<p>Nosotros tenemos 8 agentes IA que se ocupan de todo eso: Pablo contesta WhatsApp 24/7, Carmen (add-on) puede coger llamadas, Rocío pide reseñas tras cada visita.</p>
 <p>¿Tiene sentido hablar 15 minutos esta semana?</p>
 <p><a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" style="background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block">→ Reservar demo gratis</a></p>
 <p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
@@ -48,7 +48,7 @@ export const SEQUENCES: Sequence[] = [
 <p>Hola de nuevo ${v(vars, "contactName", "equipo")} 👋</p>
 <p>Solo quería saber si viste mi email anterior.</p>
 <p>Una pregunta directa: ¿cuántas citas perdéis al mes por no-shows o porque nadie contestó el WhatsApp a tiempo?</p>
-<p>La media en clínicas de 1-3 dentistas es <strong>8-12 citas/mes</strong>. A 80€ de media, son 640-960€/mes en humo.</p>
+<p>La media en negocios de 1-3 dentistas es <strong>8-12 citas/mes</strong>. A 80€ de media, son 640-960€/mes en humo.</p>
 <p>Pablo (nuestro agente de WhatsApp) lo resuelve en 48h de setup. Sin cambiar vuestro software dental.</p>
 <p><a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" style="background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block">→ Ver cómo funciona (15 min)</a></p>
 <p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
@@ -56,10 +56,10 @@ export const SEQUENCES: Sequence[] = [
       {
         step: 3,
         delayDays: 7,
-        subject: "Caso real: Clínica en Málaga +22 citas/mes",
+        subject: "Caso real: Negocio en Málaga +22 citas/mes",
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")},</p>
-<p>Hace 4 meses una clínica en Málaga (similar a ${v(vars, "businessName")}) empezó con AI-Team.</p>
+<p>Hace 4 meses un negocio en Málaga (similar a ${v(vars, "businessName")}) empezó con AI-Team.</p>
 <p>Resultados a los 90 días:</p>
 <ul>
 <li>✅ No-shows reducidos del 30% al 8%</li>

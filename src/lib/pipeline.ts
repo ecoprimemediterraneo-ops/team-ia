@@ -13,7 +13,7 @@ export { STAGE_ORDER, STAGE_LABEL } from "./pipeline-constants";
 import type { Lead, LeadStage, LeadActivity } from "./pipeline-constants";
 import { STAGE_ORDER } from "./pipeline-constants";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
 const PIPELINE_FILE = path.join(DATA_DIR, "pipeline.json");
 const USE_SUPABASE = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
 

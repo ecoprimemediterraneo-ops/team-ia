@@ -4,7 +4,7 @@ import { getUser, appendMessage, logActivity, bumpStats } from "@/lib/store";
 import { anthropic, SYSTEM_BUILDERS, MODEL_BY_AGENT } from "@/lib/claude";
 import type { AgentSlug } from "@/lib/agents";
 
-const VALID = new Set<AgentSlug>(["lucia", "marta", "carmen", "pablo", "rocio", "eva", "sergio", "diana"]);
+const VALID = new Set<AgentSlug>(["lucia", "marta", "carmen", "pablo", "rocio", "eva", "sergio", "diana", "tomas", "tomas"]);
 
 export async function POST(
   req: Request,

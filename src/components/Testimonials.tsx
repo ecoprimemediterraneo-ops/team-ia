@@ -22,7 +22,7 @@ const items = [
   {
     name: "Patricia G.",
     sector: "Clínica dental · Bogotá",
-    text: "Pensé que era marketing. Es una pasada. La tropa funciona mientras yo cierro la clínica.",
+    text: "Pensé que era marketing. Es una pasada. La tropa funciona mientras yo cierro el negocio.",
   },
   {
     name: "Néstor V.",

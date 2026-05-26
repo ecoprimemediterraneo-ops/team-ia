@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
-import { createSession } from "@/lib/auth";
-import { getUser } from "@/lib/store";
 
-const schema = z.object({ email: z.string().email() });
-
-export async function POST(req: Request) {
-  const body = await req.json();
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Email inválido" }, { status: 400 });
-  await getUser(parsed.data.email);
-  await createSession(parsed.data.email);
-  return NextResponse.json({ ok: true });
+/**
+ * Endpoint deshabilitado por seguridad.
+ * Antes permitía crear sesión solo con email (auth bypass total).
+ * Flujo correcto: /api/auth/magic-link → email → /login/verify?token=...
+ */
+export async function POST() {
+  return NextResponse.json(
+    { error: "Usa el flujo de magic link: /login" },
+    { status: 410 },
+  );
 }

@@ -3,13 +3,13 @@ import { requireSession } from "@/lib/auth";
 import { MOCK_COMPETITORS, filterCompetitors } from "@/lib/sergio";
 import { anthropic } from "@/lib/claude";
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
-const isFounder = (e: string) => e === FOUNDER_EMAIL || e === "crisasky@gmail.com";
-
+/**
+ * GET — Datos mock de competidores para el showroom del agente.
+ * Abierto a cualquier sesión (es contenido demo, no datos privados).
+ */
 export async function GET(req: Request) {
   try {
-    const { email } = await requireSession();
-    if (!isFounder(email)) return NextResponse.json({ error: "Solo founder" }, { status: 403 });
+    await requireSession();
 
     const { searchParams } = new URL(req.url);
     const sector = searchParams.get("sector") || undefined;
@@ -21,7 +21,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ competitors, sectors, cities, total: MOCK_COMPETITORS.length });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
@@ -68,10 +68,8 @@ Nota: Si no tienes datos en tiempo real sobre este competidor específico, gener
       return NextResponse.json({ report });
     }
 
-    // Pitch para founder (flujo original)
-    const { email } = await requireSession();
-    if (!isFounder(email)) return NextResponse.json({ error: "Solo founder" }, { status: 403 });
-
+    // Pitch desde dataset mock (cualquier sesión)
+    await requireSession();
     const { competitorId } = body;
     const competitor = MOCK_COMPETITORS.find((c) => c.id === competitorId);
     if (!competitor) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
@@ -103,6 +101,6 @@ Tono: directo, sin rodeos, en español de España.`,
     const pitch = msg.content[0].type === "text" ? msg.content[0].text : "";
     return NextResponse.json({ pitch, competitor });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

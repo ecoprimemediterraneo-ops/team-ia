@@ -13,7 +13,7 @@ export default function MockupShowcase() {
           Tu operación.<br />Automatizada.
         </h2>
         <p className="text-base text-black/40 mb-16 max-w-xl">
-          Un dashboard central. Ocho agentes trabajando en paralelo. Tú solo revisas y apruebas.
+          Un dashboard central. Nueve agentes trabajando en paralelo. Tú solo revisas y apruebas.
         </p>
 
         {/* Grid de mockups */}
@@ -87,7 +87,7 @@ export default function MockupShowcase() {
               <div className="flex justify-start gap-2">
                 <div className="w-6 h-6 border border-white/20 overflow-hidden shrink-0 mt-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/agentes/pablo.webp" alt="Pablo" className="w-full h-full object-cover" />
+                  <img src="/agentes/pablo/pablo.webp" alt="Pablo" className="w-full h-full object-cover" />
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-sm px-3 py-2 max-w-[75%]">
                   <p className="text-[9px] text-[color:var(--mustard)] font-mono mb-1">PABLO · AI-TEAM</p>
@@ -106,7 +106,7 @@ export default function MockupShowcase() {
               <div className="flex justify-start gap-2">
                 <div className="w-6 h-6 border border-white/20 overflow-hidden shrink-0 mt-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/agentes/pablo.webp" alt="Pablo" className="w-full h-full object-cover" />
+                  <img src="/agentes/pablo/pablo.webp" alt="Pablo" className="w-full h-full object-cover" />
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-sm px-3 py-2 max-w-[75%]">
                   <p className="text-[9px] text-[color:var(--mustard)] font-mono mb-1">PABLO · AI-TEAM</p>
@@ -130,7 +130,7 @@ export default function MockupShowcase() {
                 <div className="w-2 h-2 rounded-full bg-white/20" />
               </div>
               <span className="text-[10px] font-mono text-white/40 tracking-widest">FLUJO DE OPERACIONES · EN TIEMPO REAL</span>
-              <div className="text-[10px] font-mono text-green-400">● 7 AGENTES ACTIVOS</div>
+              <div className="text-[10px] font-mono text-green-400">● 9 AGENTES ACTIVOS</div>
             </div>
             <div className="bg-[#0a0a0a] p-6 overflow-x-auto">
               <div className="flex items-center gap-0 min-w-[600px]">
@@ -208,7 +208,7 @@ export default function MockupShowcase() {
                 <div className="text-[10px] font-mono text-white/30 tracking-widest mb-3">LOG DE ACTIVIDAD</div>
                 <div className="space-y-2 text-[9px] font-mono">
                   {[
-                    { time: "23:14", msg: "Pablo cerró cita: Clínica Moreno", color: "text-green-400" },
+                    { time: "23:14", msg: "Pablo cerró cita: Negocio Moreno", color: "text-green-400" },
                     { time: "23:09", msg: "Eva: 3 aperturas en campaña", color: "text-blue-400" },
                     { time: "22:58", msg: "Rocío: reseña 5★ respondida", color: "text-yellow-400" },
                     { time: "22:41", msg: "Competidor actualizó precios", color: "text-[color:var(--mustard)]" },

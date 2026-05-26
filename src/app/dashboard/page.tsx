@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import { agents, agentBySlug, type AgentSlug } from "@/lib/agents";
+import AgentsHealthStrip from "@/components/AgentsHealthStrip";
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -61,6 +62,7 @@ export default async function DashboardHome() {
 
   return (
     <div className="space-y-6">
+      <AgentsHealthStrip />
       {/* Banner heroico con los 6 avatares */}
       <div className="relative card-hard overflow-hidden">
         <div className="brick absolute inset-0 opacity-30" />

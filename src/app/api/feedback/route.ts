@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const fb = await addFeedback(email, parsed.data);
     return NextResponse.json({ ok: true, id: fb.id });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
@@ -42,6 +42,6 @@ export async function GET(req: Request) {
     };
     return NextResponse.json({ feedback, learned, stats });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
+    console.error("[api]", e); return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

@@ -1,66 +1,92 @@
 const packs = [
   {
+    name: "Discover",
+    priceFounder: "0",
+    priceRegular: "0",
+    tagline: "Empieza gratis. Sin tarjeta. Para siempre.",
+    agents: [
+      "Sergio — Vigila 3 competidores",
+      "Diana — 1 auditoría inicial gratis",
+      "Tomás — Soporte IA",
+    ],
+    cta: "Empezar sin tarjeta",
+  },
+  {
     name: "Local",
     priceFounder: "79",
     priceRegular: "199",
-    tagline: "Equivalente a una recepcionista part-time. Operativo 24/7.",
-    agents: ["Pablo — WhatsApp 24/7", "Carmen — Llamadas entrantes", "Rocío — Reseñas Google"],
-    cta: "Activar plan Local",
+    tagline: "Lo esencial para no perder ni una llamada ni un mensaje.",
+    agents: [
+      "Pablo — WhatsApp 24/7",
+      "Rocío — Reseñas Google",
+      "Carmen — Recepcionista (contestador)",
+      "Diana — Auditora continua",
+      "Tomás — Soporte IA 24/7",
+    ],
+    cta: "Quiero el plan Local",
   },
   {
     name: "Digital",
     priceFounder: "149",
     priceRegular: "349",
-    tagline: "Equivalente a agencia de redes + email mkt.",
-    agents: ["Lucía — Correo y calendario", "Marta — Redes sociales", "Eva — Email marketing"],
-    cta: "Activar plan Digital",
+    tagline: "Local + marca digital completa (redes, email, calendario).",
+    agents: [
+      "Todo lo del plan Local",
+      "Lucía — Correo y calendario",
+      "Marta — Redes sociales",
+      "Eva — Email marketing",
+    ],
+    cta: "Quiero el plan Digital",
   },
   {
     name: "Élite",
     priceFounder: "249",
     priceRegular: "549",
-    tagline: "Operación 360. Los 6 canales activos.",
-    agents: ["Pablo — WhatsApp 24/7", "Carmen — Llamadas entrantes", "Rocío — Reseñas Google", "Lucía — Correo y calendario", "Marta — Redes sociales", "Eva — Email marketing"],
-    cta: "Activar plan Élite",
+    tagline: "Equipo IA completo: 9 agentes operando 24/7.",
+    agents: [
+      "Todo lo del plan Digital",
+      "Sergio — Inteligencia competitiva",
+      "Carmen Pro — Reservas y agenda automática",
+    ],
+    cta: "Quiero el plan Élite",
     featured: true,
   },
   {
     name: "Pro",
     priceFounder: "449",
     priceRegular: "899",
-    tagline: "Élite + Sergio + Diana + onboarding 1:1 + soporte directo.",
-    agents: ["Los 6 agentes operativos", "Sergio — Inteligencia competitiva", "Diana — Diagnóstico continuo", "Onboarding 1:1 con setup incluido", "Soporte prioritario directo"],
+    tagline: "Élite + onboarding 1:1 + multi-usuario + soporte directo.",
+    agents: [
+      "Todo lo del plan Élite",
+      "Onboarding 1:1 con setup incluido",
+      "Multi-usuario (hasta 5 cuentas)",
+      "Soporte prioritario por WhatsApp directo",
+      "Integración a medida con tu software",
+    ],
     cta: "Hablar con ventas",
   },
 ];
 
 export default function Packs() {
   return (
-    <section id="packs" className="py-24 border-t-[3px] border-black bg-white">
+    <section id="packs" className="py-14 md:py-24 border-t-[3px] border-black bg-white">
       <div className="max-w-6xl mx-auto px-5">
         <div className="flex items-center gap-3 mb-6 text-xs font-mono flex-wrap">
           <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">PRECIOS FUNDADORES</span>
           <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">PARA SIEMPRE</span>
-          <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">SOLO 100 PLAZAS</span>
+          <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">50 PLAZAS BETA · 6 MESES GRATIS</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-7xl mb-4">
-          Nivel de<br />automatización
+          Empieza gratis.<br />Añade agentes<br />cuando los necesites.
         </h2>
-        <p className="text-lg max-w-2xl mb-8 text-black/70">
+        <p className="text-lg max-w-2xl mb-4 text-black/70">
           La misma operación que un equipo de 2.000–5.000 €/mes. Sin nóminas, sin contratos, sin fricciones de gestión.
         </p>
+        <p className="text-sm max-w-2xl mb-8 text-black/60">
+          ✓ Diana (auditora), Tomás (soporte IA 24/7), Pablo (WhatsApp) y Carmen (contestador) <b>incluidos en todos los packs</b>.
+        </p>
 
-        {/* Banner Diana incluida en todos los packs */}
-        <div className="card-hard p-4 bg-[#14B8A6]/10 border-[#14B8A6] mb-8 flex items-center gap-4 flex-wrap">
-          <span className="text-3xl">🔍</span>
-          <div className="flex-1 min-w-[200px]">
-            <div className="font-bold">Diana — Auditora — incluida en todos los packs</div>
-            <div className="text-xs text-black/60">Diagnóstico inicial gratis + revisión mensual continua de tu clínica. HOTEL-D8.</div>
-          </div>
-          <a href="/diagnostico" className="text-xs font-mono font-bold tracking-widest border-2 border-black px-3 py-2 hover:bg-black hover:text-white">PROBAR GRATIS →</a>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {packs.map((p) => (
             <article
               key={p.name}
@@ -75,14 +101,25 @@ export default function Packs() {
               <p className="text-xs text-black/60 leading-tight mb-5">{p.tagline}</p>
 
               <div className="mb-5">
-                <div className="flex items-baseline gap-2">
-                  <span className="font-stencil text-5xl">{p.priceFounder}</span>
-                  <span className="text-sm font-bold">€/mes</span>
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-black/50 line-through">{p.priceRegular} €</span>
-                  <span className="text-[10px] font-bold tracking-widest bg-[color:var(--red)] text-white px-1.5 py-0.5">FUNDADOR</span>
-                </div>
+                {p.priceFounder === "0" ? (
+                  <>
+                    <div className="font-stencil text-3xl leading-tight text-[color:var(--red)]">
+                      Gratis<br />para siempre
+                    </div>
+                    <div className="text-xs text-black/60 mt-2 font-mono">Sin tarjeta</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-stencil text-5xl">{p.priceFounder}</span>
+                      <span className="text-sm font-bold">€/mes</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-black/50 line-through">{p.priceRegular} €</span>
+                      <span className="text-[10px] font-bold tracking-widest bg-[color:var(--red)] text-white px-1.5 py-0.5">FUNDADOR</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <ul className="space-y-2 mb-6 text-sm flex-1">
@@ -94,19 +131,20 @@ export default function Packs() {
                 ))}
               </ul>
 
-              <a href="#waitlist" className="btn-mustard text-xs text-center block">
+              <a href="/beta" className="btn-mustard text-xs text-center block">
                 {p.cta}
               </a>
               <p className="text-[10px] text-black/40 text-center mt-1 font-mono">
-                * El cobro se activa tras 14 días gratis
+                * 6 meses gratis · cancela cuando quieras · sin permanencia
               </p>
             </article>
           ))}
         </div>
 
         <p className="text-center text-xs text-black/50 mt-8 font-mono uppercase tracking-widest">
-          14 días de prueba · cancela en un click · sin permanencia · precio fundador para siempre
+          6 meses gratis · cancela en un click · sin permanencia · precio fundador para siempre
         </p>
+
       </div>
     </section>
   );

@@ -4,19 +4,19 @@ import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "Casos de Éxito · AI-Team | Resultados reales con agentes IA",
-  description: "Descubre cómo clínicas dentales, peluquerías y restaurantes han automatizado su marketing con AI-Team. Casos reales con métricas reales.",
+  description: "Descubre cómo clínicas dentales, peluquerías y despachos han automatizado su marketing con AI-Team. Casos reales con métricas reales.",
 };
 
 const casos = [
   {
     vertical: "🦷 Clínica Dental",
-    negocio: "Clínica DentAll",
+    negocio: "Negocio DentAll",
     ciudad: "Málaga",
     foto: "/avatars/rocio.png",
     color: "#e8f4f8",
     tiempo: "Usando AI-Team 4 meses",
     quote: "Antes perdíamos 3-4 citas a la semana porque nadie contestaba el WhatsApp por la noche. Ahora Pablo contesta solo y las citas no se caen.",
-    autor: "Dr. Ramírez, director clínica",
+    autor: "Dr. Ramírez, director negocio",
     antes: [
       "WhatsApp sin contestar fuera de horario",
       "30% de no-shows sin aviso previo",
@@ -105,7 +105,7 @@ export default function CasosPage() {
               CASOS DE ÉXITO
             </h1>
             <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto">
-              Negocios como el tuyo que ya tienen a los 8 agentes trabajando.
+              Negocios como el tuyo que ya tienen a los 9 agentes trabajando.
               Métricas reales, nombres cambiados por privacidad.
             </p>
           </div>
@@ -168,7 +168,7 @@ export default function CasosPage() {
         <section className="py-16 bg-[color:var(--red)] text-white text-center border-t-[6px] border-black">
           <div className="max-w-2xl mx-auto px-5">
             <h2 className="font-stencil text-4xl md:text-5xl mb-4">¿Tu negocio es el siguiente?</h2>
-            <p className="text-lg mb-8 text-white/80">Plazas fundadoras a 39,90 €/mes. Precio para siempre.</p>
+            <p className="text-lg mb-8 text-white/80">50 plazas fundadoras desde 79€/mes. Precio para siempre.</p>
             <a href="/#waitlist" className="btn-mustard text-lg">Reclutar mi equipo →</a>
           </div>
         </section>

@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import CookieBanner from "@/components/CookieBanner";
+import TomasWidget from "@/components/TomasWidget";
+import BetaBanner from "@/components/BetaBanner";
+import RegisterSW from "@/components/RegisterSW";
 
 const SITE_URL = "https://aiteam.marketing";
 
@@ -17,22 +20,23 @@ export const metadata: Metadata = {
     template: "%s | AI-Team",
   },
   description:
-    "Ocho agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes sociales, email marketing e inteligencia competitiva. Autónomo. Medible. Desde 79€/mes.",
+    "Nueve agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes sociales, email marketing e inteligencia competitiva. Autónomo. Medible. Desde 79€/mes.",
   metadataBase: new URL(SITE_URL),
+  applicationName: "AI-Team",
   openGraph: {
     type: "website",
     locale: "es_ES",
     url: SITE_URL,
     siteName: "AI-Team",
-    title: "AI-Team — Ocho agentes IA para tu negocio",
+    title: "AI-Team — Nueve agentes IA para tu negocio",
     description:
-      "Ocho agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes, email marketing y diagnóstico. Desde 79€/mes.",
+      "Nueve agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes, email marketing y diagnóstico. Desde 79€/mes.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI-Team — Ocho agentes IA para tu negocio",
+    title: "AI-Team — Nueve agentes IA para tu negocio",
     description:
-      "Ocho agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes, email marketing y diagnóstico. Desde 79€/mes.",
+      "Nueve agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes, email marketing y diagnóstico. Desde 79€/mes.",
   },
   alternates: { canonical: SITE_URL },
   robots: { index: true, follow: true },
@@ -47,6 +51,10 @@ export default function RootLayout({
       className="h-full antialiased"
     >
       <head>
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="AI-Team" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -82,8 +90,8 @@ export default function RootLayout({
               offers: {
                 "@type": "AggregateOffer",
                 priceCurrency: "EUR",
-                lowPrice: "39",
-                highPrice: "299",
+                lowPrice: "79",
+                highPrice: "449",
                 offerCount: "4",
               },
             }),
@@ -91,8 +99,11 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-[color:var(--cream)] text-[color:var(--ink)]">
+        <RegisterSW />
+        <BetaBanner />
         {children}
         <CookieBanner />
+        <TomasWidget />
       </body>
     </html>
   );

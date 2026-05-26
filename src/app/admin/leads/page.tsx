@@ -1,15 +1,23 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSession, isFounder } from "@/lib/auth";
 import fs from "node:fs/promises";
 import path from "node:path";
-
-const FOUNDER_EMAILS = [
-  process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com",
-  "crisasky@gmail.com",
-];
+import { kvGet } from "@/lib/supabase";
+import BetaStatusSelector from "@/components/admin/BetaStatusSelector";
 const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
+const USE_SUPABASE = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
+
+const KV_KEYS: Record<string, string> = {
+  "diagnosticos.json": "diagnosticos:all",
+  "newsletter.json": "newsletter:subscribers",
+  "beta.json": "beta:all",
+};
 
 async function readJson<T>(file: string, fallback: T): Promise<T> {
+  if (USE_SUPABASE && KV_KEYS[file]) {
+    const data = await kvGet<T>(KV_KEYS[file]);
+    return data ?? fallback;
+  }
   try {
     return JSON.parse(await fs.readFile(path.join(DATA_DIR, file), "utf-8"));
   } catch {
@@ -27,11 +35,25 @@ type Diagnostico = {
   fecha: string;
 };
 type Newsletter = { email: string; date: string };
+type Beta = {
+  nombre: string;
+  email: string;
+  whatsapp: string;
+  negocio: string;
+  sector: string;
+  ciudad: string;
+  web?: string;
+  empleados?: string;
+  porQue: string;
+  agentesInteres?: string[];
+  fecha: string;
+  estado: "pendiente" | "activo" | "cerrado";
+};
 
 export default async function AdminLeadsPage() {
   const s = await getSession();
   if (!s) redirect("/login");
-  if (!FOUNDER_EMAILS.includes(s.email)) {
+  if (!isFounder(s.email)) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8">
         <div className="card-hard p-8 max-w-md text-center">
@@ -43,6 +65,7 @@ export default async function AdminLeadsPage() {
 
   const diagnosticos = await readJson<Diagnostico[]>("diagnosticos.json", []);
   const newsletter = await readJson<Newsletter[]>("newsletter.json", []);
+  const beta = await readJson<Beta[]>("beta.json", []);
 
   const today = Date.now();
   const last7 = (ts: string) => new Date(ts).getTime() > today - 7 * 86400000;
@@ -71,11 +94,60 @@ export default async function AdminLeadsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+          <Stat label="Solicitudes Beta" value={beta.length} accent="#EF4444" />
           <Stat label="Diagnósticos total" value={diagnosticos.length} accent="#14B8A6" />
           <Stat label="Diagnósticos últ. 7d" value={diag7.length} accent="#F5C518" />
           <Stat label="Diagnósticos últ. 30d" value={diag30.length} accent="#FF7A59" />
           <Stat label="Newsletter total" value={newsletter.length} accent="#3B82F6" />
+        </div>
+
+        {/* Beta */}
+        <div className="card-hard p-5 bg-white mb-6 border-[color:var(--red)]">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <h2 className="font-stencil text-2xl">🔒 Beta privada · {beta.filter(b => b.estado === "pendiente").length} pendientes · {Math.max(0, 10 - beta.filter(b => b.estado === "activo").length)} plazas libres de 10</h2>
+          </div>
+          {beta.length === 0 ? (
+            <p className="text-sm text-black/50">Aún no hay solicitudes. Comparte aiteam.marketing/beta.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="border-b-2 border-black">
+                  <tr>
+                    <th className="text-left p-2">Fecha</th>
+                    <th className="text-left p-2">Negocio</th>
+                    <th className="text-left p-2">Sector</th>
+                    <th className="text-left p-2">Ciudad</th>
+                    <th className="text-left p-2">Nombre</th>
+                    <th className="text-left p-2">Contacto</th>
+                    <th className="text-left p-2">Agentes</th>
+                    <th className="text-left p-2">Dolor</th>
+                    <th className="text-left p-2">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {beta.slice().reverse().map((b, i) => (
+                    <tr key={i} className="border-b border-black/10 align-top">
+                      <td className="p-2 font-mono">{new Date(b.fecha).toLocaleDateString("es-ES")}</td>
+                      <td className="p-2 font-bold">{b.negocio}</td>
+                      <td className="p-2">{b.sector}</td>
+                      <td className="p-2">{b.ciudad}</td>
+                      <td className="p-2">{b.nombre}</td>
+                      <td className="p-2">
+                        <a href={`mailto:${b.email}`} className="block underline">{b.email}</a>
+                        <a href={`https://wa.me/${b.whatsapp.replace(/[^\d]/g, "")}`} target="_blank" className="block underline text-[#25D366]">{b.whatsapp}</a>
+                      </td>
+                      <td className="p-2 text-[10px]">{b.agentesInteres?.join(", ") || "—"}</td>
+                      <td className="p-2 max-w-[260px] text-[11px]">{b.porQue}</td>
+                      <td className="p-2">
+                        <BetaStatusSelector email={b.email} current={b.estado} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         <div className="card-hard p-5 bg-white mb-6">

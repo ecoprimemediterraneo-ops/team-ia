@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import AgentsForSector from "@/components/AgentsForSector";
 import { agents } from "@/lib/agents";
 import VerticalCTA from "@/components/dental/VerticalCTA";
 
@@ -85,7 +86,7 @@ const restoPacks = [
     priceFounder: "59",
     priceRegular: "99",
     tagline: "Para bar/restaurante de 1-20 mesas, 1 sala",
-    agents: ["Pablo (reservas WhatsApp)", "Carmen (llamadas español/inglés)", "Rocío (TripAdvisor + Google)"],
+    agents: ["Pablo (reservas WhatsApp)", "Rocío (TripAdvisor + Google)", "Carmen (llamadas - add-on opcional)"],
     cta: "Empezar Esencial",
   },
   {
@@ -155,8 +156,8 @@ export default function RestaurantesPage() {
               <span className="block mt-2 font-bold text-white">Tú vuelves a la cocina. Ellos hacen lo demás.</span>
             </p>
             <div className="mt-10 flex flex-col items-center gap-3">
-              <a href="#waitlist-resto" className="btn-mustard text-lg">Quiero una de las 5 plazas</a>
-              <p className="text-sm text-white/60">5 plazas gratis 30 días para restaurantes de Costa del Sol · Después 59€/mes fundador</p>
+              <a href="#waitlist-resto" className="btn-mustard text-lg">Quiero una de las 50 plazas</a>
+              <p className="text-sm text-white/60">50 plazas beta · 6 meses gratis · después desde 79€/mes precio fundador</p>
             </div>
           </div>
           <div className="relative z-10 max-w-6xl mx-auto px-5 pb-12">
@@ -290,11 +291,12 @@ export default function RestaurantesPage() {
           city="Marbella"
           emoji="🍽️"
           headline="Reserva tu plaza piloto"
-          plazas="5 plazas piloto · Costa del Sol · 30 días gratis"
-          priceFounder="59€/mes"
+          plazas="50 plazas beta · Costa del Sol · 6 meses gratis"
+          priceFounder="79€/mes"
           ctaLabel="restaurante"
         />
       </main>
+      <AgentsForSector sector="restaurante" />
       <Footer />
     </>
   );

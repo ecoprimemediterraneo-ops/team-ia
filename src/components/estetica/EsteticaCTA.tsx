@@ -41,7 +41,7 @@ export default function EsteticaCTA() {
           <span className="border border-white/20 text-white/40 px-3 py-1">100 PLAZAS · PRECIO CONGELADO</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-7xl mb-6 leading-tight">
-          Tu clínica.<br />Operativa<br />esta semana.
+          Tu negocio.<br />Operativa<br />esta semana.
         </h2>
         <p className="text-base md:text-lg mb-4 text-white/50 max-w-md mx-auto">
           Desde <span className="text-white font-semibold">79 €/mes</span>, precio fundador congelado de por vida.

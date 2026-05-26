@@ -9,13 +9,11 @@
 
 import { NextResponse } from "next/server";
 import { publicarPendientes } from "@/lib/redes";
+import { checkCronAuth } from "@/lib/cron-auth";
 
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization");
-  const expected = `Bearer ${process.env.CRON_SECRET || "dev-secret"}`;
-  if (process.env.VERCEL && auth !== expected) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const auth = checkCronAuth(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: 401 });
 
   const res = await publicarPendientes();
   return NextResponse.json({ success: true, resumen: res });

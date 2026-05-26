@@ -34,12 +34,12 @@ export async function GET(req: Request) {
             style={{
               backgroundColor: "#000",
               color: color,
-              padding: "30px 50px",
+              padding: "30px 140px",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              fontSize: 28,
-              letterSpacing: 6,
+              fontSize: 24,
+              letterSpacing: 5,
               fontWeight: 800,
             }}
           >
@@ -47,26 +47,26 @@ export async function GET(req: Request) {
             <div style={{ display: "flex", color: "#fff" }}>● AI-TEAM</div>
           </div>
 
-          {/* Cuerpo */}
+          {/* Cuerpo — padding amplio para Instagram safe-zone */}
           <div
             style={{
               flex: 1,
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
-              padding: "60px 80px",
+              padding: "80px 160px",
             }}
           >
             <div
               style={{
                 display: "flex",
-                fontSize: 90,
+                fontSize: 72,
                 lineHeight: 1.1,
                 fontWeight: 900,
                 color: "#0A0A0A",
                 textTransform: "uppercase",
-                letterSpacing: -2,
-                marginBottom: 40,
+                letterSpacing: -1,
+                marginBottom: 50,
               }}
             >
               {frase}
@@ -76,12 +76,12 @@ export async function GET(req: Request) {
                 display: "flex",
                 backgroundColor: color,
                 color: "#000",
-                padding: "20px 40px",
-                fontSize: 36,
+                padding: "18px 36px",
+                fontSize: 30,
                 fontWeight: 900,
-                letterSpacing: 4,
+                letterSpacing: 3,
                 alignSelf: "flex-start",
-                border: "6px solid #000",
+                border: "5px solid #000",
               }}
             >
               AITEAM.MARKETING
@@ -93,12 +93,12 @@ export async function GET(req: Request) {
             style={{
               backgroundColor: "#0A0A0A",
               color: "#FAF7F0",
-              padding: "30px 50px",
+              padding: "28px 140px",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              fontSize: 26,
-              letterSpacing: 5,
+              fontSize: 22,
+              letterSpacing: 4,
               fontWeight: 700,
             }}
           >

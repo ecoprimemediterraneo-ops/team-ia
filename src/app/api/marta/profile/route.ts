@@ -1,0 +1,45 @@
+/**
+ * GET /api/marta/profile — devuelve la config Marta del cliente autenticado.
+ * PUT /api/marta/profile — actualiza la config con los campos editables.
+ */
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { getSession } from "@/lib/auth";
+import { getMartaProfile, upsertMartaProfile } from "@/lib/marta-profile";
+
+export async function GET() {
+  const s = await getSession();
+  if (!s) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const profile = await getMartaProfile(s.email);
+  return NextResponse.json({ profile });
+}
+
+const updateSchema = z.object({
+  nombre_negocio: z.string().min(1).max(120).optional(),
+  sector: z.string().max(80).optional(),
+  horario: z.string().max(200).optional(),
+  servicios_destacados: z.string().max(800).optional(),
+  tono_marca: z.string().max(200).optional(),
+  reglas_custom: z.string().max(1500).optional(),
+  modo_activacion: z.enum(["ruedines", "auto"]).optional(),
+});
+
+export async function PUT(req: Request) {
+  const s = await getSession();
+  if (!s) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await req.json();
+  const parsed = updateSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+  }
+
+  try {
+    const profile = await upsertMartaProfile(s.email, parsed.data);
+    return NextResponse.json({ ok: true, profile });
+  } catch (e) {
+    console.error("[marta/profile]", e);
+    return NextResponse.json({ error: "Supabase no configurado o error al guardar" }, { status: 500 });
+  }
+}
