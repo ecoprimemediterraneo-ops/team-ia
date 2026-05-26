@@ -62,7 +62,7 @@ export default function Packs() {
           <span className="text-3xl">🔍</span>
           <div className="flex-1 min-w-[200px]">
             <div className="font-bold">Diana — Auditora — incluida en todos los packs</div>
-            <div className="text-xs text-black/60">Diagnóstico inicial gratis + revisión mensual continua de tu clínica. HOTEL-D8.</div>
+            <div className="text-xs text-black/60">Diagnóstico inicial gratis + revisión mensual continua de tu negocio. HOTEL-D8.</div>
           </div>
           <a href="/diagnostico" className="text-xs font-mono font-bold tracking-widest border-2 border-black px-3 py-2 hover:bg-black hover:text-white">PROBAR GRATIS →</a>
         </div>

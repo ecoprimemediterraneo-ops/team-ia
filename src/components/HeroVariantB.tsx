@@ -28,7 +28,7 @@ export default function HeroVariantB() {
       <div className="brick relative overflow-hidden border-b-[3px] border-black/40">
         <div className="relative max-w-5xl mx-auto px-6 pt-24 md:pt-36 pb-16 md:pb-24 z-10 text-center text-white">
           <p className="text-[11px] font-mono tracking-[0.25em] text-white/40 mb-6 uppercase">
-            Auditoría gratis · Para clínicas dentales y estéticas
+            Auditoría gratis · Para cualquier negocio
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] font-mono mb-10 tracking-[0.2em]">
@@ -39,7 +39,7 @@ export default function HeroVariantB() {
           <h1 className="font-stencil text-4xl sm:text-6xl md:text-7xl lg:text-[80px] leading-[1.0] tracking-tight">
             <span className="block text-white">DESCUBRE DÓNDE</span>
             <span className="block text-[color:var(--mustard)] mt-2">PIERDES DINERO</span>
-            <span className="block text-white mt-2">EN TU CLÍNICA.</span>
+            <span className="block text-white mt-2">EN TU NEGOCIO.</span>
           </h1>
 
           <div className="w-16 h-[2px] bg-white/20 mx-auto mt-10 mb-10" />

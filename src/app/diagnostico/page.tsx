@@ -4,7 +4,7 @@ import DiagnosticoForm from "@/components/DiagnosticoForm";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Diagnóstico gratis de tu clínica en 2 minutos",
+  title: "Diagnóstico gratis de tu negocio en 2 minutos",
   description:
     "Diana analiza tu web, Google Business, Instagram, WhatsApp y software de gestión. Te entrega un informe con tu pérdida estimada anual en 2 minutos. Sin tarjeta.",
   alternates: { canonical: "https://aiteam.marketing/diagnostico" },
@@ -18,10 +18,10 @@ export default function DiagnosticoPage() {
         <section className="py-16 border-b-[3px] border-black" style={{ backgroundColor: "#14B8A615" }}>
           <div className="max-w-4xl mx-auto px-5 text-center">
             <span className="inline-block bg-black text-[#14B8A6] px-3 py-1 text-xs font-mono font-bold tracking-widest mb-4">
-              HOTEL-D8 · DIANA · AUDITORA DE CLÍNICAS
+              HOTEL-D8 · DIANA · AUDITORA DE NEGOCIOS
             </span>
             <h1 className="font-stencil text-4xl md:text-6xl mb-4">
-              ¿Dónde pierdes dinero<br />en tu clínica?
+              ¿Dónde pierdes dinero<br />en tu negocio?
             </h1>
             <p className="text-lg text-black/70 max-w-2xl mx-auto mb-6">
               Diana audita 7 áreas digitales en 2 minutos: web, Google, reseñas, WhatsApp, redes, gestión y competencia. Te entrega tu pérdida estimada anual en euros.
@@ -55,7 +55,7 @@ export default function DiagnosticoPage() {
                 { k: "📞", t: "Llamadas", d: "Tasa de atención, fuera de horario" },
                 { k: "📱", t: "Instagram", d: "Frecuencia, engagement, calendario editorial" },
                 { k: "✉️", t: "Email marketing", d: "BBDD, newsletter, SPF/DKIM/DMARC" },
-                { k: "🔍", t: "Competencia", d: "Precios y promos de clínicas cercanas" },
+                { k: "🔍", t: "Competencia", d: "Precios y promos de negocios cercanos" },
               ].map((x) => (
                 <div key={x.t} className="card-hard p-5 bg-[color:var(--cream)]/40 flex gap-3 items-start">
                   <span className="text-3xl">{x.k}</span>

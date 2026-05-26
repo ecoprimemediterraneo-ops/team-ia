@@ -136,7 +136,7 @@ const details: Record<AgentSlug, Detail> = {
     ],
   },
   diana: {
-    hook: "Diagnostica el estado digital de tu clínica en 2 minutos. Encuentra exactamente dónde pierdes dinero cada semana — y cómo recuperarlo.",
+    hook: "Diagnostica el estado digital de tu negocio en 2 minutos. Encuentra exactamente dónde pierdes dinero cada semana — y cómo recuperarlo.",
     capabilities: [
       "Analiza web, Google Business, Instagram y WhatsApp",
       "Detecta cuellos de botella en comunicación y reputación",

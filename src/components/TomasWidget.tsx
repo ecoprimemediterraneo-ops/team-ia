@@ -63,10 +63,15 @@ export default function TomasWidget() {
         <button
           onClick={() => setOpen(true)}
           aria-label="Abrir chat con Tomás"
-          className="fixed right-5 z-50 w-[72px] h-[72px] rounded-full flex items-center justify-center shadow-lg shadow-black/30 transition-transform duration-200 hover:scale-105 bg-black border-[3px] border-[color:var(--mustard)]"
+          className="fixed right-5 z-50 w-[72px] h-[72px] rounded-full overflow-hidden shadow-lg shadow-black/30 transition-transform duration-200 hover:scale-105 border-[3px] border-[color:var(--mustard)] bg-black"
           style={{ bottom: "92px" }}
         >
-          <span className="font-stencil text-[color:var(--mustard)] text-2xl leading-none">T</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/agentes/tomas/tomas.webp"
+            alt="Tomás"
+            className="w-full h-full object-cover"
+          />
           <span className="absolute -top-1 -right-1 bg-[color:var(--red)] text-white text-[10px] font-bold tracking-widest px-1.5 py-0.5 border-2 border-black">
             24/7
           </span>

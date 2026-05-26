@@ -114,12 +114,12 @@ export const agents: Agent[] = [
   {
     slug: "diana",
     name: "Diana",
-    role: "Auditora de Clínicas",
+    role: "Auditora de Negocios",
     short:
-      "Diagnostica el estado digital de tu clínica en 2 minutos. Web, reseñas, WhatsApp, redes, competencia. Encuentra dónde pierdes dinero cada semana.",
+      "Diagnostica el estado digital de tu negocio en 2 minutos. Web, reseñas, WhatsApp, redes, competencia. Encuentra dónde pierdes dinero cada semana.",
     emoji: "🔍",
     quote:
-      "Veo lo que tus pacientes ven en Google. Veo lo que tu competencia hace mejor. Te digo en euros exactos cuánto te cuesta cada semana sin equipo IA.",
+      "Veo lo que tus clientes ven en Google. Veo lo que tu competencia hace mejor. Te digo en euros exactos cuánto te cuesta cada semana sin equipo IA.",
     color: "#14B8A6",
     codename: "HOTEL-D8",
     status: "ready",

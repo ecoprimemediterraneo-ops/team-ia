@@ -76,7 +76,7 @@ export default function DiagnosticoForm() {
             INFORME · HOTEL-D8
           </div>
           <h2 className="font-stencil text-3xl mb-2">Diagnóstico de {form.negocio}</h2>
-          <p className="text-sm text-black/60">Diana ha analizado tu clínica. También te lo hemos enviado a {form.email}.</p>
+          <p className="text-sm text-black/60">Diana ha analizado tu negocio. También te lo hemos enviado a {form.email}.</p>
         </div>
         <div className="prose-custom whitespace-pre-wrap text-sm leading-relaxed border-t-2 border-black pt-6">
           {report}
@@ -94,7 +94,7 @@ export default function DiagnosticoForm() {
   return (
     <form onSubmit={submit} className="card-hard p-6 md:p-8 bg-white space-y-6">
       <div>
-        <h3 className="font-stencil text-2xl mb-1">Cuéntame de tu clínica</h3>
+        <h3 className="font-stencil text-2xl mb-1">Cuéntame de tu negocio</h3>
         <p className="text-sm text-black/60">2 minutos. 12 preguntas. Sin tarjeta.</p>
       </div>
 
@@ -120,6 +120,14 @@ export default function DiagnosticoForm() {
             <option value="">Elige...</option>
             <option value="dental">Clínica dental</option>
             <option value="estetica">Clínica estética</option>
+            <option value="peluqueria">Peluquería / salón</option>
+            <option value="restaurante">Restaurante / bar</option>
+            <option value="fisio">Fisioterapia</option>
+            <option value="abogado">Bufete de abogados</option>
+            <option value="asesoria">Asesoría</option>
+            <option value="gimnasio">Gimnasio</option>
+            <option value="podologo">Podología</option>
+            <option value="inmobiliaria">Inmobiliaria</option>
             <option value="otro">Otro</option>
           </select>
         </div>
@@ -146,7 +154,7 @@ export default function DiagnosticoForm() {
         </select>
       </div>
 
-      <Field label="¿Qué software de gestión usáis?" placeholder="Doctoralia, Klinik, Dentalink, Excel..." value={form.gestionSoftware} onChange={(v) => set("gestionSoftware", v)} />
+      <Field label="¿Qué software de gestión usáis?" placeholder="Tu software de gestión..." value={form.gestionSoftware} onChange={(v) => set("gestionSoftware", v)} />
 
       <div className="grid md:grid-cols-2 gap-4">
         <Field label="Reseñas Google nuevas al mes" placeholder="0, 1-3, 4-10, +10" value={form.reseñasMes} onChange={(v) => set("reseñasMes", v)} />
