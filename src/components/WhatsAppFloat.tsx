@@ -11,14 +11,14 @@ export default function WhatsAppFloat() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Escríbenos por WhatsApp"
-      className="fixed bottom-5 right-5 z-50 w-[60px] h-[60px] rounded-full flex items-center justify-center shadow-lg shadow-black/30 transition-transform duration-200 hover:scale-110 animate-pulse"
+      className="fixed bottom-5 right-5 z-50 w-[52px] h-[52px] rounded-full flex items-center justify-center shadow-lg shadow-black/30 transition-transform duration-200 hover:scale-110 animate-pulse"
       style={{ backgroundColor: "#25D366" }}
     >
       {/* Icono oficial de WhatsApp */}
       <svg
         viewBox="0 0 32 32"
-        width="32"
-        height="32"
+        width="28"
+        height="28"
         fill="white"
         aria-hidden="true"
       >

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import CookieBanner from "@/components/CookieBanner";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
+import TomasWidget from "@/components/TomasWidget";
 
 const SITE_URL = "https://aiteam.marketing";
 
@@ -93,6 +94,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-[color:var(--cream)] text-[color:var(--ink)]">
         {children}
+        <TomasWidget />
         <WhatsAppFloat />
         <CookieBanner />
       </body>
