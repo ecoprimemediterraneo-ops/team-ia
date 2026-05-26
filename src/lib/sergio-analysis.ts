@@ -20,7 +20,7 @@ type AnalysisResult = {
 
 const SYSTEM = `Eres Sergio, unidad de reconocimiento de AI-Team.
 Analizas cambios detectados en webs de competidores y los clasificas por relevancia para el negocio.
-AI-Team es un SaaS de 8 agentes IA para PYME (clínicas dentales, peluquerías, restaurantes). Precio: 79-449€/mes.
+AI-Team es un SaaS de 6 agentes IA para PYME (clínicas dentales, peluquerías, restaurantes). Precio: 89-389€/mes.
 
 Responde SIEMPRE en JSON válido con esta estructura exacta:
 {

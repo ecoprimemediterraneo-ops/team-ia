@@ -156,9 +156,6 @@ export default function MockupShowcase() {
                   </div>
                 ))}
               </div>
-              <div className="mt-4 text-[10px] font-mono text-white/20 tracking-widest">
-                TIEMPO TOTAL DE RESPUESTA: &lt; 10 SEG · INTERVENCIÓN HUMANA: 0
-              </div>
             </div>
           </div>
 
@@ -233,7 +230,7 @@ export default function MockupShowcase() {
                     <div className="text-[10px] text-white/70">Bajó precio limpieza dental de 60€ a 45€</div>
                   </div>
                   <div className="border border-white/8 p-2 bg-white/3">
-                    <div className="text-[9px] text-white/30 font-mono mb-1">Centro Estética Marbella · hace 2h</div>
+                    <div className="text-[9px] text-white/30 font-mono mb-1">Centro Estética competencia · hace 2h</div>
                     <div className="text-[10px] text-white/70">Lanzó promo: «2x1 en depilación láser»</div>
                   </div>
                   <div className="text-[9px] font-mono text-white/20 mt-2">

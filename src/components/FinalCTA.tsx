@@ -70,7 +70,7 @@ export default function FinalCTA() {
       <div className="max-w-3xl mx-auto px-5 py-24 text-center">
         <div className="flex flex-wrap justify-center items-center gap-2 text-[10px] font-mono mb-8 tracking-[0.2em]">
           <span className="border border-[color:var(--mustard)]/40 text-[color:var(--mustard)] px-3 py-1">ACCESO FUNDADOR</span>
-          <span className="border border-white/20 text-white/40 px-3 py-1">100 PLAZAS · PRECIO CONGELADO</span>
+          <span className="border border-white/20 text-white/40 px-3 py-1">50 PLAZAS · PRECIO CONGELADO</span>
         </div>
 
         <h2 className="font-stencil text-5xl md:text-7xl mb-6 leading-tight">
@@ -78,10 +78,10 @@ export default function FinalCTA() {
         </h2>
 
         <p className="text-base md:text-lg mb-4 text-white/50 max-w-md mx-auto">
-          Desde <span className="text-white font-semibold">79 €/mes</span>, precio fundador congelado de por vida.
+          Desde <span className="text-white font-semibold">89 €/mes</span>, precio fundador congelado de por vida.
         </p>
         <p className="text-sm mb-10 text-white/30 max-w-sm mx-auto">
-          14 días gratis, sin tarjeta. Si en dos semanas no ves el valor, te vas en un click. Sin penalización.
+          6 meses gratis, sin tarjeta. Si no ves el valor, te vas en un click. Sin penalización.
         </p>
 
         {status === "ok" ? (
@@ -138,7 +138,7 @@ export default function FinalCTA() {
         )}
 
         <div className="flex flex-wrap justify-center gap-4 mt-8 text-[10px] font-mono text-white/20 tracking-widest">
-          <span>SIN TARJETA · 14 DÍAS FREE</span>
+          <span>SIN TARJETA · 6 MESES GRATIS</span>
           <span>·</span>
           <span>CANCELA CUANDO QUIERAS</span>
           <span>·</span>

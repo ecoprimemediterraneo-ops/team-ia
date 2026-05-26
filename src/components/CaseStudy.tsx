@@ -44,7 +44,7 @@ export default function CaseStudy() {
               </footer>
             </blockquote>
             <div className="flex items-center gap-3 text-xs font-mono text-black/40">
-              <span className="border border-black/20 px-2 py-1">PACK LOCAL · 79 €/MES</span>
+              <span className="border border-black/20 px-2 py-1">PLAN ESENCIAL · 89 €/MES</span>
               <span className="border border-black/20 px-2 py-1">ACTIVO DESDE DÍA 1</span>
             </div>
           </div>

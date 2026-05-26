@@ -88,7 +88,7 @@ Cristóbal`,
         subject: "Última: cerramos las plazas piloto el viernes",
         body: `Hola {{firstName}},
 
-Solo aviso de cierre. El viernes confirmo las 5 clínicas piloto que se llevan 30 días gratis con precio fundador 79€/mes después.
+Solo aviso de cierre. El viernes confirmo las 5 clínicas piloto que se llevan 30 días gratis con precio fundador 89€/mes después.
 
 Si te interesa, contesta SÍ y te llamo personalmente.
 Si no, te dejo en paz — palabra.
@@ -144,7 +144,7 @@ He visto que tu restaurante {{businessName}} en {{city}} tiene {{rating}} en Goo
 
 He montado un equipo de 6 IAs que gestiona reservas WhatsApp 24/7, coge llamadas en español + inglés, responde TripAdvisor y publica fotos de tus platos en Instagram.
 
-Regalo 30 días a 5 restaurantes de Costa del Sol. ¿Te enseño en 15 min?
+Regalo 30 días a 5 restaurantes. ¿Te enseño en 15 min?
 
 Un saludo,
 Cristóbal — AI-Team

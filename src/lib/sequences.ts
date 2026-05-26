@@ -56,10 +56,10 @@ export const SEQUENCES: Sequence[] = [
       {
         step: 3,
         delayDays: 7,
-        subject: "Caso real: Clínica en Málaga +22 citas/mes",
+        subject: "Caso real: una clínica con +22 citas/mes",
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")},</p>
-<p>Hace 4 meses una clínica en Málaga (similar a ${v(vars, "businessName")}) empezó con AI-Team.</p>
+<p>Hace 4 meses una clínica (similar a ${v(vars, "businessName")}) empezó con AI-Team.</p>
 <p>Resultados a los 90 días:</p>
 <ul>
 <li>✅ No-shows reducidos del 30% al 8%</li>
@@ -67,7 +67,7 @@ export const SEQUENCES: Sequence[] = [
 <li>✅ +22 citas recuperadas al mes</li>
 <li>✅ WhatsApp contestado en &lt;2 min a cualquier hora</li>
 </ul>
-<p>Setup en 48h. Sin tocar Gesden ni Clinic Cloud. <strong>Precio fundador: 79€/mes para siempre.</strong></p>
+<p>Setup en 48h. Sin tocar Gesden ni Clinic Cloud. <strong>Precio fundador: 89€/mes para siempre.</strong></p>
 <p><a href="https://aiteam.marketing/casos" style="background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block">→ Ver caso completo</a></p>
 <p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
       },
@@ -131,10 +131,10 @@ export const SEQUENCES: Sequence[] = [
       {
         step: 3,
         delayDays: 10,
-        subject: "Salón en Marbella: +340 seguidores y +28% retención en 3 meses",
+        subject: "Un salón: +340 seguidores y +28% retención en 3 meses",
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")},</p>
-<p>Salón Aura (Marbella) lleva 3 meses con AI-Team. Sin community manager, sin recepcionista extra.</p>
+<p>Un salón (Salón Aura) lleva 3 meses con AI-Team. Sin community manager, sin recepcionista extra.</p>
 <ul>
 <li>+340 seguidores reales en Instagram</li>
 <li>+28% clientas que repiten vs trimestre anterior</li>

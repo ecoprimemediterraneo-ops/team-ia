@@ -4,7 +4,7 @@ import { useState } from "react";
 const faqs = [
   {
     q: "¿Cuánto cuesta?",
-    a: "Cuatro planes: Local 79 €/mes (WhatsApp + llamadas + reseñas), Digital 149 €/mes (correo + redes + email marketing), Élite 249 €/mes con los 6 agentes operativos, y Pro 449 €/mes (los 6 agentes + Sergio (inteligencia competitiva) + Diana (diagnóstico continuo) + onboarding 1:1 + soporte prioritario). Solo 100 plazas fundador con precio congelado de por vida.",
+    a: "Tres planes: Esencial 89 €/mes (Pablo + Carmen + Rocío — WhatsApp, llamadas y reseñas), Completo 189 €/mes con los 6 agentes activos (añade Lucía + Eva + Marta), y Pro 389 €/mes (Completo + onboarding 1:1 + multiusuario hasta 5 cuentas + soporte prioritario 4h + integraciones a medida). Solo 50 plazas fundador con precio congelado de por vida.",
   },
   {
     q: "¿Necesito instalar algo o saber de tecnología?",
@@ -12,7 +12,7 @@ const faqs = [
   },
   {
     q: "¿Y si quiero solo 1 o 2 agentes en vez de los packs?",
-    a: "Sí, puedes empezar con el plan Local (79 €/mes) y ampliar cuando quieras. El precio fundador se congela desde el primer día, independientemente del plan que elijas.",
+    a: "Sí, puedes empezar con el plan Esencial (89 €/mes) y ampliar cuando quieras. El precio fundador se congela desde el primer día, independientemente del plan que elijas.",
   },
   {
     q: "¿Va de verdad a publicar y contestar, o solo es chat con IA?",
@@ -24,7 +24,7 @@ const faqs = [
   },
   {
     q: "¿Puedo cancelar cuando quiera?",
-    a: "Sí, sin penalización. 14 días de prueba sin tarjeta. Después, mes a mes. Si no te aporta, te vas. Tus datos se borran a los 30 días tras la cancelación.",
+    a: "Sí, sin penalización. 6 meses de prueba sin tarjeta. Después, mes a mes. Si no te aporta, te vas. Tus datos se borran a los 30 días tras la cancelación.",
   },
   {
     q: "¿Mis datos están seguros?",

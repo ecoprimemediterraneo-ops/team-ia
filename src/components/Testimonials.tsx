@@ -6,7 +6,7 @@ const items = [
   },
   {
     name: "Javier R.",
-    sector: "Agencia inmobiliaria · Málaga",
+    sector: "Agencia inmobiliaria · Madrid",
     text: "Pablo me contesta los WhatsApps de noche y los fines de semana. He cerrado 3 visitas que antes se me caían por no responder a tiempo.",
   },
   {

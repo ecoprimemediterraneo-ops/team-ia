@@ -1,35 +1,42 @@
 const packs = [
   {
-    name: "Local",
-    priceFounder: "79",
-    priceRegular: "199",
+    name: "Esencial",
+    priceFounder: "89",
+    priceRegular: "189",
     tagline: "Equivalente a una recepcionista part-time. Operativo 24/7.",
-    agents: ["Pablo — WhatsApp 24/7", "Carmen — Llamadas entrantes", "Rocío — Reseñas Google"],
-    cta: "Activar plan Local",
+    agents: [
+      "Pablo — WhatsApp 24/7",
+      "Carmen — Llamadas entrantes",
+      "Rocío — Reseñas Google",
+    ],
+    cta: "Activar plan Esencial",
   },
   {
-    name: "Digital",
-    priceFounder: "149",
-    priceRegular: "349",
-    tagline: "Equivalente a agencia de redes + email mkt.",
-    agents: ["Lucía — Correo y calendario", "Marta — Redes sociales", "Eva — Email marketing"],
-    cta: "Activar plan Digital",
-  },
-  {
-    name: "Élite",
-    priceFounder: "249",
-    priceRegular: "549",
-    tagline: "Operación 360. Los 6 canales activos.",
-    agents: ["Pablo — WhatsApp 24/7", "Carmen — Llamadas entrantes", "Rocío — Reseñas Google", "Lucía — Correo y calendario", "Marta — Redes sociales", "Eva — Email marketing"],
-    cta: "Activar plan Élite",
+    name: "Completo",
+    priceFounder: "189",
+    priceRegular: "389",
+    tagline: "Operación 360. Los 6 agentes activos.",
+    agents: [
+      "Todo lo del plan Esencial",
+      "Lucía — Correo y calendario",
+      "Eva — Email marketing",
+      "Marta — Redes sociales",
+    ],
+    cta: "Activar plan Completo",
     featured: true,
   },
   {
     name: "Pro",
-    priceFounder: "449",
-    priceRegular: "899",
-    tagline: "Élite + Sergio + Diana + onboarding 1:1 + soporte directo.",
-    agents: ["Los 6 agentes operativos", "Sergio — Inteligencia competitiva", "Diana — Diagnóstico continuo", "Onboarding 1:1 con setup incluido", "Soporte prioritario directo"],
+    priceFounder: "389",
+    priceRegular: "789",
+    tagline: "Completo + onboarding personalizado + multiusuario.",
+    agents: [
+      "Todo lo del plan Completo",
+      "Onboarding 1:1 con setup incluido",
+      "Multiusuario (hasta 5 cuentas)",
+      "Soporte prioritario email (4h)",
+      "Integraciones a medida (Gesden, ClinicCloud…)",
+    ],
     cta: "Hablar con ventas",
   },
 ];
@@ -41,7 +48,7 @@ export default function Packs() {
         <div className="flex items-center gap-3 mb-6 text-xs font-mono flex-wrap">
           <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">PRECIOS FUNDADORES</span>
           <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">PARA SIEMPRE</span>
-          <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">SOLO 100 PLAZAS</span>
+          <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">SOLO 50 PLAZAS</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-7xl mb-4">
           Nivel de<br />automatización
@@ -60,7 +67,7 @@ export default function Packs() {
           <a href="/diagnostico" className="text-xs font-mono font-bold tracking-widest border-2 border-black px-3 py-2 hover:bg-black hover:text-white">PROBAR GRATIS →</a>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid md:grid-cols-3 gap-5">
           {packs.map((p) => (
             <article
               key={p.name}
@@ -98,14 +105,14 @@ export default function Packs() {
                 {p.cta}
               </a>
               <p className="text-[10px] text-black/40 text-center mt-1 font-mono">
-                * El cobro se activa tras 14 días gratis
+                * El cobro se activa tras 6 meses gratis
               </p>
             </article>
           ))}
         </div>
 
         <p className="text-center text-xs text-black/50 mt-8 font-mono uppercase tracking-widest">
-          14 días de prueba · cancela en un click · sin permanencia · precio fundador para siempre
+          6 meses de prueba · cancela en un click · sin permanencia · precio fundador para siempre
         </p>
       </div>
     </section>

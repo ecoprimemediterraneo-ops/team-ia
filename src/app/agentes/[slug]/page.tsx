@@ -275,7 +275,7 @@ export default async function AgentePage({ params }: { params: Promise<{ slug: s
         <section className="py-16 border-t-[3px] border-black bg-[color:var(--mustard)]">
           <div className="max-w-3xl mx-auto px-5 text-center">
             <h2 className="font-stencil text-3xl md:text-5xl mb-4">¿Empezamos con {agent.name}?</h2>
-            <p className="text-lg mb-8">14 días gratis. Sin tarjeta. Cancela cuando quieras.</p>
+            <p className="text-lg mb-8">6 meses gratis. Sin tarjeta. Cancela cuando quieras.</p>
             <Link href="/reclutar" className="btn-mustard bg-black text-[color:var(--mustard)] hover:bg-[color:var(--red)] hover:text-white inline-block">
               ACTIVAR MI EQUIPO →
             </Link>

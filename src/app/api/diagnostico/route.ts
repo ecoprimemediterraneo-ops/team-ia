@@ -54,11 +54,10 @@ REGLAS:
   * Llamada perdida fuera de horario: 1 de cada 3 deriva a competencia.
   * Negocio sin email mkt: pierde 20-35% de retorno cliente.
 - Sé específico con los cuellos de botella. Cita los datos del cliente.
-- Cierra recomendando un pack específico de AI-Team:
-  * Local 79€/mes: Pablo + Carmen + Rocío (problemas de comunicación + reseñas)
-  * Digital 149€/mes: Lucía + Marta + Eva (problemas de redes + email + correo)
-  * Élite 249€/mes: los 6 (operación 360)
-  * Pro 449€/mes: Élite + Sergio + Diana (con inteligencia competitiva)
+- Cierra recomendando un plan específico de AI-Team:
+  * Esencial 89€/mes: Pablo + Carmen + Rocío (problemas de comunicación + reseñas)
+  * Completo 189€/mes: los 6 agentes activos (operación 360, añade Lucía + Eva + Marta)
+  * Pro 389€/mes: Completo + onboarding 1:1 + multiusuario + integraciones a medida
 
 FORMATO DE SALIDA (markdown plano, sin código):
 
@@ -96,7 +95,7 @@ Cómo lo resuelve:
 ROI estimado: tu equipo IA se paga solo con [X] citas recuperadas al mes.
 
 ## 🚀 Siguiente paso
-Activa tu equipo en 24h con 14 días gratis. Plaza fundador limitada: precio congelado para siempre.
+Activa tu equipo en 24h con 6 meses gratis. Plaza fundador limitada: precio congelado para siempre.
 
 [Activar mi equipo →](https://aiteam.marketing/reclutar)
 `;

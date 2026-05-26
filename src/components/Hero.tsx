@@ -1,7 +1,7 @@
 import { agents } from "@/lib/agents";
 
 export default function Hero() {
-  const team = agents;
+  const team = agents.filter((a) => a.showOnHome);
   const items = [...team, ...team, ...team];
   return (
     <section id="top" className="relative">
@@ -55,8 +55,8 @@ export default function Hero() {
 
           {/* Descripción */}
           <p className="text-base md:text-lg max-w-xl mx-auto text-white/70 leading-relaxed font-sans">
-            Ocho empleados IA cubren WhatsApp, llamadas, reseñas, correo, redes y vigilan a tu competencia mientras duermes.
-            <span className="block mt-2 text-white/90 font-semibold">Desde 79 €/mes. Operativo en 24 horas.</span>
+            Seis empleados IA cubren WhatsApp, llamadas, reseñas, correo, redes y email marketing mientras duermes.
+            <span className="block mt-2 text-white/90 font-semibold">Desde 89 €/mes. Operativo en 24 horas.</span>
           </p>
 
           {/* CTAs */}
@@ -74,13 +74,13 @@ export default function Hero() {
 
           {/* Social proof */}
           <p className="mt-6 text-xs text-white/35 tracking-widest font-mono">
-            +1.200 NEGOCIOS EN LISTA · OPERATIVO EN 24H · 14 DÍAS SIN TARJETA
+            +1.200 NEGOCIOS EN LISTA · OPERATIVO EN 24H · 6 MESES SIN TARJETA
           </p>
         </div>
 
-        {/* Foto-strip de 8 agentes */}
+        {/* Foto-strip de agentes */}
         <div className="relative z-10 max-w-5xl mx-auto px-6 pb-16">
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 md:gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 md:gap-3">
             {team.map((a) => (
               <div
                 key={a.slug}

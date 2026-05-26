@@ -12,6 +12,8 @@ export type Agent = {
   status: "ready" | "soon";
   statusNote: string;
   avatar: string;
+  /** Si aparece en la rejilla/marquee de la home (`/`). Si false, sigue accesible en `/agentes/[slug]`. */
+  showOnHome: boolean;
 };
 
 // Avatares ochenteros generados con Gemini (estilo cómic 80s).
@@ -32,6 +34,7 @@ export const agents: Agent[] = [
     status: "ready",
     statusNote: "Operativa · modo manual con IA (auto-respuesta 24/7: en alta Meta Business)",
     avatar: avatar("pablo"),
+    showOnHome: true,
   },
   {
     slug: "rocio",
@@ -46,6 +49,7 @@ export const agents: Agent[] = [
     status: "ready",
     statusNote: "Operativa · modo manual con IA (auto-publicación: en aprobación Google)",
     avatar: avatar("rocio"),
+    showOnHome: true,
   },
   {
     slug: "eva",
@@ -60,6 +64,7 @@ export const agents: Agent[] = [
     status: "ready",
     statusNote: "Operativa · envíos reales desde eva@aiteam.marketing",
     avatar: avatar("eva"),
+    showOnHome: true,
   },
   {
     slug: "lucia",
@@ -74,6 +79,7 @@ export const agents: Agent[] = [
     status: "ready",
     statusNote: "Operativa · Gmail OAuth real (lectura + borradores + limpieza IA)",
     avatar: avatar("lucia"),
+    showOnHome: true,
   },
   {
     slug: "marta",
@@ -88,6 +94,7 @@ export const agents: Agent[] = [
     status: "ready",
     statusNote: "Operativa · modo manual con IA (auto-publicación: en aprobación Meta/LinkedIn)",
     avatar: avatar("marta"),
+    showOnHome: true,
   },
   {
     slug: "carmen",
@@ -102,6 +109,7 @@ export const agents: Agent[] = [
     status: "ready",
     statusNote: "Operativa · guiones manuales con IA (auto-voz: en alta Vapi)",
     avatar: avatar("carmen"),
+    showOnHome: true,
   },
   {
     slug: "diana",
@@ -117,6 +125,7 @@ export const agents: Agent[] = [
     status: "ready",
     statusNote: "Operativa · diagnóstico gratuito, 2 minutos, sin tarjeta",
     avatar: avatar("diana"),
+    showOnHome: false,
   },
   {
     slug: "sergio",
@@ -131,6 +140,7 @@ export const agents: Agent[] = [
     status: "ready",
     statusNote: "Operativa · monitorización web con IA (alertas en tiempo real)",
     avatar: avatar("sergio"),
+    showOnHome: false,
   },
 ];
 

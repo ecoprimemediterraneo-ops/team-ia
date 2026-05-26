@@ -31,7 +31,7 @@ const dentalAgents: Record<string, { titulo: string; bullets: string[] }> = {
   carmen: {
     titulo: "Carmen coge llamadas mientras operas",
     bullets: [
-      "Habla español e inglés (turismo dental, expats Marbella)",
+      "Habla español e inglés (turismo dental, pacientes internacionales)",
       "Da horarios, agenda primeras visitas, pasa recados de urgencia",
       "Nunca cuelga de mal humor, nunca tiene un mal día",
     ],
@@ -82,29 +82,29 @@ const dentalDay = [
 
 const dentalPacks = [
   {
-    name: "Esencial Dental",
-    priceFounder: "79",
-    priceRegular: "129",
+    name: "Esencial",
+    priceFounder: "89",
+    priceRegular: "189",
     tagline: "Para clínica de 1 dentista, sin recepcionista",
     agents: ["Pablo (WhatsApp urgencias)", "Carmen (llamadas)", "Rocío (reseñas Google)"],
     cta: "Empezar Esencial",
   },
   {
-    name: "Crecimiento",
-    priceFounder: "149",
-    priceRegular: "249",
-    tagline: "Para clínica de 1-2 dentistas con recepcionista saturada",
-    agents: ["Los 3 anteriores", "+ Eva (recuperar pacientes inactivos)", "+ Lucía (limpiar correo)"],
+    name: "Completo",
+    priceFounder: "189",
+    priceRegular: "389",
+    tagline: "Operación 360. Los 6 agentes activos.",
+    agents: ["Todo lo del plan Esencial", "+ Lucía (correo y calendario)", "+ Eva (recuperar pacientes inactivos)", "+ Marta (redes sociales)"],
     cta: "Quiero crecer",
     featured: true,
   },
   {
-    name: "Élite Dental",
-    priceFounder: "249",
-    priceRegular: "449",
-    tagline: "Para clínica 2-3 dentistas que quiere escalar",
-    agents: ["Los 8 especialistas", "+ Onboarding personal 1:1", "+ Setup Gesden / Clinic Cloud / Dentalink", "+ WhatsApp directo conmigo"],
-    cta: "Hablar conmigo",
+    name: "Pro",
+    priceFounder: "389",
+    priceRegular: "789",
+    tagline: "Completo + onboarding + multiusuario + integraciones",
+    agents: ["Todo lo del plan Completo", "+ Onboarding 1:1 con setup", "+ Multiusuario (hasta 5 cuentas)", "+ Soporte prioritario email (4h)", "+ Integraciones Gesden / Clinic Cloud / Dentalink"],
+    cta: "Hablar con ventas",
   },
 ];
 
@@ -135,7 +135,7 @@ const dentalFAQ = [
   },
   {
     q: "¿En cuánto tiempo veo resultados?",
-    a: "Semana 1: Pablo y Carmen ya contestan. Semana 2-3: las primeras reseñas de Rocío empiezan a llegar. Mes 1: 5-15 pacientes inactivos vuelven gracias a Eva. Mes 2-3: tu Google sube 0.3-0.5★ y la agenda se llena con menos hueco. Caso real piloto: clínica en Málaga recuperó 3.200€ el primer mes.",
+    a: "Semana 1: Pablo y Carmen ya contestan. Semana 2-3: las primeras reseñas de Rocío empiezan a llegar. Mes 1: 5-15 pacientes inactivos vuelven gracias a Eva. Mes 2-3: tu Google sube 0.3-0.5★ y la agenda se llena con menos hueco. Caso real piloto: una clínica recuperó 3.200€ el primer mes.",
   },
 ];
 
@@ -174,7 +174,7 @@ export default function DentistasPage() {
 
             <div className="mt-10 flex flex-col items-center gap-3">
               <a href="#waitlist-dental" className="btn-mustard text-lg">Quiero una de las 5 plazas</a>
-              <p className="text-sm text-white/60">5 plazas gratis 30 días para clínicas dentales de Málaga · Después 79€/mes fundador</p>
+              <p className="text-sm text-white/60">5 plazas gratis 30 días para clínicas dentales · Después 89€/mes fundador</p>
             </div>
           </div>
 
@@ -311,7 +311,7 @@ export default function DentistasPage() {
         <section className="py-24 border-t-[3px] border-black bg-[color:var(--cream)]">
           <div className="max-w-5xl mx-auto px-5">
             <div className="flex items-center gap-3 mb-6 text-xs font-mono">
-              <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">COMPARATIVA OPERATIVA</span>
+              <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">COMPARATIVA</span>
             </div>
             <h2 className="font-stencil text-5xl md:text-7xl mb-12">
               AI-Team vs<br />recepcionista + community manager
@@ -329,7 +329,7 @@ export default function DentistasPage() {
                 </thead>
                 <tbody>
                   {[
-                    ["Coste mes", "79-249€", "1.200€", "+400-800€"],
+                    ["Coste mes", "89-389€", "1.200€", "+400-800€"],
                     ["Horario", "24/7 incluido sábados y domingos", "Lun-Vie 9-18h", "Solo entregas"],
                     ["WhatsApp en vacaciones", "Contesta igual", "Nadie", "Nada"],
                     ["Llamadas nuevas", "Coge todas", "Si está libre", "No coge"],
@@ -348,7 +348,7 @@ export default function DentistasPage() {
                   ))}
                   <tr className="bg-[color:var(--red)] text-white font-bold">
                     <td className="border-2 border-black p-3">TOTAL/mes</td>
-                    <td className="border-2 border-black p-3 bg-[color:var(--mustard)] text-black">79 €</td>
+                    <td className="border-2 border-black p-3 bg-[color:var(--mustard)] text-black">89 €</td>
                     <td className="border-2 border-black p-3" colSpan={2}>1.600 - 2.000 €</td>
                   </tr>
                 </tbody>
@@ -362,11 +362,11 @@ export default function DentistasPage() {
           <div className="max-w-6xl mx-auto px-5">
             <div className="flex items-center gap-3 mb-6 text-xs font-mono flex-wrap">
               <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">PRECIOS FUNDADORES DENTAL</span>
-              <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">5 PLAZAS MÁLAGA</span>
+              <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">5 PLAZAS PILOTO</span>
             </div>
             <h2 className="font-stencil text-5xl md:text-7xl mb-4">Elige tu pack dental</h2>
             <p className="text-lg max-w-2xl mb-12 text-black/70">
-              Una clínica media de Málaga pierde 2.000-5.000€/mes en citas que se caen, presupuestos no cerrados y pacientes que no vuelven. AI-Team cuesta una fracción.
+              Una clínica media pierde 2.000-5.000€/mes en citas que se caen, presupuestos no cerrados y pacientes que no vuelven. AI-Team cuesta una fracción.
             </p>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">

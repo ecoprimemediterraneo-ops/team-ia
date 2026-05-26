@@ -11,7 +11,7 @@ const casos = [
   {
     vertical: "🦷 Clínica Dental",
     negocio: "Clínica DentAll",
-    ciudad: "Málaga",
+    ciudad: "Madrid",
     foto: "/avatars/rocio.png",
     color: "#e8f4f8",
     tiempo: "Usando AI-Team 4 meses",
@@ -38,7 +38,7 @@ const casos = [
   {
     vertical: "💇‍♀️ Peluquería",
     negocio: "Salón Aura",
-    ciudad: "Marbella",
+    ciudad: "Valencia",
     foto: "/avatars/marta.png",
     color: "#fdf4e8",
     tiempo: "Usando AI-Team 3 meses",

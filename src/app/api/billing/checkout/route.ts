@@ -3,10 +3,11 @@
  *
  * Configurar:
  *  1. Crear cuenta en stripe.com
- *  2. Crear 4 productos: Local 79 / Digital 149 / Élite 249 / Pro 449 €/mes
+ *  2. Crear 3 productos: Esencial 89 / Completo 189 / Pro 389 €/mes
  *  3. Para cada producto, crear un Price recurring monthly
- *  4. Copiar los price IDs y ponerlos en STRIPE_PRICES env var:
- *     STRIPE_PRICES=local:price_xxx,digital:price_yyy,elite:price_zzz,pro:price_www
+ *  4. Copiar los price IDs y ponerlos en STRIPE_PRICES env var.
+ *     (El enum interno aún usa local/digital/elite/pro como claves
+ *      hasta que se haga la migración Stripe; ver TODO)
  *  5. Añadir STRIPE_SECRET_KEY a Vercel
  *  6. Configurar webhook en Stripe → /api/billing/webhook
  */
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
       success_url: `${process.env.PUBLIC_URL || "https://aiteam.marketing"}/dashboard?billing=ok`,
       cancel_url: `${process.env.PUBLIC_URL || "https://aiteam.marketing"}/#packs?billing=cancel`,
       subscription_data: {
-        trial_period_days: 14,
+        trial_period_days: 180,
         metadata: { user_email: email, pack: parsed.data.pack },
       },
     });

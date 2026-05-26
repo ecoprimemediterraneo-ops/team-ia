@@ -80,7 +80,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
           <div className="mt-16 card-hard p-6 bg-[color:var(--mustard)] text-center">
             <h3 className="font-stencil text-2xl mb-3">¿Quieres esto en tu negocio?</h3>
-            <p className="text-sm mb-5">14 días gratis. Sin tarjeta. Sin permanencia.</p>
+            <p className="text-sm mb-5">6 meses gratis. Sin tarjeta. Sin permanencia.</p>
             <Link href="/reclutar" className="btn-mustard bg-black text-[color:var(--mustard)] hover:bg-[color:var(--red)] hover:text-white inline-block">
               ACTIVAR MI EQUIPO →
             </Link>

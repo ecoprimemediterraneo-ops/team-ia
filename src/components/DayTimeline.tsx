@@ -101,7 +101,6 @@ export default function DayTimeline() {
                     >
                       <header className="bg-[color:var(--olive)] text-white border-b-[3px] border-black px-4 py-2 flex items-center justify-between text-[11px] font-mono uppercase tracking-widest">
                         <span>Informe #{reportNum}</span>
-                        <span className="hidden sm:inline">· CONFIDENCIAL ·</span>
                         <span>{m.time}H</span>
                       </header>
                       <div className="p-6 relative">

@@ -54,7 +54,7 @@ export default function PerfilEditor({ initial }: { initial: BusinessProfile }) 
           required
           value={b.sector}
           onChange={(e) => update("sector", e.target.value)}
-          placeholder="Clínica dental en Málaga centro"
+          placeholder="Clínica dental en el centro"
           className="w-full border-2 border-black px-3 py-2 text-sm focus:outline-none focus:bg-[color:var(--mustard)]/20"
         />
         <p className="text-[10px] text-black/50 mt-1">Importante: si pones &quot;dental&quot; o &quot;dentista&quot;, los agentes activan skills específicas dentales.</p>

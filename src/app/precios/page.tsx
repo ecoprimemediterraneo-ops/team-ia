@@ -1,28 +1,29 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Packs from "@/components/Packs";
+import PlansComparisonTable from "@/components/PlansComparisonTable";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Precios — Desde 79€/mes",
+  title: "Precios — Desde 89€/mes",
   description:
-    "Planes Local, Digital, Élite y Pro. Precio fundador para siempre. 14 días gratis, sin tarjeta, sin permanencia.",
+    "Tres planes: Esencial, Completo y Pro. Precio fundador para siempre. 6 meses gratis, sin tarjeta, sin permanencia.",
   alternates: { canonical: "https://aiteam.marketing/precios" },
 };
 
-const features: { label: string; local: string | boolean; digital: string | boolean; elite: string | boolean; pro: string | boolean }[] = [
-  { label: "Pablo — WhatsApp 24/7", local: true, digital: false, elite: true, pro: true },
-  { label: "Carmen — Llamadas entrantes", local: true, digital: false, elite: true, pro: true },
-  { label: "Rocío — Reseñas Google", local: true, digital: false, elite: true, pro: true },
-  { label: "Lucía — Correo y calendario", local: false, digital: true, elite: true, pro: true },
-  { label: "Marta — Redes sociales", local: false, digital: true, elite: true, pro: true },
-  { label: "Eva — Email marketing", local: false, digital: true, elite: true, pro: true },
-  { label: "Sergio — Inteligencia competitiva", local: false, digital: false, elite: false, pro: true },
-  { label: "Diana — Diagnóstico continuo", local: false, digital: false, elite: false, pro: true },
-  { label: "Onboarding 1:1", local: false, digital: false, elite: false, pro: true },
-  { label: "Soporte", local: "Email", digital: "Email", elite: "Prioritario", pro: "Directo" },
-  { label: "Período de prueba", local: "14 días", digital: "14 días", elite: "14 días", pro: "14 días" },
-  { label: "Permanencia", local: "Ninguna", digital: "Ninguna", elite: "Ninguna", pro: "Ninguna" },
+const features: { label: string; esencial: string | boolean; completo: string | boolean; pro: string | boolean }[] = [
+  { label: "Pablo — WhatsApp 24/7", esencial: true, completo: true, pro: true },
+  { label: "Carmen — Llamadas entrantes", esencial: true, completo: true, pro: true },
+  { label: "Rocío — Reseñas Google", esencial: true, completo: true, pro: true },
+  { label: "Lucía — Correo y calendario", esencial: false, completo: true, pro: true },
+  { label: "Eva — Email marketing", esencial: false, completo: true, pro: true },
+  { label: "Marta — Redes sociales", esencial: false, completo: true, pro: true },
+  { label: "Onboarding 1:1", esencial: false, completo: false, pro: true },
+  { label: "Multiusuario", esencial: "—", completo: "—", pro: "Hasta 5 cuentas" },
+  { label: "Integraciones a medida", esencial: false, completo: false, pro: true },
+  { label: "Soporte", esencial: "Email", completo: "Email", pro: "Prioritario 4h" },
+  { label: "Período de prueba", esencial: "6 meses", completo: "6 meses", pro: "6 meses" },
+  { label: "Permanencia", esencial: "Ninguna", completo: "Ninguna", pro: "Ninguna" },
 ];
 
 const faq = [
@@ -32,11 +33,11 @@ const faq = [
   },
   {
     q: "¿Qué es el precio fundador?",
-    a: "Los primeros 100 negocios mantienen su precio fundador para siempre, incluso si subimos las tarifas. No expira mientras tu suscripción siga activa.",
+    a: "Los primeros 50 negocios mantienen su precio fundador para siempre, incluso si subimos las tarifas. No expira mientras tu suscripción siga activa.",
   },
   {
     q: "¿Hay coste de instalación?",
-    a: "No. En los planes Local, Digital y Élite el alta es self-service. Solo el plan Pro incluye onboarding 1:1 (sin coste extra).",
+    a: "No. En los planes Esencial y Completo el alta es self-service. Solo el plan Pro incluye onboarding 1:1 (sin coste extra).",
   },
   {
     q: "¿Qué pasa si cancelo?",
@@ -56,28 +57,29 @@ export default function PreciosPage() {
         <section className="py-16 border-b-[3px] border-black">
           <div className="max-w-5xl mx-auto px-5 text-center">
             <span className="inline-block bg-black text-[color:var(--mustard)] px-3 py-1 text-xs font-mono font-bold tracking-widest mb-4">
-              PRECIO FUNDADOR · 100 PLAZAS
+              PRECIO FUNDADOR · 50 PLAZAS
             </span>
             <h1 className="font-stencil text-4xl md:text-6xl mb-4">Precios sin sorpresas</h1>
             <p className="text-lg text-black/70 max-w-2xl mx-auto">
-              Desde 79€/mes. 14 días gratis. Sin tarjeta para empezar. Sin permanencia. Cambia de plan cuando quieras.
+              Desde 89€/mes. 6 meses gratis. Sin tarjeta para empezar. Sin permanencia. Cambia de plan cuando quieras.
             </p>
           </div>
         </section>
 
         <Packs />
 
+        <PlansComparisonTable />
+
         <section className="py-20 border-t-[3px] border-black bg-white">
           <div className="max-w-6xl mx-auto px-5">
-            <h2 className="font-stencil text-3xl md:text-5xl mb-8">Comparativa de planes</h2>
+            <h2 className="font-stencil text-3xl md:text-5xl mb-8">Resumen rápido</h2>
             <div className="overflow-x-auto">
               <table className="w-full border-2 border-black text-sm">
                 <thead>
                   <tr className="bg-black text-[color:var(--mustard)]">
                     <th className="text-left px-4 py-3 font-mono text-xs tracking-widest">FUNCIÓN</th>
-                    <th className="px-4 py-3 font-mono text-xs tracking-widest">LOCAL</th>
-                    <th className="px-4 py-3 font-mono text-xs tracking-widest">DIGITAL</th>
-                    <th className="px-4 py-3 font-mono text-xs tracking-widest bg-[color:var(--mustard)] text-black">ÉLITE</th>
+                    <th className="px-4 py-3 font-mono text-xs tracking-widest">ESENCIAL</th>
+                    <th className="px-4 py-3 font-mono text-xs tracking-widest bg-[color:var(--mustard)] text-black">COMPLETO</th>
                     <th className="px-4 py-3 font-mono text-xs tracking-widest">PRO</th>
                   </tr>
                 </thead>
@@ -85,7 +87,7 @@ export default function PreciosPage() {
                   {features.map((f, i) => (
                     <tr key={f.label} className={i % 2 === 0 ? "bg-[color:var(--cream)]/40" : "bg-white"}>
                       <td className="px-4 py-3 font-semibold">{f.label}</td>
-                      {(["local", "digital", "elite", "pro"] as const).map((p) => {
+                      {(["esencial", "completo", "pro"] as const).map((p) => {
                         const v = f[p];
                         return (
                           <td key={p} className="px-4 py-3 text-center">

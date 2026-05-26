@@ -119,7 +119,7 @@ export default async function DentistasCiudadPage({ params }: { params: Promise<
             <p className="font-stencil text-2xl md:text-3xl mb-2">
               "En 30 días redujimos los no-shows un 40% y subimos de 4.2 a 4.7 en Google"
             </p>
-            <p className="text-white/60 text-sm">— Clínica piloto, Costa del Sol</p>
+            <p className="text-white/60 text-sm">— Clínica piloto real</p>
           </div>
         </section>
 
@@ -130,10 +130,10 @@ export default async function DentistasCiudadPage({ params }: { params: Promise<
               <h2 className="font-stencil text-3xl md:text-4xl mb-2">
                 30 días gratis para clínicas de {ciudad.nombre}
               </h2>
-              <p className="text-black/70">Sin tarjeta. Sin permanencia. Precio fundador 79€/mes después.</p>
+              <p className="text-black/70">Sin tarjeta. Sin permanencia. Precio fundador 89€/mes después.</p>
             </div>
             <a href={`/dentistas#waitlist-dental`} className="btn-mustard text-lg inline-block">{v.cta} →</a>
-            <p className="text-sm text-black/60 mt-3">Sin tarjeta · 30 días gratis · Precio fundador 79€/mes después</p>
+            <p className="text-sm text-black/60 mt-3">Sin tarjeta · 30 días gratis · Precio fundador 89€/mes después</p>
           </div>
         </section>
 

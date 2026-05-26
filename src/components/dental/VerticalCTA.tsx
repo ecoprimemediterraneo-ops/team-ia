@@ -13,7 +13,7 @@ type Props = {
 };
 
 export default function VerticalCTA({
-  id, sector, city = "Málaga", emoji, headline, plazas, priceFounder, ctaLabel,
+  id, sector, city = "", emoji, headline, plazas, priceFounder, ctaLabel,
 }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

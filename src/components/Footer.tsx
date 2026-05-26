@@ -9,7 +9,7 @@ export default function Footer() {
           <div>
             <Logo size="sm" />
             <p className="text-sm text-black/70 mt-4 max-w-xs">
-              Sistema operativo de empleados IA para PYMES. Desde 79€/mes.
+              Sistema operativo de empleados IA para PYMES. Desde 89€/mes.
             </p>
           </div>
 
@@ -41,7 +41,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-black/20 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-black/60">© {new Date().getFullYear()} AI-Team · Hecho desde España, para todo el mundo hispano</p>
+          <p className="text-xs text-black/60">© {new Date().getFullYear()} AI-Team · Hecho en España para el mundo hispano</p>
           <div className="flex gap-5 text-xs font-semibold uppercase tracking-wider">
             <a href="/legal/privacidad" className="hover:text-[color:var(--red)]">Privacidad</a>
             <a href="/legal/terminos" className="hover:text-[color:var(--red)]">Términos</a>

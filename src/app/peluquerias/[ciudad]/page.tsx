@@ -111,7 +111,7 @@ export default async function PeluqueriasCiudadPage({ params }: { params: Promis
             <p className="font-stencil text-2xl md:text-3xl mb-2">
               "Pasé de 12 a 47 reseñas en Google en un mes. El WhatsApp del sábado ya no me estresa."
             </p>
-            <p className="text-white/60 text-sm">— Salón piloto, Costa del Sol</p>
+            <p className="text-white/60 text-sm">— Salón piloto real</p>
           </div>
         </section>
 

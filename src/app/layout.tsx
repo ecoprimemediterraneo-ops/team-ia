@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import CookieBanner from "@/components/CookieBanner";
+import WhatsAppFloat from "@/components/WhatsAppFloat";
 
 const SITE_URL = "https://aiteam.marketing";
 
@@ -17,22 +18,22 @@ export const metadata: Metadata = {
     template: "%s | AI-Team",
   },
   description:
-    "Ocho agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes sociales, email marketing e inteligencia competitiva. Autónomo. Medible. Desde 79€/mes.",
+    "Seis agentes IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Sin nóminas. Desde 89€/mes. 6 meses gratis.",
   metadataBase: new URL(SITE_URL),
   openGraph: {
     type: "website",
     locale: "es_ES",
     url: SITE_URL,
     siteName: "AI-Team",
-    title: "AI-Team — Ocho agentes IA para tu negocio",
+    title: "AI-Team — Seis agentes IA para tu negocio",
     description:
-      "Ocho agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes, email marketing y diagnóstico. Desde 79€/mes.",
+      "Seis agentes IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Sin nóminas. Desde 89€/mes. 6 meses gratis.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI-Team — Ocho agentes IA para tu negocio",
+    title: "AI-Team — Seis agentes IA para tu negocio",
     description:
-      "Ocho agentes de IA gestionan WhatsApp, llamadas, reseñas, correo, redes, email marketing y diagnóstico. Desde 79€/mes.",
+      "Seis agentes IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Sin nóminas. Desde 89€/mes. 6 meses gratis.",
   },
   alternates: { canonical: SITE_URL },
   robots: { index: true, follow: true },
@@ -92,6 +93,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-[color:var(--cream)] text-[color:var(--ink)]">
         {children}
+        <WhatsAppFloat />
         <CookieBanner />
       </body>
     </html>

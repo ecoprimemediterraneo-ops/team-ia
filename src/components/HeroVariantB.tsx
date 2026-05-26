@@ -1,7 +1,7 @@
 import { agents } from "@/lib/agents";
 
 export default function HeroVariantB() {
-  const team = agents;
+  const team = agents.filter((a) => a.showOnHome);
   const items = [...team, ...team, ...team];
   return (
     <section id="top" className="relative">
@@ -62,12 +62,12 @@ export default function HeroVariantB() {
           </div>
 
           <p className="mt-6 text-xs text-white/35 tracking-widest font-mono">
-            +1.200 NEGOCIOS EN LISTA · INFORME PERSONALIZADO · 14 DÍAS SIN TARJETA
+            +1.200 NEGOCIOS EN LISTA · INFORME PERSONALIZADO · 6 MESES SIN TARJETA
           </p>
         </div>
 
         <div className="relative z-10 max-w-5xl mx-auto px-6 pb-16">
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 md:gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 md:gap-3">
             {team.map((a) => (
               <div
                 key={a.slug}

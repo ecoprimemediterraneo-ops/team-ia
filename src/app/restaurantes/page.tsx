@@ -30,7 +30,7 @@ const restoAgents: Record<string, { titulo: string; bullets: string[] }> = {
   carmen: {
     titulo: "Carmen coge llamadas en español e inglés",
     bullets: [
-      "Esencial en zonas turísticas (Marbella, Málaga centro, costa)",
+      "Esencial en zonas turísticas y de paso",
       "Da menú del día, horarios, gestiona reservas y eventos privados",
       "Filtra los comerciales que llaman para venderte vino o luz",
     ],
@@ -40,7 +40,7 @@ const restoAgents: Record<string, { titulo: string; bullets: string[] }> = {
     bullets: [
       "Tras cada cena, manda WhatsApp pidiendo reseña al cliente contento",
       "Las 5★ las agradece con cariño, las 1★ con disculpa profesional sin justificarse",
-      "Sube tu Google de 4.0 a 4.5★ en 4 meses (caso piloto Málaga)",
+      "Sube tu Google de 4.0 a 4.5★ en 4 meses (caso piloto real)",
     ],
   },
   lucia: {
@@ -82,28 +82,28 @@ const restoDay = [
 const restoPacks = [
   {
     name: "Esencial",
-    priceFounder: "59",
-    priceRegular: "99",
+    priceFounder: "89",
+    priceRegular: "189",
     tagline: "Para bar/restaurante de 1-20 mesas, 1 sala",
     agents: ["Pablo (reservas WhatsApp)", "Carmen (llamadas español/inglés)", "Rocío (TripAdvisor + Google)"],
     cta: "Empezar Esencial",
   },
   {
-    name: "Crecimiento",
-    priceFounder: "129",
-    priceRegular: "229",
-    tagline: "Para restaurante 20-50 mesas con redes activas",
-    agents: ["Los 3 anteriores", "+ Marta (Instagram + reels gastronómicos)", "+ Eva (menús + promos)"],
+    name: "Completo",
+    priceFounder: "189",
+    priceRegular: "389",
+    tagline: "Operación 360. Los 6 agentes activos.",
+    agents: ["Todo lo del plan Esencial", "+ Lucía (correo y reservas eventos)", "+ Eva (menús + promos)", "+ Marta (Instagram + reels gastronómicos)"],
     cta: "Quiero crecer",
     featured: true,
   },
   {
-    name: "Élite",
-    priceFounder: "229",
-    priceRegular: "399",
-    tagline: "Para restaurante con eventos privados, catering, varios locales",
-    agents: ["Los 8 especialistas", "+ Onboarding 1:1", "+ Setup con The Fork / OpenTable / Covermanager", "+ WhatsApp directo conmigo"],
-    cta: "Hablar conmigo",
+    name: "Pro",
+    priceFounder: "389",
+    priceRegular: "789",
+    tagline: "Completo + onboarding + multiusuario + integraciones",
+    agents: ["Todo lo del plan Completo", "+ Onboarding 1:1 con setup", "+ Multiusuario (hasta 5 cuentas)", "+ Soporte prioritario email (4h)", "+ Integraciones (The Fork, OpenTable, Covermanager…)"],
+    cta: "Hablar con ventas",
   },
 ];
 
@@ -156,7 +156,7 @@ export default function RestaurantesPage() {
             </p>
             <div className="mt-10 flex flex-col items-center gap-3">
               <a href="#waitlist-resto" className="btn-mustard text-lg">Quiero una de las 5 plazas</a>
-              <p className="text-sm text-white/60">5 plazas gratis 30 días para restaurantes de Costa del Sol · Después 59€/mes fundador</p>
+              <p className="text-sm text-white/60">5 plazas gratis 30 días para restaurantes · Después 59€/mes fundador</p>
             </div>
           </div>
           <div className="relative z-10 max-w-6xl mx-auto px-5 pb-12">
@@ -287,10 +287,10 @@ export default function RestaurantesPage() {
         <VerticalCTA
           id="waitlist-resto"
           sector="Restaurante / hostelería"
-          city="Marbella"
+          city=""
           emoji="🍽️"
           headline="Reserva tu plaza piloto"
-          plazas="5 plazas piloto · Costa del Sol · 30 días gratis"
+          plazas="5 plazas piloto · 30 días gratis"
           priceFounder="59€/mes"
           ctaLabel="restaurante"
         />

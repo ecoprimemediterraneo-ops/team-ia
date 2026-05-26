@@ -111,7 +111,7 @@ export default async function RestaurantesCiudadPage({ params }: { params: Promi
             <p className="font-stencil text-2xl md:text-3xl mb-2">
               "Las reservas de turistas ingleses subieron un 60% desde que Carmen atiende las llamadas."
             </p>
-            <p className="text-white/60 text-sm">— Restaurante piloto, Costa del Sol</p>
+            <p className="text-white/60 text-sm">— Restaurante piloto real</p>
           </div>
         </section>
 
@@ -120,7 +120,7 @@ export default async function RestaurantesCiudadPage({ params }: { params: Promi
             <h2 className="font-stencil text-3xl md:text-4xl mb-2">
               30 días gratis para restaurantes de {ciudad.nombre}
             </h2>
-            <p className="text-black/70 mb-6">Sin tarjeta. Sin permanencia. Precio fundador 79€/mes después.</p>
+            <p className="text-black/70 mb-6">Sin tarjeta. Sin permanencia. Precio fundador 89€/mes después.</p>
             <a href="/restaurantes#waitlist" className="btn-mustard text-lg">{v.cta} →</a>
           </div>
         </section>

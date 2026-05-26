@@ -6,7 +6,7 @@ import EsteticaCTA from "@/components/estetica/EsteticaCTA";
 export const metadata = {
   title: "AI-Team para Clínicas Estéticas — Automatiza WhatsApp, reseñas, Instagram y email",
   description:
-    "El equipo de IA para centros de estética. Responde consultas 24/7, sube tu Google, publica antes/después y reactiva clientes con bonos sin usar. Desde 79€/mes.",
+    "El equipo de IA para centros de estética. Responde consultas 24/7, sube tu Google, publica antes/después y reactiva clientes con bonos sin usar. Desde 89€/mes.",
 };
 
 const esteticaPains = [
@@ -82,35 +82,27 @@ const esteticaDay = [
 const esteticaPacks = [
   {
     name: "Esencial",
-    priceFounder: "79",
-    priceRegular: "199",
+    priceFounder: "89",
+    priceRegular: "189",
     tagline: "Automatización de canales de atención",
     agents: ["Pablo — WhatsApp 24/7", "Carmen — Llamadas entrantes", "Rocío — Reseñas Google"],
     cta: "Activar Esencial",
   },
   {
-    name: "Crecimiento",
-    priceFounder: "249",
-    priceRegular: "349",
-    tagline: "Atención + marketing digital automatizado",
-    agents: ["Lucía — Correo y administración", "Marta — Instagram y TikTok", "Eva — Email y reactivación"],
-    cta: "Activar Crecimiento",
-  },
-  {
-    name: "Élite",
-    priceFounder: "249",
-    priceRegular: "549",
-    tagline: "Operación completa. Los 6 canales operativos.",
-    agents: ["Pablo — WhatsApp 24/7", "Carmen — Llamadas entrantes", "Rocío — Reseñas Google", "Lucía — Correo", "Marta — Redes sociales", "Eva — Email marketing"],
-    cta: "Activar Élite",
+    name: "Completo",
+    priceFounder: "189",
+    priceRegular: "389",
+    tagline: "Operación completa. Los 6 agentes activos.",
+    agents: ["Todo lo del plan Esencial", "Lucía — Correo y calendario", "Eva — Email marketing", "Marta — Redes sociales"],
+    cta: "Activar Completo",
     featured: true,
   },
   {
     name: "Pro",
-    priceFounder: "449",
-    priceRegular: "899",
-    tagline: "Élite + inteligencia competitiva + soporte directo",
-    agents: ["Los 6 agentes operativos", "Sergio — Monitorización de competidores", "Onboarding 1:1 con setup incluido", "Soporte prioritario directo"],
+    priceFounder: "389",
+    priceRegular: "789",
+    tagline: "Completo + onboarding personalizado + multiusuario.",
+    agents: ["Todo lo del plan Completo", "Onboarding 1:1 con setup incluido", "Multiusuario (hasta 5 cuentas)", "Soporte prioritario email (4h)", "Integraciones a medida"],
     cta: "Hablar con ventas",
   },
 ];
@@ -188,7 +180,7 @@ export default function EsteticaPage() {
               </a>
             </div>
             <p className="mt-4 text-xs text-white/35 tracking-widest font-mono">
-              DESDE 79 €/MES · OPERATIVO EN 24H · 14 DÍAS SIN TARJETA
+              DESDE 89 €/MES · OPERATIVO EN 24H · 6 MESES SIN TARJETA
             </p>
           </div>
 
@@ -323,7 +315,7 @@ export default function EsteticaPage() {
                 <div className="p-4 text-center text-white/50">RECEP. + CM</div>
               </div>
               {[
-                ["Coste mensual", "79–449 €", "1.400–2.200 €"],
+                ["Coste mensual", "89–389 €", "1.400–2.200 €"],
                 ["Horario", "24/7 inc. fines de semana", "Lun-Vie 9-18h"],
                 ["WhatsApp fuera de horario", "Responde siempre", "Sin cobertura"],
                 ["Llamadas en cabina", "Carmen lo gestiona", "Buzón o pérdida"],
@@ -348,13 +340,13 @@ export default function EsteticaPage() {
             <div className="flex items-center gap-3 mb-6 text-xs font-mono flex-wrap">
               <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">PRECIOS FUNDADORES</span>
               <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">PARA SIEMPRE</span>
-              <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">SOLO 100 PLAZAS</span>
+              <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">SOLO 50 PLAZAS</span>
             </div>
             <h2 className="font-stencil text-5xl md:text-7xl mb-4">Nivel de<br />automatización</h2>
             <p className="text-lg max-w-2xl mb-12 text-black/70">
               La misma operación que un equipo de 1.400–2.200 €/mes. Sin nóminas, sin contratos, sin fricciones de gestión.
             </p>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="grid md:grid-cols-3 gap-5">
               {esteticaPacks.map((p) => (
                 <article key={p.name} className={`card-hard p-6 flex flex-col relative ${p.featured ? "bg-[color:var(--mustard)]" : "bg-white"}`}>
                   {p.featured && (
@@ -387,7 +379,7 @@ export default function EsteticaPage() {
               ))}
             </div>
             <p className="text-center text-xs text-black/50 mt-8 font-mono uppercase tracking-widest">
-              14 días de prueba · cancela en un click · sin permanencia · precio fundador para siempre
+              6 meses de prueba · cancela en un click · sin permanencia · precio fundador para siempre
             </p>
           </div>
         </section>

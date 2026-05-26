@@ -81,29 +81,29 @@ const peluDay = [
 
 const peluPacks = [
   {
-    name: "Esencial Salón",
-    priceFounder: "59",
-    priceRegular: "99",
+    name: "Esencial",
+    priceFounder: "89",
+    priceRegular: "189",
     tagline: "Para peluquería de 1 estilista, sin recepción",
     agents: ["Pablo (WhatsApp)", "Carmen (llamadas)", "Rocío (reseñas)"],
     cta: "Empezar Esencial",
   },
   {
-    name: "Crecimiento",
-    priceFounder: "129",
-    priceRegular: "199",
-    tagline: "Para salón de 2-3 sillones que quiere subir Instagram",
-    agents: ["Los 3 anteriores", "+ Marta (Instagram + reels)", "+ Eva (recuperar clientas)"],
+    name: "Completo",
+    priceFounder: "189",
+    priceRegular: "389",
+    tagline: "Operación 360. Los 6 agentes activos.",
+    agents: ["Todo lo del plan Esencial", "+ Lucía (correo y calendario)", "+ Eva (recuperar clientas)", "+ Marta (Instagram + reels)"],
     cta: "Quiero crecer",
     featured: true,
   },
   {
-    name: "Élite Salón",
-    priceFounder: "199",
-    priceRegular: "349",
-    tagline: "Para salón premium o cadena con 3+ sillones",
-    agents: ["Los 8 especialistas", "+ Onboarding 1:1", "+ Setup con tu software (Treatwell, Booksy)", "+ WhatsApp directo conmigo"],
-    cta: "Hablar conmigo",
+    name: "Pro",
+    priceFounder: "389",
+    priceRegular: "789",
+    tagline: "Completo + onboarding + multiusuario + integraciones",
+    agents: ["Todo lo del plan Completo", "+ Onboarding 1:1 con setup", "+ Multiusuario (hasta 5 cuentas)", "+ Soporte prioritario email (4h)", "+ Integraciones (Treatwell, Booksy…)"],
+    cta: "Hablar con ventas",
   },
 ];
 
@@ -160,7 +160,7 @@ export default function PeluqueriasPage() {
             </p>
             <div className="mt-10 flex flex-col items-center gap-3">
               <a href="#waitlist-pelu" className="btn-mustard text-lg">Quiero una de las 5 plazas</a>
-              <p className="text-sm text-white/60">5 plazas gratis 30 días para peluquerías de Marbella · Después 59€/mes fundador</p>
+              <p className="text-sm text-white/60">5 plazas gratis 30 días para peluquerías · Después 59€/mes fundador</p>
             </div>
           </div>
 
@@ -302,10 +302,10 @@ export default function PeluqueriasPage() {
         <VerticalCTA
           id="waitlist-pelu"
           sector="Peluquería / estética"
-          city="Marbella"
+          city=""
           emoji="💇‍♀️"
           headline="Reserva tu plaza piloto"
-          plazas="5 plazas piloto · Marbella · 30 días gratis"
+          plazas="5 plazas piloto · 30 días gratis"
           priceFounder="59€/mes"
           ctaLabel="Salón"
         />

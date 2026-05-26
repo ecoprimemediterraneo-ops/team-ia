@@ -23,10 +23,10 @@ export default function TerminosPage() {
           <h2 className="font-stencil text-2xl mt-8 mb-3">3. Suscripciones y precios</h2>
           <ul className="list-disc pl-6 space-y-1">
             <li>Pago mensual. Sin permanencia.</li>
-            <li>14 días de prueba sin tarjeta. Puedes cancelar antes sin coste.</li>
-            <li>Plazas <strong>fundadoras</strong>: 100 primeros clientes con precio congelado de por vida.</li>
+            <li>6 meses de prueba sin tarjeta. Puedes cancelar antes sin coste.</li>
+            <li>Plazas <strong>fundadoras</strong>: 50 primeros clientes con precio congelado de por vida.</li>
             <li>Tras el lanzamiento general, los precios pueden subir para nuevos clientes (no para fundadores).</li>
-            <li>Reembolsos: si en los primeros 14 días no estás contento, devolvemos el 100%.</li>
+            <li>Reembolsos: si en los primeros 6 meses no estás contento, devolvemos el 100%.</li>
           </ul>
 
           <h2 className="font-stencil text-2xl mt-8 mb-3">4. Cancelación</h2>

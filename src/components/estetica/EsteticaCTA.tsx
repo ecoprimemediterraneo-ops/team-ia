@@ -38,16 +38,16 @@ export default function EsteticaCTA() {
       <div className="max-w-3xl mx-auto px-5 text-center">
         <div className="flex flex-wrap justify-center items-center gap-3 text-xs font-mono mb-6">
           <span className="border border-[color:var(--mustard)]/40 text-[color:var(--mustard)] px-3 py-1">ACCESO FUNDADOR</span>
-          <span className="border border-white/20 text-white/40 px-3 py-1">100 PLAZAS · PRECIO CONGELADO</span>
+          <span className="border border-white/20 text-white/40 px-3 py-1">50 PLAZAS · PRECIO CONGELADO</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-7xl mb-6 leading-tight">
           Tu clínica.<br />Operativa<br />esta semana.
         </h2>
         <p className="text-base md:text-lg mb-4 text-white/50 max-w-md mx-auto">
-          Desde <span className="text-white font-semibold">79 €/mes</span>, precio fundador congelado de por vida.
+          Desde <span className="text-white font-semibold">89 €/mes</span>, precio fundador congelado de por vida.
         </p>
         <p className="text-sm mb-10 text-white/30 max-w-sm mx-auto">
-          14 días gratis, sin tarjeta. Setup en 15 minutos. Sin código.
+          6 meses gratis, sin tarjeta. Setup en 15 minutos. Sin código.
         </p>
 
         {status === "ok" ? (
@@ -85,7 +85,7 @@ export default function EsteticaCTA() {
           </form>
         )}
         <div className="flex flex-wrap justify-center gap-4 mt-8 text-[10px] font-mono text-white/20 tracking-widest">
-          <span>SIN TARJETA · 14 DÍAS FREE</span>
+          <span>SIN TARJETA · 6 MESES GRATIS</span>
           <span>·</span>
           <span>CANCELA CUANDO QUIERAS</span>
           <span>·</span>

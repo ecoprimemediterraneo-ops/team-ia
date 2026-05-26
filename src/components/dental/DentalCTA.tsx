@@ -4,7 +4,7 @@ import { useState } from "react";
 export default function DentalCTA() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [city, setCity] = useState("Málaga");
+  const [city, setCity] = useState("");
   const [clinic, setClinic] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [msg, setMsg] = useState("");
@@ -38,14 +38,14 @@ export default function DentalCTA() {
       <div className="max-w-3xl mx-auto px-5 text-center">
         <div className="flex flex-wrap justify-center items-center gap-3 text-xs font-mono mb-6">
           <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">5 PLAZAS PILOTO</span>
-          <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">MÁLAGA · 30 DÍAS GRATIS</span>
+          <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">30 DÍAS GRATIS</span>
         </div>
         <h2 className="font-display text-5xl md:text-7xl mb-6">
           Reserva tu<br />plaza piloto
         </h2>
         <p className="text-lg md:text-xl mb-10 text-white/80">
-          Regalo <span className="font-bold text-[color:var(--mustard)]">30 días gratis</span> a 5 clínicas dentales de Málaga a cambio de feedback honesto.
-          <span className="block mt-2 text-white/60 text-sm">Sin tarjeta. Si no te aporta, te vas. Si te aporta, sigues con precio fundador 79€/mes para siempre.</span>
+          Regalo <span className="font-bold text-[color:var(--mustard)]">30 días gratis</span> a 5 clínicas dentales a cambio de feedback honesto.
+          <span className="block mt-2 text-white/60 text-sm">Sin tarjeta. Si no te aporta, te vas. Si te aporta, sigues con precio fundador 89€/mes para siempre.</span>
         </p>
 
         {status === "ok" ? (

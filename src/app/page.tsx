@@ -4,13 +4,11 @@ import PromoVideo from "@/components/PromoVideo";
 import StatsBar from "@/components/StatsBar";
 import AgentOS from "@/components/AgentOS";
 import Pains from "@/components/Pains";
-import MockupShowcase from "@/components/MockupShowcase";
 import HowItWorks from "@/components/HowItWorks";
 import Team from "@/components/Team";
-import DayTimeline from "@/components/DayTimeline";
 import Packs from "@/components/Packs";
+import PlansComparisonTable from "@/components/PlansComparisonTable";
 import Compare from "@/components/Compare";
-import CaseStudy from "@/components/CaseStudy";
 import Testimonials from "@/components/Testimonials";
 import FAQ from "@/components/FAQ";
 import FinalCTA from "@/components/FinalCTA";
@@ -26,13 +24,11 @@ export default function Home() {
         <StatsBar />
         <AgentOS />
         <Pains />
-        <MockupShowcase />
         <HowItWorks />
         <Team />
-        <DayTimeline />
         <Packs />
+        <PlansComparisonTable />
         <Compare />
-        <CaseStudy />
         <Testimonials />
         <FAQ />
         <FinalCTA />
