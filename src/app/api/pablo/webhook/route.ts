@@ -16,6 +16,7 @@
 
 import { NextResponse } from "next/server";
 import { anthropic, MODELS } from "@/lib/claude";
+import { PABLO_SYSTEM } from "@/lib/pablo-prompt";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -154,23 +155,11 @@ async function generateReply(message: string, customerName?: string): Promise<st
     return "Hola, hemos recibido tu mensaje. Te respondemos en breve.";
   }
 
-  const system = `Eres Pablo, asistente de WhatsApp de AI-Team (aiteam.marketing).
-Reglas estrictas WhatsApp:
-- MÁXIMO 4-5 frases. WhatsApp es corto.
-- Tono cercano, castellano de España, tuteo.
-- Emojis con moderación (1-2 máx, solo si encajan).
-- Empieza por el nombre del cliente o "¡Hola!".
-- Si necesitas datos, pídelos al final con una sola pregunta.
-- Si el cliente pide algo que requiere humano (precios personalizados, decisiones técnicas), toma recado: nombre, motivo, y di que te ponéis en contacto en 24h.
-- NO inventes precios concretos. Si pregunta cuánto cuesta: Esencial 89€/mes, Completo 189€/mes, Pro 389€/mes. 6 meses gratis, sin tarjeta.
-
-Devuelve SOLO el texto del mensaje WhatsApp, listo para enviar. Sin meta-comentarios.`;
-
   try {
     const ai = await anthropic.messages.create({
-      model: MODELS.fast,
+      model: MODELS.fast, // Claude Haiku 4.5
       max_tokens: 400,
-      system,
+      system: PABLO_SYSTEM,
       messages: [
         {
           role: "user",
