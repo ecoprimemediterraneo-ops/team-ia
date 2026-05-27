@@ -18,8 +18,8 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li><a href="/agentes" className="hover:text-[color:var(--red)]">Agentes</a></li>
               <li><a href="/precios" className="hover:text-[color:var(--red)]">Precios</a></li>
-              <li><a href="/demo" className="hover:text-[color:var(--red)]">Demo</a></li>
-              <li><a href="/reclutar" className="hover:text-[color:var(--red)]">Reclutar</a></li>
+              <li><a href="/beta" className="hover:text-[color:var(--red)]">Reservar plaza</a></li>
+              <li><a href="/diagnostico" className="hover:text-[color:var(--red)]">Diagnóstico gratis</a></li>
             </ul>
           </div>
 
