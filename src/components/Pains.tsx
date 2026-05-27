@@ -1,9 +1,24 @@
-
-const labels = [
-  { text: "100+ correos sin leer cada mañana", pos: "top-[8%] left-[3%] sm:top-[12%] sm:left-[4%]", rot: "-rotate-2" },
-  { text: "Redes sin publicar. Visibilidad cayendo.", pos: "top-[34%] right-[3%] sm:top-[38%] sm:right-[4%]", rot: "rotate-2" },
-  { text: "Llamada no contestada = cliente perdido", pos: "top-[58%] left-[3%] sm:top-[60%] sm:left-[6%]", rot: "-rotate-1" },
-  { text: "Tareas críticas acumuladas sin ejecutar", pos: "bottom-[6%] right-[3%] sm:bottom-[8%] sm:right-[5%]", rot: "rotate-1" },
+const pains = [
+  {
+    icon: "📧",
+    title: "100+ correos sin leer cada mañana",
+    text: "Pierdes hora y media revisando bandeja antes de empezar a trabajar.",
+  },
+  {
+    icon: "📱",
+    title: "Redes sin publicar. Visibilidad cayendo.",
+    text: "Tus competidores aparecen en Instagram. Tú no. Cada semana sin postear pesa.",
+  },
+  {
+    icon: "📞",
+    title: "Llamada no contestada = cliente perdido",
+    text: "El 40% de las consultas llegan fuera de horario. La mayoría no vuelve a llamar.",
+  },
+  {
+    icon: "⭐",
+    title: "Reseñas sin responder",
+    text: "Una reseña sin contestar resta más que tres respondidas. Google lo penaliza.",
+  },
 ];
 
 export default function Pains() {
@@ -11,60 +26,31 @@ export default function Pains() {
     <section className="py-20 border-t-[3px] border-black bg-[color:var(--cream)]">
       <div className="max-w-6xl mx-auto px-5">
         <div className="flex items-center gap-3 mb-8 text-xs font-mono">
-          <span className="bg-[color:var(--red)] text-white px-2 py-1 font-bold tracking-widest">SITUACIÓN ACTUAL</span>
-          <span className="border-2 border-black px-2 py-1 font-bold tracking-widest">COSTE OPERATIVO</span>
+          <span className="bg-[color:var(--red)] text-white px-2 py-1 font-bold tracking-widest">
+            SITUACIÓN ACTUAL
+          </span>
         </div>
-        <h2 className="font-stencil text-5xl md:text-7xl mb-10 leading-[0.95]">
+        <h2 className="font-stencil text-5xl md:text-7xl mb-4 leading-[0.95]">
           La operación<br />te come el tiempo
         </h2>
+        <p className="text-base md:text-lg max-w-2xl mb-10 text-black/60">
+          La operación diaria no debería depender del fundador. Cada hora gestionando correos, llamadas o redes es una hora que no va a crecimiento.
+        </p>
 
-        {/* Viñeta cómic */}
-        <div
-          className="relative w-full overflow-hidden border-[5px] border-black shadow-[10px_10px_0_#000]"
-          style={{ aspectRatio: "4 / 3" }}
-        >
-          {/* Fondo cómic: degradado azul noche + halftone */}
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: `
-                radial-gradient(rgba(255,255,255,0.18) 1px, transparent 1.6px),
-                linear-gradient(135deg, #1a2540 0%, #0f1729 100%)
-              `,
-              backgroundSize: "8px 8px, 100% 100%",
-              backgroundPosition: "0 0, 0 0",
-            }}
-          />
-
-          {/* Imagen cómic ochentera del equipo trabajando */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/agentes/team-action.webp"
-            alt="AI-Team trabajando en la oficina ochentera"
-            className="absolute inset-0 w-full h-full object-cover object-top"
-          />
-
-
-          {/* Frases flotantes sin cartel */}
-          {labels.map((l, i) => (
-            <span
-              key={i}
-              className={`absolute ${l.pos} ${l.rot} text-white font-bold text-sm sm:text-base md:text-lg max-w-[55%] sm:max-w-xs leading-tight`}
-              style={{ textShadow: "2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000" }}
-            >
-              {l.text}
-            </span>
+        <div className="grid sm:grid-cols-2 gap-5">
+          {pains.map((p) => (
+            <article key={p.title} className="card-hard p-5 bg-white flex gap-4 items-start">
+              <span className="text-3xl shrink-0">{p.icon}</span>
+              <div>
+                <h3 className="font-bold text-base mb-1">{p.title}</h3>
+                <p className="text-sm text-black/60 leading-relaxed">{p.text}</p>
+              </div>
+            </article>
           ))}
-
-          {/* Sello rojo en esquina */}
-          <div className="absolute top-4 right-4 stamp text-[10px] sm:text-xs">
-            Problema resuelto
-          </div>
         </div>
 
-        <p className="mt-8 text-center text-base md:text-lg max-w-xl mx-auto text-black/60">
-          La operación diaria no debería depender del fundador. Cada hora gestionando correos, llamadas o redes es una hora que no va a crecimiento.
-          <span className="block mt-2 font-semibold text-black">AI-Team automatiza esa carga.</span>
+        <p className="mt-10 text-center text-base md:text-lg max-w-xl mx-auto text-black/80">
+          <span className="font-semibold">AI-Team automatiza esa carga.</span> Seis agentes que trabajan mientras tú haces lo importante.
         </p>
       </div>
     </section>

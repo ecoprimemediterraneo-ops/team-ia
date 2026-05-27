@@ -74,7 +74,7 @@ export default function Hero() {
 
           {/* Social proof */}
           <p className="mt-6 text-xs text-white/35 tracking-widest font-mono">
-            +1.200 NEGOCIOS EN LISTA · OPERATIVO EN 24H · 6 MESES SIN TARJETA
+            50 PLAZAS BETA · 6 MESES GRATIS · SIN PERMANENCIA
           </p>
         </div>
 

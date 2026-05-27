@@ -1,5 +1,5 @@
 import Navbar from "@/components/Navbar";
-import HeroSwitcher from "@/components/HeroSwitcher";
+import Hero from "@/components/Hero";
 import PromoVideo from "@/components/PromoVideo";
 import StatsBar from "@/components/StatsBar";
 import AgentOS from "@/components/AgentOS";
@@ -19,7 +19,7 @@ export default function Home() {
     <>
       <Navbar />
       <main className="flex-1">
-        <HeroSwitcher />
+        <Hero />
         <PromoVideo />
         <StatsBar />
         <AgentOS />

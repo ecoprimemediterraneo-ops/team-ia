@@ -104,7 +104,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             ))}
           </div>
           <p className="text-[11px] font-mono uppercase tracking-widest text-black/60">
-            +1.200 negocios en lista de espera
+            50 plazas beta · 6 meses gratis · sin permanencia
           </p>
           <p className="text-[10px] text-black/40 mt-1">
             Clínicas dentales · estéticas · peluquerías · restaurantes
