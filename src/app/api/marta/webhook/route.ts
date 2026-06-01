@@ -19,7 +19,11 @@
 import { NextResponse } from "next/server";
 import { anthropic, MODELS } from "@/lib/claude";
 import { martaPrompt } from "@/lib/marta-prompt";
-import { hasGreeted, markGreeted } from "@/lib/greeting-store";
+import {
+  appendTurn,
+  getConversation,
+  type Conversation,
+} from "@/lib/conversation-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -116,14 +120,20 @@ export async function POST(req: Request) {
 
         console.log(`[marta/webhook] DM RX from=${senderId} text="${text}"`);
 
-        // ¿Primer DM de este usuario? Si ya fue saludado, no se presenta.
-        const alreadyGreeted = await hasGreeted("marta", senderId);
+        // Memoria: si no hay turnos (o estaba stale → ya limpiado on-read),
+        // se trata como primer mensaje.
+        const conv = await getConversation("marta", senderId);
+        const isNew = !conv || conv.turns.length === 0;
 
-        const reply = await generateReply(text, !alreadyGreeted);
+        const reply = await generateReply(text, isNew, conv);
         console.log(`[marta/webhook] AI reply: "${reply}"`);
 
         const sendResult = await sendInstagramDM(senderId, reply);
-        if (!alreadyGreeted) await markGreeted("marta", senderId);
+
+        // Persistir tras el envío. El payload de IG no trae nombre legible
+        // (solo IGSID), así que `name` queda sin actualizar.
+        await appendTurn("marta", senderId, "user", text);
+        await appendTurn("marta", senderId, "assistant", reply);
         console.log(
           `[marta/webhook] TX result:`,
           JSON.stringify(sendResult).slice(0, 500),
@@ -171,10 +181,22 @@ export async function POST(req: Request) {
 // -----------------------------------------------------------------------------
 // Generar respuesta con Claude
 // -----------------------------------------------------------------------------
-async function generateReply(message: string, firstMessage = false): Promise<string> {
+async function generateReply(
+  message: string,
+  firstMessage: boolean,
+  conv: Conversation | null,
+): Promise<string> {
   if (!process.env.ANTHROPIC_API_KEY) {
     return "¡Hola! Hemos recibido tu mensaje, te respondemos en breve.";
   }
+
+  const history = (conv?.turns ?? []).map((t) => ({
+    role: t.role,
+    content: t.text,
+  }));
+
+  const currentUserContent =
+    `${firstMessage ? "[PRIMER MENSAJE]" : "[CONVERSACIÓN YA INICIADA]"}\nMensaje recibido:\n"${message}"`;
 
   try {
     const ai = await anthropic.messages.create({
@@ -182,10 +204,8 @@ async function generateReply(message: string, firstMessage = false): Promise<str
       max_tokens: 400,
       system: martaPrompt,
       messages: [
-        {
-          role: "user",
-          content: `${firstMessage ? "[PRIMER MENSAJE]" : "[CONVERSACIÓN YA INICIADA]"}\nMensaje recibido:\n"${message}"`,
-        },
+        ...history,
+        { role: "user", content: currentUserContent },
       ],
     });
 

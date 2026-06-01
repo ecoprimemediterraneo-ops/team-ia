@@ -17,7 +17,11 @@
 import { NextResponse } from "next/server";
 import { anthropic, MODELS } from "@/lib/claude";
 import { PABLO_SYSTEM } from "@/lib/pablo-prompt";
-import { hasGreeted, markGreeted } from "@/lib/greeting-store";
+import {
+  appendTurn,
+  getConversation,
+  type Conversation,
+} from "@/lib/conversation-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -126,18 +130,23 @@ export async function POST(req: Request) {
             `[pablo/webhook] RX from=${from} name=${customerName ?? "?"} text="${text}"`,
           );
 
-          // ¿Es el primer mensaje de este número? Si ya fue saludado, no se presenta.
-          const alreadyGreeted = await hasGreeted("pablo", from);
+          // Memoria de conversación: si no hay turnos (o estaba stale → ya limpiado
+          // on-read por getConversation), tratamos como primer mensaje.
+          const conv = await getConversation("pablo", from);
+          const isNew = !conv || conv.turns.length === 0;
 
           // Generar respuesta con Claude (no llamamos a /api/pablo/respond porque
           // ese endpoint requiere sesión de usuario, no aplicable a un webhook).
-          const reply = await generateReply(text, customerName, !alreadyGreeted);
+          const reply = await generateReply(text, customerName, isNew, conv);
           console.log(`[pablo/webhook] AI reply: "${reply}"`);
 
           // Enviar de vuelta vía Graph API
           const sendResult = await sendWhatsAppText(from, reply);
-          // Marcar saludado tras responder (solo si era el primer mensaje).
-          if (!alreadyGreeted) await markGreeted("pablo", from);
+
+          // Persistir turno del usuario y de la IA (después de enviar OK, evita
+          // guardar interacciones que nunca llegaron al usuario).
+          await appendTurn("pablo", from, "user", text, customerName);
+          await appendTurn("pablo", from, "assistant", reply, customerName);
           console.log(
             `[pablo/webhook] TX result:`,
             JSON.stringify(sendResult).slice(0, 500),
@@ -156,10 +165,30 @@ export async function POST(req: Request) {
 // -----------------------------------------------------------------------------
 // Generar respuesta con Claude
 // -----------------------------------------------------------------------------
-async function generateReply(message: string, customerName?: string, firstMessage = false): Promise<string> {
+async function generateReply(
+  message: string,
+  customerName: string | undefined,
+  firstMessage: boolean,
+  conv: Conversation | null,
+): Promise<string> {
   if (!process.env.ANTHROPIC_API_KEY) {
     return "Hola, hemos recibido tu mensaje. Te respondemos en breve.";
   }
+
+  // Reconstruimos el historial previo (sin el mensaje actual) como turnos
+  // alternados user/assistant. Si la API rechazara dos turnos seguidos del
+  // mismo rol (caso poco probable con webhook real), el último user se
+  // fusiona con el mensaje actual abajo.
+  const history = (conv?.turns ?? []).map((t) => ({
+    role: t.role,
+    content: t.text,
+  }));
+
+  const currentUserContent =
+    `${firstMessage ? "[PRIMER MENSAJE]" : "[CONVERSACIÓN YA INICIADA]"}\n` +
+    (customerName
+      ? `Mensaje de ${customerName}:\n"${message}"`
+      : `Mensaje recibido:\n"${message}"`);
 
   try {
     const ai = await anthropic.messages.create({
@@ -167,13 +196,8 @@ async function generateReply(message: string, customerName?: string, firstMessag
       max_tokens: 400,
       system: PABLO_SYSTEM,
       messages: [
-        {
-          role: "user",
-          content: `${firstMessage ? "[PRIMER MENSAJE]" : "[CONVERSACIÓN YA INICIADA]"}\n` +
-            (customerName
-              ? `Mensaje de ${customerName}:\n"${message}"`
-              : `Mensaje recibido:\n"${message}"`),
-        },
+        ...history,
+        { role: "user", content: currentUserContent },
       ],
     });
 
