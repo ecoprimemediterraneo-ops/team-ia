@@ -1,14 +1,10 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
-import PromoVideo from "@/components/PromoVideo";
-import StatsBar from "@/components/StatsBar";
 import AgentOS from "@/components/AgentOS";
-import Pains from "@/components/Pains";
 import HowItWorks from "@/components/HowItWorks";
 import Team from "@/components/Team";
 import Packs from "@/components/Packs";
 import PlansComparisonTable from "@/components/PlansComparisonTable";
-import Compare from "@/components/Compare";
 import Testimonials from "@/components/Testimonials";
 import FAQ from "@/components/FAQ";
 import FinalCTA from "@/components/FinalCTA";
@@ -20,15 +16,11 @@ export default function Home() {
       <Navbar />
       <main className="flex-1">
         <Hero />
-        <PromoVideo />
-        <StatsBar />
         <AgentOS />
-        <Pains />
         <HowItWorks />
         <Team />
         <Packs />
         <PlansComparisonTable />
-        <Compare />
         <Testimonials />
         <FAQ />
         <FinalCTA />

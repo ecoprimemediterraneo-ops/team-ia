@@ -165,7 +165,10 @@ export default function MartaEditorialCalendar() {
           );
         })}
       </div>
-      <p className="text-[10px] text-black/40 mt-3 italic">Datos guardados en tu navegador (localStorage). Pasa el ratón sobre un post para cambiar estado o quitar.</p>
+      <div className="mt-3 p-2 border border-[color:var(--mustard)] bg-[color:var(--mustard)]/15 text-[11px] text-black/70">
+        ⚠️ Datos guardados solo en este navegador. Próximamente se sincronizarán automáticamente con tu cuenta.
+      </div>
+      <p className="text-[10px] text-black/40 mt-2 italic">Pasa el ratón sobre un post para cambiar estado o quitar.</p>
     </div>
   );
 }

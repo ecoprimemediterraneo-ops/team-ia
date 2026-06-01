@@ -15,11 +15,10 @@ export default async function CarmenPage() {
   return (
     <section>
       <div className="flex items-center gap-3 mb-3 text-xs font-mono flex-wrap">
-        <span className="px-2 py-1 font-bold tracking-widest border-2 border-black" style={{ background: a.color }}>
-          {a.codename}
+        <span className="border-2 border-black px-2 py-1 font-bold tracking-widest" style={{ background: a.color }}>
+          {a.role.toUpperCase()}
         </span>
-        <span className="border-2 border-black px-2 py-1 font-bold tracking-widest">{a.role.toUpperCase()}</span>
-        <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">★ MODO MANUAL OPERATIVO</span>
+        <span className="bg-black/70 text-white px-2 py-1 font-bold tracking-widest">PRÓXIMAMENTE</span>
       </div>
       <div className="flex items-end justify-between mb-4 flex-wrap gap-2">
         <div>
@@ -27,7 +26,7 @@ export default async function CarmenPage() {
           <p className="text-sm text-black/60 mt-1">{a.short}</p>
         </div>
         <p className="text-xs font-mono text-black/50 max-w-xs text-right">
-          ✓ Guiones de llamada con IA. Auto-respuesta por voz: en alta Vapi.
+          Carmen genera guiones de llamada con IA. Atención automática por voz: próximamente.
         </p>
       </div>
 

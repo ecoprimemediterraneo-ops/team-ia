@@ -62,19 +62,19 @@ export default function Packs() {
           <span className="text-3xl">🔍</span>
           <div className="flex-1 min-w-[200px]">
             <div className="font-bold">Diana — Auditora — incluida en todos los packs</div>
-            <div className="text-xs text-black/60">Diagnóstico inicial gratis + revisión mensual continua de tu negocio. HOTEL-D8.</div>
+            <div className="text-xs text-black/60">Diagnóstico inicial gratis + revisión mensual continua de tu negocio.</div>
           </div>
           <a href="/diagnostico" className="text-xs font-mono font-bold tracking-widest border-2 border-black px-3 py-2 hover:bg-black hover:text-white">PROBAR GRATIS →</a>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-5">
+        <div className="grid md:grid-cols-3 gap-5 pt-6">
           {packs.map((p) => (
             <article
               key={p.name}
               className={`card-hard p-6 flex flex-col relative ${p.featured ? "bg-[color:var(--mustard)]" : "bg-white"}`}
             >
               {p.featured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[color:var(--red)] text-white text-xs font-bold tracking-widest px-3 py-1 border-2 border-black">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[color:var(--red)] text-white text-xs font-bold tracking-widest px-3 py-1 border-2 border-black z-10 whitespace-nowrap shadow-[3px_3px_0_#000]">
                   ★ MÁS VENDIDO
                 </div>
               )}

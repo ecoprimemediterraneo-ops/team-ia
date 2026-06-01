@@ -17,6 +17,7 @@
 import { NextResponse } from "next/server";
 import { anthropic, MODELS } from "@/lib/claude";
 import { PABLO_SYSTEM } from "@/lib/pablo-prompt";
+import { hasGreeted, markGreeted } from "@/lib/greeting-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -125,13 +126,18 @@ export async function POST(req: Request) {
             `[pablo/webhook] RX from=${from} name=${customerName ?? "?"} text="${text}"`,
           );
 
+          // ¿Es el primer mensaje de este número? Si ya fue saludado, no se presenta.
+          const alreadyGreeted = await hasGreeted("pablo", from);
+
           // Generar respuesta con Claude (no llamamos a /api/pablo/respond porque
           // ese endpoint requiere sesión de usuario, no aplicable a un webhook).
-          const reply = await generateReply(text, customerName);
+          const reply = await generateReply(text, customerName, !alreadyGreeted);
           console.log(`[pablo/webhook] AI reply: "${reply}"`);
 
           // Enviar de vuelta vía Graph API
           const sendResult = await sendWhatsAppText(from, reply);
+          // Marcar saludado tras responder (solo si era el primer mensaje).
+          if (!alreadyGreeted) await markGreeted("pablo", from);
           console.log(
             `[pablo/webhook] TX result:`,
             JSON.stringify(sendResult).slice(0, 500),
@@ -150,7 +156,7 @@ export async function POST(req: Request) {
 // -----------------------------------------------------------------------------
 // Generar respuesta con Claude
 // -----------------------------------------------------------------------------
-async function generateReply(message: string, customerName?: string): Promise<string> {
+async function generateReply(message: string, customerName?: string, firstMessage = false): Promise<string> {
   if (!process.env.ANTHROPIC_API_KEY) {
     return "Hola, hemos recibido tu mensaje. Te respondemos en breve.";
   }
@@ -163,9 +169,10 @@ async function generateReply(message: string, customerName?: string): Promise<st
       messages: [
         {
           role: "user",
-          content: customerName
-            ? `Mensaje de ${customerName}:\n"${message}"`
-            : `Mensaje recibido:\n"${message}"`,
+          content: `${firstMessage ? "[PRIMER MENSAJE]" : "[CONVERSACIÓN YA INICIADA]"}\n` +
+            (customerName
+              ? `Mensaje de ${customerName}:\n"${message}"`
+              : `Mensaje recibido:\n"${message}"`),
         },
       ],
     });

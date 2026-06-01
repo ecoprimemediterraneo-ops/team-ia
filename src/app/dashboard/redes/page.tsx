@@ -23,7 +23,7 @@ const planes: Plan[] = [
     archivo: "assets/instagram/",
     emoji: "📷",
     color: "#E1306C",
-    bio: "🤖 8 empleados IA para clínicas dentales y estéticas",
+    bio: "🤖 6 agentes IA para PYMES",
   },
   {
     red: "LinkedIn",
@@ -34,7 +34,7 @@ const planes: Plan[] = [
     archivo: "assets/linkedin/",
     emoji: "💼",
     color: "#0A66C2",
-    bio: "Sistema operativo de 8 empleados IA para clínicas y PYMES en España",
+    bio: "Sistema operativo de 6 agentes IA para PYMES en España",
   },
   {
     red: "TikTok",
@@ -45,7 +45,7 @@ const planes: Plan[] = [
     archivo: "assets/tiktok/",
     emoji: "🎵",
     color: "#000000",
-    bio: "Automatiza tu clínica en 24h. 8 empleados IA.",
+    bio: "Automatiza tu negocio en 24h. 6 agentes IA.",
   },
 ];
 
@@ -61,7 +61,7 @@ export default async function RedesDashboardPage() {
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div>
             <span className="inline-block bg-black text-[color:var(--mustard)] px-2 py-1 text-xs font-mono font-bold tracking-widest mb-2">
-              DELTA-M5 · MARTA · COMMUNITY OPS
+              MARTA · REDES SOCIALES
             </span>
             <h1 className="font-stencil text-4xl">Redes Sociales</h1>
             <p className="text-xs font-mono text-black/60 mt-1">

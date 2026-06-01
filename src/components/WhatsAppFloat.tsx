@@ -1,13 +1,11 @@
 // Botón flotante de WhatsApp, visible en todas las páginas (montado en layout.tsx).
-// TODO: cambiar NUMERO por el número real de WhatsApp de Cristóbal (formato internacional, sin "+" ni espacios).
-const NUMERO = "34NUMERO";
-const MENSAJE = "Hola, me interesa AI-Team";
+// El número se gestiona en src/lib/constants.ts (WHATSAPP_NUMBER / WHATSAPP_LINK).
+import { WHATSAPP_LINK } from "@/lib/constants";
 
 export default function WhatsAppFloat() {
-  const href = `https://wa.me/${NUMERO}?text=${encodeURIComponent(MENSAJE)}`;
   return (
     <a
-      href={href}
+      href={WHATSAPP_LINK}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Escríbenos por WhatsApp"

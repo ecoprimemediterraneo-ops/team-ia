@@ -4,14 +4,14 @@
 type Plan = "esencial" | "completo" | "pro";
 
 type Row =
-  | { kind: "value"; label: string; esencial: string; completo: string; pro: string; emphasize?: boolean }
+  | { kind: "value"; label: string; esencial: string; completo: string; pro: string; emphasize?: boolean; strike?: boolean }
   | { kind: "check"; label: string; esencial: boolean; completo: boolean; pro: boolean }
   | { kind: "group"; label: string };
 
 const rows: Row[] = [
   // Precio (sin etiqueta de grupo)
   { kind: "value", label: "Precio fundador", esencial: "89€/mes", completo: "189€/mes", pro: "389€/mes", emphasize: true },
-  { kind: "value", label: "Precio normal", esencial: "189€", completo: "389€", pro: "789€" },
+  { kind: "value", label: "Precio normal", esencial: "189€", completo: "389€", pro: "789€", strike: true },
 
   // AGENTES
   { kind: "group", label: "Agentes" },
@@ -25,10 +25,9 @@ const rows: Row[] = [
 
   // EXTRAS
   { kind: "group", label: "Extras" },
-  { kind: "check", label: "Onboarding 1:1 personalizado", esencial: false, completo: false, pro: true },
-  { kind: "check", label: "Multiusuario (5 cuentas)", esencial: false, completo: false, pro: true },
+  { kind: "check", label: "Asistente de configuración guiado por sector", esencial: true, completo: true, pro: true },
+  { kind: "value", label: "Usuarios incluidos", esencial: "1 usuario", completo: "2 usuarios", pro: "5 usuarios" },
   { kind: "check", label: "Soporte prioritario email (4h)", esencial: false, completo: false, pro: true },
-  { kind: "check", label: "Integraciones a medida", esencial: false, completo: false, pro: true },
 
   // GARANTÍAS
   { kind: "group", label: "Garantías" },
@@ -119,13 +118,13 @@ export default function PlansComparisonTable() {
                       <tr key={`v-${i}`} className="border-t border-black/15">
                         <td className="px-4 py-3 text-black/80">{r.label}</td>
                         <td className="px-4 py-3 text-center border-l-2 border-black/15">
-                          <span className={r.emphasize ? "font-stencil text-xl" : "text-xs text-black/50 line-through"}>{r.esencial}</span>
+                          <span className={r.emphasize ? "font-stencil text-xl" : r.strike ? "text-xs text-black/50 line-through" : "text-sm font-semibold text-black/80"}>{r.esencial}</span>
                         </td>
                         <td className="px-4 py-3 text-center border-l-2 border-black/15 bg-[color:var(--mustard)]/30">
-                          <span className={r.emphasize ? "font-stencil text-xl" : "text-xs text-black/50 line-through"}>{r.completo}</span>
+                          <span className={r.emphasize ? "font-stencil text-xl" : r.strike ? "text-xs text-black/50 line-through" : "text-sm font-semibold text-black/80"}>{r.completo}</span>
                         </td>
                         <td className="px-4 py-3 text-center border-l-2 border-black/15">
-                          <span className={r.emphasize ? "font-stencil text-xl" : "text-xs text-black/50 line-through"}>{r.pro}</span>
+                          <span className={r.emphasize ? "font-stencil text-xl" : r.strike ? "text-xs text-black/50 line-through" : "text-sm font-semibold text-black/80"}>{r.pro}</span>
                         </td>
                       </tr>
                     );
@@ -201,6 +200,14 @@ export default function PlansComparisonTable() {
                         <div key={`mc-${i}`} className="flex items-center justify-between gap-3 text-sm">
                           <span className="text-black/80">{r.label}</span>
                           <CheckCell on={r[p]} />
+                        </div>
+                      );
+                    }
+                    if (r.kind === "value") {
+                      return (
+                        <div key={`mv-${i}`} className="flex items-center justify-between gap-3 text-sm">
+                          <span className="text-black/80">{r.label}</span>
+                          <span className="font-semibold text-black/80 text-right">{r[p]}</span>
                         </div>
                       );
                     }

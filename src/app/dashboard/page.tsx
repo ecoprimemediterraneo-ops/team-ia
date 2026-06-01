@@ -80,10 +80,12 @@ export default async function DashboardHome() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 text-xs font-mono">
-              <span className="bg-black text-[color:var(--mustard)] px-2 py-0.5 font-bold tracking-widest">CUARTEL GENERAL</span>
-              <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-0.5 font-bold tracking-widest hidden sm:inline">UNIDAD OPERATIVA</span>
+              <span className="bg-black text-[color:var(--mustard)] px-2 py-0.5 font-bold tracking-widest">PANEL</span>
+              <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-0.5 font-bold tracking-widest hidden sm:inline">TU CUENTA</span>
             </div>
-            <h1 className="font-stencil text-3xl md:text-5xl leading-[1]">Hola, jefe.</h1>
+            <h1 className="font-stencil text-3xl md:text-5xl leading-[1]">
+              Hola{session.email ? `, ${session.email.split("@")[0]}` : ""}.
+            </h1>
             <p className="text-black/70 mt-1 text-sm">{user.business.nombre} · {user.business.sector}</p>
           </div>
         </div>
@@ -102,7 +104,7 @@ export default async function DashboardHome() {
           <div className="text-xs text-black/50 mt-1">Total: {stats.emailsSent}</div>
         </div>
         <div className="card-hard p-4">
-          <div className="text-xs font-mono uppercase tracking-widest text-black/60">Chats con tu unidad</div>
+          <div className="text-xs font-mono uppercase tracking-widest text-black/60">Chats con tu equipo</div>
           <div className="font-stencil text-4xl mt-1">{chatsThisWeek}</div>
           <div className="text-xs text-black/50 mt-1">Esta semana</div>
         </div>
@@ -168,7 +170,7 @@ export default async function DashboardHome() {
 
       {/* AGENTES (compacto) */}
       <div>
-        <h2 className="font-stencil text-2xl mb-3">Tu unidad</h2>
+        <h2 className="font-stencil text-2xl mb-3">Tu equipo</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {agents.map((a) => {
             const last = stats.lastChatAt[a.slug];
@@ -185,7 +187,7 @@ export default async function DashboardHome() {
                   {a.emoji}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-black/60">{a.codename}</div>
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-black/60">{a.role}</div>
                   <div className="font-stencil text-lg leading-none">{a.name}</div>
                   <div className="text-[11px] text-black/60">
                     {last ? `Último uso: ${timeAgo(last)}` : "Sin estrenar"}

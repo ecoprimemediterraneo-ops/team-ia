@@ -8,15 +8,11 @@ const faqs = [
   },
   {
     q: "¿Necesito instalar algo o saber de tecnología?",
-    a: "No. Te das de alta con tu email, describes tu negocio en 5 preguntas y la unidad ya está lista. Para conectar Gmail o tu WhatsApp Business hacemos juntos un setup de 10-15 minutos en una videollamada. Sin código, sin configurar APIs raras.",
-  },
-  {
-    q: "¿Y si quiero solo 1 o 2 agentes en vez de los packs?",
-    a: "Sí, puedes empezar con el plan Esencial (89 €/mes) y ampliar cuando quieras. El precio fundador se congela desde el primer día, independientemente del plan que elijas.",
+    a: "No. Reservas tu plaza en /beta, te damos de alta con tu email y un onboarding guiado paso a paso (15-20 min) para conectar tu WhatsApp Business, Gmail y Google Business. Sin código, sin configurar APIs raras.",
   },
   {
     q: "¿Va de verdad a publicar y contestar, o solo es chat con IA?",
-    a: "Te lo cuento honesto. En este momento (mayo 2026): Eva sí envía emails reales desde tu dominio (Resend integrado). Lucía sí lee tu Gmail real, te lo resume con IA y te crea borradores reales en tu Gmail (OAuth de Google). Pablo, Rocío, Marta y Carmen funcionan en modo asistido: generan el contenido (mensajes, respuestas, posts, guiones, voz) y tú lo publicas con un click. Para que publiquen 100% solos necesitamos las APIs oficiales de Meta (WhatsApp Business), Google Business Profile y Vapi (voz), que están en proceso de aprobación con Meta y Google. Te decimos en cada agente exactamente qué está automático y qué es asistido. Sin humo.",
+    a: "Te lo cuento honesto. Hoy: Eva envía emails reales desde tu dominio (Resend integrado). Lucía lee tu Gmail real, lo resume con IA y crea borradores reales (OAuth de Google). Pablo está conectado a WhatsApp Business Cloud (Meta) y contesta en tu nombre. Carmen, Rocío y Marta funcionan en modo asistido: generan el contenido y tú lo publicas con un click, mientras terminamos las aprobaciones de Vapi (voz), Google Business Profile (reseñas) y Meta para Instagram/Facebook. Te indicamos en cada agente qué está automático y qué es asistido. Sin humo.",
   },
   {
     q: "¿En qué idiomas trabaja?",
@@ -32,7 +28,7 @@ const faqs = [
   },
   {
     q: "¿Funciona con mi software actual (Gesden, ClinicCloud, etc.)?",
-    a: "AI-Team vive 'al lado', no 'dentro' de tu software. Trabajamos con tu calendario (Google Calendar o Cal.com), tu WhatsApp Business y tu Gmail. La sincronización con software vertical (clínicas, peluquerías) la hace tu recepcionista en 30 segundos al confirmar cada cita. Estamos preparando integraciones directas con los más populares.",
+    a: "AI-Team vive 'al lado', no 'dentro' de tu software. Trabajamos con tu calendario (Google Calendar o Cal.com), tu WhatsApp Business y tu Gmail. Las integraciones directas con software vertical (Gesden, ClinicCloud, Treatwell, Booksy, TheFork…) están disponibles en el plan Pro o se preparan bajo demanda.",
   },
 ];
 

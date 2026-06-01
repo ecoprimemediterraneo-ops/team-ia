@@ -18,9 +18,8 @@ const features: { label: string; esencial: string | boolean; completo: string | 
   { label: "Lucía — Correo y calendario", esencial: false, completo: true, pro: true },
   { label: "Eva — Email marketing", esencial: false, completo: true, pro: true },
   { label: "Marta — Redes sociales", esencial: false, completo: true, pro: true },
-  { label: "Onboarding 1:1", esencial: false, completo: false, pro: true },
-  { label: "Multiusuario", esencial: "—", completo: "—", pro: "Hasta 5 cuentas" },
-  { label: "Integraciones a medida", esencial: false, completo: false, pro: true },
+  { label: "Asistente de configuración guiado por sector", esencial: true, completo: true, pro: true },
+  { label: "Usuarios incluidos", esencial: "1 usuario", completo: "2 usuarios", pro: "5 usuarios" },
   { label: "Soporte", esencial: "Email", completo: "Email", pro: "Prioritario 4h" },
   { label: "Período de prueba", esencial: "6 meses", completo: "6 meses", pro: "6 meses" },
   { label: "Permanencia", esencial: "Ninguna", completo: "Ninguna", pro: "Ninguna" },
@@ -37,7 +36,7 @@ const faq = [
   },
   {
     q: "¿Hay coste de instalación?",
-    a: "No. En los planes Esencial y Completo el alta es self-service. Solo el plan Pro incluye onboarding 1:1 (sin coste extra).",
+    a: "No. El alta es self-service en los tres planes — el asistente de configuración te guía por sector paso a paso. Tardas unos 15 minutos.",
   },
   {
     q: "¿Qué pasa si cancelo?",

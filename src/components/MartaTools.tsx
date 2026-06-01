@@ -233,8 +233,8 @@ export default function MartaTools() {
                 Abrir {platform} →
               </a>
             </div>
-            <p className="text-xs text-black/50 mt-3 font-mono">
-              ★ Publicación automática vía API: en aprobación de Meta/LinkedIn. Mientras, copia/pega manual.
+            <p className="text-xs text-black/60 mt-3 font-mono">
+              Marta genera el contenido. La publicación automática vía API estará disponible próximamente. Por ahora copias y publicas tú.
             </p>
           </div>
         </div>
@@ -260,9 +260,9 @@ export default function MartaTools() {
 
           <div className="flex items-center gap-2 mb-3 flex-wrap">
             <button onClick={generateImage} disabled={imgLoading || !topic.trim()} className="btn-mustard text-sm">
-              {imgLoading ? "GENERANDO IMAGEN…" : "✨ GENERAR IMAGEN"}
+              {imgLoading ? "GENERANDO IMAGEN…" : "✨ Generar imagen"}
             </button>
-            <span className="text-xs text-black/50 font-mono">~10-15 segundos · Cuesta ~$0.04</span>
+            <span className="text-xs text-black/50 font-mono">~10-15 segundos</span>
           </div>
 
           {imgLoading && (
@@ -298,6 +298,50 @@ export default function MartaTools() {
             </div>
           )}
         </div>
+
+        {/* TODO FASE 2: Scraping de fotos desde la web del cliente. Endpoint /api/marta/scrape-images pendiente. */}
+        <BusinessPhotos />
+      </div>
+    </div>
+  );
+}
+
+// TODO FASE 2 — UI lista, backend pendiente.
+// Permitirá que Marta importe fotos/vídeos de la web del cliente y los use
+// automáticamente en publicaciones (3 fotos/semana del catálogo).
+function BusinessPhotos() {
+  return (
+    <div className="mt-6 pt-6 border-t-[3px] border-black/10">
+      <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
+        <div>
+          <h4 className="font-stencil text-xl">📸 Fotos del negocio</h4>
+          <p className="text-xs text-black/60 mt-1">
+            Marta usará estas fotos en los posts automáticamente. 3 fotos por semana del catálogo de tu web.
+          </p>
+        </div>
+        <span className="text-[10px] font-mono bg-black/70 text-white px-2 py-1 font-bold tracking-widest whitespace-nowrap">
+          PRÓXIMAMENTE
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <input
+          type="url"
+          placeholder="https://tunegocio.com"
+          disabled
+          className="flex-1 min-w-[200px] border-2 border-black/30 px-3 py-2 text-sm bg-black/[0.03] cursor-not-allowed placeholder:text-black/30"
+        />
+        <button
+          type="button"
+          disabled
+          className="border-2 border-black/30 text-black/30 px-4 py-2 text-xs font-bold tracking-widest uppercase cursor-not-allowed"
+        >
+          Importar fotos de mi web
+        </button>
+      </div>
+
+      <div className="border-2 border-dashed border-black/30 p-10 text-center text-sm text-black/50">
+        Conecta tu web para que Marta use tus fotos reales en las publicaciones.
       </div>
     </div>
   );

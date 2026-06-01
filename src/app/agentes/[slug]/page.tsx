@@ -14,9 +14,17 @@ type Detail = {
   metrics: { label: string; value: string }[];
 };
 
+// Métricas estándar de la oferta beta — honesto, sin números inflados.
+// Reemplaza las cifras de rendimiento inventadas que había antes.
+const BETA_METRICS = [
+  { label: "Plazas fundadoras", value: "50" },
+  { label: "Prueba", value: "6 meses gratis" },
+  { label: "Permanencia", value: "Sin compromiso" },
+];
+
 const details: Record<AgentSlug, Detail> = {
   pablo: {
-    hook: "Tu WhatsApp deja de ser una bandeja a medio leer. Pablo contesta en 8 segundos, agenda citas y captura leads las 24 horas.",
+    hook: "Tu WhatsApp deja de ser una bandeja a medio leer. Pablo contesta cuando tú no puedes, agenda citas y captura leads las 24 horas.",
     capabilities: [
       "Responde mensajes con tu tono, catálogo y precios",
       "Agenda citas según tu disponibilidad real",
@@ -29,19 +37,15 @@ const details: Record<AgentSlug, Detail> = {
       "Equipos pequeños que reciben más de 30 mensajes al día",
     ],
     integrations: ["WhatsApp Business · Meta Cloud API", "Google Calendar", "Calendly / Cal.com"],
-    metrics: [
-      { label: "Tiempo medio respuesta", value: "8 seg" },
-      { label: "Resolución sin humano", value: "85%" },
-      { label: "Leads recuperados", value: "+34%" },
-    ],
+    metrics: BETA_METRICS,
   },
   rocio: {
-    hook: "Pide reseñas en el momento exacto, responde el 100% en menos de 24h. Tu ficha de Google deja de estancarse.",
+    hook: "Pide reseñas en el momento exacto y prepara respuestas listas para publicar. Tu ficha de Google deja de estancarse.",
     capabilities: [
       "Solicita reseña 30-60 min después de la visita",
-      "Responde con el tono de tu negocio (buenas y malas)",
-      "Alerta en menos de 10 min ante reseña <3 estrellas",
-      "Genera informes mensuales de reputación",
+      "Genera respuestas con el tono de tu negocio (buenas y malas)",
+      "Alerta inmediata ante reseña <3 estrellas",
+      "Informe mensual de reputación",
     ],
     whenToUse: [
       "Negocios con ficha de Google activa y volumen de visitas semanales",
@@ -49,34 +53,26 @@ const details: Record<AgentSlug, Detail> = {
       "Equipos que olvidan pedir reseña o no contestan las nuevas",
     ],
     integrations: ["Google Business Profile", "Doctoralia", "Reservas internas"],
-    metrics: [
-      { label: "Reseñas/mes (media)", value: "+18-24" },
-      { label: "Tasa de respuesta", value: "100%" },
-      { label: "Nota Google", value: "+0.3 ★" },
-    ],
+    metrics: BETA_METRICS,
   },
   eva: {
-    hook: "Email marketing sin Mailchimp. Newsletters, secuencias y campañas con entregabilidad de primer nivel desde tu dominio.",
+    hook: "Email marketing desde tu dominio. Newsletters, secuencias y campañas con buena entregabilidad y sin lock-in.",
     capabilities: [
       "Configuración SPF/DKIM/DMARC en tu dominio",
       "Secuencias de bienvenida automáticas",
-      "Newsletters semanales con copy generado",
+      "Newsletters periódicas con copy generado",
       "Segmentación por comportamiento",
     ],
     whenToUse: [
-      "Negocios con base de contactos >300",
+      "Negocios con base de contactos en crecimiento",
       "E-commerce, SaaS, clínicas con seguimientos",
-      "Equipos que pagan Mailchimp y no usan el 90% de las features",
+      "Equipos que pagan herramientas caras y no usan la mayoría de features",
     ],
     integrations: ["Resend", "Tu propio dominio", "CSV / Google Sheets / Supabase"],
-    metrics: [
-      { label: "Apertura media", value: "32-41%" },
-      { label: "Coste por envío", value: "0,0004€" },
-      { label: "Ahorro vs Mailchimp", value: "~85€/mes" },
-    ],
+    metrics: BETA_METRICS,
   },
   lucia: {
-    hook: "A las 8:00 tu bandeja está procesada. Spam fuera, urgentes arriba, borradores listos para aprobar.",
+    hook: "A primera hora tu bandeja está procesada. Spam fuera, urgentes arriba, borradores listos para aprobar.",
     capabilities: [
       "Lectura y clasificación de bandeja",
       "Borradores de respuesta con tu estilo",
@@ -84,19 +80,15 @@ const details: Record<AgentSlug, Detail> = {
       "Limpieza automática de promociones",
     ],
     whenToUse: [
-      "Profesionales con +50 emails/día",
-      "Directivos que pierden 1h al día en bandeja",
+      "Profesionales con bandeja saturada de emails al día",
+      "Directivos que pierden tiempo cada mañana revisando correo",
       "Asistentes que necesitan amplificar su trabajo",
     ],
     integrations: ["Gmail OAuth", "Google Calendar", "Outlook (próximamente)"],
-    metrics: [
-      { label: "Tiempo ahorrado/día", value: "47 min" },
-      { label: "Precisión clasificación", value: "94%" },
-      { label: "Borradores aprobados", value: "78%" },
-    ],
+    metrics: BETA_METRICS,
   },
   marta: {
-    hook: "Tres posts por semana en Instagram y LinkedIn, con tu voz, tu estrategia y tu calendario. Tú apruebas, salen programados.",
+    hook: "Posts semanales en Instagram y LinkedIn, con tu voz, tu estrategia y tu calendario. Tú apruebas, salen programados.",
     capabilities: [
       "Generación de copy + imagen IA",
       "Calendario editorial mensual",
@@ -108,15 +100,11 @@ const details: Record<AgentSlug, Detail> = {
       "Profesionales que sufren la presión del 'hay que publicar'",
       "Marcas que quieren consistencia sin agencia",
     ],
-    integrations: ["Ayrshare (multi-canal)", "Meta Business Suite", "LinkedIn"],
-    metrics: [
-      { label: "Posts/mes", value: "12-16" },
-      { label: "Engagement medio", value: "+62%" },
-      { label: "Coste vs agencia", value: "-91%" },
-    ],
+    integrations: ["Meta Business Suite", "LinkedIn", "TikTok (próximamente)"],
+    metrics: BETA_METRICS,
   },
   carmen: {
-    hook: "Recepcionista 24/7 en español. Atiende, agenda, registra y deriva — al segundo tono, con tu catálogo y tu agenda.",
+    hook: "Recepcionista 24/7 en español. Atiende, agenda, registra y deriva — con tu catálogo y tu agenda.",
     capabilities: [
       "Llamadas entrantes en español natural",
       "Agendado de citas según disponibilidad",
@@ -126,14 +114,10 @@ const details: Record<AgentSlug, Detail> = {
     whenToUse: [
       "Negocios que pierden llamadas fuera de horario",
       "Equipos que dejan sonar el teléfono en hora punta",
-      "Sectores con +30 llamadas/día",
+      "Sectores con alto volumen de llamadas diarias",
     ],
     integrations: ["Vapi", "Twilio Voice", "Google Calendar"],
-    metrics: [
-      { label: "Tasa de atención", value: "100%" },
-      { label: "Citas cerradas", value: "+41%" },
-      { label: "Coste vs recepcionista", value: "-87%" },
-    ],
+    metrics: BETA_METRICS,
   },
   diana: {
     hook: "Diagnostica el estado digital de tu negocio en 2 minutos. Encuentra exactamente dónde pierdes dinero cada semana — y cómo recuperarlo.",
@@ -141,12 +125,12 @@ const details: Record<AgentSlug, Detail> = {
       "Analiza web, Google Business, Instagram y WhatsApp",
       "Detecta cuellos de botella en comunicación y reputación",
       "Calcula pérdida estimada anual en €",
-      "Entrega informe PDF personalizado en 2 minutos",
+      "Entrega informe personalizado en 2 minutos",
     ],
     whenToUse: [
       "Antes de contratar AI-Team (gratis, sin compromiso)",
-      "Clínicas que sospechan que pierden citas pero no saben dónde",
-      "Negocios que quieren saber qué hace la competencia",
+      "Negocios que sospechan que pierden clientes pero no saben dónde",
+      "Cualquiera que quiera saber qué hace la competencia",
     ],
     integrations: ["Google PageSpeed", "Google Business API", "Análisis web propio"],
     metrics: [
@@ -156,7 +140,7 @@ const details: Record<AgentSlug, Detail> = {
     ],
   },
   sergio: {
-    hook: "Tus competidores no descansan. Sergio tampoco. Escaneo nocturno de webs, redes y reseñas — informe en tu bandeja a las 7:00.",
+    hook: "Tus competidores no descansan. Sergio tampoco. Escaneo nocturno de webs, redes y reseñas — informe en tu bandeja a primera hora.",
     capabilities: [
       "Monitorización de webs de competidores 24/7",
       "Alertas por cambios de precio o promo",
@@ -169,11 +153,7 @@ const details: Record<AgentSlug, Detail> = {
       "Equipos que quieren anticiparse, no reaccionar",
     ],
     integrations: ["Scraping propietario", "Google Business", "Supabase"],
-    metrics: [
-      { label: "Webs monitorizadas", value: "Hasta 20" },
-      { label: "Alertas/semana (media)", value: "4-7" },
-      { label: "Tiempo de detección", value: "<24h" },
-    ],
+    metrics: BETA_METRICS,
   },
 };
 
@@ -206,7 +186,6 @@ export default async function AgentePage({ params }: { params: Promise<{ slug: s
           <div className="max-w-5xl mx-auto px-5 grid md:grid-cols-[1fr_280px] gap-10 items-center">
             <div>
               <div className="flex items-center gap-3 mb-4 text-xs font-mono">
-                <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">{agent.codename}</span>
                 <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">{agent.role.toUpperCase()}</span>
               </div>
               <h1 className="font-stencil text-4xl md:text-6xl mb-4">{agent.name}</h1>

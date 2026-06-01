@@ -31,41 +31,44 @@ export default function Navbar() {
             Precios
           </a>
 
-          {/* Sectores dropdown */}
-          <div className="relative">
+          {/* Sectores dropdown (hover + click, sin overlay bloqueante) */}
+          <div
+            className="relative group"
+            onMouseEnter={() => setSectoresOpen(true)}
+            onMouseLeave={() => setSectoresOpen(false)}
+          >
             <button
               type="button"
-              onClick={() => setSectoresOpen((v) => !v)}
-              className="flex items-center gap-1 hover:text-[color:var(--red)] transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSectoresOpen((v) => !v);
+              }}
+              className="flex items-center gap-1 hover:text-[color:var(--red)] transition-colors py-2"
               aria-haspopup="true"
               aria-expanded={sectoresOpen}
             >
               Sectores
               <span className="text-[10px]">▾</span>
             </button>
-            {sectoresOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
+            <div
+              className={`absolute top-full left-0 bg-white border-[3px] border-black shadow-[4px_4px_0_#000] min-w-[220px] z-[100] transition-opacity duration-100 ${
+                sectoresOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+              }`}
+            >
+              {SECTORES.map((s, i) => (
+                <a
+                  key={s.href}
+                  href={s.href}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-xs hover:bg-[color:var(--mustard)] font-bold ${
+                    i > 0 ? "border-t border-black/10" : ""
+                  }`}
                   onClick={() => setSectoresOpen(false)}
-                />
-                <div className="absolute top-full left-0 mt-1 bg-white border-[3px] border-black shadow-[4px_4px_0_#000] min-w-[200px] z-20">
-                  {SECTORES.map((s, i) => (
-                    <a
-                      key={s.href}
-                      href={s.href}
-                      className={`flex items-center gap-2 px-4 py-2.5 text-xs hover:bg-[color:var(--mustard)] font-bold ${
-                        i > 0 ? "border-t border-black/10" : ""
-                      }`}
-                      onClick={() => setSectoresOpen(false)}
-                    >
-                      <span>{s.emoji}</span>
-                      <span>{s.label}</span>
-                    </a>
-                  ))}
-                </div>
-              </>
-            )}
+                >
+                  <span>{s.emoji}</span>
+                  <span>{s.label}</span>
+                </a>
+              ))}
+            </div>
           </div>
 
           <a href="/diagnostico" className="hover:text-[color:var(--red)] transition-colors">

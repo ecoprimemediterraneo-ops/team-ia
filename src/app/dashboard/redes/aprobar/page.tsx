@@ -19,7 +19,7 @@ export default async function AprobarPage() {
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div>
             <span className="inline-block bg-black text-[color:var(--mustard)] px-2 py-1 text-xs font-mono font-bold tracking-widest mb-2">
-              DELTA-M5 · COLA DE PUBLICACIÓN
+              COLA DE PUBLICACIÓN
             </span>
             <h1 className="font-stencil text-4xl">Aprobar publicaciones</h1>
             <p className="text-xs font-mono text-black/60 mt-1">Marta propone · tú apruebas · el sistema publica</p>

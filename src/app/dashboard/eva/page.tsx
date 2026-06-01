@@ -25,11 +25,10 @@ export default async function EvaPage() {
   return (
     <section>
       <div className="flex items-center gap-3 mb-3 text-xs font-mono flex-wrap">
-        <span className="px-2 py-1 font-bold tracking-widest border-2 border-black" style={{ background: a.color }}>
-          {a.codename}
+        <span className="border-2 border-black px-2 py-1 font-bold tracking-widest" style={{ background: a.color }}>
+          {a.role.toUpperCase()}
         </span>
-        <span className="border-2 border-black px-2 py-1 font-bold tracking-widest">{a.role.toUpperCase()}</span>
-        <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">★ ENVÍO REAL ACTIVADO</span>
+        <span className="bg-green-700 text-white px-2 py-1 font-bold tracking-widest">LIVE</span>
       </div>
       <div className="flex items-end justify-between mb-4 flex-wrap gap-2">
         <div>

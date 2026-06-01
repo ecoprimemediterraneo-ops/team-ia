@@ -1,3 +1,15 @@
+// ⚠️ REVISAR — stats sospechosos detectados en estos artículos.
+// El usuario quiere revisarlos manualmente antes de borrarlos. No se modifica nada aquí.
+// Listado (slug · línea aprox · stat):
+//   - Línea 43:   "+34% conversión lead → cita"
+//   - Línea 61:   "3 veces más visitas" (clínica con 80 reseñas vs 20)
+//   - Línea 78:   "4-6 → 18-24 reseñas/mes (pilotos)"
+//   - Línea 136:  "Reseñas/mes, nota agregada…" (umbral genérico, probablemente OK)
+//   - Línea 233:  "4-7 reseñas/semana (mix Google + TripAdvisor)"
+//   - Línea 385:  "+18% seguidores en 90 días"
+//   - Línea 448:  "+41% citas cerradas en primera llamada"
+// También menciona "caso piloto Marbella/Málaga" (residuos geográficos) en líneas 165, 230, 292, 305, 322, 348.
+
 export type BlogPost = {
   slug: string;
   title: string;

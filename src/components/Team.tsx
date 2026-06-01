@@ -1,5 +1,34 @@
 import { agents } from "@/lib/agents";
 
+// Agentes secundarios — incluidos pero no en el grid principal.
+// Tomás no está en el catálogo agents.ts (es soporte), así que va aparte.
+const secondary = [
+  {
+    slug: "diana",
+    name: "Diana",
+    role: "Auditoría inicial gratis",
+    avatar: "/agentes/diana.webp",
+    color: "#14B8A6",
+    href: "/agentes/diana",
+  },
+  {
+    slug: "sergio",
+    name: "Sergio",
+    role: "Vigila a tu competencia 24/7",
+    avatar: "/agentes/sergio.webp",
+    color: "#3B82F6",
+    href: "/agentes/sergio",
+  },
+  {
+    slug: "tomas",
+    name: "Tomás",
+    role: "Soporte 24/7 dentro del producto",
+    avatar: "/agentes/tomas/tomas.webp",
+    color: "#A88BE8",
+    href: null, // Tomás no tiene página propia
+  },
+];
+
 export default function Team() {
   return (
     <section id="equipo" className="py-24 border-t-[3px] border-black bg-[color:var(--cream)]">
@@ -15,11 +44,20 @@ export default function Team() {
           Cada agente gestiona un canal de forma autónoma. Operan en paralelo, sin supervisión, sin interrupciones.
         </p>
 
+        {/* Grid principal: 6 agentes */}
         <div className="grid md:grid-cols-2 gap-10 mt-16">
           {agents.filter((a) => a.showOnHome).map((a) => (
-            <article key={a.slug} className="dossier p-6 hover:-translate-y-1 transition relative overflow-hidden">
+            <article
+              key={a.slug}
+              className="dossier pt-14 p-6 hover:-translate-y-1 transition relative overflow-hidden"
+            >
+              {/* Pestaña decorativa superior (color mostaza, sin texto militar) */}
+              <div className="absolute top-1 left-4 right-4 flex items-center z-10 text-black/70 text-[10px] font-mono tracking-widest">
+                <span>{a.name.toUpperCase()}</span>
+              </div>
+
               {a.status === "soon" && (
-                <div className="absolute top-4 -right-14 rotate-45 bg-[color:var(--red)] text-white text-[9px] sm:text-[10px] font-bold tracking-widest px-14 py-1 z-20 shadow-md">
+                <div className="absolute top-14 -right-14 rotate-45 bg-[color:var(--red)] text-white text-[9px] sm:text-[10px] font-bold tracking-widest px-14 py-1 z-20 shadow-md">
                   PRÓXIMAMENTE
                 </div>
               )}
@@ -30,8 +68,12 @@ export default function Team() {
                   style={{ background: a.color }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={a.avatar} alt={a.name} className="w-full h-full object-cover" />
-                  <span className="absolute -bottom-1 -right-1 bg-white border-[3px] border-black w-9 h-9 flex items-center justify-center text-xl">
+                  <img
+                    src={a.avatar}
+                    alt={a.name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <span className="absolute -bottom-1 -right-1 bg-white border-[3px] border-black w-9 h-9 flex items-center justify-center text-xl z-10">
                     {a.emoji}
                   </span>
                 </div>
@@ -53,20 +95,51 @@ export default function Team() {
           ))}
         </div>
 
-        {/* Agentes incluidos pero discretos */}
-        <p className="mt-12 text-center text-sm text-black/45 max-w-3xl mx-auto leading-relaxed">
-          También incluido:{" "}
-          <a href="/agentes/diana" className="underline decoration-black/20 hover:decoration-black/60">
-            <strong className="text-black/70">Diana</strong>
-          </a>
-          {" "}— auditoría gratis de tu negocio en 2 minutos ·{" "}
-          <a href="/agentes/sergio" className="underline decoration-black/20 hover:decoration-black/60">
-            <strong className="text-black/70">Sergio</strong>
-          </a>
-          {" "}— vigila a tu competencia 24/7 ·{" "}
-          <strong className="text-black/70">Tomás</strong>
-          {" "}— soporte 24/7
-        </p>
+        {/* Agentes secundarios — cards más pequeñas (~65% del tamaño principal) */}
+        <div className="mt-16 pt-10 border-t-2 border-black/15">
+          <div className="text-[10px] font-mono tracking-[0.25em] text-black/40 uppercase mb-6 text-center">
+            También incluidos
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+            {secondary.map((a) => {
+              const CardInner = (
+                <div className="flex items-center gap-3 p-4 bg-white border-2 border-black/80 shadow-[4px_4px_0_#000] hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000] transition h-full">
+                  <div
+                    className="relative w-16 h-16 rounded-full border-[3px] border-black overflow-hidden shrink-0"
+                    style={{ background: a.color }}
+                  >
+                    {/* Fallback (inicial) detrás — se ve si la imagen falla */}
+                    <span
+                      className="absolute inset-0 flex items-center justify-center font-stencil text-2xl text-white"
+                      aria-hidden="true"
+                    >
+                      {a.name.charAt(0)}
+                    </span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={a.avatar}
+                      alt={a.name}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-stencil text-lg leading-tight">{a.name}</div>
+                    <div className="text-[11px] text-black/55 leading-snug">{a.role}</div>
+                  </div>
+                </div>
+              );
+
+              return a.href ? (
+                <a key={a.slug} href={a.href} className="block">
+                  {CardInner}
+                </a>
+              ) : (
+                <div key={a.slug}>{CardInner}</div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </section>
   );

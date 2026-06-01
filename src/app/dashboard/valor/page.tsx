@@ -75,10 +75,10 @@ export default async function ValorPage() {
   return (
     <section>
       <div className="flex items-center gap-3 mb-3 text-xs font-mono flex-wrap">
-        <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">VALOR OPERATIVO</span>
-        <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">INFORME EJECUTIVO</span>
+        <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">VALOR GENERADO</span>
+        <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">INFORME</span>
       </div>
-      <h1 className="font-stencil text-4xl md:text-5xl mb-2 leading-none">¿Cuánto te aporta tu unidad?</h1>
+      <h1 className="font-stencil text-4xl md:text-5xl mb-2 leading-none">¿Cuánto te aporta tu equipo?</h1>
       <p className="text-sm text-black/60 mb-6">
         Estimaciones conservadoras basadas en tu actividad real.
       </p>

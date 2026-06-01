@@ -177,8 +177,8 @@ export default function RocioTools() {
                 Abrir Google Business →
               </a>
             </div>
-            <p className="text-xs text-black/50 mt-3 font-mono">
-              ★ Respuesta automática vía API: en aprobación. Mientras, copia/pega manual.
+            <p className="text-xs text-black/60 mt-3 font-mono">
+              Rocío prepara la respuesta. La publicación automática en Google estará disponible próximamente. Por ahora copias y publicas tú.
             </p>
           </div>
         </div>

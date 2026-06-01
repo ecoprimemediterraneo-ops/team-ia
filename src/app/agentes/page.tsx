@@ -35,7 +35,6 @@ export default function AgentesPage() {
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <h2 className="font-stencil text-2xl">{a.name}</h2>
-                  <span className="ml-auto text-[10px] font-mono bg-black text-white px-2 py-1">{a.codename}</span>
                 </div>
                 <div className="text-xs font-mono uppercase tracking-widest text-black/60 mb-3">{a.role}</div>
                 <p className="text-sm text-black/70 flex-1">{a.short}</p>

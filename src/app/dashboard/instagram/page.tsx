@@ -19,12 +19,12 @@ const calendario: Post[] = [
   { n: 3, semana: 1, dia: "Mié", pilar: "EDUCATIVO", formato: "Carrusel", personaje: "Diana", titulo: "Las 7 áreas que pierden dinero", estado: "pendiente" },
   { n: 4, semana: 1, dia: "Jue", pilar: "PRODUCTO", formato: "Post", personaje: "Rocío", titulo: "Antes vs después reseñas", estado: "pendiente" },
   { n: 5, semana: 1, dia: "Vie", pilar: "PRODUCTO", formato: "Reel", personaje: "Marta", titulo: "Instagram que se publica solo", estado: "pendiente" },
-  { n: 6, semana: 1, dia: "Sáb", pilar: "DETRÁS", formato: "Post", personaje: "Equipo", titulo: "Bienvenida Diana HOTEL-D8", estado: "pendiente" },
+  { n: 6, semana: 1, dia: "Sáb", pilar: "DETRÁS", formato: "Post", personaje: "Equipo", titulo: "Bienvenida Diana", estado: "pendiente" },
   // Semana 2
   { n: 7, semana: 2, dia: "Lun", pilar: "DOLOR", formato: "Post", personaje: "Pablo", titulo: "23:47 un sábado", estado: "pendiente" },
   { n: 8, semana: 2, dia: "Mar", pilar: "EDUCATIVO", formato: "Reel", personaje: "Carmen", titulo: "Llamada perdida más cara", estado: "pendiente" },
   { n: 9, semana: 2, dia: "Mié", pilar: "EDUCATIVO", formato: "Carrusel", personaje: "Sergio", titulo: "Cómo Sergio analiza competencia", estado: "pendiente" },
-  { n: 10, semana: 2, dia: "Jue", pilar: "PRODUCTO", formato: "Post", personaje: "Eva", titulo: "Caso Marbella 8.420€", estado: "pendiente" },
+  { n: 10, semana: 2, dia: "Jue", pilar: "PRODUCTO", formato: "Post", personaje: "Eva", titulo: "Caso piloto recuperando ingresos", estado: "pendiente" },
   { n: 11, semana: 2, dia: "Vie", pilar: "PRODUCTO", formato: "Reel", personaje: "Marta", titulo: "Calendario editorial visual", estado: "pendiente" },
   { n: 12, semana: 2, dia: "Sáb", pilar: "DETRÁS", formato: "Post", personaje: "Fundador", titulo: "Por qué montamos AI-Team", estado: "pendiente" },
   // Semana 3
@@ -44,7 +44,7 @@ const calendario: Post[] = [
   // Semana 5 extras
   { n: 25, semana: 5, dia: "Lun", pilar: "DOLOR", formato: "Post", personaje: "Marta", titulo: "IG abandonado 18 días", estado: "pendiente" },
   { n: 26, semana: 5, dia: "Mar", pilar: "EDUCATIVO", formato: "Post", personaje: "Sergio", titulo: "3 datos competencia", estado: "pendiente" },
-  { n: 27, semana: 5, dia: "Mié", pilar: "PRODUCTO", formato: "Post", personaje: "Equipo", titulo: "Pack Élite explicado", estado: "pendiente" },
+  { n: 27, semana: 5, dia: "Mié", pilar: "PRODUCTO", formato: "Post", personaje: "Equipo", titulo: "Plan Completo explicado", estado: "pendiente" },
   { n: 28, semana: 5, dia: "Jue", pilar: "DOLOR", formato: "Post", personaje: "Diana", titulo: "1.500-4.200€ perdidos/mes", estado: "pendiente" },
   { n: 29, semana: 5, dia: "Vie", pilar: "DETRÁS", formato: "Post", personaje: "Equipo", titulo: "Cómo entras en AI-Team", estado: "pendiente" },
   { n: 30, semana: 5, dia: "Sáb", pilar: "DETRÁS", formato: "Post", personaje: "Equipo", titulo: "Mes 1 recap", estado: "pendiente" },
@@ -84,7 +84,7 @@ export default async function InstagramDashboardPage() {
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div>
             <span className="inline-block bg-black text-[color:var(--mustard)] px-2 py-1 text-xs font-mono font-bold tracking-widest mb-2">
-              DELTA-M5 · MARTA · IG @aiteam.marketing
+              MARTA · IG @aiteam.marketing
             </span>
             <h1 className="font-stencil text-4xl">Calendario Instagram</h1>
             <p className="text-xs font-mono text-black/60 mt-1">Mes 1 — 30 publicaciones planificadas</p>

@@ -197,10 +197,9 @@ export default function RestaurantesPage() {
                 const v = restoAgents[a.slug];
                 if (!v) return null;
                 return (
-                  <article key={a.slug} className="dossier pt-12 p-6 relative overflow-hidden">
-                    <div className="absolute top-1 left-4 right-4 flex items-center justify-between z-10 text-white text-[11px] font-mono tracking-widest">
-                      <span>EXP. {a.codename}</span>
-                      <span className="hidden sm:inline">· RESTO ·</span>
+                  <article key={a.slug} className="dossier pt-14 p-6 relative overflow-hidden">
+                    <div className="absolute top-1 left-4 right-4 flex items-center z-10 text-black/70 text-[11px] font-mono tracking-widest">
+                      <span>{a.name.toUpperCase()}</span>
                     </div>
                     <div className="flex items-start gap-5 relative">
                       <div className="relative w-28 h-28 border-[3px] border-black overflow-hidden shrink-0" style={{ background: a.color }}>

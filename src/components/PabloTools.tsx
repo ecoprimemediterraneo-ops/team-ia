@@ -131,8 +131,8 @@ export default function PabloTools() {
                 Abrir WhatsApp Web →
               </a>
             </div>
-            <p className="text-xs text-black/50 mt-3 font-mono">
-              ★ Respuesta automática 24/7: en alta de Meta Business. Mientras, pega manualmente.
+            <p className="text-xs text-green-700 mt-3 font-mono">
+              ✓ Pablo está conectado a WhatsApp Business y responde automáticamente. Usa esta herramienta para generar respuestas manuales si quieres intervenir tú.
             </p>
           </div>
         </div>

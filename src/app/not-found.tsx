@@ -14,7 +14,7 @@ export default function NotFound() {
             Esta página no existe. O la borramos. O nunca existió. Carmen no contesta este número.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <Link href="/" className="btn-mustard">VOLVER AL CUARTEL →</Link>
+            <Link href="/" className="btn-mustard">VOLVER AL INICIO →</Link>
             <Link href="/agentes" className="border-[3px] border-black px-5 py-3 font-bold uppercase tracking-widest text-sm hover:bg-black hover:text-[color:var(--mustard)]">
               Ver agentes
             </Link>

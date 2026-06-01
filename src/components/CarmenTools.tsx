@@ -169,8 +169,8 @@ export default function CarmenTools() {
                 🖨 IMPRIMIR
               </button>
             </div>
-            <p className="text-xs text-black/50 mt-3 font-mono">
-              ★ Llamadas automáticas con voz IA: en alta de Vapi (de pago). Mientras, usa los guiones manualmente.
+            <p className="text-xs text-black/60 mt-3 font-mono">
+              Carmen genera guiones de llamada. La atención automática por voz estará disponible próximamente.
             </p>
           </div>
         </div>

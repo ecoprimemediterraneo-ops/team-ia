@@ -31,7 +31,7 @@ async function loginAction(formData: FormData) {
         <div style="font-family:system-ui,-apple-system,sans-serif;max-width:560px;margin:0 auto;padding:40px 20px;color:#0A0A0A">
           <div style="border:3px solid #000;box-shadow:6px 6px 0 #000;padding:32px;background:#FAF7F0">
             <h1 style="font-size:28px;margin:0 0 16px;letter-spacing:-1px">Tu acceso a AI-Team</h1>
-            <p style="font-size:16px;line-height:1.5;color:#444">Haz click en el botón para entrar a tu unidad. El enlace caduca en 15 minutos.</p>
+            <p style="font-size:16px;line-height:1.5;color:#444">Haz click en el botón para entrar a tu cuenta. El enlace caduca en 15 minutos.</p>
             <p style="margin:32px 0">
               <a href="${url}" style="display:inline-block;background:#F5C518;color:#000;text-decoration:none;padding:16px 28px;font-weight:800;letter-spacing:2px;border:3px solid #000;box-shadow:4px 4px 0 #000">ENTRAR EN AI-TEAM →</a>
             </p>
@@ -60,8 +60,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <main className="min-h-screen flex items-center justify-center px-5 py-10 bg-[color:var(--cream)]">
       <div className="card-hard p-8 max-w-sm w-full">
         <div className="mb-6"><Logo size="md" /></div>
-        <h1 className="font-stencil text-3xl mb-2">Acceso a tu unidad</h1>
-        <p className="text-sm text-black/60 mb-6">Login sin contraseñas. Te enviamos un enlace mágico a tu email para entrar.</p>
+        <h1 className="font-stencil text-3xl mb-2">Accede a tu cuenta</h1>
+        <p className="text-sm text-black/60 mb-6">Accede con tu email. Te enviamos un enlace seguro para entrar sin contraseñas.</p>
 
         {sent ? (
           <div className="bg-[color:var(--mustard)]/30 border-2 border-black p-4 mb-4">
@@ -96,17 +96,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <a href="/legal/privacidad" className="underline hover:text-black">Política de Privacidad</a>.
         </p>
 
-        {/* Trust banner */}
+        {/* Trust strip — solo info verificable */}
         <div className="mt-6 pt-6 border-t-2 border-black/10 text-center">
-          <div className="flex items-center justify-center gap-1 mb-2">
-            {[1, 2, 3, 4, 5].map((s) => (
-              <span key={s} className="text-[color:var(--mustard)] text-lg">★</span>
-            ))}
-          </div>
-          <p className="text-[11px] font-mono uppercase tracking-widest text-black/60">
-            50 plazas beta · 6 meses gratis · sin permanencia
-          </p>
-          <p className="text-[10px] text-black/40 mt-1">
+          <p className="text-[10px] text-black/50">
             Clínicas dentales · estéticas · peluquerías · restaurantes
           </p>
         </div>

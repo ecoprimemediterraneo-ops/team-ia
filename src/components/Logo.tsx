@@ -17,20 +17,8 @@ export default function Logo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
       <rect x="9" y="9" width="362" height="92" rx="2"
         fill="none" stroke="#000" strokeWidth="1.5" />
 
-      {/* "TU" pequeño arriba izquierda */}
-      <text
-        x="22" y="38"
-        fontFamily="var(--font-anton), Impact, sans-serif"
-        fontSize="22"
-        fontStyle="italic"
-        fill="#000"
-        letterSpacing="2"
-      >
-        TU
-      </text>
-
-      {/* AI-TEAM grande, centrado */}
-      <g transform="translate(190, 86) skewX(-8)">
+      {/* AI-TEAM centrado dentro del marco */}
+      <g transform="translate(190, 78) skewX(-8)">
         <text
           x="0" y="0"
           textAnchor="middle"

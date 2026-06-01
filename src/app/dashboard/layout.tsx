@@ -2,7 +2,11 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import Logo from "@/components/Logo";
-import { agents } from "@/lib/agents";
+import { agents, type AgentSlug } from "@/lib/agents";
+
+// Agentes con integración externa REAL conectada hoy.
+// El resto se marca como "Próximamente" hasta que llegue verificación de Meta / Vapi / GMB.
+const LIVE_AGENTS = new Set<AgentSlug>(["pablo", "eva", "lucia", "diana"]);
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -25,7 +29,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
       <div className="max-w-7xl mx-auto grid md:grid-cols-[260px_1fr] gap-6 px-5 py-6">
         <aside className="space-y-2">
-          <div className="text-xs font-mono uppercase tracking-widest text-black/50 px-1 mb-2">Tu unidad · 8 especialistas</div>
+          <div className="text-xs font-mono uppercase tracking-widest text-black/50 px-1 mb-2">Tu equipo · {agents.length} agentes</div>
           {agents.map((a) => (
             <a
               key={a.slug}
@@ -44,10 +48,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 <span className="block font-stencil text-lg leading-none truncate">{a.name}</span>
                 <span className="block text-[10px] uppercase tracking-widest text-black/70 truncate">{a.role}</span>
               </span>
-              {a.status === "ready" ? (
-                <span className="absolute top-1 right-1 text-[8px] bg-green-700 text-white px-1 py-0.5 font-bold tracking-widest">★ LIVE</span>
+              {LIVE_AGENTS.has(a.slug) ? (
+                <span className="absolute top-1 right-1 text-[8px] bg-green-700 text-white px-1 py-0.5 font-bold tracking-widest">LIVE</span>
               ) : (
-                <span className="absolute top-1 right-1 text-[8px] bg-black text-[color:var(--mustard)] px-1 py-0.5 font-bold tracking-widest">DEMO</span>
+                <span className="absolute top-1 right-1 text-[8px] bg-black/70 text-white px-1 py-0.5 font-bold tracking-widest">PRÓXIMAMENTE</span>
               )}
             </a>
           ))}

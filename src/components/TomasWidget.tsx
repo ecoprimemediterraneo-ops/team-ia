@@ -14,12 +14,44 @@ export default function TomasWidget() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, open]);
+
+  // Cerrar al hacer click/touch fuera del panel cuando está abierto
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e: MouseEvent | TouchEvent) {
+      const target = e.target as Node | null;
+      if (target && panelRef.current && !panelRef.current.contains(target)) {
+        setOpen(false);
+      }
+    }
+    // Pequeño delay para que el click que abre el panel no lo cierre inmediatamente
+    const id = window.setTimeout(() => {
+      document.addEventListener("mousedown", handleOutside);
+      document.addEventListener("touchstart", handleOutside);
+    }, 0);
+    return () => {
+      window.clearTimeout(id);
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
+    };
+  }, [open]);
+
+  // Cerrar con Escape
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
 
   async function send() {
     const text = input.trim();
@@ -81,6 +113,7 @@ export default function TomasWidget() {
       {/* Panel de chat */}
       {open && (
         <div
+          ref={panelRef}
           className="fixed right-5 z-50 w-[92vw] sm:w-[360px] h-[480px] max-h-[80vh] flex flex-col bg-[color:var(--cream)] border-[3px] border-black shadow-2xl"
           style={{ bottom: "92px" }}
           role="dialog"
