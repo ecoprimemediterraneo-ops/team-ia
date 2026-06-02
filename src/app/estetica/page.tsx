@@ -101,8 +101,8 @@ const esteticaPacks = [
     name: "Pro",
     priceFounder: "389",
     priceRegular: "789",
-    tagline: "Completo + onboarding personalizado + multiusuario.",
-    agents: ["Todo lo del plan Completo", "Onboarding 1:1 con setup incluido", "Multiusuario (hasta 5 cuentas)", "Soporte prioritario email (4h)", "Integraciones a medida"],
+    tagline: "Completo + multiusuario + soporte prioritario.",
+    agents: ["Todo lo del plan Completo", "Multiusuario hasta 5 cuentas", "Soporte prioritario email (4 h)", "Auditoría mensual de negocio con recomendaciones"],
     cta: "Hablar con ventas",
   },
 ];

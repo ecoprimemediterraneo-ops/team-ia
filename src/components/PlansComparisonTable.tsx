@@ -21,7 +21,6 @@ const rows: Row[] = [
   { kind: "check", label: "Lucía · Correo y agenda", esencial: false, completo: true, pro: true },
   { kind: "check", label: "Eva · Email marketing", esencial: false, completo: true, pro: true },
   { kind: "check", label: "Marta · Instagram", esencial: false, completo: true, pro: true },
-  { kind: "check", label: "Diana · Auditoría inicial", esencial: true, completo: true, pro: true },
 
   // EXTRAS
   { kind: "group", label: "Extras" },

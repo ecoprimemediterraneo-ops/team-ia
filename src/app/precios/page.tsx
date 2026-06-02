@@ -1,7 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Packs from "@/components/Packs";
-import PlansComparisonTable from "@/components/PlansComparisonTable";
+import MonthlyReportSection from "@/components/MonthlyReportSection";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -10,20 +10,6 @@ export const metadata: Metadata = {
     "Tres planes: Esencial, Completo y Pro. Precio fundador para siempre. 6 meses gratis, sin tarjeta, sin permanencia.",
   alternates: { canonical: "https://aiteam.marketing/precios" },
 };
-
-const features: { label: string; esencial: string | boolean; completo: string | boolean; pro: string | boolean }[] = [
-  { label: "Pablo — WhatsApp 24/7", esencial: true, completo: true, pro: true },
-  { label: "Carmen — Llamadas entrantes", esencial: true, completo: true, pro: true },
-  { label: "Rocío — Reseñas Google", esencial: true, completo: true, pro: true },
-  { label: "Lucía — Correo y calendario", esencial: false, completo: true, pro: true },
-  { label: "Eva — Email marketing", esencial: false, completo: true, pro: true },
-  { label: "Marta — Redes sociales", esencial: false, completo: true, pro: true },
-  { label: "Asistente de configuración guiado por sector", esencial: true, completo: true, pro: true },
-  { label: "Usuarios incluidos", esencial: "1 usuario", completo: "2 usuarios", pro: "5 usuarios" },
-  { label: "Soporte", esencial: "Email", completo: "Email", pro: "Prioritario 4h" },
-  { label: "Período de prueba", esencial: "6 meses", completo: "6 meses", pro: "6 meses" },
-  { label: "Permanencia", esencial: "Ninguna", completo: "Ninguna", pro: "Ninguna" },
-];
 
 const faq = [
   {
@@ -67,44 +53,7 @@ export default function PreciosPage() {
 
         <Packs />
 
-        <PlansComparisonTable />
-
-        <section className="py-20 border-t-[3px] border-black bg-white">
-          <div className="max-w-6xl mx-auto px-5">
-            <h2 className="font-stencil text-3xl md:text-5xl mb-8">Resumen rápido</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full border-2 border-black text-sm">
-                <thead>
-                  <tr className="bg-black text-[color:var(--mustard)]">
-                    <th className="text-left px-4 py-3 font-mono text-xs tracking-widest">FUNCIÓN</th>
-                    <th className="px-4 py-3 font-mono text-xs tracking-widest">ESENCIAL</th>
-                    <th className="px-4 py-3 font-mono text-xs tracking-widest bg-[color:var(--mustard)] text-black">COMPLETO</th>
-                    <th className="px-4 py-3 font-mono text-xs tracking-widest">PRO</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {features.map((f, i) => (
-                    <tr key={f.label} className={i % 2 === 0 ? "bg-[color:var(--cream)]/40" : "bg-white"}>
-                      <td className="px-4 py-3 font-semibold">{f.label}</td>
-                      {(["esencial", "completo", "pro"] as const).map((p) => {
-                        const v = f[p];
-                        return (
-                          <td key={p} className="px-4 py-3 text-center">
-                            {typeof v === "boolean" ? (
-                              v ? <span className="text-[color:var(--red)] font-bold text-lg">✓</span> : <span className="text-black/20">—</span>
-                            ) : (
-                              <span className="text-xs">{v}</span>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+        <MonthlyReportSection />
 
         <section className="py-20 border-t-[3px] border-black">
           <div className="max-w-3xl mx-auto px-5">

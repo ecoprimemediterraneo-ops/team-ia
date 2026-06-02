@@ -1,14 +1,41 @@
-const packs = [
+// Roles canónicos (alineados con src/lib/agents.ts y los prompts):
+//   Pablo  → WhatsApp (ventas)
+//   Marta  → Instagram y redes
+//   Carmen → Llamadas de voz
+//   Eva    → Email marketing
+//   Lucía  → Agenda y gestión
+//   Rocío  → Reseñas de Google
+
+type Pack = {
+  name: string;
+  priceFounder: string;
+  priceRegular: string;
+  tagline: string;
+  agents: string[];
+  extras: string[];
+  reportLabel: string;       // qué informe mensual incluye este plan
+  users: string;
+  cta: string;
+  featured?: boolean;
+};
+
+const packs: Pack[] = [
   {
     name: "Esencial",
     priceFounder: "89",
     priceRegular: "189",
-    tagline: "Equivalente a una recepcionista part-time. Operativo 24/7.",
+    tagline: "Lo justo para empezar a no perder clientes.",
     agents: [
-      "Pablo — WhatsApp 24/7",
-      "Carmen — Llamadas entrantes",
-      "Rocío — Reseñas Google",
+      "Pablo · WhatsApp (ventas)",
+      "Carmen · Llamadas de voz",
+      "Rocío · Reseñas de Google",
     ],
+    extras: [
+      "Asistente de configuración guiado por sector",
+      "1 usuario",
+    ],
+    reportLabel: "Resumen mensual",
+    users: "1 usuario",
     cta: "Activar plan Esencial",
   },
   {
@@ -17,11 +44,19 @@ const packs = [
     priceRegular: "389",
     tagline: "Operación 360. Los 6 agentes activos.",
     agents: [
-      "Todo lo del plan Esencial",
-      "Lucía — Correo y calendario",
-      "Eva — Email marketing",
-      "Marta — Redes sociales",
+      "Pablo · WhatsApp (ventas)",
+      "Carmen · Llamadas de voz",
+      "Rocío · Reseñas de Google",
+      "Lucía · Agenda y gestión",
+      "Eva · Email marketing",
+      "Marta · Instagram y redes",
     ],
+    extras: [
+      "Asistente de configuración guiado por sector",
+      "2 usuarios",
+    ],
+    reportLabel: "Informe mensual con análisis y leads calientes",
+    users: "2 usuarios",
     cta: "Activar plan Completo",
     featured: true,
   },
@@ -29,14 +64,21 @@ const packs = [
     name: "Pro",
     priceFounder: "389",
     priceRegular: "789",
-    tagline: "Completo + onboarding personalizado + multiusuario.",
+    tagline: "Completo + soporte prioritario y multiusuario.",
     agents: [
-      "Todo lo del plan Completo",
-      "Onboarding 1:1 con setup incluido",
-      "Multiusuario (hasta 5 cuentas)",
-      "Soporte prioritario email (4h)",
-      "Integraciones a medida (Gesden, ClinicCloud…)",
+      "Pablo · WhatsApp (ventas)",
+      "Carmen · Llamadas de voz",
+      "Rocío · Reseñas de Google",
+      "Lucía · Agenda y gestión",
+      "Eva · Email marketing",
+      "Marta · Instagram y redes",
     ],
+    extras: [
+      "Soporte prioritario email (4 h)",
+      "5 usuarios",
+    ],
+    reportLabel: "Auditoría mensual con recomendaciones estratégicas",
+    users: "5 usuarios",
     cta: "Hablar con ventas",
   },
 ];
@@ -56,16 +98,6 @@ export default function Packs() {
         <p className="text-lg max-w-2xl mb-8 text-black/70">
           La misma operación que un equipo de 2.000–5.000 €/mes. Sin nóminas, sin contratos, sin fricciones de gestión.
         </p>
-
-        {/* Banner Diana incluida en todos los packs */}
-        <div className="card-hard p-4 bg-[#14B8A6]/10 border-[#14B8A6] mb-8 flex items-center gap-4 flex-wrap">
-          <span className="text-3xl">🔍</span>
-          <div className="flex-1 min-w-[200px]">
-            <div className="font-bold">Diana — Auditora — incluida en todos los packs</div>
-            <div className="text-xs text-black/60">Diagnóstico inicial gratis + revisión mensual continua de tu negocio.</div>
-          </div>
-          <a href="/diagnostico" className="text-xs font-mono font-bold tracking-widest border-2 border-black px-3 py-2 hover:bg-black hover:text-white">PROBAR GRATIS →</a>
-        </div>
 
         <div className="grid md:grid-cols-3 gap-5 pt-6">
           {packs.map((p) => (
@@ -92,14 +124,42 @@ export default function Packs() {
                 </div>
               </div>
 
-              <ul className="space-y-2 mb-6 text-sm flex-1">
+              {/* Agentes incluidos */}
+              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-black/55 mb-2">
+                Agentes incluidos
+              </div>
+              <ul className="space-y-1.5 mb-4 text-sm">
                 {p.agents.map((a) => (
                   <li key={a} className="flex items-start gap-2">
-                    <span className="text-[color:var(--red)] font-bold">▸</span>
-                    <span>{a}</span>
+                    <span className="text-[color:var(--red)] font-bold leading-snug">▸</span>
+                    <span className="leading-snug">{a}</span>
                   </li>
                 ))}
               </ul>
+
+              {/* Extras */}
+              {p.extras.length > 0 && (
+                <ul className="space-y-1 mb-4 text-xs text-black/70 border-t border-black/15 pt-3">
+                  {p.extras.map((e) => (
+                    <li key={e} className="flex items-start gap-2">
+                      <span className="text-black/40 font-bold">+</span>
+                      <span>{e}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Informe mensual destacado */}
+              <div className={`mb-5 border-t-2 border-black/15 pt-3 ${p.featured ? "" : ""}`}>
+                <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-black/55">
+                  Informe mensual incluido
+                </div>
+                <div className="text-sm font-semibold leading-snug mt-0.5">
+                  📊 {p.reportLabel}
+                </div>
+              </div>
+
+              <div className="flex-1" />
 
               <a href="#waitlist" className="btn-mustard text-xs text-center block">
                 {p.cta}

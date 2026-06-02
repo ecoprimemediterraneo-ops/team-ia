@@ -19,7 +19,6 @@ export default function Footer() {
               <li><a href="/agentes" className="hover:text-[color:var(--red)]">Agentes</a></li>
               <li><a href="/precios" className="hover:text-[color:var(--red)]">Precios</a></li>
               <li><a href="/beta" className="hover:text-[color:var(--red)]">Reservar plaza</a></li>
-              <li><a href="/diagnostico" className="hover:text-[color:var(--red)]">Diagnóstico gratis</a></li>
             </ul>
           </div>
 

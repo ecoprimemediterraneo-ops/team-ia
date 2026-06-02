@@ -71,9 +71,6 @@ export default function Navbar() {
             </div>
           </div>
 
-          <a href="/diagnostico" className="hover:text-[color:var(--red)] transition-colors">
-            Diagnóstico
-          </a>
           <a href="/casos" className="hover:text-[color:var(--red)] transition-colors">
             Casos
           </a>
@@ -117,13 +114,6 @@ export default function Navbar() {
             onClick={() => setMenuOpen(false)}
           >
             Precios
-          </a>
-          <a
-            href="/diagnostico"
-            className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]"
-            onClick={() => setMenuOpen(false)}
-          >
-            Diagnóstico
           </a>
           <a
             href="/casos"

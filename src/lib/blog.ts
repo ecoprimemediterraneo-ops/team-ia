@@ -152,11 +152,11 @@ Tirar 800€/mes a Google Ads sin tener WhatsApp contestado en menos de 10 min e
 6. **Email marketing.** ¿Tienes BBDD? ¿Mandas newsletter? ¿Tienes SPF/DKIM/DMARC?
 7. **Competencia local.** ¿Qué precios, promos y reseñas mueven en tu zona en los últimos 90 días?
 
-## Lo que automáticamente hace Diana
+## Cómo se ve dentro de AI-Team
 
-Diana (HOTEL-D8) ejecuta esta auditoría en 2 minutos y te devuelve un PDF con semáforo por área + **pérdida estimada anual en euros** + plan de acción. Sin tarjeta, sin compromiso.
+Esta auditoría no es un servicio aparte: es lo que tu equipo IA hace cada mes contigo. En tu informe mensual ves semáforo por área, pérdida estimada en euros y qué vamos a afinar el mes siguiente. Sin paja, sin auditorías eternas: el plan se ajusta solo.
 
-[Probar diagnóstico gratis](https://aiteam.marketing/diagnostico)`,
+[Ver planes y reservar plaza](https://aiteam.marketing/beta)`,
   },
   {
     slug: "cold-email-b2b-pyme",
@@ -297,7 +297,7 @@ El propietario medio dedica **3-5 horas al día** a estos canales. No al pelo.
 
 **Mes 2: Redes + email.** Marta + Eva. Sube tu Instagram y empieza a fidelizar BBDD.
 
-**Mes 3: Llamadas + diagnóstico continuo.** Carmen + Diana. Cierras el círculo: ya no hay canal sin cobertura.
+**Mes 3: Llamadas + auditoría continua.** Carmen + auditoría mensual del Pro. Cierras el círculo: ya no hay canal sin cobertura.
 
 ## Lo que NO funciona
 

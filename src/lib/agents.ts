@@ -1,4 +1,4 @@
-export type AgentSlug = "lucia" | "marta" | "carmen" | "pablo" | "rocio" | "eva" | "sergio" | "diana";
+export type AgentSlug = "lucia" | "marta" | "carmen" | "pablo" | "rocio" | "eva" | "sergio";
 
 export type Agent = {
   slug: AgentSlug;
@@ -69,7 +69,7 @@ export const agents: Agent[] = [
   {
     slug: "lucia",
     name: "Lucía",
-    role: "Asistente Ejecutiva",
+    role: "Agenda y gestión",
     short: "Procesa la bandeja de entrada, prioriza correos y genera borradores de respuesta con tu estilo.",
     emoji: "📬",
     quote:
@@ -84,7 +84,7 @@ export const agents: Agent[] = [
   {
     slug: "marta",
     name: "Marta",
-    role: "Community Manager",
+    role: "Instagram y redes",
     short: "Genera y publica contenido para Instagram, LinkedIn y TikTok con el tono y la estrategia de tu negocio.",
     emoji: "📱",
     quote:
@@ -99,7 +99,7 @@ export const agents: Agent[] = [
   {
     slug: "carmen",
     name: "Carmen",
-    role: "Recepcionista",
+    role: "Llamadas de voz",
     short: "Atiende llamadas entrantes en español, agenda citas y registra mensajes con precisión.",
     emoji: "📞",
     quote:
@@ -110,22 +110,6 @@ export const agents: Agent[] = [
     statusNote: "Operativa · guiones manuales con IA (auto-voz: en alta Vapi)",
     avatar: avatar("carmen"),
     showOnHome: true,
-  },
-  {
-    slug: "diana",
-    name: "Diana",
-    role: "Auditora de Negocios",
-    short:
-      "Diagnostica el estado digital de tu negocio en 2 minutos. Web, reseñas, WhatsApp, redes, competencia. Encuentra dónde pierdes dinero cada semana.",
-    emoji: "🔍",
-    quote:
-      "Veo lo que tus clientes ven en Google. Veo lo que tu competencia hace mejor. Te digo en euros exactos cuánto te cuesta cada semana sin equipo IA.",
-    color: "#14B8A6",
-    codename: "HOTEL-D8",
-    status: "ready",
-    statusNote: "Operativa · diagnóstico gratuito, 2 minutos, sin tarjeta",
-    avatar: avatar("diana"),
-    showOnHome: false,
   },
   {
     slug: "sergio",

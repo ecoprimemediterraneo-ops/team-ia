@@ -14,12 +14,12 @@ type Post = {
 
 const calendario: Post[] = [
   // Semana 1
-  { n: 1, semana: 1, dia: "Lun", pilar: "DOLOR", formato: "Post", personaje: "Diana", titulo: "67% llamadas perdidas", estado: "pendiente" },
+  { n: 1, semana: 1, dia: "Lun", pilar: "DOLOR", formato: "Post", personaje: "Equipo", titulo: "67% llamadas perdidas", estado: "pendiente" },
   { n: 2, semana: 1, dia: "Mar", pilar: "EDUCATIVO", formato: "Reel", personaje: "Pablo", titulo: "WhatsApp un sábado 23:00", estado: "pendiente" },
-  { n: 3, semana: 1, dia: "Mié", pilar: "EDUCATIVO", formato: "Carrusel", personaje: "Diana", titulo: "Las 7 áreas que pierden dinero", estado: "pendiente" },
+  { n: 3, semana: 1, dia: "Mié", pilar: "EDUCATIVO", formato: "Carrusel", personaje: "Equipo", titulo: "Las 7 áreas que pierden dinero", estado: "pendiente" },
   { n: 4, semana: 1, dia: "Jue", pilar: "PRODUCTO", formato: "Post", personaje: "Rocío", titulo: "Antes vs después reseñas", estado: "pendiente" },
   { n: 5, semana: 1, dia: "Vie", pilar: "PRODUCTO", formato: "Reel", personaje: "Marta", titulo: "Instagram que se publica solo", estado: "pendiente" },
-  { n: 6, semana: 1, dia: "Sáb", pilar: "DETRÁS", formato: "Post", personaje: "Equipo", titulo: "Bienvenida Diana", estado: "pendiente" },
+  { n: 6, semana: 1, dia: "Sáb", pilar: "DETRÁS", formato: "Post", personaje: "Equipo", titulo: "Bienvenida al equipo", estado: "pendiente" },
   // Semana 2
   { n: 7, semana: 2, dia: "Lun", pilar: "DOLOR", formato: "Post", personaje: "Pablo", titulo: "23:47 un sábado", estado: "pendiente" },
   { n: 8, semana: 2, dia: "Mar", pilar: "EDUCATIVO", formato: "Reel", personaje: "Carmen", titulo: "Llamada perdida más cara", estado: "pendiente" },
@@ -29,7 +29,7 @@ const calendario: Post[] = [
   { n: 12, semana: 2, dia: "Sáb", pilar: "DETRÁS", formato: "Post", personaje: "Fundador", titulo: "Por qué montamos AI-Team", estado: "pendiente" },
   // Semana 3
   { n: 13, semana: 3, dia: "Lun", pilar: "DOLOR", formato: "Post", personaje: "Sergio", titulo: "Tu competidor de la misma calle", estado: "pendiente" },
-  { n: 14, semana: 3, dia: "Mar", pilar: "EDUCATIVO", formato: "Reel", personaje: "Diana", titulo: "Diagnóstico en 2 min", estado: "pendiente" },
+  { n: 14, semana: 3, dia: "Mar", pilar: "EDUCATIVO", formato: "Reel", personaje: "Equipo", titulo: "Diagnóstico en 2 min", estado: "pendiente" },
   { n: 15, semana: 3, dia: "Mié", pilar: "EDUCATIVO", formato: "Carrusel", personaje: "Lucía", titulo: "47 emails en 30 seg", estado: "pendiente" },
   { n: 16, semana: 3, dia: "Jue", pilar: "PRODUCTO", formato: "Post", personaje: "Carmen", titulo: "Llamada cerrada 8:47 AM", estado: "pendiente" },
   { n: 17, semana: 3, dia: "Vie", pilar: "PRODUCTO", formato: "Reel", personaje: "Marta", titulo: "Antes/después IG", estado: "pendiente" },
@@ -38,14 +38,14 @@ const calendario: Post[] = [
   { n: 19, semana: 4, dia: "Lun", pilar: "DOLOR", formato: "Post", personaje: "Lucía", titulo: "47 emails un lunes", estado: "pendiente" },
   { n: 20, semana: 4, dia: "Mar", pilar: "EDUCATIVO", formato: "Reel", personaje: "Pablo", titulo: "24/7 comparativa", estado: "pendiente" },
   { n: 21, semana: 4, dia: "Mié", pilar: "EDUCATIVO", formato: "Carrusel", personaje: "Eva", titulo: "SPF DKIM DMARC explicado", estado: "pendiente" },
-  { n: 22, semana: 4, dia: "Jue", pilar: "PRODUCTO", formato: "Post", personaje: "Diana", titulo: "Auditoría paciente cero", estado: "pendiente" },
+  { n: 22, semana: 4, dia: "Jue", pilar: "PRODUCTO", formato: "Post", personaje: "Equipo", titulo: "Auditoría paciente cero", estado: "pendiente" },
   { n: 23, semana: 4, dia: "Vie", pilar: "PRODUCTO", formato: "Reel", personaje: "Marta", titulo: "Antes/después IG cliente", estado: "pendiente" },
   { n: 24, semana: 4, dia: "Sáb", pilar: "DETRÁS", formato: "Post", personaje: "Equipo", titulo: "Por qué los agentes son 80s", estado: "pendiente" },
   // Semana 5 extras
   { n: 25, semana: 5, dia: "Lun", pilar: "DOLOR", formato: "Post", personaje: "Marta", titulo: "IG abandonado 18 días", estado: "pendiente" },
   { n: 26, semana: 5, dia: "Mar", pilar: "EDUCATIVO", formato: "Post", personaje: "Sergio", titulo: "3 datos competencia", estado: "pendiente" },
   { n: 27, semana: 5, dia: "Mié", pilar: "PRODUCTO", formato: "Post", personaje: "Equipo", titulo: "Plan Completo explicado", estado: "pendiente" },
-  { n: 28, semana: 5, dia: "Jue", pilar: "DOLOR", formato: "Post", personaje: "Diana", titulo: "1.500-4.200€ perdidos/mes", estado: "pendiente" },
+  { n: 28, semana: 5, dia: "Jue", pilar: "DOLOR", formato: "Post", personaje: "Equipo", titulo: "1.500-4.200€ perdidos/mes", estado: "pendiente" },
   { n: 29, semana: 5, dia: "Vie", pilar: "DETRÁS", formato: "Post", personaje: "Equipo", titulo: "Cómo entras en AI-Team", estado: "pendiente" },
   { n: 30, semana: 5, dia: "Sáb", pilar: "DETRÁS", formato: "Post", personaje: "Equipo", titulo: "Mes 1 recap", estado: "pendiente" },
 ];

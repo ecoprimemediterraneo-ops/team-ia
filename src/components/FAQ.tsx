@@ -4,7 +4,7 @@ import { useState } from "react";
 const faqs = [
   {
     q: "¿Cuánto cuesta?",
-    a: "Tres planes: Esencial 89 €/mes (Pablo + Carmen + Rocío — WhatsApp, llamadas y reseñas), Completo 189 €/mes con los 6 agentes activos (añade Lucía + Eva + Marta), y Pro 389 €/mes (Completo + onboarding 1:1 + multiusuario hasta 5 cuentas + soporte prioritario 4h + integraciones a medida). Solo 50 plazas fundador con precio congelado de por vida.",
+    a: "Tres planes: Esencial 89 €/mes (Pablo + Carmen + Rocío — WhatsApp, llamadas y reseñas) con resumen mensual incluido; Completo 189 €/mes con los 6 agentes activos (añade Lucía + Eva + Marta) e informe mensual con análisis y leads calientes; y Pro 389 €/mes (todo lo del Completo + multiusuario hasta 5 cuentas + soporte prioritario 4 h + auditoría mensual de negocio con recomendaciones estratégicas). Solo 50 plazas fundador con precio congelado de por vida.",
   },
   {
     q: "¿Necesito instalar algo o saber de tecnología?",

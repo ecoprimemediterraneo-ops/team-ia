@@ -6,8 +6,8 @@ import { agents } from "@/lib/agents";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Los 8 agentes IA",
-  description: "Conoce a Pablo, Rocío, Eva, Lucía, Marta, Carmen, Sergio y Diana. Cada uno especializado en un canal de tu negocio.",
+  title: "Los agentes IA del equipo",
+  description: "Conoce a Pablo, Rocío, Eva, Lucía, Marta, Carmen y Sergio. Cada uno especializado en un canal de tu negocio.",
   alternates: { canonical: "https://aiteam.marketing/agentes" },
 };
 

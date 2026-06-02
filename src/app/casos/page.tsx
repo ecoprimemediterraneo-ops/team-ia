@@ -47,10 +47,10 @@ export default function CasosPage() {
                 Reservar plaza →
               </a>
               <a
-                href="/diagnostico"
+                href="/precios"
                 className="border-[3px] border-black px-5 py-3 font-bold uppercase tracking-widest text-sm hover:bg-black hover:text-[color:var(--mustard)] transition-colors"
               >
-                Probar diagnóstico gratis
+                Ver planes y precios
               </a>
             </div>
           </div>

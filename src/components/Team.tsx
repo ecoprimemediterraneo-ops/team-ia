@@ -4,14 +4,6 @@ import { agents } from "@/lib/agents";
 // Tomás no está en el catálogo agents.ts (es soporte), así que va aparte.
 const secondary = [
   {
-    slug: "diana",
-    name: "Diana",
-    role: "Auditoría inicial gratis",
-    avatar: "/agentes/diana.webp",
-    color: "#14B8A6",
-    href: "/agentes/diana",
-  },
-  {
     slug: "sergio",
     name: "Sergio",
     role: "Vigila a tu competencia 24/7",

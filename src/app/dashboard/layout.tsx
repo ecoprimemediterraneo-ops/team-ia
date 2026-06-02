@@ -6,7 +6,7 @@ import { agents, type AgentSlug } from "@/lib/agents";
 
 // Agentes con integración externa REAL conectada hoy.
 // El resto se marca como "Próximamente" hasta que llegue verificación de Meta / Vapi / GMB.
-const LIVE_AGENTS = new Set<AgentSlug>(["pablo", "eva", "lucia", "diana"]);
+const LIVE_AGENTS = new Set<AgentSlug>(["pablo", "eva", "lucia"]);
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();

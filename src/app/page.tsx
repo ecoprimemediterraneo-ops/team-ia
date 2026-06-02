@@ -3,8 +3,8 @@ import Hero from "@/components/Hero";
 import AgentOS from "@/components/AgentOS";
 import HowItWorks from "@/components/HowItWorks";
 import Team from "@/components/Team";
+import MonthlyReportSection from "@/components/MonthlyReportSection";
 import Packs from "@/components/Packs";
-import PlansComparisonTable from "@/components/PlansComparisonTable";
 import Testimonials from "@/components/Testimonials";
 import FAQ from "@/components/FAQ";
 import FinalCTA from "@/components/FinalCTA";
@@ -19,8 +19,8 @@ export default function Home() {
         <AgentOS />
         <HowItWorks />
         <Team />
+        <MonthlyReportSection />
         <Packs />
-        <PlansComparisonTable />
         <Testimonials />
         <FAQ />
         <FinalCTA />

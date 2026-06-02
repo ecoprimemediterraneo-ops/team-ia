@@ -119,26 +119,6 @@ const details: Record<AgentSlug, Detail> = {
     integrations: ["Vapi", "Twilio Voice", "Google Calendar"],
     metrics: BETA_METRICS,
   },
-  diana: {
-    hook: "Diagnostica el estado digital de tu negocio en 2 minutos. Encuentra exactamente dónde pierdes dinero cada semana — y cómo recuperarlo.",
-    capabilities: [
-      "Analiza web, Google Business, Instagram y WhatsApp",
-      "Detecta cuellos de botella en comunicación y reputación",
-      "Calcula pérdida estimada anual en €",
-      "Entrega informe personalizado en 2 minutos",
-    ],
-    whenToUse: [
-      "Antes de contratar AI-Team (gratis, sin compromiso)",
-      "Negocios que sospechan que pierden clientes pero no saben dónde",
-      "Cualquiera que quiera saber qué hace la competencia",
-    ],
-    integrations: ["Google PageSpeed", "Google Business API", "Análisis web propio"],
-    metrics: [
-      { label: "Tiempo del informe", value: "2 min" },
-      { label: "Áreas auditadas", value: "7" },
-      { label: "Coste", value: "0€" },
-    ],
-  },
   sergio: {
     hook: "Tus competidores no descansan. Sergio tampoco. Escaneo nocturno de webs, redes y reseñas — informe en tu bandeja a primera hora.",
     capabilities: [

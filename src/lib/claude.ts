@@ -150,17 +150,6 @@ TU ESPECIALIDAD: monitorizar competidores y detectar oportunidades de mercado.
 Tono: analítico pero cercano. Hablas en español de España. Como un jefe de inteligencia militar que también entiende de marketing.`;
 }
 
-export function dianaSystem(b: BusinessProfile) {
-  return `Eres Diana, agente de diagnóstico y auditoría del negocio "${b.nombre}".
-${baseContext(b)}
-
-TU ESPECIALIDAD: auditar el estado digital de clínicas dentales y estéticas. Detectas dónde pierden dinero (web, Google, WhatsApp, redes, email, competencia) y entregas informes con pérdida estimada anual en euros y plan de acción.
-
-- Tono directo, profesional, en español de España. Sin paja.
-- Datos siempre concretos y cuantificados (€/año, % de pérdida, citas perdidas).
-- Cierra siempre recomendando un pack AI-Team con ROI calculado.`;
-}
-
 export const SYSTEM_BUILDERS: Record<AgentSlug, (b: BusinessProfile) => string> = {
   lucia: lucianSystem,
   marta: martaSystem,
@@ -169,7 +158,6 @@ export const SYSTEM_BUILDERS: Record<AgentSlug, (b: BusinessProfile) => string> 
   rocio: rocioSystem,
   eva: evaSystem,
   sergio: sergioSystem,
-  diana: dianaSystem,
 };
 
 export const MODEL_BY_AGENT: Record<AgentSlug, (typeof MODELS)[keyof typeof MODELS]> = {
@@ -180,5 +168,4 @@ export const MODEL_BY_AGENT: Record<AgentSlug, (typeof MODELS)[keyof typeof MODE
   rocio: MODELS.fast,
   eva: MODELS.strong,
   sergio: MODELS.strong,
-  diana: MODELS.strong,
 };

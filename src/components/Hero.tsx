@@ -91,10 +91,10 @@ export default function Hero() {
               Reservar plaza →
             </a>
             <a
-              href="/diagnostico"
+              href="/precios"
               className="text-sm font-mono border border-white/30 text-white/80 px-8 py-3 hover:border-white hover:text-white transition-all duration-200"
             >
-              Diagnóstico gratis (2 min)
+              Ver planes y precios
             </a>
           </div>
 
