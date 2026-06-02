@@ -26,23 +26,28 @@ async function loginAction(formData: FormData) {
     await resend.emails.send({
       from: RESEND_FROM,
       to: email,
-      subject: "Tu enlace de acceso a AI-Team",
+      replyTo: process.env.RESEND_REPLY_TO || "hola@aiteam.marketing",
+      subject: "Tu enlace de acceso (válido 15 minutos)",
       html: `
-        <div style="font-family:system-ui,-apple-system,sans-serif;max-width:560px;margin:0 auto;padding:40px 20px;color:#0A0A0A">
-          <div style="border:3px solid #000;box-shadow:6px 6px 0 #000;padding:32px;background:#FAF7F0">
-            <h1 style="font-size:28px;margin:0 0 16px;letter-spacing:-1px">Tu acceso a AI-Team</h1>
-            <p style="font-size:16px;line-height:1.5;color:#444">Haz click en el botón para entrar a tu cuenta. El enlace caduca en 15 minutos.</p>
-            <p style="margin:32px 0">
-              <a href="${url}" style="display:inline-block;background:#F5C518;color:#000;text-decoration:none;padding:16px 28px;font-weight:800;letter-spacing:2px;border:3px solid #000;box-shadow:4px 4px 0 #000">ENTRAR EN AI-TEAM →</a>
-            </p>
-            <p style="font-size:12px;color:#888;margin-top:32px;border-top:1px solid #ddd;padding-top:16px">
-              Si no has solicitado este acceso, ignora este email. Nadie podrá entrar sin abrir este enlace.
-            </p>
-          </div>
-          <p style="font-size:11px;color:#999;text-align:center;margin-top:16px;letter-spacing:1px">AI-TEAM · AITEAM.MARKETING</p>
+        <div style="font-family:system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;padding:32px 20px;color:#0A0A0A">
+          <p style="font-size:16px;line-height:1.6;margin:0 0 16px">Hola,</p>
+          <p style="font-size:16px;line-height:1.6;margin:0 0 24px">Has pedido entrar a tu cuenta de AI-Team. Confirma tu acceso desde el siguiente enlace:</p>
+          <p style="margin:24px 0">
+            <a href="${url}" style="display:inline-block;background:#0A0A0A;color:#ffffff;text-decoration:none;padding:14px 24px;font-weight:600;border-radius:6px">Entrar en mi cuenta</a>
+          </p>
+          <p style="font-size:14px;line-height:1.6;color:#555;margin:0 0 16px">O copia y pega esta dirección en tu navegador:</p>
+          <p style="font-size:13px;line-height:1.5;color:#0A0A0A;word-break:break-all;margin:0 0 24px"><a href="${url}" style="color:#0A0A0A">${url}</a></p>
+          <p style="font-size:13px;line-height:1.6;color:#666;margin:0 0 8px">Este enlace caduca en 15 minutos y solo puede usarse una vez.</p>
+          <p style="font-size:13px;line-height:1.6;color:#666;margin:0 0 24px">Si no has solicitado este acceso, puedes ignorar este mensaje. Nadie podrá entrar sin abrirlo.</p>
+          <hr style="border:none;border-top:1px solid #e5e5e5;margin:24px 0">
+          <p style="font-size:12px;line-height:1.5;color:#888;margin:0">AI-Team · aiteam.marketing<br>¿Dudas? Responde a este correo.</p>
         </div>
       `,
-      text: `Tu acceso a AI-Team\n\nAbre este enlace (caduca en 15 min):\n${url}\n\nSi no lo solicitaste, ignora este email.`,
+      text:
+        `Hola,\n\nHas pedido entrar a tu cuenta de AI-Team.\n\n` +
+        `Confirma tu acceso abriendo este enlace (válido 15 minutos, un solo uso):\n${url}\n\n` +
+        `Si no has solicitado este acceso, ignora este mensaje.\n\n` +
+        `— AI-Team · aiteam.marketing`,
     });
   } catch (e) {
     console.error("[login] error enviando email:", e);
