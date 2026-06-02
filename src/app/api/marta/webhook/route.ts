@@ -24,6 +24,16 @@ import {
   getConversation,
   type Conversation,
 } from "@/lib/conversation-store";
+import { logEvent, makeEventId } from "@/lib/event-log";
+import { resolveTenantFromMeta } from "@/lib/tenants";
+
+async function safeLogEvent(...args: Parameters<typeof logEvent>): Promise<void> {
+  try {
+    await logEvent(...args);
+  } catch (err) {
+    console.error("[marta/webhook] event log error:", err);
+  }
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -104,6 +114,9 @@ export async function POST(req: Request) {
   try {
     const entries = body.entry ?? [];
     for (const entry of entries) {
+      // Resolver tenant a partir del id del entry (IG user id de la cuenta receptora).
+      const tenantId = await resolveTenantFromMeta({ instagramUserId: entry.id });
+
       // --- DMs ---
       const messaging = entry.messaging ?? [];
       for (const ev of messaging) {
@@ -117,6 +130,9 @@ export async function POST(req: Request) {
           console.log("[marta/webhook] evento sin sender/text ignorado");
           continue;
         }
+
+        const rxTs = new Date().toISOString();
+        const mid = ev.message?.mid;
 
         console.log(`[marta/webhook] DM RX from=${senderId} text="${text}"`);
 
@@ -134,6 +150,21 @@ export async function POST(req: Request) {
         // (solo IGSID), así que `name` queda sin actualizar.
         await appendTurn("marta", senderId, "user", text);
         await appendTurn("marta", senderId, "assistant", reply);
+
+        await safeLogEvent(tenantId, {
+          id: makeEventId("message_in", "marta", mid),
+          ts: rxTs,
+          type: "message_in",
+          channel: "marta",
+          senderId,
+        });
+        await safeLogEvent(tenantId, {
+          id: makeEventId("message_out", "marta", mid),
+          type: "message_out",
+          channel: "marta",
+          senderId,
+          meta: { latencyMs: Date.now() - Date.parse(rxTs) },
+        });
         console.log(
           `[marta/webhook] TX result:`,
           JSON.stringify(sendResult).slice(0, 500),

@@ -22,6 +22,18 @@ import {
   getConversation,
   type Conversation,
 } from "@/lib/conversation-store";
+import { logEvent, makeEventId } from "@/lib/event-log";
+import { resolveTenantFromMeta } from "@/lib/tenants";
+
+// Logging de eventos del informe mensual. Silencioso ante fallos para no
+// romper el flujo principal del webhook.
+async function safeLogEvent(...args: Parameters<typeof logEvent>): Promise<void> {
+  try {
+    await logEvent(...args);
+  } catch (err) {
+    console.error("[pablo/webhook] event log error:", err);
+  }
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -113,6 +125,10 @@ export async function POST(req: Request) {
           continue;
         }
 
+        // Resolver tenant a partir del phone_number_id del receptor (nuestro número).
+        const phoneNumberId = value.metadata?.phone_number_id;
+        const tenantId = await resolveTenantFromMeta({ whatsappPhoneNumberId: phoneNumberId });
+
         const messages = value.messages ?? [];
         const contacts = value.contacts ?? [];
         for (const msg of messages) {
@@ -125,6 +141,9 @@ export async function POST(req: Request) {
           const from = msg.from; // número del cliente (sin '+')
           const text = msg.text.body;
           const customerName = contacts.find((c) => c.wa_id === from)?.profile?.name;
+
+          // Ts de recepción para medir latencia de respuesta del agente.
+          const rxTs = new Date().toISOString();
 
           console.log(
             `[pablo/webhook] RX from=${from} name=${customerName ?? "?"} text="${text}"`,
@@ -147,6 +166,22 @@ export async function POST(req: Request) {
           // guardar interacciones que nunca llegaron al usuario).
           await appendTurn("pablo", from, "user", text, customerName);
           await appendTurn("pablo", from, "assistant", reply, customerName);
+
+          // Eventos del informe mensual (silenciosos ante fallos).
+          await safeLogEvent(tenantId, {
+            id: makeEventId("message_in", "pablo", msg.id), // dedup por message_id de Meta
+            ts: rxTs,
+            type: "message_in",
+            channel: "pablo",
+            senderId: from,
+          });
+          await safeLogEvent(tenantId, {
+            id: makeEventId("message_out", "pablo", msg.id),
+            type: "message_out",
+            channel: "pablo",
+            senderId: from,
+            meta: { latencyMs: Date.now() - Date.parse(rxTs) },
+          });
           console.log(
             `[pablo/webhook] TX result:`,
             JSON.stringify(sendResult).slice(0, 500),

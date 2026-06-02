@@ -43,6 +43,7 @@ export type LeadActivity = {
 
 export type Lead = {
   id: string;
+  tenantId?: string; // cliente AI-Team al que pertenece este lead (default: tenant_aiteam)
   businessName: string;
   contactName?: string;
   email?: string;

@@ -6,6 +6,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { kvGet, kvSet } from "./supabase";
+import { logEvent, makeEventId } from "./event-log";
+import { DEFAULT_TENANT_ID, getTenant } from "./tenants";
 
 // Re-export types and constants from client-safe module
 export type { LeadStage, Lead, LeadActivity } from "./pipeline-constants";
@@ -112,6 +114,38 @@ export async function moveLead(id: string, newStage: LeadStage): Promise<Lead | 
     data: { from: old, to: newStage },
   });
   await writePipeline(all);
+
+  // Eventos del informe mensual (silencioso ante fallos, no rompe el flujo).
+  try {
+    const tenantId = l.tenantId || DEFAULT_TENANT_ID;
+    if (newStage === "demo_booked" && old !== "demo_booked") {
+      await logEvent(tenantId, {
+        id: makeEventId("appointment_set", id, l.updatedAt),
+        ts: l.updatedAt,
+        type: "appointment_set",
+        channel: "dashboard",
+        meta: { stageFrom: old, stageTo: newStage, sector: l.sector },
+      });
+    }
+    if (newStage === "client" && old !== "client") {
+      const t = await getTenant(tenantId);
+      await logEvent(tenantId, {
+        id: makeEventId("sale", id, l.updatedAt),
+        ts: l.updatedAt,
+        type: "sale",
+        channel: "dashboard",
+        meta: {
+          stageFrom: old,
+          stageTo: newStage,
+          sector: l.sector,
+          valueEUR: t?.conversionValueEUR ?? 200,
+        },
+      });
+    }
+  } catch (err) {
+    console.error("[pipeline] event log error en moveLead:", err);
+  }
+
   return l;
 }
 
