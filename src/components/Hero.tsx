@@ -66,12 +66,11 @@ export default function Hero() {
 
           {/* H1 principal */}
           <h1 className="font-stencil text-4xl sm:text-6xl md:text-7xl lg:text-[80px] leading-[1.0] tracking-tight">
-            <span className="block text-white">SEIS EMPLEADOS IA</span>
+            <span className="block text-white">SEIS EMPLEADOS 24H:</span>
+            <span className="block text-white mt-2">MÁS TIEMPO PARA TI,</span>
             <span className="block text-white mt-2">
-              QUE HACEN EL TRABAJO{" "}
-              <span className="text-[color:var(--mustard)]">POR TI</span>
+              <span className="text-[color:var(--mustard)]">MÁS CITAS</span> PARA TU NEGOCIO
             </span>
-            <span className="block text-white mt-2">24/7</span>
           </h1>
 
           {/* Separador */}
