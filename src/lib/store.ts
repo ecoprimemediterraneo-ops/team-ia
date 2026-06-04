@@ -46,6 +46,17 @@ export type GmailTokens = {
   connectedAt: string;
 };
 
+// Tokens de Google Business Profile (Rocío). Mismo refresh-token pattern que
+// Gmail. `locationName` lo elige el usuario tras conectar (puede tener varias
+// ubicaciones); formato `accounts/{ACCOUNT_ID}/locations/{LOCATION_ID}`.
+export type GbpTokens = {
+  refreshToken: string;
+  email: string;
+  connectedAt: string;
+  locationName?: string;
+  locationTitle?: string;
+};
+
 export type Feedback = {
   id: string;
   agent: AgentSlug;
@@ -110,6 +121,7 @@ export type UserData = {
   stats?: Stats;
   activity?: ActivityEvent[];
   gmailTokens?: GmailTokens;
+  gbpTokens?: GbpTokens;
   feedback?: Feedback[];
   learned?: LearnedPattern[];
   emailTemplates?: EmailTemplate[];
@@ -462,6 +474,29 @@ export async function clearGmailTokens(email: string) {
   const all = await readAll();
   if (!all[email]) return;
   delete all[email].gmailTokens;
+  await writeAll(all);
+}
+
+// -----------------------------------------------------------------------------
+// Google Business Profile (Rocío) — same refresh-token pattern as Gmail.
+// -----------------------------------------------------------------------------
+export async function saveGbpTokens(email: string, tokens: GbpTokens) {
+  const all = await readAll();
+  if (!all[email]) await getUser(email);
+  const fresh = await readAll();
+  fresh[email].gbpTokens = tokens;
+  await writeAll(fresh);
+}
+
+export async function getGbpTokens(email: string): Promise<GbpTokens | null> {
+  const u = await getUser(email);
+  return u.gbpTokens ?? null;
+}
+
+export async function clearGbpTokens(email: string) {
+  const all = await readAll();
+  if (!all[email]) return;
+  delete all[email].gbpTokens;
   await writeAll(all);
 }
 

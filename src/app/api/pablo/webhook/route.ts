@@ -37,6 +37,13 @@ import {
   markCalendarEntryPublished,
   markCalendarEntryRejected,
 } from "@/lib/marta-calendar";
+import {
+  findPendingRocioByWhatsapp,
+  markRocioPublished,
+  markRocioRejected,
+  recordRocioClientReply,
+} from "@/lib/rocio-proposals";
+import { replyToReview } from "@/lib/google-business";
 
 // Logging de eventos del informe mensual. Silencioso ante fallos para no
 // romper el flujo principal del webhook.
@@ -161,6 +168,46 @@ export async function POST(req: Request) {
           console.log(
             `[pablo/webhook] RX from=${from} name=${customerName ?? "?"} text="${text}"`,
           );
+
+          // === INTERCEPTOR: ¿propuesta de Rocío pendiente (respuesta a reseña)? ===
+          // Antes que Marta para no mezclar. Aprobación → publica en Google.
+          try {
+            const rocioP = await findPendingRocioByWhatsapp(from);
+            if (rocioP) {
+              const cls = await classifyClientReply(text);
+              await recordRocioClientReply(rocioP, text, cls.intent);
+              console.log(`[pablo/webhook] Rocio proposal id=${rocioP.id} intent=${cls.intent}`);
+              if (cls.intent === "ok") {
+                // El usuario que pertenezca al tenant es el receptor —
+                // simplificación: usamos el email del fundador para los
+                // tokens GBP. En multi-tenant: mapear tenantId→userEmail.
+                const founder = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
+                const redirectUri = `https://aiteam.marketing/api/rocio/callback`;
+                const r = await replyToReview(founder, redirectUri, rocioP.reviewName, rocioP.draftReply);
+                if (r.ok) {
+                  await markRocioPublished(rocioP);
+                  await safeLogEvent(rocioP.tenantId, {
+                    id: makeEventId("review_replied", "rocio", rocioP.reviewName),
+                    type: "review_replied",
+                    channel: "rocio",
+                    meta: { rating: rocioP.rating },
+                  });
+                  await sendWhatsAppText(from, "¡Publicado en Google! ⭐ La respuesta ya está visible.");
+                } else {
+                  console.error(`[pablo/webhook] Rocio reply falló: ${r.reason} ${r.detail}`);
+                  await sendWhatsAppText(from, "Recibí tu OK, pero Google me ha rechazado la respuesta. Lo revisamos y volvemos a intentarlo.");
+                }
+              } else if (cls.intent === "rechazar") {
+                await markRocioRejected(rocioP);
+                await sendWhatsAppText(from, "Sin problema, descartado 👌");
+              } else {
+                await sendWhatsAppText(from, "Vale, ¿cómo quieres que reformule la respuesta a la reseña?");
+              }
+              continue;
+            }
+          } catch (err) {
+            console.error("[pablo/webhook] error en interceptor de Rocío:", err);
+          }
 
           // === INTERCEPTOR: ¿propuesta de Marta pendiente para este número? ===
           // Si hay propuesta pendiente, este mensaje NO va a Claude/Pablo.
