@@ -1,66 +1,12 @@
 // Sección de la home (y de /precios) que vende el INFORME MENSUAL como gran
-// razón para contratar AI-Team. Tres variantes visualmente diferenciadas según
-// plan: Esencial → Resumen, Completo → Informe, Pro → Auditoría.
+// razón para contratar AI-Team.
 //
-// Estética: card-hard + sombras retro, paleta cream/mustard/red/ink. Encaja
-// con Hero, Packs y PlansComparisonTable.
-
-const TIERS = [
-  {
-    plan: "ESENCIAL",
-    title: "Tu resumen mensual",
-    tagline: "Lo esencial de un vistazo",
-    accent: "white",                // bg-white
-    badgeBg: "bg-black",
-    badgeColor: "text-[color:var(--mustard)]",
-    items: [
-      "Cuánto dinero te ha generado tu equipo",
-      "Cuántas horas te ha ahorrado",
-      "Conversaciones, leads, citas y ventas del mes",
-      "Una línea honesta: qué cerraste tú vs. qué se te escapó",
-    ],
-  },
-  {
-    plan: "COMPLETO",
-    title: "Tu informe mensual",
-    tagline: "Con leads calientes y análisis",
-    accent: "mustard",              // bg-[color:var(--mustard)]
-    badgeBg: "bg-[color:var(--red)]",
-    badgeColor: "text-white",
-    featured: true,
-    items: [
-      "Todo lo del resumen Esencial",
-      "Lista de leads calientes que merece la pena recuperar",
-      "Qué pregunta más tu cliente este mes (y qué le falta saber)",
-      "Comparativa con el mes anterior — qué mejora, qué empeora",
-    ],
-  },
-  {
-    plan: "PRO",
-    title: "Tu auditoría mensual",
-    tagline: "Recomendaciones estratégicas",
-    accent: "ink",                  // bg-black text-white
-    badgeBg: "bg-[color:var(--mustard)]",
-    badgeColor: "text-black",
-    items: [
-      "Todo lo del informe Completo",
-      "Recomendaciones concretas: qué cambiar el mes que viene",
-      "Análisis por canal, sector y campaña",
-      "Detección de cuellos de botella en tu embudo de venta",
-    ],
-  },
-] as const;
-
-function tierBg(accent: "white" | "mustard" | "ink"): string {
-  if (accent === "mustard") return "bg-[color:var(--mustard)]";
-  if (accent === "ink") return "bg-black text-white";
-  return "bg-white";
-}
-
-function tierBorderText(accent: "white" | "mustard" | "ink"): string {
-  if (accent === "ink") return "border-[color:var(--mustard)]/40";
-  return "border-black/15";
-}
+// El detalle por plan (Resumen / Informe / Auditoría con sus bullets) vive
+// EXCLUSIVAMENTE dentro de cada tarjeta de la sección PRECIOS (Packs.tsx),
+// para no duplicar la información. Esta sección se centra en el mensaje y
+// en mostrar un mockup real de cómo se ve el informe.
+//
+// Estética: card-hard + sombras retro, paleta cream/mustard/red/ink.
 
 export default function MonthlyReportSection() {
   return (
@@ -77,8 +23,9 @@ export default function MonthlyReportSection() {
             </span>
           </div>
           <h2 className="font-stencil text-4xl md:text-6xl leading-[1.05] mb-5">
-            Cada mes sabes <span className="text-[color:var(--red)]">exactamente</span><br />
-            cuánto te ha valido tu equipo IA.
+            Cada mes sabes cuánto <span className="text-[color:var(--red)]">dinero</span> y
+            cuánto <span className="text-[color:var(--red)]">tiempo</span><br />
+            te ha ahorrado tu equipo IA.
           </h2>
           <p className="text-xl md:text-2xl text-black/80 max-w-3xl mx-auto leading-snug font-medium">
             Cada mes, un informe claro: lo que ganaste, lo que se te escapó y
@@ -154,56 +101,8 @@ export default function MonthlyReportSection() {
           </p>
         </div>
 
-        {/* Los 3 tiers de informe */}
-        <div className="text-center mb-8">
-          <h3 className="font-stencil text-3xl md:text-4xl">
-            El informe escala con tu plan
-          </h3>
-          <p className="text-sm md:text-base text-black/60 mt-2">
-            Cuanto más profundo el plan, más profundo el análisis.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {TIERS.map((t) => {
-            const dark = t.accent === "ink";
-            return (
-              <article
-                key={t.plan}
-                className={`card-hard p-6 md:p-7 relative ${tierBg(t.accent)} ${"featured" in t && t.featured ? "md:scale-[1.03]" : ""}`}
-              >
-                {"featured" in t && t.featured && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[color:var(--red)] text-white text-[10px] font-bold tracking-widest px-3 py-1 border-2 border-black whitespace-nowrap">
-                    ★ MÁS VENDIDO
-                  </div>
-                )}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className={`${t.badgeBg} ${t.badgeColor} px-2 py-1 text-[10px] font-mono font-bold tracking-widest`}>
-                    {t.plan}
-                  </span>
-                </div>
-                <h4 className="font-stencil text-3xl md:text-4xl leading-tight mb-1">
-                  {t.title}
-                </h4>
-                <p className={`text-xs font-mono uppercase tracking-widest mb-5 ${dark ? "text-white/60" : "text-black/55"}`}>
-                  {t.tagline}
-                </p>
-                <ul className={`space-y-3 ${dark ? "text-white/90" : "text-black/80"}`}>
-                  {t.items.map((it) => (
-                    <li key={it} className="flex gap-2 text-sm leading-snug">
-                      <span className={`${dark ? "text-[color:var(--mustard)]" : "text-[color:var(--red)]"} font-bold mt-[1px]`}>›</span>
-                      <span>{it}</span>
-                    </li>
-                  ))}
-                </ul>
-                {/* Línea inferior diferenciadora del tier */}
-                <div className={`mt-6 pt-4 border-t ${tierBorderText(t.accent)} text-[10px] font-mono uppercase tracking-widest ${dark ? "text-white/50" : "text-black/50"}`}>
-                  Entrega 1ª semana del mes · listo para imprimir
-                </div>
-              </article>
-            );
-          })}
-        </div>
+        {/* El detalle por plan (Resumen / Informe / Auditoría) está dentro de
+            cada tarjeta de la sección PRECIOS — no se duplica aquí. */}
 
         {/* Mensaje diferenciador final */}
         <div className="mt-14 md:mt-16 text-center max-w-3xl mx-auto">

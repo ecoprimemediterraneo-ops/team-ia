@@ -340,7 +340,7 @@ export default function EsteticaPage() {
             <div className="flex items-center gap-3 mb-6 text-xs font-mono flex-wrap">
               <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">PRECIOS FUNDADORES</span>
               <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">PARA SIEMPRE</span>
-              <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">SOLO 50 PLAZAS</span>
+              <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">SOLO 20 PLAZAS</span>
             </div>
             <h2 className="font-stencil text-5xl md:text-7xl mb-4">Nivel de<br />automatización</h2>
             <p className="text-lg max-w-2xl mb-12 text-black/70">

@@ -19,7 +19,7 @@ export default function Hero() {
           </span>
           <span className="hidden sm:inline text-white/40">·</span>
           <span className="font-mono text-[11px] sm:text-xs tracking-widest uppercase">
-            <strong className="text-[color:var(--mustard)] font-bold">50 plazas</strong> · 6 meses gratis · sin tarjeta
+            <strong className="text-[color:var(--mustard)] font-bold">20 plazas</strong> · 6 meses gratis · sin tarjeta
           </span>
           <span className="hidden sm:inline text-white/40">·</span>
           <span className="inline-flex items-center gap-1 bg-[color:var(--mustard)] text-black font-bold text-[11px] sm:text-xs tracking-widest uppercase px-3 py-1 border-2 border-black shadow-[2px_2px_0_#000] group-hover:translate-x-[1px] group-hover:translate-y-[1px] group-hover:shadow-[1px_1px_0_#000] transition-all">
@@ -60,7 +60,7 @@ export default function Hero() {
           {/* Badge superior */}
           <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] font-mono mb-10 tracking-[0.2em]">
             <span className="border border-[color:var(--mustard)]/60 text-[color:var(--mustard)] px-3 py-1 rounded-full">
-              50 PLAZAS BETA · 6 MESES GRATIS
+              20 PLAZAS BETA · 6 MESES GRATIS
             </span>
           </div>
 
@@ -100,7 +100,7 @@ export default function Hero() {
 
           {/* Línea fina */}
           <p className="mt-6 text-xs text-white/35 tracking-widest font-mono">
-            50 PLAZAS BETA · 6 MESES GRATIS · SIN PERMANENCIA
+            20 PLAZAS BETA · 6 MESES GRATIS · SIN PERMANENCIA
           </p>
         </div>
 

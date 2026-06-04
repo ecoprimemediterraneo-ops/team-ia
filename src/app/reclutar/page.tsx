@@ -25,7 +25,7 @@ export default function ReclutarPage() {
         <section className="py-20 border-b-[3px] border-black">
           <div className="max-w-5xl mx-auto px-5 text-center">
             <span className="inline-block bg-[color:var(--red)] text-white px-3 py-1 text-xs font-mono font-bold tracking-widest mb-4">
-              RECLUTAMIENTO ABIERTO · 50 PLAZAS FUNDADOR
+              RECLUTAMIENTO ABIERTO · 20 PLAZAS FUNDADOR
             </span>
             <h1 className="font-stencil text-4xl md:text-6xl mb-4">
               Recluta a tu equipo IA

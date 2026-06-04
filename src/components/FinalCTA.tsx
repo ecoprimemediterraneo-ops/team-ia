@@ -70,7 +70,7 @@ export default function FinalCTA() {
       <div className="max-w-3xl mx-auto px-5 py-24 text-center">
         <div className="flex flex-wrap justify-center items-center gap-2 text-[10px] font-mono mb-8 tracking-[0.2em]">
           <span className="border border-[color:var(--mustard)]/40 text-[color:var(--mustard)] px-3 py-1">ACCESO FUNDADOR</span>
-          <span className="border border-white/20 text-white/40 px-3 py-1">50 PLAZAS · PRECIO CONGELADO</span>
+          <span className="border border-white/20 text-white/40 px-3 py-1">20 PLAZAS · PRECIO CONGELADO</span>
         </div>
 
         <h2 className="font-stencil text-5xl md:text-7xl mb-6 leading-tight">

@@ -18,7 +18,7 @@ const faq = [
   },
   {
     q: "¿Qué es el precio fundador?",
-    a: "Los primeros 50 negocios mantienen su precio fundador para siempre, incluso si subimos las tarifas. No expira mientras tu suscripción siga activa.",
+    a: "Los primeros 20 negocios mantienen su precio fundador para siempre, incluso si subimos las tarifas. No expira mientras tu suscripción siga activa.",
   },
   {
     q: "¿Hay coste de instalación?",
@@ -42,7 +42,7 @@ export default function PreciosPage() {
         <section className="py-16 border-b-[3px] border-black">
           <div className="max-w-5xl mx-auto px-5 text-center">
             <span className="inline-block bg-black text-[color:var(--mustard)] px-3 py-1 text-xs font-mono font-bold tracking-widest mb-4">
-              PRECIO FUNDADOR · 50 PLAZAS
+              PRECIO FUNDADOR · 20 PLAZAS
             </span>
             <h1 className="font-stencil text-4xl md:text-6xl mb-4">Precios sin sorpresas</h1>
             <p className="text-lg text-black/70 max-w-2xl mx-auto">

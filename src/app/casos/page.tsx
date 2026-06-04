@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 export const metadata: Metadata = {
   title: "Casos · AI-Team",
   description:
-    "Estamos lanzando con 50 fundadores beta. Los primeros casos reales se publicarán aquí en los próximos meses.",
+    "Estamos lanzando con 20 fundadores beta. Los primeros casos reales se publicarán aquí en los próximos meses.",
   alternates: { canonical: "https://aiteam.marketing/casos" },
 };
 
@@ -23,7 +23,7 @@ export default function CasosPage() {
               Los primeros casos<br />reales, en camino
             </h1>
             <p className="text-lg text-black/70 max-w-2xl mx-auto mb-3">
-              Estamos lanzando con <strong>50 fundadores beta</strong>. Los primeros resultados reales se publicarán aquí en los próximos meses, con métricas verificables y nombre del negocio.
+              Estamos lanzando con <strong>20 fundadores beta</strong>. Los primeros resultados reales se publicarán aquí en los próximos meses, con métricas verificables y nombre del negocio.
             </p>
             <p className="text-sm text-black/50 max-w-xl mx-auto">
               Sin testimonios inventados. Sin números inflados. Cuando un cliente nos autorice a publicar su caso, lo subimos aquí tal cual.
@@ -37,7 +37,7 @@ export default function CasosPage() {
               ¿Quieres ser uno de ellos?
             </h2>
             <p className="text-base text-black/70 mb-8 leading-relaxed">
-              Las 50 plazas fundadoras incluyen 6 meses gratis sin tarjeta y precio fundador congelado para siempre. A cambio te pedimos feedback honesto y, si los resultados son buenos, autorización para publicar tu caso aquí.
+              Las 20 plazas fundadoras incluyen 6 meses gratis sin tarjeta y precio fundador congelado para siempre. A cambio te pedimos feedback honesto y, si los resultados son buenos, autorización para publicar tu caso aquí.
             </p>
             <div className="flex flex-wrap gap-3">
               <a

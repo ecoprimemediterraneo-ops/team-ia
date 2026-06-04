@@ -8,7 +8,7 @@
 // - Sus leads en `pipeline` llevan `tenantId`.
 // - Sus eventos van a `events:<tenantId>:<YYYY-MM>`.
 //
-// Durante la beta (50 plazas) la tabla cabe holgadamente en una sola clave.
+// Durante la beta (20 plazas) la tabla cabe holgadamente en una sola clave.
 
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -87,7 +87,7 @@ function seedTenants(): Record<string, Tenant> {
           "Eva · email marketing con base de datos propia",
         ],
         promosActuales: [
-          "Beta fundadores: 50 plazas con 6 meses gratis sin tarjeta, precio fundador para siempre",
+          "Beta fundadores: 20 plazas con 6 meses gratis sin tarjeta, precio fundador para siempre",
         ],
         publicoObjetivo:
           "Dueños/as de PYMES de servicios en España: clínicas dentales y estéticas, peluquerías, restaurantes, fisios, podólogos, gimnasios. 1-50 empleados.",

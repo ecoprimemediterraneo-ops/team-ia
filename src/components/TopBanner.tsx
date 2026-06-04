@@ -7,7 +7,7 @@ export default function TopBanner() {
       href="/beta"
       className="block bg-[color:var(--red)] text-white text-center py-2 px-4 text-[11px] sm:text-xs font-mono font-bold tracking-widest uppercase hover:bg-black transition-colors border-b-2 border-black"
     >
-      🔒 50 PLAZAS BETA · 6 MESES GRATIS · SIN PERMANENCIA — Reservar plaza →
+      🔒 20 PLAZAS BETA · 6 MESES GRATIS · SIN PERMANENCIA — Reservar plaza →
     </a>
   );
 }

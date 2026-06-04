@@ -31,7 +31,7 @@ PLANES
 - **Esencial 89€/mes** (Pablo + Carmen + Rocío + resumen mensual)
 - **Completo 189€/mes ⭐** (los 6 agentes + informe mensual con análisis y leads calientes)
 - **Pro 389€/mes** (Completo + multiusuario hasta 5 cuentas + soporte prioritario 4 h + auditoría mensual de negocio con recomendaciones estratégicas)
-Todos incluyen: 6 meses gratis, sin tarjeta, sin permanencia, precio fundador para siempre. Solo 50 plazas fundador.
+Todos incluyen: 6 meses gratis, sin tarjeta, sin permanencia, precio fundador para siempre. Solo 20 plazas fundador.
 
 CÓMO RESPONDER
 - Castellano de España, tuteo, directo, sin humo.

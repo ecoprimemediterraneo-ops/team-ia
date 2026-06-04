@@ -6,7 +6,7 @@ import BetaForm from "./BetaForm";
 export const metadata: Metadata = {
   title: "Reserva tu plaza · Beta privada",
   description:
-    "50 plazas fundador · 6 meses gratis · sin permanencia. Reserva la tuya en 30 segundos.",
+    "20 plazas fundador · 6 meses gratis · sin permanencia. Reserva la tuya en 30 segundos.",
   alternates: { canonical: "https://aiteam.marketing/beta" },
 };
 
@@ -36,14 +36,14 @@ export default function BetaPage() {
                 🔒 BETA PRIVADA
               </span>
               <span className="border border-white/20 text-white/60 px-3 py-1 tracking-widest">
-                50 PLAZAS · 6 MESES GRATIS · SIN PERMANENCIA
+                20 PLAZAS · 6 MESES GRATIS · SIN PERMANENCIA
               </span>
             </div>
             <h1 className="font-stencil text-4xl md:text-6xl mb-4 leading-tight">
               Reserva tu plaza
             </h1>
             <p className="text-base md:text-lg text-white/70 max-w-xl mx-auto">
-              50 negocios fundadores. 6 meses gratis sin tarjeta. Precio fundador congelado para siempre.
+              20 negocios fundadores. 6 meses gratis sin tarjeta. Precio fundador congelado para siempre.
             </p>
           </div>
         </section>

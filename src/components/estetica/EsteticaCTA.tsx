@@ -38,7 +38,7 @@ export default function EsteticaCTA() {
       <div className="max-w-3xl mx-auto px-5 text-center">
         <div className="flex flex-wrap justify-center items-center gap-3 text-xs font-mono mb-6">
           <span className="border border-[color:var(--mustard)]/40 text-[color:var(--mustard)] px-3 py-1">ACCESO FUNDADOR</span>
-          <span className="border border-white/20 text-white/40 px-3 py-1">50 PLAZAS · PRECIO CONGELADO</span>
+          <span className="border border-white/20 text-white/40 px-3 py-1">20 PLAZAS · PRECIO CONGELADO</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-7xl mb-6 leading-tight">
           Tu clínica.<br />Operativa<br />esta semana.

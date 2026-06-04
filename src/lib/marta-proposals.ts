@@ -148,7 +148,7 @@ export async function findPendingProposalByWhatsapp(
   recipientWhatsapp: string,
 ): Promise<MartaProposal | null> {
   // Supabase: necesitaríamos un índice. Como hoy las propuestas activas son
-  // pocas (≤ 50 plazas), iteramos el bucket local. En prod con muchos tenants
+  // pocas (≤ 20 plazas), iteramos el bucket local. En prod con muchos tenants
   // habría que migrar a una tabla con índice por recipient.
   if (USE_SUPABASE) {
     // Sin búsqueda por prefijo en kvGet → seguimos la convención: buscamos

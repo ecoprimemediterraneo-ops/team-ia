@@ -13,7 +13,8 @@ type Pack = {
   tagline: string;
   agents: string[];
   extras: string[];
-  reportLabel: string;       // qué informe mensual incluye este plan
+  reportLabel: string;       // título del informe mensual del plan
+  reportItems: string[];     // 3-4 bullets concretos de qué incluye
   users: string;
   cta: string;
   featured?: boolean;
@@ -35,6 +36,11 @@ const packs: Pack[] = [
       "1 usuario",
     ],
     reportLabel: "Resumen mensual",
+    reportItems: [
+      "Dinero generado y horas ahorradas",
+      "Conversaciones, leads, citas y ventas del mes",
+      "Una línea honesta: qué cerraste tú vs. qué se escapó",
+    ],
     users: "1 usuario",
     cta: "Activar plan Esencial",
   },
@@ -56,6 +62,12 @@ const packs: Pack[] = [
       "2 usuarios",
     ],
     reportLabel: "Informe mensual con análisis y leads calientes",
+    reportItems: [
+      "Todo lo del Resumen Esencial",
+      "Lista de leads calientes a recuperar",
+      "Qué pregunta más tu cliente este mes",
+      "Comparativa vs. el mes anterior",
+    ],
     users: "2 usuarios",
     cta: "Activar plan Completo",
     featured: true,
@@ -78,6 +90,12 @@ const packs: Pack[] = [
       "5 usuarios",
     ],
     reportLabel: "Auditoría mensual con recomendaciones estratégicas",
+    reportItems: [
+      "Todo lo del Informe Completo",
+      "Recomendaciones concretas para el mes siguiente",
+      "Análisis por canal, sector y campaña",
+      "Detección de cuellos de botella en tu embudo",
+    ],
     users: "5 usuarios",
     cta: "Hablar con ventas",
   },
@@ -90,7 +108,7 @@ export default function Packs() {
         <div className="flex items-center gap-3 mb-6 text-xs font-mono flex-wrap">
           <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">PRECIOS FUNDADORES</span>
           <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">PARA SIEMPRE</span>
-          <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">SOLO 50 PLAZAS</span>
+          <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">SOLO 20 PLAZAS</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-7xl mb-4">
           Nivel de<br />automatización
@@ -150,13 +168,21 @@ export default function Packs() {
               )}
 
               {/* Informe mensual destacado */}
-              <div className={`mb-5 border-t-2 border-black/15 pt-3 ${p.featured ? "" : ""}`}>
+              <div className="mb-5 border-t-2 border-black/15 pt-3">
                 <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-black/55">
                   Informe mensual incluido
                 </div>
-                <div className="text-sm font-semibold leading-snug mt-0.5">
+                <div className="text-sm font-bold leading-snug mt-0.5 mb-2">
                   📊 {p.reportLabel}
                 </div>
+                <ul className="space-y-1 text-xs text-black/75">
+                  {p.reportItems.map((it) => (
+                    <li key={it} className="flex items-start gap-1.5 leading-snug">
+                      <span className="text-[color:var(--red)] font-bold">›</span>
+                      <span>{it}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
 
               <div className="flex-1" />

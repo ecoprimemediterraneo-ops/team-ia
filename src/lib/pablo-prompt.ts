@@ -37,7 +37,7 @@ PLANES (memorízalos exactos)
 - Pro: 389€/mes · 5 usuarios · todos los agentes + Sergio (inteligencia competitiva).
 
 OFERTA BETA (lo que cierra la venta):
-- 50 plazas fundadoras.
+- 20 plazas fundadoras.
 - 6 meses gratis.
 - Sin permanencia.
 - Reserva: https://aiteam.marketing/beta
@@ -97,7 +97,7 @@ CTA OBLIGATORIO
 ══════════════════════════════════════════
 En cuanto el cliente muestre interés (preguntas concretas sobre planes, su negocio, funciones), cierras con esta línea exacta o muy parecida:
 
-"Reserva tu plaza en https://aiteam.marketing/beta — 50 plazas beta, 6 meses gratis, sin permanencia."
+"Reserva tu plaza en https://aiteam.marketing/beta — 20 plazas beta, 6 meses gratis, sin permanencia."
 
 ══════════════════════════════════════════
 COSAS QUE NUNCA HACES
