@@ -67,13 +67,20 @@ const VIDEO_POLL_INTERVAL_MS = 3_000;
 // Tipos públicos
 // -----------------------------------------------------------------------------
 
-export type PublishMediaType = "IMAGE" | "VIDEO" | "REELS";
+// IMAGE / VIDEO / REELS → posts al feed o reel.
+// STORIES_IMAGE / STORIES_VIDEO → publicación a Stories (caducan en 24h).
+export type PublishMediaType =
+  | "IMAGE"
+  | "VIDEO"
+  | "REELS"
+  | "STORIES_IMAGE"
+  | "STORIES_VIDEO";
 
 export interface PublishInput {
   mediaType: PublishMediaType;
-  /** URL pública accesible por Meta. Imagen para IMAGE, vídeo para VIDEO/REELS. */
+  /** URL pública accesible por Meta. Imagen para IMAGE/STORIES_IMAGE, vídeo para VIDEO/REELS/STORIES_VIDEO. */
   mediaUrl: string;
-  /** Caption (≤ 2200 chars, ≤ 30 hashtags). Opcional. */
+  /** Caption (≤ 2200 chars, ≤ 30 hashtags). Opcional. Stories: Instagram suele ignorarlo. */
   caption?: string;
   /** Opcional. Para Reels: thumbnail (URL). */
   coverUrl?: string;
@@ -176,9 +183,19 @@ async function createMediaContainer(
   const params = new URLSearchParams();
   if (input.mediaType === "IMAGE") {
     params.set("image_url", input.mediaUrl);
-  } else {
+  } else if (input.mediaType === "STORIES_IMAGE") {
+    // Stories de imagen → media_type=STORIES + image_url.
+    params.set("image_url", input.mediaUrl);
+    params.set("media_type", "STORIES");
+  } else if (input.mediaType === "STORIES_VIDEO") {
+    // Stories de vídeo → media_type=STORIES + video_url.
     params.set("video_url", input.mediaUrl);
-    params.set("media_type", input.mediaType); // VIDEO o REELS
+    params.set("media_type", "STORIES");
+    if (input.coverUrl) params.set("cover_url", input.coverUrl);
+  } else {
+    // VIDEO o REELS
+    params.set("video_url", input.mediaUrl);
+    params.set("media_type", input.mediaType);
     if (input.coverUrl) params.set("cover_url", input.coverUrl);
   }
   if (input.caption) params.set("caption", input.caption);
@@ -324,8 +341,12 @@ export async function publishToInstagram(input: PublishInput): Promise<PublishRe
     return errorToResult(err, "fallo creando media container");
   }
 
-  // Paso 1.5 — esperar a FINISHED si es vídeo/Reel
-  if (input.mediaType !== "IMAGE") {
+  // Paso 1.5 — esperar a FINISHED si es vídeo/Reel/StoryVideo.
+  const needsPolling =
+    input.mediaType === "VIDEO" ||
+    input.mediaType === "REELS" ||
+    input.mediaType === "STORIES_VIDEO";
+  if (needsPolling) {
     try {
       await waitForContainerReady(creationId, token);
     } catch (err) {

@@ -13,8 +13,26 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { kvGet, kvSet } from "./supabase";
+import type { StyleConfig } from "./image-style-presets";
 
 export type TenantPlan = "esencial" | "completo" | "pro";
+export type { StyleConfig } from "./image-style-presets";
+
+// Ficha de marca / cliente. Una sola por tenant que alimenta a todos los
+// agentes (Marta para captions de Instagram, Pablo para WhatsApp, etc).
+export type Ficha = {
+  nombreNegocio: string;
+  sector: string;                          // "clínica dental", "peluquería", ...
+  ciudad: string;
+  tono: string;                            // "cercano y profesional", "elegante", ...
+  serviciosClave: string[];                // 3-5 servicios que más quieren promocionar
+  promosActuales?: string[];               // ofertas vigentes (opcional)
+  publicoObjetivo?: string;                // a quién se dirigen (opcional)
+  notasEstilo?: string;                    // qué evitar / incluir siempre (opcional)
+  // Estilo visual del cliente — fuente única para TODAS las imágenes que
+  // genera Marta. Si está aquí, el motor de imagen lo lee y lo aplica.
+  estilo?: StyleConfig;
+};
 
 export type Tenant = {
   id: string;                              // "tenant_aiteam", "tenant_clinicasonrisa", ...
@@ -28,6 +46,8 @@ export type Tenant = {
   // Asunciones de cálculo (configurable por tenant):
   minutesPerInteraction: number;           // default 4
   conversionValueEUR: number;              // valor medio de un cliente cerrado (default 200)
+  // Ficha de marca / cliente (alimenta a todos los agentes):
+  ficha?: Ficha;
 };
 
 const KV_KEY = "tenants";
@@ -53,6 +73,28 @@ function seedTenants(): Record<string, Tenant> {
       startedAt: new Date().toISOString(),
       minutesPerInteraction: 4,
       conversionValueEUR: 200,
+      ficha: {
+        nombreNegocio: "AI-Team",
+        sector: "Software / SaaS (agentes IA para PYMES de servicios)",
+        ciudad: "Marbella (operación remota, España)",
+        tono: "Cercano, directo, profesional. Castellano de España, tuteo. Sin humo ni promesas exageradas.",
+        serviciosClave: [
+          "Pablo · WhatsApp 24/7 que cierra ventas",
+          "Marta · Instagram y redes que captan",
+          "Carmen · llamadas de voz que recogen citas",
+          "Lucía · agenda y gestión de correo",
+          "Rocío · respuestas automáticas a reseñas de Google",
+          "Eva · email marketing con base de datos propia",
+        ],
+        promosActuales: [
+          "Beta fundadores: 50 plazas con 6 meses gratis sin tarjeta, precio fundador para siempre",
+        ],
+        publicoObjetivo:
+          "Dueños/as de PYMES de servicios en España: clínicas dentales y estéticas, peluquerías, restaurantes, fisios, podólogos, gimnasios. 1-50 empleados.",
+        notasEstilo:
+          "Nunca decir 'garantizado' ni '100%'. Nunca prometer integraciones no listadas. CTA siempre a https://aiteam.marketing/beta. Nunca mencionar al fundador por nombre. Cierre comercial sin agresividad.",
+        estilo: { preset: "natural" },
+      },
     },
   };
 }
