@@ -23,38 +23,47 @@ export default async function EvaPage() {
   const baseUrl = `${proto}://${host}`;
 
   return (
-    <section>
-      <div className="flex items-center gap-3 mb-3 text-xs font-mono flex-wrap">
-        <span className="border-2 border-black px-2 py-1 font-bold tracking-widest" style={{ background: a.color }}>
-          {a.role.toUpperCase()}
-        </span>
-        <span className="bg-green-700 text-white px-2 py-1 font-bold tracking-widest">LIVE</span>
-      </div>
-      <div className="flex items-end justify-between mb-4 flex-wrap gap-2">
-        <div>
-          <h1 className="font-stencil text-4xl md:text-5xl leading-none">{a.name}</h1>
-          <p className="text-sm text-black/60 mt-1">{a.short}</p>
+    <section className="space-y-4">
+      <header className="space-y-2">
+        <div className="flex items-center gap-2 text-[10px] font-mono flex-wrap">
+          <span className="border-2 border-black px-2 py-0.5 font-bold tracking-widest" style={{ background: a.color }}>
+            {a.role.toUpperCase()}
+          </span>
+          <span className="bg-green-700 text-white px-2 py-0.5 font-bold tracking-widest">LIVE</span>
+          <span className="ml-auto text-[11px] font-mono text-black/55 hidden md:inline">
+            ✓ Conectada a Resend · Manda correos de verdad
+          </span>
         </div>
-        <p className="text-xs font-mono text-black/50 max-w-xs text-right">
-          ✓ Conectada a Resend. Manda correos de verdad.
-        </p>
-      </div>
+        <div className="flex items-end justify-between flex-wrap gap-2">
+          <div>
+            <h1 className="font-stencil text-3xl md:text-4xl leading-none">{a.name}</h1>
+            <p className="text-sm text-black/60 mt-0.5">{a.short}</p>
+          </div>
+          <p className="text-[11px] font-mono text-black/55 md:hidden">
+            ✓ Conectada a Resend · Manda correos de verdad
+          </p>
+        </div>
+      </header>
 
-      <AgentChat
-        agent="eva"
-        initialMessages={user.chats.eva}
-        placeholder="Pídele a Eva que escriba campañas de email…"
-        suggestions={[
-          "Diseña una secuencia de bienvenida para nuevos clientes",
-          "Newsletter de esta semana con un consejo y una promo",
-          "Email de reactivación para clientes que llevan 3 meses sin venir",
-        ]}
-      />
-
-      <EvaWidget initial={widget} baseUrl={baseUrl} />
-
+      {/* Lista + composer a ancho completo — su grid interno (lg:260px+1fr) se activa aquí */}
       <EvaTools initialContacts={contacts} />
 
+      {/* Chat de prueba + widget de captación: pareja equilibrada */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        <AgentChat
+          agent="eva"
+          initialMessages={user.chats.eva}
+          placeholder="Pídele a Eva que escriba campañas de email…"
+          suggestions={[
+            "Diseña una secuencia de bienvenida para nuevos clientes",
+            "Newsletter de esta semana con un consejo y una promo",
+            "Email de reactivación para clientes que llevan 3 meses sin venir",
+          ]}
+        />
+        <EvaWidget initial={widget} baseUrl={baseUrl} />
+      </div>
+
+      {/* Secuencias automáticas — ancho completo (suele tener mucho contenido) */}
       <EvaAutomation />
     </section>
   );

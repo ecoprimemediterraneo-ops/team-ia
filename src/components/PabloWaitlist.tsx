@@ -62,13 +62,13 @@ export default function PabloWaitlist() {
   }
 
   return (
-    <div className="card-hard p-5 mt-6">
+    <div className="card-hard p-4 overflow-hidden">
       <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
-        <div>
-          <h3 className="font-stencil text-2xl">Lista de espera</h3>
-          <p className="text-sm text-black/60 mt-1">Cuando alguien cancele a última hora, Pablo ofrece automáticamente ese hueco a quien esté aquí.</p>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-stencil text-xl sm:text-2xl leading-tight">Lista de espera</h3>
+          <p className="text-xs sm:text-sm text-black/60 mt-1 leading-snug">Cuando alguien cancele, Pablo ofrece ese hueco a quien esté aquí.</p>
         </div>
-        <span className="text-xs font-mono bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">{items.length} EN LISTA</span>
+        <span className="text-[10px] font-mono bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-wider shrink-0">{items.length} EN LISTA</span>
       </div>
 
       <form onSubmit={add} className="grid sm:grid-cols-2 gap-2 mb-4 border-2 border-black p-3 bg-[color:var(--cream)]">

@@ -50,7 +50,7 @@ export default function SergioTools() {
   }
 
   return (
-    <div className="mt-8">
+    <div className="mt-0">
       {flash && (
         <div className={`mb-4 px-3 py-2 border-2 border-black text-sm font-bold ${flash.ok ? "bg-green-200" : "bg-red-200"}`}>
           {flash.ok ? "✓" : "⚠"} {flash.msg}
@@ -58,35 +58,36 @@ export default function SergioTools() {
         </div>
       )}
 
-      <div className="card-hard p-5">
+      <div className="card-hard p-4">
         <div className="mb-4">
-          <h3 className="font-stencil text-2xl">Analiza a tu competencia en 10 segundos</h3>
+          <h3 className="font-stencil text-xl">Analiza a tu competencia en 10 segundos</h3>
           <p className="text-sm text-black/60 mt-1">
             Dile a Sergio qué competidor analizar y qué tipo de informe quieres. Él escanea su web y te devuelve inteligencia accionable.
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-5">
-          <div>
-            <label className="block text-xs font-mono uppercase tracking-widest text-black/60 mb-1">URL o nombre del competidor</label>
+        <div className="grid lg:grid-cols-2 gap-4">
+          <div className="min-w-0">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 mb-1">URL o nombre del competidor</label>
             <input
               type="text"
               value={competitor}
               onChange={(e) => setCompetitor(e.target.value)}
-              placeholder="Ej: competidor.com o Clínica Dental López"
-              className="w-full border-2 border-black px-3 py-2 text-sm focus:outline-none focus:bg-[color:var(--mustard)]/10"
+              placeholder="Ej: competidor.com o Clínica López"
+              className="w-full border-2 border-black px-2 py-1.5 text-sm focus:outline-none focus:bg-[color:var(--mustard)]/10"
             />
 
-            <label className="block text-xs font-mono uppercase tracking-widest text-black/60 mb-1 mt-4">Tipo de análisis</label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 mb-1 mt-3">Tipo de análisis</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
               {REPORT_TYPES.map((r) => (
                 <button
                   key={r.value}
                   type="button"
                   onClick={() => setReportType(r.value)}
-                  className={`border-2 border-black px-2 py-2 text-[11px] font-bold tracking-widest text-left ${reportType === r.value ? "bg-black text-white" : "bg-white hover:bg-[color:var(--mustard)]/30"}`}
+                  className={`border-2 border-black px-1.5 py-1.5 text-[10px] font-bold tracking-normal text-center leading-tight break-words min-w-0 ${reportType === r.value ? "bg-black text-white" : "bg-white hover:bg-[color:var(--mustard)]/30"}`}
                 >
-                  {r.emoji} {r.label.toUpperCase()}
+                  <span className="block">{r.emoji}</span>
+                  <span className="block">{r.label.toUpperCase()}</span>
                 </button>
               ))}
             </div>
@@ -107,7 +108,7 @@ export default function SergioTools() {
             <textarea
               value={report}
               onChange={(e) => setReport(e.target.value)}
-              rows={12}
+              rows={5}
               placeholder="Aquí aparecerá el análisis de inteligencia competitiva…"
               className="w-full border-2 border-black p-3 text-sm bg-[color:var(--cream)] focus:outline-none focus:bg-white whitespace-pre-wrap"
             />

@@ -56,10 +56,10 @@ export default function LuciaCalendar() {
   }
 
   return (
-    <div className="card-hard p-5 mt-6">
+    <div className="card-hard p-4 mt-3">
       <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
         <div>
-          <h3 className="font-stencil text-2xl">📅 Tu agenda esta semana</h3>
+          <h3 className="font-stencil text-xl">📅 Tu agenda esta semana</h3>
           <p className="text-sm text-black/60 mt-1">Eventos de Google Calendar (lectura). Próximos 7 días.</p>
         </div>
       </div>

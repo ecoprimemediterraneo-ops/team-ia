@@ -14,36 +14,51 @@ export default async function PabloPage() {
   const a = agentBySlug.pablo;
 
   return (
-    <section>
-      <div className="flex items-center gap-3 mb-3 text-xs font-mono flex-wrap">
-        <span className="border-2 border-black px-2 py-1 font-bold tracking-widest" style={{ background: a.color }}>
-          {a.role.toUpperCase()}
-        </span>
-        <span className="bg-green-700 text-white px-2 py-1 font-bold tracking-widest">LIVE</span>
-      </div>
-      <div className="flex items-end justify-between mb-4 flex-wrap gap-2">
-        <div>
-          <h1 className="font-stencil text-4xl md:text-5xl leading-none">{a.name}</h1>
-          <p className="text-sm text-black/60 mt-1">{a.short}</p>
+    <section className="space-y-4">
+      {/* CABECERA — compacta, ancho completo */}
+      <header className="space-y-2">
+        <div className="flex items-center gap-2 text-[10px] font-mono flex-wrap">
+          <span
+            className="border-2 border-black px-2 py-0.5 font-bold tracking-widest"
+            style={{ background: a.color }}
+          >
+            {a.role.toUpperCase()}
+          </span>
+          <span className="bg-green-700 text-white px-2 py-0.5 font-bold tracking-widest">
+            LIVE
+          </span>
+          <span className="ml-auto text-[11px] font-mono text-black/55 hidden md:inline">
+            ✓ Conectado a WhatsApp Business Cloud · 24/7
+          </span>
         </div>
-        <p className="text-xs font-mono text-black/50 max-w-xs text-right">
-          ✓ Conectado a WhatsApp Business Cloud. Respuestas automáticas 24/7.
-        </p>
-      </div>
+        <div className="flex items-end justify-between flex-wrap gap-2">
+          <div>
+            <h1 className="font-stencil text-3xl md:text-4xl leading-none">{a.name}</h1>
+            <p className="text-sm text-black/60 mt-0.5">{a.short}</p>
+          </div>
+          <p className="text-[11px] font-mono text-black/55 md:hidden">
+            ✓ Conectado a WhatsApp Business Cloud · 24/7
+          </p>
+        </div>
+      </header>
 
-      <AgentChat
-        agent="pablo"
-        initialMessages={user.chats.pablo}
-        placeholder="Escribe como un cliente por WhatsApp…"
-        suggestions={[
-          "Hola, ¿qué precio tiene una limpieza?",
-          "¿Puedo pedir cita para esta semana?",
-          "¿Qué horarios tenéis los sábados?",
-        ]}
-      />
-
+      {/* Generador a ancho completo — usa su grid interno a partir de lg */}
       <PabloTools />
-      <PabloWaitlist />
+
+      {/* Chat de prueba + lista de espera en 2-col equilibradas */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        <AgentChat
+          agent="pablo"
+          initialMessages={user.chats.pablo}
+          placeholder="Escribe como un cliente por WhatsApp…"
+          suggestions={[
+            "Hola, ¿qué precio tiene una limpieza?",
+            "¿Puedo pedir cita para esta semana?",
+            "¿Qué horarios tenéis los sábados?",
+          ]}
+        />
+        <PabloWaitlist />
+      </div>
     </section>
   );
 }

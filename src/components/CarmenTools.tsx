@@ -83,7 +83,7 @@ export default function CarmenTools() {
   }
 
   return (
-    <div className="mt-8">
+    <div className="mt-0">
       {flash && (
         <div className={`mb-4 px-3 py-2 border-2 border-black text-sm font-bold ${flash.ok ? "bg-green-200" : "bg-red-200"}`}>
           {flash.ok ? "✓" : "⚠"} {flash.msg}
@@ -91,26 +91,27 @@ export default function CarmenTools() {
         </div>
       )}
 
-      <div className="card-hard p-5">
+      <div className="card-hard p-4">
         <div className="mb-4">
-          <h3 className="font-stencil text-2xl">Guiones de llamada listos para usar</h3>
+          <h3 className="font-stencil text-xl">Guiones de llamada listos para usar</h3>
           <p className="text-sm text-black/60 mt-1">
             Carmen te genera el guion para cualquier escenario telefónico. Lo imprimes o lo lees al descolgar — nunca más te quedas en blanco.
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-5">
-          <div>
-            <label className="block text-xs font-mono uppercase tracking-widest text-black/60 mb-1">Escenario</label>
-            <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="grid lg:grid-cols-2 gap-4">
+          <div className="min-w-0">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 mb-1">Escenario</label>
+            <div className="grid grid-cols-2 gap-1.5 mb-3">
               {SCENARIOS.map((s) => (
                 <button
                   key={s.value}
                   type="button"
                   onClick={() => setScenario(s.value)}
-                  className={`border-2 border-black px-2 py-2 text-[11px] font-bold tracking-widest text-left ${scenario === s.value ? "bg-black text-white" : "bg-white hover:bg-[color:var(--mustard)]/30"}`}
+                  className={`border-2 border-black px-1.5 py-1.5 text-[10px] font-bold tracking-normal text-center leading-tight break-words min-w-0 ${scenario === s.value ? "bg-black text-white" : "bg-white hover:bg-[color:var(--mustard)]/30"}`}
                 >
-                  {s.emoji} {s.label.toUpperCase()}
+                  <span className="block">{s.emoji}</span>
+                  <span className="block">{s.label.toUpperCase()}</span>
                 </button>
               ))}
             </div>
@@ -154,7 +155,7 @@ export default function CarmenTools() {
             <textarea
               value={script}
               onChange={(e) => setScript(e.target.value)}
-              rows={14}
+              rows={6}
               placeholder="Aquí aparecerá el guion estructurado para que lo uses al teléfono…"
               className="w-full border-2 border-black p-3 text-sm bg-[color:var(--cream)] focus:outline-none focus:bg-white whitespace-pre-wrap"
             />
@@ -176,7 +177,7 @@ export default function CarmenTools() {
         </div>
 
         {/* Sintetizador de voz */}
-        <div className="mt-6 pt-6 border-t-[3px] border-black/10">
+        <div className="mt-3 pt-6 border-t-[3px] border-black/10">
           <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
             <div>
               <h4 className="font-stencil text-xl">🎤 Escucha cómo sonaría Carmen</h4>

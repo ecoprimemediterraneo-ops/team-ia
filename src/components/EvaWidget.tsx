@@ -45,10 +45,10 @@ export default function EvaWidget({ initial, baseUrl }: { initial: LeadWidget; b
   }
 
   return (
-    <div className="mt-6 card-hard p-5">
+    <div className="mt-3 card-hard p-4">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div>
-          <h3 className="font-stencil text-2xl">Captura de leads</h3>
+          <h3 className="font-stencil text-xl">Captura de leads</h3>
           <p className="text-xs text-black/60">Comparte tu URL o pégala en cualquier web. Cada lead entra solo en la lista de Eva.</p>
         </div>
         <label className="flex items-center gap-2 text-sm font-bold cursor-pointer">
@@ -123,7 +123,7 @@ export default function EvaWidget({ initial, baseUrl }: { initial: LeadWidget; b
             <label className="flex flex-col gap-1 text-xs">
               <span className="font-bold">Cuerpo (texto plano, dobles saltos = párrafos)</span>
               <textarea
-                rows={8}
+                rows={4}
                 value={w.welcomeBody}
                 onChange={(e) => setW({ ...w, welcomeBody: e.target.value })}
                 className="border-2 border-black px-2 py-1.5 text-sm font-mono"

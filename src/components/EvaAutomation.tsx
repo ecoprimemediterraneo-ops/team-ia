@@ -138,7 +138,7 @@ export default function EvaAutomation() {
   }
 
   return (
-    <div className="mt-8 space-y-6">
+    <div className="mt-0 space-y-6">
       {flash && (
         <div className={`px-3 py-2 border-2 border-black text-sm font-bold ${flash.ok ? "bg-green-200" : "bg-red-200"}`}>
           {flash.ok ? "✓" : "⚠"} {flash.msg}
@@ -146,10 +146,10 @@ export default function EvaAutomation() {
       )}
 
       {/* WELCOME SERIES */}
-      <div className="card-hard p-5">
+      <div className="card-hard p-4">
         <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
           <div>
-            <h3 className="font-stencil text-2xl">📥 Welcome series</h3>
+            <h3 className="font-stencil text-xl">📥 Welcome series</h3>
             <p className="text-sm text-black/60 mt-1">Cada vez que añadas un contacto, Eva le manda esta secuencia automática.</p>
           </div>
           {series && (
@@ -206,8 +206,8 @@ export default function EvaAutomation() {
       </div>
 
       {/* SCHEDULE */}
-      <div className="card-hard p-5">
-        <h3 className="font-stencil text-2xl mb-3">⏰ Programar envío</h3>
+      <div className="card-hard p-4">
+        <h3 className="font-stencil text-xl mb-3">⏰ Programar envío</h3>
         <p className="text-sm text-black/60 mb-3">Manda un email a fecha futura (ej: promo de Black Friday).</p>
 
         <div className="grid sm:grid-cols-2 gap-2 mb-2">
@@ -248,8 +248,8 @@ export default function EvaAutomation() {
       </div>
 
       {/* BULK IMPORT */}
-      <div className="card-hard p-5">
-        <h3 className="font-stencil text-2xl mb-3">📤 Importar contactos CSV</h3>
+      <div className="card-hard p-4">
+        <h3 className="font-stencil text-xl mb-3">📤 Importar contactos CSV</h3>
         <p className="text-sm text-black/60 mb-3">Sube un archivo CSV o pega el contenido. Detecta automáticamente columnas &quot;email&quot; y &quot;nombre&quot;.</p>
 
         <input type="file" accept=".csv,.txt" onChange={handleFile} className="block mb-2 text-sm" />
@@ -257,7 +257,7 @@ export default function EvaAutomation() {
         <textarea
           value={csv}
           onChange={(e) => setCsv(e.target.value)}
-          rows={6}
+          rows={4}
           placeholder={"email,nombre\nmaria@ejemplo.com,María García\njuan@ejemplo.com,Juan Pérez"}
           className="w-full border-2 border-black px-3 py-2 text-sm font-mono mb-2"
         />

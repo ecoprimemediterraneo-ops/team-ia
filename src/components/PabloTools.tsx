@@ -51,88 +51,93 @@ export default function PabloTools() {
   }
 
   return (
-    <div className="mt-8">
+    <div>
       {flash && (
-        <div className={`mb-4 px-3 py-2 border-2 border-black text-sm font-bold ${flash.ok ? "bg-green-200" : "bg-red-200"}`}>
+        <div className={`mb-3 px-3 py-2 border-2 border-black text-sm font-bold ${flash.ok ? "bg-green-200" : "bg-red-200"}`}>
           {flash.ok ? "✓" : "⚠"} {flash.msg}
           <button onClick={() => setFlash(null)} className="ml-2 text-xs">×</button>
         </div>
       )}
 
-      <div className="card-hard p-5">
-        <div className="mb-4">
-          <h3 className="font-stencil text-2xl">Responde WhatsApps en 10 segundos</h3>
-          <p className="text-sm text-black/60 mt-1">
-            Pega el mensaje que recibiste, elige qué quieres conseguir, Pablo te genera la respuesta. Tú la copias y la pegas en WhatsApp.
+      <div className="card-hard p-4 overflow-hidden">
+        <div className="mb-3">
+          <h3 className="font-stencil text-xl sm:text-2xl leading-tight break-words">
+            Responde WhatsApps en 10 segundos
+          </h3>
+          <p className="text-xs sm:text-sm text-black/60 mt-1 leading-snug">
+            Pega el mensaje, elige qué quieres conseguir y Pablo genera la respuesta. Tú copias y pegas.
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-5">
-          <div>
-            <label className="block text-xs font-mono uppercase tracking-widest text-black/60 mb-1">Mensaje del cliente</label>
+        {/* Se mantiene en columna única dentro del dashboard de 2 col;
+            solo se divide en pantallas muy anchas. */}
+        <div className="grid lg:grid-cols-2 gap-4">
+          <div className="min-w-0">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 mb-1">Mensaje del cliente</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              rows={5}
-              placeholder='Ej: "Hola, ¿tenéis hueco esta semana para una limpieza?"'
-              className="w-full border-2 border-black p-3 text-sm focus:outline-none focus:bg-[color:var(--mustard)]/10"
+              rows={4}
+              placeholder='Ej: "Hola, ¿tenéis hueco esta semana?"'
+              className="w-full border-2 border-black p-2 text-sm focus:outline-none focus:bg-[color:var(--mustard)]/10"
             />
 
-            <label className="block text-xs font-mono uppercase tracking-widest text-black/60 mb-1 mt-3">Qué queremos conseguir</label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 mb-1 mt-3">Qué queremos conseguir</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
               {INTENTS.map((i) => (
                 <button
                   key={i.value}
                   type="button"
                   onClick={() => setIntent(i.value)}
-                  className={`border-2 border-black px-2 py-2 text-[11px] font-bold tracking-widest text-left ${intent === i.value ? "bg-black text-white" : "bg-white hover:bg-[color:var(--mustard)]/30"}`}
+                  className={`border-2 border-black px-1.5 py-1.5 text-[10px] font-bold tracking-normal text-center leading-tight break-words min-w-0 ${intent === i.value ? "bg-black text-white" : "bg-white hover:bg-[color:var(--mustard)]/30"}`}
                 >
-                  {i.emoji} {i.label.toUpperCase()}
+                  <span className="block">{i.emoji}</span>
+                  <span className="block">{i.label.toUpperCase()}</span>
                 </button>
               ))}
             </div>
 
-            <label className="block text-xs font-mono uppercase tracking-widest text-black/60 mb-1 mt-3">Nombre del cliente (opcional)</label>
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 mb-1 mt-3">Nombre del cliente (opcional)</label>
             <input
               type="text"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="Marta, Juan…"
-              className="w-full border-2 border-black px-3 py-2 text-sm focus:outline-none focus:bg-[color:var(--mustard)]/20"
+              className="w-full border-2 border-black px-2 py-1.5 text-sm focus:outline-none focus:bg-[color:var(--mustard)]/20"
             />
 
-            <button onClick={generate} disabled={loading} className="btn-mustard text-sm mt-4 w-full">
+            <button onClick={generate} disabled={loading} className="btn-mustard text-sm mt-3 w-full">
               {loading ? "REDACTANDO…" : "✨ GENERAR RESPUESTA"}
             </button>
           </div>
 
-          <div>
-            <label className="block text-xs font-mono uppercase tracking-widest text-black/60 mb-1">Respuesta de Pablo</label>
+          <div className="min-w-0">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 mb-1">Respuesta de Pablo</label>
             <textarea
               value={reply}
               onChange={(e) => setReply(e.target.value)}
-              rows={10}
+              rows={4}
               placeholder="Aquí aparecerá la respuesta lista para pegar en WhatsApp…"
-              className="w-full border-2 border-black p-3 text-sm bg-[color:var(--cream)] focus:outline-none focus:bg-white whitespace-pre-wrap"
+              className="w-full border-2 border-black p-2 text-sm bg-[color:var(--cream)] focus:outline-none focus:bg-white whitespace-pre-wrap"
             />
-            <div className="mt-3 flex items-center gap-2 flex-wrap">
-              <button onClick={copy} disabled={!reply} className="btn-mustard text-sm">
+            <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+              <button onClick={copy} disabled={!reply} className="btn-mustard text-xs px-3 py-1.5">
                 {copied ? "✓ COPIADO" : "📋 COPIAR"}
               </button>
-              <button onClick={generate} disabled={loading || !message.trim()} className="text-xs font-mono border-2 border-black px-3 py-2 hover:bg-black hover:text-white disabled:opacity-40">
+              <button onClick={generate} disabled={loading || !message.trim()} className="text-[11px] font-mono border-2 border-black px-2 py-1.5 hover:bg-black hover:text-white disabled:opacity-40">
                 🔄 REGENERAR
               </button>
               <a
                 href="https://web.whatsapp.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-bold underline ml-auto"
+                className="text-[11px] font-bold underline ml-auto"
               >
                 Abrir WhatsApp Web →
               </a>
             </div>
-            <p className="text-xs text-green-700 mt-3 font-mono">
-              ✓ Pablo está conectado a WhatsApp Business y responde automáticamente. Usa esta herramienta para generar respuestas manuales si quieres intervenir tú.
+            <p className="text-[11px] text-green-700 mt-2 font-mono leading-snug">
+              ✓ Pablo responde solo en WhatsApp. Usa esto para redactar manualmente si quieres intervenir.
             </p>
           </div>
         </div>

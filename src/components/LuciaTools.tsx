@@ -207,17 +207,17 @@ export default function LuciaTools({ initialFlash }: { initialFlash?: { ok?: str
   const summaryProseClass = "text-sm leading-relaxed max-w-none [&_h1]:font-stencil [&_h1]:text-xl [&_h1]:mt-3 [&_h2]:font-stencil [&_h2]:text-lg [&_h2]:mt-3 [&_h2]:mb-1 [&_p]:my-1 [&_ul]:my-1 [&_ul]:pl-5 [&_ul]:list-disc [&_ol]:my-1 [&_ol]:pl-5 [&_ol]:list-decimal [&_strong]:font-bold [&_li]:my-0.5";
 
   return (
-    <div className="mt-8">
+    <div className="mt-0">
       {flash && (
         <div className={`mb-4 px-3 py-2 border-2 border-black text-sm font-bold ${flash.ok ? "bg-green-200" : "bg-red-200"}`}>
           {flash.ok ? "✓" : "⚠"} {flash.msg}
         </div>
       )}
 
-      <div className="card-hard p-5">
+      <div className="card-hard p-4">
         <div className="flex items-start justify-between mb-4 flex-wrap gap-2">
           <div>
-            <h3 className="font-stencil text-2xl">Tu bandeja, leída por Lucía</h3>
+            <h3 className="font-stencil text-xl">Tu bandeja, leída por Lucía</h3>
             <p className="text-sm text-black/60 mt-1">
               Lucía se conecta a tu Gmail, te lo resume con IA y te genera borradores listos.
             </p>
@@ -302,7 +302,7 @@ export default function LuciaTools({ initialFlash }: { initialFlash?: { ok?: str
                 <textarea
                   value={editor.body}
                   onChange={(e) => setEditor({ ...editor, body: e.target.value, saved: false })}
-                  rows={8}
+                  rows={4}
                   className="w-full border-2 border-black/40 p-3 text-sm font-sans bg-white"
                 />
                 <div className="mt-2">
@@ -343,22 +343,22 @@ export default function LuciaTools({ initialFlash }: { initialFlash?: { ok?: str
             )}
 
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-              <div className="flex items-center gap-1 text-xs">
+              <div className="flex items-center gap-1 text-[11px]">
                 <button
                   onClick={() => setFilter("todos")}
-                  className={`border-2 border-black px-2 py-1 font-bold tracking-widest ${filter === "todos" ? "bg-black text-white" : "hover:bg-[color:var(--mustard)]"}`}
+                  className={`border-2 border-black px-2 py-1 font-bold tracking-wider ${filter === "todos" ? "bg-black text-white" : "hover:bg-[color:var(--mustard)]"}`}
                 >TODOS ({state.messages.length})</button>
                 <button
                   onClick={() => setFilter("no_leidos")}
-                  className={`border-2 border-black px-2 py-1 font-bold tracking-widest ${filter === "no_leidos" ? "bg-black text-white" : "hover:bg-[color:var(--mustard)]"}`}
+                  className={`border-2 border-black px-2 py-1 font-bold tracking-wider ${filter === "no_leidos" ? "bg-black text-white" : "hover:bg-[color:var(--mustard)]"}`}
                 >NO LEÍDOS ({state.messages.filter((m) => m.unread).length})</button>
               </div>
               <button
                 onClick={cleanPromos}
                 disabled={cleaning}
-                className="text-xs font-bold tracking-widest border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 hover:bg-[color:var(--red)] hover:text-white disabled:opacity-50"
+                className="text-[10px] font-bold tracking-wider border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 hover:bg-[color:var(--red)] hover:text-white disabled:opacity-50 break-words text-center max-w-[180px] leading-tight"
               >
-                {cleaning ? "LIMPIANDO…" : "🧹 LIMPIAR PROMOS CON IA"}
+                {cleaning ? "LIMPIANDO…" : "🧹 LIMPIAR PROMOS"}
               </button>
             </div>
 

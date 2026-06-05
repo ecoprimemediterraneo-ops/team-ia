@@ -59,7 +59,7 @@ export default function RocioTools() {
   }
 
   return (
-    <div className="mt-8">
+    <div className="mt-0">
       {flash && (
         <div className={`mb-4 px-3 py-2 border-2 border-black text-sm font-bold ${flash.ok ? "bg-green-200" : "bg-red-200"}`}>
           {flash.ok ? "✓" : "⚠"} {flash.msg}
@@ -67,50 +67,50 @@ export default function RocioTools() {
         </div>
       )}
 
-      <div className="card-hard p-5">
+      <div className="card-hard p-4">
         <div className="flex items-start justify-between mb-4 flex-wrap gap-2">
           <div>
-            <h3 className="font-stencil text-2xl">Responde reseñas en 30 segundos</h3>
+            <h3 className="font-stencil text-xl">Responde reseñas en 30 segundos</h3>
             <p className="text-sm text-black/60 mt-1">
               Pega la reseña que recibiste, Rocío te genera la respuesta en tu tono. Tú la copias y la pegas en tu panel de Google Business.
             </p>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-5">
+        <div className="grid lg:grid-cols-2 gap-4">
           {/* Input */}
-          <div>
-            <label className="block text-xs font-mono uppercase tracking-widest text-black/60 mb-1">
+          <div className="min-w-0">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 mb-1">
               Reseña recibida
             </label>
             <textarea
               value={review}
               onChange={(e) => setReview(e.target.value)}
-              rows={6}
-              placeholder='Ej: "Vine a hacerme una limpieza, trato impecable, no me dolió nada y el sitio muy limpio. Repetiré."'
-              className="w-full border-2 border-black p-3 text-sm focus:outline-none focus:bg-[color:var(--mustard)]/10"
+              rows={5}
+              placeholder='Ej: "Vine a hacerme una limpieza, trato impecable, repetiré."'
+              className="w-full border-2 border-black p-2 text-sm focus:outline-none focus:bg-[color:var(--mustard)]/10"
             />
 
-            <div className="grid grid-cols-2 gap-3 mt-3">
-              <div>
-                <label className="block text-xs font-mono uppercase tracking-widest text-black/60 mb-1">Estrellas</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+              <div className="min-w-0">
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 mb-1">Estrellas</label>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button
                       key={n}
                       type="button"
                       onClick={() => setRatingAuto(n)}
-                      className={`w-9 h-9 border-2 border-black text-lg ${rating >= n ? "bg-[color:var(--mustard)]" : "bg-white hover:bg-[color:var(--mustard)]/30"}`}
+                      className={`w-8 h-8 border-2 border-black text-base ${rating >= n ? "bg-[color:var(--mustard)]" : "bg-white hover:bg-[color:var(--mustard)]/30"}`}
                     >★</button>
                   ))}
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-mono uppercase tracking-widest text-black/60 mb-1">Tono</label>
+              <div className="min-w-0">
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 mb-1">Tono</label>
                 <select
                   value={tone}
                   onChange={(e) => setTone(e.target.value as Tone)}
-                  className="w-full border-2 border-black px-2 py-2 text-sm font-bold bg-white focus:outline-none focus:bg-[color:var(--mustard)]/20"
+                  className="w-full border-2 border-black px-2 py-1.5 text-sm font-bold bg-white focus:outline-none focus:bg-[color:var(--mustard)]/20 truncate"
                 >
                   {(Object.keys(TONE_LABEL) as Tone[]).map((t) => (
                     <option key={t} value={t}>{TONE_LABEL[t]}</option>
@@ -120,7 +120,7 @@ export default function RocioTools() {
             </div>
 
             <div className="mt-3">
-              <label className="block text-xs font-mono uppercase tracking-widest text-black/60 mb-1">
+              <label className="block text-[10px] font-mono uppercase tracking-wider text-black/60 mb-1">
                 Nombre del cliente (opcional)
               </label>
               <input
@@ -149,7 +149,7 @@ export default function RocioTools() {
             <textarea
               value={reply}
               onChange={(e) => setReply(e.target.value)}
-              rows={10}
+              rows={5}
               placeholder="Aquí aparecerá la respuesta lista para copiar y pegar en Google Business…"
               className="w-full border-2 border-black p-3 text-sm bg-[color:var(--cream)] focus:outline-none focus:bg-white"
             />

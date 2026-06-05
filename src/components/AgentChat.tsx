@@ -49,8 +49,8 @@ export default function AgentChat({ agent, initialMessages, placeholder, suggest
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-220px)] min-h-[500px]">
-      <div className="flex-1 overflow-y-auto card-hard p-4 space-y-3 bg-white">
+    <div className="flex flex-col min-h-[260px] max-h-[60vh]">
+      <div className="flex-1 overflow-y-auto card-hard p-3 space-y-2 bg-white">
         {messages.length === 0 && suggestions.length > 0 && (
           <div className="text-sm">
             <p className="text-black/60 mb-3 font-mono uppercase tracking-widest text-xs">Prueba con:</p>
@@ -106,19 +106,19 @@ export default function AgentChat({ agent, initialMessages, placeholder, suggest
 
       <form
         onSubmit={(e) => { e.preventDefault(); send(input); }}
-        className="mt-3 flex gap-2"
+        className="mt-2 flex gap-2"
       >
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={placeholder}
-          className="flex-1 border-[3px] border-black px-3 py-3 focus:outline-none"
+          className="flex-1 border-[3px] border-black px-3 py-2 text-sm focus:outline-none"
         />
-        <button type="submit" disabled={loading || !input.trim()} className="btn-mustard">
+        <button type="submit" disabled={loading || !input.trim()} className="btn-mustard text-sm">
           Enviar
         </button>
         {messages.length > 0 && (
-          <button type="button" onClick={clear} className="border-[3px] border-black px-3 py-3 text-xs uppercase tracking-widest font-bold hover:bg-[color:var(--red)] hover:text-white">
+          <button type="button" onClick={clear} className="border-[3px] border-black px-3 py-2 text-[10px] uppercase tracking-widest font-bold hover:bg-[color:var(--red)] hover:text-white">
             Limpiar
           </button>
         )}

@@ -117,7 +117,7 @@ export default function EvaTools({ initialContacts }: { initialContacts: Contact
   }
 
   return (
-    <div className="mt-8 grid lg:grid-cols-[300px_1fr] gap-5">
+    <div className="grid lg:grid-cols-[260px_1fr] gap-4">
       {/* Lista de contactos */}
       <div className="card-hard p-4">
         <div className="flex items-center justify-between mb-3">
@@ -192,7 +192,7 @@ export default function EvaTools({ initialContacts }: { initialContacts: Contact
           className="w-full border-2 border-black px-3 py-2 text-sm mb-2 focus:outline-none focus:bg-[color:var(--mustard)]/20"
         />
         <textarea
-          rows={8}
+          rows={4}
           placeholder="Cuerpo del correo (texto plano o HTML)"
           value={body}
           onChange={(e) => setBody(e.target.value)}
