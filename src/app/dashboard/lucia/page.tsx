@@ -4,6 +4,7 @@ import { getUser } from "@/lib/store";
 import AgentChat from "@/components/AgentChat";
 import LuciaTools from "@/components/LuciaTools";
 import LuciaCalendar from "@/components/LuciaCalendar";
+import LuciaBooking from "@/components/LuciaBooking";
 import { agentBySlug } from "@/lib/agents";
 
 export default async function LuciaPage({ searchParams }: { searchParams: Promise<{ gmail?: string; gmail_error?: string }> }) {
@@ -73,7 +74,10 @@ export default async function LuciaPage({ searchParams }: { searchParams: Promis
         </div>
       )}
 
-      {/* Calendar + Chat: pareja corta y equilibrada arriba */}
+      {/* Reserva de cita (agenda central Google Calendar) */}
+      <LuciaBooking connected={!!user.gmailTokens} />
+
+      {/* Calendar + Chat: pareja corta y equilibrada */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         <LuciaCalendar />
         <AgentChat

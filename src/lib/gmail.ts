@@ -1,11 +1,16 @@
 import { google } from "googleapis";
 import { getGmailTokens } from "./store";
 
+// Calendar.events: read + write (crear/modificar eventos en el calendario
+// "primary" del usuario). Cambio desde calendar.readonly: los usuarios que ya
+// estaban conectados tendrán que re-autorizar para que la agenda funcione.
+// El flow OAuth ya usa prompt:"consent" → al pulsar de nuevo "Conectar Gmail"
+// Google les pedirá el nuevo permiso ampliado.
 export const GMAIL_SCOPES = [
   "https://www.googleapis.com/auth/gmail.readonly",
   "https://www.googleapis.com/auth/gmail.compose",
   "https://www.googleapis.com/auth/gmail.modify",
-  "https://www.googleapis.com/auth/calendar.readonly",
+  "https://www.googleapis.com/auth/calendar.events",
   "https://www.googleapis.com/auth/userinfo.email",
 ];
 
