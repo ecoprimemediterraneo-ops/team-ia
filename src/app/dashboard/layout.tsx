@@ -29,6 +29,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
       <div className="max-w-7xl mx-auto grid md:grid-cols-[260px_1fr] gap-6 px-5 py-6">
         <aside className="space-y-2">
+          <a
+            href="/dashboard/agenda"
+            className="card-hard flex items-center gap-3 p-3 mb-3 hover:-translate-y-0.5 transition"
+            style={{ background: "var(--mustard)" }}
+          >
+            <span className="text-2xl">📅</span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-stencil text-xl leading-none">AGENDA</span>
+              <span className="block text-[10px] uppercase tracking-widest text-black/70">Todas tus citas</span>
+            </span>
+          </a>
           <div className="text-xs font-mono uppercase tracking-widest text-black/50 px-1 mb-2">Tu equipo · {agents.length} agentes</div>
           {agents.map((a) => (
             <a

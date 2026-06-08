@@ -184,6 +184,65 @@ export async function freeBusyQuery(
 }
 
 // -----------------------------------------------------------------------------
+// Listar eventos
+// -----------------------------------------------------------------------------
+
+export type CalendarEvent = {
+  id: string;
+  summary: string;
+  description?: string;
+  location?: string;
+  start: string;
+  end: string;
+  allDay: boolean;
+  htmlLink?: string;
+  status?: string;
+};
+
+export type ListEventsResult =
+  | { ok: true; events: CalendarEvent[]; timezone?: string }
+  | { ok: false; reason: "no_tokens" | "api_error" | "insufficient_scope"; detail: string };
+
+export async function listEvents(
+  userEmail: string,
+  redirectUri: string,
+  from: string,
+  to: string,
+): Promise<ListEventsResult> {
+  const cal = await getAuthedCalendarClient(userEmail, redirectUri);
+  if (!cal) return { ok: false, reason: "no_tokens", detail: "Sin tokens para este usuario." };
+  try {
+    const r = await cal.events.list({
+      calendarId: PRIMARY,
+      timeMin: from,
+      timeMax: to,
+      singleEvents: true,
+      orderBy: "startTime",
+      maxResults: 250,
+    });
+    const events: CalendarEvent[] = (r.data.items ?? [])
+      .filter((ev) => ev.status !== "cancelled")
+      .map((ev) => ({
+        id: ev.id || "",
+        summary: ev.summary || "(sin título)",
+        description: ev.description ?? undefined,
+        location: ev.location ?? undefined,
+        start: ev.start?.dateTime || ev.start?.date || "",
+        end: ev.end?.dateTime || ev.end?.date || "",
+        allDay: !ev.start?.dateTime,
+        htmlLink: ev.htmlLink ?? undefined,
+        status: ev.status ?? undefined,
+      }))
+      .filter((e) => e.start && e.end);
+    return { ok: true, events, timezone: r.data.timeZone ?? undefined };
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    const reason = /insufficient|scope/i.test(detail) ? "insufficient_scope" : "api_error";
+    return { ok: false, reason, detail };
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Crear evento
 // -----------------------------------------------------------------------------
 
