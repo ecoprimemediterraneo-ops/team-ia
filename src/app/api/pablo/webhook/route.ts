@@ -33,6 +33,11 @@ import {
 import { publishToInstagram } from "@/lib/marta-publish";
 import { classifyClientReply } from "@/lib/marta-intent";
 import {
+  tryAgendarFromText,
+  missingFieldsToQuestion,
+  formatStartHumanES,
+} from "@/lib/appointment-intent";
+import {
   findEntryByProposalId,
   markCalendarEntryPublished,
   markCalendarEntryRejected,
@@ -304,6 +309,61 @@ export async function POST(req: Request) {
           } catch (err) {
             console.error("[pablo/webhook] error en interceptor de Marta:", err);
             // Caemos al flujo normal de Pablo si algo falla en el interceptor.
+          }
+
+          // === INTERCEPTOR: ¿el cliente quiere reservar cita? ===
+          // Llamamos a la agenda central (Google Calendar). Si Pablo detecta
+          // intención completa, crea la cita y avisa por WhatsApp. Si faltan
+          // datos, hace UNA pregunta. Si el hueco está ocupado, propone otro.
+          try {
+            const agRes = await tryAgendarFromText({
+              text,
+              agenteOrigen: "pablo",
+              redirectUri: `https://aiteam.marketing/api/lucia/callback`,
+              customerPhone: from,
+              customerNameFallback: customerName,
+            });
+            if (agRes.kind === "agendada") {
+              const when = formatStartHumanES(agRes.intent.fields.startIso!);
+              const ack = `¡Listo${customerName ? `, ${customerName.split(" ")[0]}` : ""}! 📅\n\nTe he agendado *${agRes.intent.fields.motivo}* el ${when}.\n\nSi necesitas cambiarla, dímelo y la movemos.`;
+              await sendWhatsAppText(from, ack);
+              await appendTurn("pablo", from, "user", text, customerName);
+              await appendTurn("pablo", from, "assistant", ack, customerName);
+              await safeLogEvent(tenantId, {
+                id: makeEventId("message_in", "pablo", msg.id),
+                ts: rxTs,
+                type: "message_in",
+                channel: "pablo",
+                senderId: from,
+              });
+              await safeLogEvent(tenantId, {
+                id: makeEventId("message_out", "pablo", msg.id),
+                type: "message_out",
+                channel: "pablo",
+                senderId: from,
+                meta: { latencyMs: Date.now() - Date.parse(rxTs) },
+              });
+              continue;
+            }
+            if (agRes.kind === "slot_taken") {
+              const suggested = agRes.suggested ? `\n\nEse hueco está ocupado. ¿Te encajaría el ${formatStartHumanES(agRes.suggested)}?` : `\n\nEse hueco está ocupado. ¿Te encajaría otra hora ese día?`;
+              await sendWhatsAppText(from, `Vale, lo intento agendar.${suggested}`);
+              await appendTurn("pablo", from, "user", text, customerName);
+              await appendTurn("pablo", from, "assistant", `Slot ocupado, propuesta: ${agRes.suggested ?? "—"}`, customerName);
+              continue;
+            }
+            if (agRes.kind === "incomplete") {
+              const q = missingFieldsToQuestion(agRes.missing);
+              if (q) {
+                await sendWhatsAppText(from, `Perfecto, te agendo cita. ${q}`);
+                await appendTurn("pablo", from, "user", text, customerName);
+                await appendTurn("pablo", from, "assistant", q, customerName);
+                continue;
+              }
+            }
+            // kind === "no_intent" o "error" → caemos al flujo normal de Pablo
+          } catch (err) {
+            console.error("[pablo/webhook] interceptor agenda falló:", err);
           }
 
           // Memoria de conversación: si no hay turnos (o estaba stale → ya limpiado
