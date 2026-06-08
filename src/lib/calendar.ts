@@ -149,16 +149,29 @@ export async function freeBusyQuery(
   const cal = await getAuthedCalendarClient(userEmail, redirectUri);
   if (!cal) return { ok: false, reason: "no_tokens", detail: "Sin tokens para este usuario." };
   try {
-    const r = await cal.freebusy.query({
-      requestBody: {
-        timeMin: from,
-        timeMax: to,
-        items: [{ id: PRIMARY }],
-      },
+    // IMPORTANTE: NO usamos freebusy.query. El scope `calendar.events` (el que
+    // pedimos para poder CREAR citas) NO autoriza freebusy.query — eso requiere
+    // `calendar.readonly`/`calendar`, y por eso daba 500 "insufficient scopes"
+    // aunque el token fuera correcto. En su lugar listamos los eventos del rango
+    // con events.list (SÍ permitido por calendar.events) y derivamos los huecos
+    // ocupados. Mismo resultado, sin pedir más permisos.
+    const r = await cal.events.list({
+      calendarId: PRIMARY,
+      timeMin: from,
+      timeMax: to,
+      singleEvents: true,        // expande eventos recurrentes a instancias
+      orderBy: "startTime",
+      maxResults: 250,
     });
-    const calData = r.data.calendars?.[PRIMARY];
-    const busy = (calData?.busy ?? [])
-      .map((b) => ({ start: b.start || "", end: b.end || "" }))
+    const busy = (r.data.items ?? [])
+      // ignora eventos marcados como "libre" (transparency: transparent) y
+      // cancelados
+      .filter((ev) => ev.status !== "cancelled" && ev.transparency !== "transparent")
+      .map((ev) => ({
+        // eventos con hora → dateTime; eventos de día completo → date
+        start: ev.start?.dateTime || ev.start?.date || "",
+        end: ev.end?.dateTime || ev.end?.date || "",
+      }))
       .filter((b) => b.start && b.end);
     return { ok: true, busy };
   } catch (err) {
