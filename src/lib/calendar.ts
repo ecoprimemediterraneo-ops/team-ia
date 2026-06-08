@@ -73,10 +73,51 @@ export type AgendarCitaResult =
 
 async function getAuthedCalendarClient(userEmail: string, redirectUri: string) {
   const tokens = await getGmailTokens(userEmail);
-  if (!tokens) return null;
+  if (!tokens?.refreshToken) return null;
+  const oauth2 = makeOAuthClient(redirectUri);
+  // Solo el refresh_token: NUNCA un access_token cacheado. La librería pide un
+  // access_token fresco a Google en la primera llamada, con los scopes que
+  // realmente concede el refresh_token guardado.
+  oauth2.setCredentials({ refresh_token: tokens.refreshToken });
+  // Forzamos YA un access_token nuevo. Si el refresh_token es de solo-Gmail
+  // (sin calendar.events) el token resultante tampoco lo tendrá → la llamada
+  // de calendar fallará con "insufficient scopes": señal de reconectar.
+  try {
+    await oauth2.getAccessToken();
+  } catch {
+    // si el refresh falla dejamos que la llamada de calendar dé el error real.
+  }
+  return google.calendar({ version: "v3", auth: oauth2 });
+}
+
+// Diagnóstico fiable: refresca el access_token y pregunta a Google qué scopes
+// concede REALMENTE el refresh_token guardado (no la cadena `scope` que
+// guardamos nosotros, que puede quedar desincronizada). Única fuente de verdad
+// sobre si la agenda funcionará de verdad.
+export async function getLiveGrantedScopes(
+  userEmail: string,
+  redirectUri: string,
+): Promise<
+  | { ok: true; scopes: string[]; hasCalendar: boolean }
+  | { ok: false; reason: string }
+> {
+  const tokens = await getGmailTokens(userEmail);
+  if (!tokens?.refreshToken) return { ok: false, reason: "no_tokens" };
   const oauth2 = makeOAuthClient(redirectUri);
   oauth2.setCredentials({ refresh_token: tokens.refreshToken });
-  return google.calendar({ version: "v3", auth: oauth2 });
+  try {
+    const at = await oauth2.getAccessToken();
+    const accessToken = typeof at === "string" ? at : at?.token;
+    if (!accessToken) return { ok: false, reason: "no_access_token" };
+    const info = await oauth2.getTokenInfo(accessToken);
+    const scopes = info.scopes ?? [];
+    const hasCalendar = scopes.some(
+      (s) => s.includes("calendar.events") || s.endsWith("/auth/calendar"),
+    );
+    return { ok: true, scopes, hasCalendar };
+  } catch (err) {
+    return { ok: false, reason: err instanceof Error ? err.message : String(err) };
+  }
 }
 
 function defaultRedirectUri(): string {

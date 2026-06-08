@@ -33,17 +33,16 @@ export async function GET(req: Request) {
     // el scope observado; si el nuevo grant ya trae calendar.events, el token
     // existente lo hereda. Si no, pedimos desconectar (revoca) y reconectar.
     if (!tokens.refresh_token) {
+      // Google NO devolvió refresh_token nuevo → seguimos teniendo el ANTIGUO.
+      // CLAVE: NO sobreescribimos el `scope` guardado con `grantedScope`. El
+      // grantedScope refleja lo que el usuario consintió AHORA, pero el
+      // refresh_token almacenado es el viejo y puede NO tener esos permisos.
+      // Stampar el scope nuevo sobre el token viejo es justo lo que hacía que
+      // /status mintiera (decía hasCalendar:true) mientras free-busy fallaba.
+      // Por eso forzamos SIEMPRE desconectar (revoca el grant) y reconectar,
+      // que es lo único que garantiza un refresh_token nuevo con calendar.
       const existing = await getGmailTokens(email);
       if (existing?.refreshToken) {
-        await saveGmailTokens(email, {
-          ...existing,
-          email: existing.email || email,
-          scope: grantedScope || existing.scope,
-          connectedAt: new Date().toISOString(),
-        });
-        if (grantedScope.includes("calendar.events")) {
-          return NextResponse.redirect(new URL("/dashboard/lucia?gmail=connected", url.origin));
-        }
         return NextResponse.redirect(
           new URL("/dashboard/lucia?gmail_error=reconecta_desconectando_primero", url.origin),
         );
