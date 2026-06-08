@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import { agents, agentBySlug, type AgentSlug } from "@/lib/agents";
+import { getFeed } from "@/lib/feed";
+import { DEFAULT_TENANT_ID } from "@/lib/tenants";
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -34,30 +36,30 @@ export default async function DashboardHome() {
   const activity = user.activity ?? [];
   const stats = user.stats ?? { emailsSent: 0, lastChatAt: {} };
   const weekStart = startOfWeek();
-  const leadsThisWeek = contacts.filter((c) => new Date(c.addedAt) >= weekStart).length;
   const emailsThisWeek = activity.filter(
     (a) => a.type === "email_sent" && new Date(a.ts) >= weekStart
   ).reduce((sum, a) => {
-    // detail format: "N email[s] · ..."
     const match = a.detail.match(/^(\d+)\s/);
     return sum + (match ? parseInt(match[1]) : 1);
   }, 0);
+
+  // Feed real del event-log (este mes + anterior) — agenda + Pablo + Marta + Eva + Rocío
+  const feed = await getFeed(DEFAULT_TENANT_ID, 12);
+  const recentActivity = feed.entries;
+
+  // Contadores: combinamos legacy (contacts/activity/stats) con event-log.
+  const leadsThisWeek = contacts.filter((c) => new Date(c.addedAt) >= weekStart).length + feed.counters.leads;
   const chatsThisWeek = activity.filter(
     (a) => a.type === "chat" && new Date(a.ts) >= weekStart
   ).length;
+  // Mensajes IN del event-log (entrantes de clientes vía Pablo/Marta) — refleja tráfico real
+  const mensajesIn = feed.counters.mensajesIn;
+  const citasMes = feed.counters.citas;
 
-  const recentActivity = activity.slice(0, 8);
-
-  const agentIcon = (slug?: AgentSlug) => slug ? agentBySlug[slug].emoji : "📋";
-  const agentName = (slug?: AgentSlug) => slug ? agentBySlug[slug].name : "—";
-
-  const eventLabel = (e: typeof activity[number]) => {
-    if (e.type === "chat") return `Chat con ${agentName(e.agent)}`;
-    if (e.type === "email_sent") return `Email enviado · ${agentName(e.agent)}`;
-    if (e.type === "lead_captured") return "Nuevo lead";
-    if (e.type === "contact_added") return "Contacto añadido";
-    return e.type;
-  };
+  // (helpers legacy quedan para el panel de Últimos leads más abajo si los necesitásemos)
+  void agentBySlug;
+  // Aviso a TS: AgentSlug se sigue usando indirectamente; mantenemos el import.
+  type _Keep = AgentSlug;
 
   return (
     <div className="space-y-6">
@@ -91,51 +93,76 @@ export default async function DashboardHome() {
         </div>
       </div>
 
-      {/* STATS */}
+      {/* STATS — mezcla legacy + event-log */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="card-hard p-4">
+          <div className="text-xs font-mono uppercase tracking-widest text-black/60">Citas este mes</div>
+          <div className="font-stencil text-4xl mt-1">{citasMes}</div>
+          <div className="text-xs text-black/50 mt-1">Agenda central</div>
+        </div>
+        <div className="card-hard p-4">
+          <div className="text-xs font-mono uppercase tracking-widest text-black/60">Mensajes de clientes</div>
+          <div className="font-stencil text-4xl mt-1">{mensajesIn}</div>
+          <div className="text-xs text-black/50 mt-1">Pablo + Marta · mes</div>
+        </div>
         <div className="card-hard p-4">
           <div className="text-xs font-mono uppercase tracking-widest text-black/60">Leads esta semana</div>
           <div className="font-stencil text-4xl mt-1">{leadsThisWeek}</div>
-          <div className="text-xs text-black/50 mt-1">Total: {contacts.length}</div>
+          <div className="text-xs text-black/50 mt-1">Total contactos: {contacts.length}</div>
         </div>
         <div className="card-hard p-4">
           <div className="text-xs font-mono uppercase tracking-widest text-black/60">Emails enviados</div>
           <div className="font-stencil text-4xl mt-1">{emailsThisWeek}</div>
           <div className="text-xs text-black/50 mt-1">Total: {stats.emailsSent}</div>
         </div>
-        <div className="card-hard p-4">
-          <div className="text-xs font-mono uppercase tracking-widest text-black/60">Chats con tu equipo</div>
-          <div className="font-stencil text-4xl mt-1">{chatsThisWeek}</div>
-          <div className="text-xs text-black/50 mt-1">Esta semana</div>
-        </div>
-        <div className="card-hard p-4">
-          <div className="text-xs font-mono uppercase tracking-widest text-black/60">Lista contactos</div>
-          <div className="font-stencil text-4xl mt-1">{contacts.length}</div>
-          <div className="text-xs text-black/50 mt-1">Eva los nutre</div>
-        </div>
       </div>
 
       <div className="grid lg:grid-cols-[1fr_320px] gap-5">
-        {/* ACTIVIDAD RECIENTE */}
-        <div className="card-hard p-5">
+        {/* ACTIVIDAD RECIENTE — feed del event-log */}
+        <div className="card-hard p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-stencil text-xl">Actividad reciente</h2>
             <span className="text-[10px] font-mono uppercase tracking-widest text-black/50">últimos {recentActivity.length}</span>
           </div>
           {recentActivity.length === 0 ? (
             <p className="text-sm text-black/60 italic py-6 text-center">
-              Aún no hay actividad. Habla con un agente o comparte tu URL de captura para empezar.
+              Aún no hay actividad. Cuando tu equipo IA empiece a recibir mensajes, agendar citas o publicar
+              respuestas, aparecerán aquí.
             </p>
           ) : (
-            <ul className="space-y-2">
-              {recentActivity.map((e, i) => (
-                <li key={i} className="flex items-center gap-3 text-sm border-b border-black/10 pb-2 last:border-0">
-                  <span className="text-xl">{agentIcon(e.agent)}</span>
-                  <span className="flex-1 min-w-0">
-                    <span className="font-bold">{eventLabel(e)}</span>
-                    <span className="block text-xs text-black/60 truncate">{e.detail}</span>
+            <ul className="space-y-1">
+              {recentActivity.map((e) => (
+                <li
+                  key={e.id}
+                  className="flex items-start gap-3 text-sm border-b border-black/10 pb-2 last:border-0"
+                >
+                  {/* Avatar/emoji del agente con su color */}
+                  <span
+                    className="shrink-0 w-9 h-9 border-2 border-black flex items-center justify-center text-lg"
+                    style={{ background: e.agentColor }}
+                    title={e.agentName}
+                  >
+                    {e.agentEmoji}
                   </span>
-                  <span className="text-[11px] font-mono text-black/50 whitespace-nowrap">{timeAgo(e.ts)}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block font-bold leading-tight">{e.label}</span>
+                    {e.detail && (
+                      <span className="block text-xs text-black/60 truncate">{e.detail}</span>
+                    )}
+                    {e.htmlLink && (
+                      <a
+                        href={e.htmlLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-[11px] font-bold underline mt-0.5"
+                      >
+                        Ver en Google Calendar →
+                      </a>
+                    )}
+                  </span>
+                  <span className="text-[11px] font-mono text-black/50 whitespace-nowrap pt-1">
+                    {timeAgo(e.ts)}
+                  </span>
                 </li>
               ))}
             </ul>
