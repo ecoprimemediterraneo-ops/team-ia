@@ -11,8 +11,9 @@ export async function GET() {
     const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
     const oauth2 = makeOAuthClient(getRedirectUri(host, proto));
     const url = oauth2.generateAuthUrl({
-      access_type: "offline",
-      prompt: "consent",
+      access_type: "offline",        // necesario para recibir refresh_token
+      prompt: "consent",             // fuerza consentimiento → refresh_token nuevo con scopes nuevos
+      include_granted_scopes: true,  // autorización incremental: acumula scopes ya concedidos
       scope: GMAIL_SCOPES,
     });
     return NextResponse.redirect(url);

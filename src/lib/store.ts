@@ -44,6 +44,7 @@ export type GmailTokens = {
   refreshToken: string;
   email: string;
   connectedAt: string;
+  scope?: string;        // lista de scopes concedidos por Google (space-separated)
 };
 
 // Tokens de Google Business Profile (Rocío). Mismo refresh-token pattern que
