@@ -23,7 +23,9 @@ import {
   type Conversation,
 } from "@/lib/conversation-store";
 import { logEvent, makeEventId } from "@/lib/event-log";
-import { resolveTenantFromMeta } from "@/lib/tenants";
+import { resolveTenantFromMeta, getTenantSector } from "@/lib/tenants";
+import { getFicha, fichaToPromptContext } from "@/lib/ficha";
+import { buildSectorSystem, getSectorPrompt } from "@/lib/sector-prompts";
 import {
   findPendingProposalByWhatsapp,
   markProposalPublished,
@@ -312,10 +314,16 @@ export async function POST(req: Request) {
           }
 
           // === INTERCEPTOR: ¿el cliente quiere reservar cita? ===
-          // Llamamos a la agenda central (Google Calendar). Si Pablo detecta
-          // intención completa, crea la cita y avisa por WhatsApp. Si faltan
-          // datos, hace UNA pregunta. Si el hueco está ocupado, propone otro.
+          // Solo para sectores que agendan citas de clientes finales (dental,
+          // estetica). El sector "vendedor" capta clínicas y NO agenda citas
+          // de pacientes, así que se salta el interceptor.
+          let sectorAgenda = true;
           try {
+            const sk = await getTenantSector(tenantId);
+            sectorAgenda = getSectorPrompt(sk).agendaCitas;
+          } catch { /* por defecto intentamos agendar */ }
+
+          if (sectorAgenda) try {
             const agRes = await tryAgendarFromText({
               text,
               agenteOrigen: "pablo",
@@ -371,9 +379,17 @@ export async function POST(req: Request) {
           const conv = await getConversation("pablo", from);
           const isNew = !conv || conv.turns.length === 0;
 
-          // Generar respuesta con Claude (no llamamos a /api/pablo/respond porque
-          // ese endpoint requiere sesión de usuario, no aplicable a un webhook).
-          const reply = await generateReply(text, customerName, isNew, conv);
+          // Generar respuesta con Claude usando el prompt del SECTOR del tenant
+          // (dental / estetica / vendedor) + el contexto de su ficha.
+          let sectorSystem = PABLO_SYSTEM;
+          try {
+            const sector = await getTenantSector(tenantId);
+            const ficha = await getFicha(tenantId);
+            sectorSystem = buildSectorSystem(sector, ficha ? fichaToPromptContext(ficha) : undefined);
+          } catch (err) {
+            console.error("[pablo/webhook] no se pudo resolver prompt de sector, uso default:", err);
+          }
+          const reply = await generateReply(text, customerName, isNew, conv, sectorSystem);
           console.log(`[pablo/webhook] AI reply: "${reply}"`);
 
           // Enviar de vuelta vía Graph API
@@ -422,6 +438,7 @@ async function generateReply(
   customerName: string | undefined,
   firstMessage: boolean,
   conv: Conversation | null,
+  systemPrompt: string = PABLO_SYSTEM,
 ): Promise<string> {
   if (!process.env.ANTHROPIC_API_KEY) {
     return "Hola, hemos recibido tu mensaje. Te respondemos en breve.";
@@ -446,7 +463,7 @@ async function generateReply(
     const ai = await anthropic.messages.create({
       model: MODELS.fast, // Claude Haiku 4.5
       max_tokens: 400,
-      system: PABLO_SYSTEM,
+      system: systemPrompt,
       messages: [
         ...history,
         { role: "user", content: currentUserContent },

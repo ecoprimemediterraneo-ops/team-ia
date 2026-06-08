@@ -14,9 +14,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { kvGet, kvSet } from "./supabase";
 import type { StyleConfig } from "./image-style-presets";
+import type { SectorKey } from "./sector-prompts";
 
 export type TenantPlan = "esencial" | "completo" | "pro";
 export type { StyleConfig } from "./image-style-presets";
+export type { SectorKey } from "./sector-prompts";
 
 // Ficha de marca / cliente. Una sola por tenant que alimenta a todos los
 // agentes (Marta para captions de Instagram, Pablo para WhatsApp, etc).
@@ -46,6 +48,9 @@ export type Tenant = {
   // Asunciones de cálculo (configurable por tenant):
   minutesPerInteraction: number;           // default 4
   conversionValueEUR: number;              // valor medio de un cliente cerrado (default 200)
+  // Sector del agente conversacional → qué prompt carga Pablo/Carmen/Eva.
+  // "dental" | "estetica" | "vendedor". Default: "vendedor" (capta clínicas).
+  sectorPrompt?: SectorKey;
   // Ficha de marca / cliente (alimenta a todos los agentes):
   ficha?: Ficha;
 };
@@ -73,6 +78,7 @@ function seedTenants(): Record<string, Tenant> {
       startedAt: new Date().toISOString(),
       minutesPerInteraction: 4,
       conversionValueEUR: 200,
+      sectorPrompt: "vendedor",
       ficha: {
         nombreNegocio: "AI-Team",
         sector: "Software / SaaS (agentes IA para PYMES de servicios)",
@@ -150,6 +156,19 @@ export async function upsertTenant(t: Tenant): Promise<Tenant> {
   all[t.id] = t;
   await writeAll(all);
   return t;
+}
+
+/** Devuelve el sector del agente conversacional del tenant (default vendedor). */
+export async function getTenantSector(tenantId: string): Promise<SectorKey> {
+  const t = await getTenant(tenantId);
+  return t?.sectorPrompt ?? "vendedor";
+}
+
+/** Cambia el sector del tenant. Devuelve el tenant actualizado o null. */
+export async function setTenantSector(tenantId: string, sector: SectorKey): Promise<Tenant | null> {
+  const t = await getTenant(tenantId);
+  if (!t) return null;
+  return upsertTenant({ ...t, sectorPrompt: sector });
 }
 
 /**
