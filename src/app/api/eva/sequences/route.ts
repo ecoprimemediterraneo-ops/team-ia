@@ -82,6 +82,7 @@ export async function POST(req: Request) {
       to: lead.email,
       subject: step.subject.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k as keyof typeof vars] ?? ""),
       html: step.bodyHtml(vars),
+      replyTo: process.env.EVA_REPLY_TO || "cita@parse.aiteam.marketing",
     });
     await addActivity(leadId, { type: "email_sent", data: { subject: step.subject, sequenceId: seqId, step: 1 } });
     enrollment.currentStep = 1;

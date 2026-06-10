@@ -75,6 +75,7 @@ export async function GET(req: Request) {
             to: r,
             subject: fillVars(s.subject, { negocio, nombre: cName }),
             html: `<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:auto;padding:20px;white-space:pre-wrap">${fillVars(s.body, { negocio, nombre: cName }).replace(/\n/g, "<br>")}</div>`,
+            replyTo: process.env.EVA_REPLY_TO || "cita@parse.aiteam.marketing",
           });
         }
         s.status = "sent";
@@ -105,6 +106,7 @@ export async function GET(req: Request) {
           to: w.contactEmail,
           subject: fillVars(e.subject, { negocio, nombre: cName }),
           html: `<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:auto;padding:20px;white-space:pre-wrap">${fillVars(e.body, { negocio, nombre: cName }).replace(/\n/g, "<br>")}</div>`,
+          replyTo: process.env.EVA_REPLY_TO || "cita@parse.aiteam.marketing",
         });
         w.status = "sent";
         w.sentAt = new Date().toISOString();

@@ -70,7 +70,7 @@ export async function GET(req: Request) {
 
     try {
       const subject = step.subject.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
-      await resend.emails.send({ from, to: lead.email, subject, html: step.bodyHtml(vars) });
+      await resend.emails.send({ from, to: lead.email, subject, html: step.bodyHtml(vars), replyTo: process.env.EVA_REPLY_TO || "cita@parse.aiteam.marketing" });
       await addActivity(lead.id, { type: "email_sent", data: { subject, sequenceId: seq.id, step: stepIndex + 1 } });
       stepsSent++;
 

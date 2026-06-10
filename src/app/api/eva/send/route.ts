@@ -58,6 +58,7 @@ export async function POST(req: Request) {
           to,
           subject: parsed.data.subject,
           html: bodyToHtml(parsed.data.body),
+          replyTo: process.env.EVA_REPLY_TO || "cita@parse.aiteam.marketing",
         });
         results.push({ to, id: r.data?.id });
       } catch (err) {

@@ -23,7 +23,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { tryAgendarFromText, formatStartHumanES } from "@/lib/appointment-intent";
 import { getRedirectUri } from "@/lib/gmail";
-import { getResend, RESEND_FROM } from "@/lib/resend";
+import { getResend, RESEND_FROM, EVA_REPLY_TO } from "@/lib/resend";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -44,6 +44,7 @@ async function sendEvaReply(to: string, subject: string, text: string): Promise<
       to,
       subject,
       text,
+      replyTo: EVA_REPLY_TO,
     });
   } catch (err) {
     console.error("[eva/inbound] no se pudo enviar la respuesta de Eva:", err);
@@ -52,8 +53,11 @@ async function sendEvaReply(to: string, subject: string, text: string): Promise<
 
 export async function POST(req: Request) {
   const h = await headers();
+  const url = new URL(req.url);
   const expected = process.env.EVA_WEBHOOK_SECRET || "";
-  const provided = h.get("x-eva-secret") || "";
+  // Auth: secret por query param (?secret=, lo usa SendGrid Inbound Parse) o
+  // header X-Eva-Secret (para POSTs JSON manuales / tests).
+  const provided = url.searchParams.get("secret") || h.get("x-eva-secret") || "";
   if (!expected) {
     return NextResponse.json({ ok: false, error: "EVA_WEBHOOK_SECRET no configurado." }, { status: 503 });
   }
@@ -61,17 +65,38 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "secret_mismatch" }, { status: 401 });
   }
 
+  // Dos formatos de entrada:
+  //  - SendGrid Inbound Parse → multipart/form-data (campos from/subject/text…)
+  //  - POST JSON manual / Cloudflare Worker → application/json
   let body: InboundPayload;
+  const ct = h.get("content-type") || "";
   try {
-    body = (await req.json()) as InboundPayload;
+    if (ct.includes("multipart/form-data") || ct.includes("application/x-www-form-urlencoded")) {
+      const form = await req.formData();
+      const get = (k: string) => {
+        const v = form.get(k);
+        return typeof v === "string" ? v : "";
+      };
+      // SendGrid manda `from` como "Nombre <email@dominio>"; extraemos ambos.
+      const rawFrom = get("from");
+      const m = rawFrom.match(/^\s*"?([^"<]*)"?\s*<([^>]+)>/);
+      body = {
+        from: (m ? m[2] : rawFrom).trim(),
+        from_name: m ? m[1].trim() || undefined : undefined,
+        subject: get("subject"),
+        text: get("text") || get("html"),
+      };
+    } else {
+      body = (await req.json()) as InboundPayload;
+    }
   } catch {
-    return NextResponse.json({ ok: false, error: "JSON inválido" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "Payload ilegible" }, { status: 400 });
   }
 
   const from = (body.from || "").trim();
   const texto = (body.body || body.text || "").trim();
   if (!from || !texto) {
-    return NextResponse.json({ ok: false, error: "Faltan `from` y/o `body` del email." }, { status: 422 });
+    return NextResponse.json({ ok: false, error: "Faltan `from` y/o cuerpo del email." }, { status: 422 });
   }
 
   const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
