@@ -42,8 +42,7 @@
 
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { agendarCita } from "@/lib/calendar";
-import { findFreeSlot } from "@/lib/appointment-intent";
+import { reservarSlot } from "@/lib/orchestrator";
 import { getRedirectUri } from "@/lib/gmail";
 
 export const dynamic = "force-dynamic";
@@ -113,32 +112,33 @@ export async function POST(req: Request) {
   const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
   const redirectUri = getRedirectUri(host, proto);
 
-  // Free-busy primero para no chocar con otra cita
-  const slot = await findFreeSlot({ userEmail: FOUNDER_EMAIL, redirectUri, startIso, durationMin });
-  if (!slot.available) {
-    return NextResponse.json({
-      ok: false,
-      error: "slot_taken",
-      suggested: slot.suggested,
-      message: slot.suggested
-        ? `El hueco solicitado está ocupado. Sugerencia: ${slot.suggested}`
-        : "El hueco solicitado está ocupado y no hay alternativa ese día.",
-    }, { status: 409 });
-  }
-
-  const result = await agendarCita({
+  // Reserva vía ORQUESTADOR (disponibilidad + lock + log de decisión)
+  const result = await reservarSlot({
     userEmail: FOUNDER_EMAIL,
+    redirectUri,
     nombre,
     motivo,
-    start: startIso,
+    startIso,
     durationMin,
     agenteOrigen: "carmen",
     customerPhone,
-    redirectUri,
   });
 
   if (!result.ok) {
-    return NextResponse.json({ ok: false, error: result.detail, reason: result.reason }, { status: 500 });
+    if (result.reason === "slot_taken") {
+      return NextResponse.json({
+        ok: false,
+        error: "slot_taken",
+        suggested: result.suggested,
+        message: result.suggested
+          ? `El hueco solicitado está ocupado. Sugerencia: ${result.suggested}`
+          : "El hueco solicitado está ocupado y no hay alternativa ese día.",
+      }, { status: 409 });
+    }
+    if (result.reason === "locked") {
+      return NextResponse.json({ ok: false, error: "locked", message: "Otro agente está reservando ese hueco." }, { status: 423 });
+    }
+    return NextResponse.json({ ok: false, error: result.detail }, { status: 500 });
   }
 
   return NextResponse.json({

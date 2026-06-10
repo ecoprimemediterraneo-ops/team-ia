@@ -22,7 +22,8 @@ export type EventType =
   | "sale"
   | "handoff_human"
   | "review_in"
-  | "review_replied";
+  | "review_replied"
+  | "orchestrator_decision";
 
 export type EventChannel =
   | "pablo"
@@ -172,6 +173,7 @@ export async function getMonthCounts(
     handoff_human: 0,
     review_in: 0,
     review_replied: 0,
+    orchestrator_decision: 0,
   };
   for (const e of events) {
     out[e.type] = (out[e.type] ?? 0) + 1;

@@ -14,7 +14,7 @@
 
 import "server-only";
 import { anthropic, MODELS } from "./claude";
-import { agendarCita, freeBusyQuery, type AgendarCitaResult } from "./calendar";
+import { freeBusyQuery, type AgendarCitaResult } from "./calendar";
 import { DEFAULT_TENANT_ID } from "./tenants";
 import type { EventChannel } from "./event-log";
 
@@ -257,33 +257,32 @@ export async function tryAgendarFromText(opts: {
     return { kind: "incomplete", missing: intent.missing, intent };
   }
 
-  // Comprobar hueco libre
-  const slot = await findFreeSlot({
-    userEmail: founderEmail,
-    redirectUri: opts.redirectUri,
-    startIso: intent.fields.startIso!,
-    durationMin: opts.durationMin ?? DEFAULT_DURATION_MIN,
-  });
-
-  if (!slot.available) {
-    return { kind: "slot_taken", suggested: slot.suggested, intent };
-  }
-
-  // Crear cita
+  // Reserva a través del ORQUESTADOR central (verifica hueco + lock + log).
+  // Import dinámico para evitar ciclo de carga en tiempo de módulo
+  // (orchestrator importa findFreeSlot de aquí).
+  const { reservarSlot } = await import("./orchestrator");
   try {
-    const res = await agendarCita({
+    const res = await reservarSlot({
       tenantId,
       userEmail: founderEmail,
+      redirectUri: opts.redirectUri,
       nombre: intent.fields.nombre!,
       motivo: intent.fields.motivo!,
-      start: intent.fields.startIso!,
+      startIso: intent.fields.startIso!,
       durationMin: opts.durationMin ?? DEFAULT_DURATION_MIN,
       agenteOrigen: opts.agenteOrigen,
       customerPhone: opts.customerPhone,
-      redirectUri: opts.redirectUri,
     });
-    if (!res.ok) return { kind: "error", detail: res.detail };
-    return { kind: "agendada", result: res, intent };
+    if (res.ok) {
+      return {
+        kind: "agendada",
+        result: { ok: true, eventId: res.eventId, htmlLink: res.htmlLink, eventLogId: res.eventLogId ?? "" },
+        intent,
+      };
+    }
+    if (res.reason === "slot_taken") return { kind: "slot_taken", suggested: res.suggested, intent };
+    if (res.reason === "locked") return { kind: "slot_taken", intent }; // otro agente reservando este hueco
+    return { kind: "error", detail: res.detail };
   } catch (err) {
     return { kind: "error", detail: err instanceof Error ? err.message : String(err) };
   }

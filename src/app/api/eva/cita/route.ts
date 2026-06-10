@@ -37,9 +37,8 @@
 
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { agendarCita } from "@/lib/calendar";
+import { reservarSlot } from "@/lib/orchestrator";
 import { tryAgendarFromText, formatStartHumanES } from "@/lib/appointment-intent";
-import { findFreeSlot } from "@/lib/appointment-intent";
 import { getRedirectUri } from "@/lib/gmail";
 
 export const dynamic = "force-dynamic";
@@ -86,31 +85,24 @@ export async function POST(req: Request) {
   // Caso B — ya extraído
   // -------------------------------------------------------------------------
   if (body.nombre && body.motivo && body.start) {
-    const slot = await findFreeSlot({
+    const result = await reservarSlot({
       userEmail: FOUNDER_EMAIL,
       redirectUri,
-      startIso: body.start,
-      durationMin: body.durationMin ?? 30,
-    });
-    if (!slot.available) {
-      return NextResponse.json({
-        ok: false,
-        error: "slot_taken",
-        suggested: slot.suggested,
-      }, { status: 409 });
-    }
-    const result = await agendarCita({
-      userEmail: FOUNDER_EMAIL,
       nombre: body.nombre,
       motivo: body.motivo,
-      start: body.start,
+      startIso: body.start,
       durationMin: body.durationMin ?? 30,
       agenteOrigen: "eva",
       attendees: body.from ? [body.from] : undefined,
-      redirectUri,
     });
     if (!result.ok) {
-      return NextResponse.json({ ok: false, error: result.detail, reason: result.reason }, { status: 500 });
+      if (result.reason === "slot_taken") {
+        return NextResponse.json({ ok: false, error: "slot_taken", suggested: result.suggested }, { status: 409 });
+      }
+      if (result.reason === "locked") {
+        return NextResponse.json({ ok: false, error: "locked" }, { status: 423 });
+      }
+      return NextResponse.json({ ok: false, error: result.detail }, { status: 500 });
     }
     return NextResponse.json({
       ok: true,
