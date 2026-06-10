@@ -130,10 +130,12 @@ export async function generarCaption(
     }
     return { ok: true, caption, tema };
   } catch (err) {
+    const detail = `Anthropic: ${(err as Error).message}`;
+    console.error(`[marta-caption] api_error tenant=${input.tenantId}: ${detail}`);
     return {
       ok: false,
       reason: "api_error",
-      detail: `Anthropic: ${(err as Error).message}`,
+      detail,
     };
   }
 }
