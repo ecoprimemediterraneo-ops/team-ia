@@ -42,6 +42,7 @@
 
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { reservarSlot } from "@/lib/orchestrator";
 import { getRedirectUri } from "@/lib/gmail";
 
@@ -73,21 +74,72 @@ function pick<T = string>(payload: RetellPayload, key: string): T | undefined {
   return undefined;
 }
 
-export async function POST(req: Request) {
-  // Auth
-  const h = await headers();
-  const expected = process.env.CARMEN_WEBHOOK_SECRET || "";
-  const provided = h.get("x-carmen-secret") || "";
-  if (!expected) {
-    return NextResponse.json({ ok: false, error: "CARMEN_WEBHOOK_SECRET no configurado en server." }, { status: 503 });
+// Comparación en tiempo constante (evita timing attacks al comparar secretos).
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
+}
+
+/**
+ * Autentica la petición de Retell por TRES vías (en orden de preferencia):
+ *   1. Firma nativa de Retell: header `x-retell-signature` = HMAC-SHA256(rawBody)
+ *      con RETELL_API_KEY. La más segura (no viaja ningún secreto en la URL).
+ *   2. Secret por query param: `?secret=<CARMEN_WEBHOOK_SECRET>`. Funciona en
+ *      versiones de Retell que NO permiten cabeceras personalizadas.
+ *   3. Header `x-carmen-secret` (legacy, por compatibilidad).
+ * Devuelve null si OK, o un mensaje de error si falla.
+ */
+function authRetell(req: Request, h: Headers, rawBody: string): string | null {
+  const url = new URL(req.url);
+  const secretExpected = process.env.CARMEN_WEBHOOK_SECRET || "";
+  const retellKey = process.env.RETELL_API_KEY || "";
+
+  // Vía 1 — firma nativa de Retell
+  const sig = h.get("x-retell-signature") || "";
+  if (retellKey && sig) {
+    const expectedSig = createHmac("sha256", retellKey).update(rawBody).digest("hex");
+    // Retell puede prefijar el algoritmo; comparamos contra hex puro y v=hex.
+    if (safeEqual(sig, expectedSig) || safeEqual(sig.replace(/^v=?/, ""), expectedSig)) {
+      return null;
+    }
   }
-  if (provided !== expected) {
-    return NextResponse.json({ ok: false, error: "secret_mismatch" }, { status: 401 });
+
+  // Vía 2 — secret por query param
+  const qpSecret = url.searchParams.get("secret") || "";
+  if (secretExpected && qpSecret && safeEqual(qpSecret, secretExpected)) return null;
+
+  // Vía 3 — header legacy
+  const hdrSecret = h.get("x-carmen-secret") || "";
+  if (secretExpected && hdrSecret && safeEqual(hdrSecret, secretExpected)) return null;
+
+  if (!secretExpected && !retellKey) {
+    return "no_auth_configured"; // ni CARMEN_WEBHOOK_SECRET ni RETELL_API_KEY en server
+  }
+  return "auth_failed";
+}
+
+export async function POST(req: Request) {
+  const h = await headers();
+
+  // Necesitamos el cuerpo en crudo para verificar la firma de Retell.
+  const rawBody = await req.text();
+
+  const authErr = authRetell(req, h, rawBody);
+  if (authErr === "no_auth_configured") {
+    return NextResponse.json(
+      { ok: false, error: "Falta CARMEN_WEBHOOK_SECRET (o RETELL_API_KEY) en el servidor." },
+      { status: 503 },
+    );
+  }
+  if (authErr) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
   let body: RetellPayload;
   try {
-    body = (await req.json()) as RetellPayload;
+    body = JSON.parse(rawBody) as RetellPayload;
   } catch {
     return NextResponse.json({ ok: false, error: "JSON inválido" }, { status: 400 });
   }
