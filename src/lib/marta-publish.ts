@@ -341,17 +341,15 @@ export async function publishToInstagram(input: PublishInput): Promise<PublishRe
     return errorToResult(err, "fallo creando media container");
   }
 
-  // Paso 1.5 — esperar a FINISHED si es vídeo/Reel/StoryVideo.
-  const needsPolling =
-    input.mediaType === "VIDEO" ||
-    input.mediaType === "REELS" ||
-    input.mediaType === "STORIES_VIDEO";
-  if (needsPolling) {
-    try {
-      await waitForContainerReady(creationId, token);
-    } catch (err) {
-      return errorToResult(err, "container no llegó a FINISHED");
-    }
+  // Paso 1.5 — esperar a FINISHED SIEMPRE, también para IMAGE.
+  // Aunque las imágenes suelen procesarse en <1s, Meta necesita descargar la
+  // image_url y dejar el container en estado FINISHED antes de media_publish.
+  // Publicar antes de tiempo devuelve 9007 "Media ID is not available".
+  // El polling para imagen termina en 1-2 vueltas; para vídeo/Reel tarda más.
+  try {
+    await waitForContainerReady(creationId, token);
+  } catch (err) {
+    return errorToResult(err, "container no llegó a FINISHED");
   }
 
   // Paso 2 — publicar
