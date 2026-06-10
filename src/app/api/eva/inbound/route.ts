@@ -77,14 +77,17 @@ export async function POST(req: Request) {
         const v = form.get(k);
         return typeof v === "string" ? v : "";
       };
-      // SendGrid manda `from` como "Nombre <email@dominio>"; extraemos ambos.
-      const rawFrom = get("from");
+      // Tolerante a varios proveedores de inbound:
+      //   Mailgun  → sender, body-plain / stripped-text, subject
+      //   SendGrid → from, text / html, subject
+      // El remitente puede venir como "Nombre <email@dominio>" o email pelado.
+      const rawFrom = get("from") || get("sender");
       const m = rawFrom.match(/^\s*"?([^"<]*)"?\s*<([^>]+)>/);
       body = {
         from: (m ? m[2] : rawFrom).trim(),
         from_name: m ? m[1].trim() || undefined : undefined,
         subject: get("subject"),
-        text: get("text") || get("html"),
+        text: get("stripped-text") || get("body-plain") || get("text") || get("html"),
       };
     } else {
       body = (await req.json()) as InboundPayload;
