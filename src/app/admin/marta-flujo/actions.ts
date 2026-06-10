@@ -62,16 +62,16 @@ export async function generarYEnviarPropuestaAction(
 
   // 1) Generar caption con Marta.
   const cap = await generarCaption({ tenantId, tema: tema || undefined, contexto: contexto || undefined });
-  if (!("ok" in cap) || !cap.ok) {
-    const detail = "ok" in cap ? "" : ("detail" in cap ? (cap as { detail?: string }).detail : "");
+  if (!cap.ok) {
+    console.error(`[marta-flujo/action] generarCaption falló: reason=${cap.reason} detail=${cap.detail}`);
     return {
       ts: Date.now(),
       variant: "error",
       title: "No se pudo generar el caption",
-      detail: detail || "Revisa la ficha del tenant y la API key de Anthropic.",
+      detail: `[${cap.reason}] ${cap.detail || "Revisa la ficha del tenant y la API key de Anthropic."}`,
     };
   }
-  const caption = (cap as { ok: true; caption: string }).caption;
+  const caption = cap.caption;
 
   // 2) Crear propuesta pendiente.
   const proposal = await createProposal({

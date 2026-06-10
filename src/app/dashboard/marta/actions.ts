@@ -104,16 +104,16 @@ export async function nuevaPropuestaClientAction(
 
   // 1) Caption desde la ficha.
   const cap = await generarCaption({ tenantId, tema: tema || undefined, contexto: contexto || undefined });
-  if (!("ok" in cap) || !cap.ok) {
-    const detail = "ok" in cap ? "" : (cap as { detail?: string }).detail || "";
+  if (!cap.ok) {
+    console.error(`[dashboard/marta/action] generarCaption falló: reason=${cap.reason} detail=${cap.detail}`);
     return {
       ts: Date.now(),
       variant: "error",
       title: "No se pudo generar el texto",
-      detail: detail || "Revisa la ficha y la API key de Anthropic.",
+      detail: `[${cap.reason}] ${cap.detail || "Revisa la ficha y la API key de Anthropic."}`,
     };
   }
-  const caption = (cap as { ok: true; caption: string }).caption;
+  const caption = cap.caption;
 
   // 2) Crear propuesta.
   const proposal = await createProposal({
