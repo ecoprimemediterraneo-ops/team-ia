@@ -90,7 +90,24 @@ export async function POST(req: Request) {
         text: get("stripped-text") || get("body-plain") || get("text") || get("html"),
       };
     } else {
-      body = (await req.json()) as InboundPayload;
+      const json = (await req.json()) as Record<string, unknown>;
+      // Postmark Inbound → JSON con campos PascalCase (From, FromFull.Email,
+      // Subject, TextBody, StrippedTextReply). Lo detectamos y normalizamos.
+      const fromFull = json.FromFull as { Email?: string; Name?: string } | undefined;
+      const isPostmark =
+        json.From !== undefined || json.TextBody !== undefined || fromFull !== undefined;
+      if (isPostmark) {
+        const rawFrom = (fromFull?.Email as string) || (json.From as string) || "";
+        const m = String(json.From || "").match(/^\s*"?([^"<]*)"?\s*<([^>]+)>/);
+        body = {
+          from: rawFrom.trim(),
+          from_name: (fromFull?.Name as string) || (m ? m[1].trim() || undefined : undefined),
+          subject: (json.Subject as string) || "",
+          text: (json.StrippedTextReply as string) || (json.TextBody as string) || "",
+        };
+      } else {
+        body = json as InboundPayload;
+      }
     }
   } catch {
     return NextResponse.json({ ok: false, error: "Payload ilegible" }, { status: 400 });
