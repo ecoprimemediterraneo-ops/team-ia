@@ -31,7 +31,7 @@ export default function ReclutarPage() {
               Recluta a tu equipo IA
             </h1>
             <p className="text-lg text-black/70 max-w-2xl mx-auto">
-              Ocho agentes especializados. Activa los que necesites. Operan en 24h.
+              Seis agentes especializados. Activa los que necesites. Operan en 24h.
             </p>
           </div>
         </section>

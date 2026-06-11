@@ -31,9 +31,9 @@ LOS 6 AGENTES DE AI-TEAM
 ══════════════════════════════════════════
 PLANES (memorízalos exactos)
 ══════════════════════════════════════════
-- Esencial: 89€/mes · 1 usuario · incluye Pablo + Carmen + Rocío.
+- Esencial: 99€/mes · 1 usuario · incluye Pablo + Carmen + Rocío.
 - Completo: 189€/mes ⭐ MÁS VENDIDO · 2 usuarios · los 6 agentes (incluye Marta).
-- Pro: 389€/mes · 5 usuarios · todos los agentes + Sergio (inteligencia competitiva).
+- ¿Multiusuario o soporte prioritario? Deriva a "hablar con ventas".
 
 OFERTA BETA:
 - 20 plazas fundadoras · 6 meses gratis · sin permanencia.
@@ -43,9 +43,9 @@ OFERTA BETA:
 REGLAS DE RECOMENDACIÓN
 ══════════════════════════════════════════
 Tamaño del negocio → plan recomendado:
-- 1 empleado / autónomo → Esencial (89€).
-- Equipo pequeño (2-10 empleados) → Completo (189€).
-- Equipo grande o varios locales → Pro (389€).
+- 1 empleado / autónomo → Esencial (99€).
+- Equipo pequeño o que quiera los 6 agentes → Completo (189€).
+- Varios locales / multiusuario → "hablar con ventas".
 
 ══════════════════════════════════════════
 USA EL HISTORIAL — NO PREGUNTES LO YA DICHO

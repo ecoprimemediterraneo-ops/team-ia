@@ -85,7 +85,7 @@ export default async function RestaurantesCiudadPage({ params }: { params: Promi
         <section className="py-16 bg-[color:var(--cream)] border-b-[3px] border-black">
           <div className="max-w-4xl mx-auto px-5 text-center">
             <h2 className="font-stencil text-3xl md:text-4xl mb-4">
-              8 agentes para tu restaurante en {ciudad.nombre}
+              6 agentes para tu restaurante en {ciudad.nombre}
             </h2>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-left mt-8">
               {[
@@ -109,19 +109,19 @@ export default async function RestaurantesCiudadPage({ params }: { params: Promi
         <section className="py-12 border-b-[3px] border-black bg-black text-white">
           <div className="max-w-3xl mx-auto px-5 text-center">
             <p className="font-stencil text-2xl md:text-3xl mb-2">
-              "Las reservas de turistas ingleses subieron un 60% desde que Carmen atiende las llamadas."
+              Objetivo estimado: más reservas de turistas con Carmen atendiendo las llamadas.
             </p>
-            <p className="text-white/60 text-sm">— Restaurante piloto real</p>
+            <p className="text-white/60 text-sm">— Estimación objetivo en los primeros meses</p>
           </div>
         </section>
 
         <section id="cta" className="py-16 bg-[color:var(--cream)]">
           <div className="max-w-2xl mx-auto px-5 text-center">
             <h2 className="font-stencil text-3xl md:text-4xl mb-2">
-              30 días gratis para restaurantes de {ciudad.nombre}
+              6 meses gratis para restaurantes de {ciudad.nombre}
             </h2>
-            <p className="text-black/70 mb-6">Sin tarjeta. Sin permanencia. Precio fundador 89€/mes después.</p>
-            <a href="/restaurantes#waitlist" className="btn-mustard text-lg">{v.cta} →</a>
+            <p className="text-black/70 mb-6">20 plazas · sin tarjeta · sin permanencia · 99€/mes fundador para siempre.</p>
+            <a href="/restaurantes#waitlist-resto" className="btn-mustard text-lg">{v.cta} →</a>
           </div>
         </section>
 

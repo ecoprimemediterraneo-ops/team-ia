@@ -40,7 +40,7 @@ const restoAgents: Record<string, { titulo: string; bullets: string[] }> = {
     bullets: [
       "Tras cada cena, manda WhatsApp pidiendo reseña al cliente contento",
       "Las 5★ las agradece con cariño, las 1★ con disculpa profesional sin justificarse",
-      "Sube tu Google de 4.0 a 4.5★ en 4 meses (caso piloto real)",
+      "Objetivo estimado: subir tu Google de 4.0 a 4.5★ en 4 meses",
     ],
   },
   lucia: {
@@ -82,8 +82,8 @@ const restoDay = [
 const restoPacks = [
   {
     name: "Esencial",
-    priceFounder: "89",
-    priceRegular: "189",
+    priceFounder: "99",
+    priceRegular: "199",
     tagline: "Para bar/restaurante de 1-20 mesas, 1 sala",
     agents: ["Pablo (reservas WhatsApp)", "Carmen (llamadas español/inglés)", "Rocío (TripAdvisor + Google)"],
     cta: "Empezar Esencial",
@@ -96,14 +96,6 @@ const restoPacks = [
     agents: ["Todo lo del plan Esencial", "+ Lucía (correo y reservas eventos)", "+ Eva (menús + promos)", "+ Marta (Instagram + reels gastronómicos)"],
     cta: "Quiero crecer",
     featured: true,
-  },
-  {
-    name: "Pro",
-    priceFounder: "389",
-    priceRegular: "789",
-    tagline: "Completo + multiusuario + soporte prioritario.",
-    agents: ["Todo lo del plan Completo", "+ Multiusuario hasta 5 cuentas", "+ Soporte prioritario email (4 h)", "+ Auditoría mensual de negocio con recomendaciones"],
-    cta: "Hablar con ventas",
   },
 ];
 
@@ -140,7 +132,7 @@ export default function RestaurantesPage() {
             </div>
             <h1 className="font-stencil text-3xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05]">
               <span className="block">UN RESTAURANTE.</span>
-              <span className="block">OCHO</span>
+              <span className="block">SEIS</span>
               <span className="block">ESPECIALISTAS.</span>
               <span className="inline-block barred mt-4 px-3 py-1">UN SUELDO.</span>
             </h1>
@@ -155,8 +147,8 @@ export default function RestaurantesPage() {
               <span className="block mt-2 font-bold text-white">Tú vuelves a la cocina. Ellos hacen lo demás.</span>
             </p>
             <div className="mt-10 flex flex-col items-center gap-3">
-              <a href="#waitlist-resto" className="btn-mustard text-lg">Quiero una de las 5 plazas</a>
-              <p className="text-sm text-white/60">5 plazas gratis 30 días para restaurantes · Después 59€/mes fundador</p>
+              <a href="#waitlist-resto" className="btn-mustard text-lg">Quiero una de las 20 plazas</a>
+              <p className="text-sm text-white/60">20 plazas · 6 meses gratis · sin tarjeta · 99€/mes fundador para siempre</p>
             </div>
           </div>
           <div className="relative z-10 max-w-6xl mx-auto px-5 pb-12">
@@ -240,7 +232,7 @@ export default function RestaurantesPage() {
         <section className="py-24 border-t-[3px] border-black bg-[color:var(--cream)]">
           <div className="max-w-6xl mx-auto px-5">
             <h2 className="font-stencil text-5xl md:text-7xl mb-4">Elige tu pack restaurante</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-8">
+            <div className="grid sm:grid-cols-2 gap-5 mt-8 max-w-3xl">
               {restoPacks.map((p) => (
                 <article key={p.name} className={`card-hard p-6 flex flex-col relative ${p.featured ? "bg-[color:var(--mustard)]" : "bg-white"}`}>
                   {p.featured && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[color:var(--red)] text-white text-xs font-bold tracking-widest px-3 py-1 border-2 border-black">★ MÁS VENDIDO</div>}
@@ -263,6 +255,10 @@ export default function RestaurantesPage() {
                 </article>
               ))}
             </div>
+            <p className="text-center text-sm text-black/60 mt-6">
+              ¿Necesitas multiusuario o soporte prioritario?{" "}
+              <a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-[color:var(--red)]">Hablar con ventas →</a>
+            </p>
           </div>
         </section>
 
@@ -288,9 +284,9 @@ export default function RestaurantesPage() {
           sector="Restaurante / hostelería"
           city=""
           emoji="🍽️"
-          headline="Reserva tu plaza piloto"
-          plazas="5 plazas piloto · 30 días gratis"
-          priceFounder="59€/mes"
+          headline="Reserva tu plaza fundadora"
+          plazas="20 plazas · 6 meses gratis"
+          priceFounder="99€/mes"
           ctaLabel="restaurante"
         />
       </main>

@@ -5,9 +5,9 @@ import MonthlyReportSection from "@/components/MonthlyReportSection";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Precios — Desde 89€/mes",
+  title: "Precios — Desde 99€/mes",
   description:
-    "Tres planes: Esencial, Completo y Pro. Precio fundador para siempre. 6 meses gratis, sin tarjeta, sin permanencia.",
+    "Dos planes: Esencial y Completo. Precio fundador para siempre. 6 meses gratis, sin tarjeta, sin permanencia.",
   alternates: { canonical: "https://aiteam.marketing/precios" },
 };
 
@@ -22,7 +22,19 @@ const faq = [
   },
   {
     q: "¿Hay coste de instalación?",
-    a: "No. El alta es self-service en los tres planes — el asistente de configuración te guía por sector paso a paso. Tardas unos 15 minutos.",
+    a: "No. El alta es self-service en ambos planes — el asistente de configuración te guía por sector paso a paso. Tardas unos 15 minutos.",
+  },
+  {
+    q: "¿Necesito instalar algo o saber de tecnología?",
+    a: "No. Reservas tu plaza en /beta, te damos de alta con tu email y un onboarding guiado paso a paso (15-20 min) para conectar tu WhatsApp Business, Gmail y Google Business. Sin código, sin configurar APIs raras.",
+  },
+  {
+    q: "¿En qué idiomas trabaja?",
+    a: "Español nativo (ES, MX, AR, CO, CL) e inglés. Carmen es bilingüe en sus guiones de llamada. Otros idiomas bajo demanda.",
+  },
+  {
+    q: "¿Funciona con mi software actual (Gesden, ClinicCloud, etc.)?",
+    a: "AI-Team vive 'al lado', no 'dentro' de tu software. Trabajamos con tu calendario (Google Calendar o Cal.com), tu WhatsApp Business y tu Gmail. Las integraciones directas con software vertical (Gesden, ClinicCloud, Treatwell, Booksy, TheFork…) se preparan bajo demanda — escríbenos a ventas.",
   },
   {
     q: "¿Qué pasa si cancelo?",
@@ -46,7 +58,7 @@ export default function PreciosPage() {
             </span>
             <h1 className="font-stencil text-4xl md:text-6xl mb-4">Precios sin sorpresas</h1>
             <p className="text-lg text-black/70 max-w-2xl mx-auto">
-              Desde 89€/mes. 6 meses gratis. Sin tarjeta para empezar. Sin permanencia. Cambia de plan cuando quieras.
+              Desde 99€/mes. 6 meses gratis. Sin tarjeta para empezar. Sin permanencia. Cambia de plan cuando quieras.
             </p>
           </div>
         </section>

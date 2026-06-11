@@ -24,7 +24,7 @@ const calendario: Post[] = [
   { n: 7, semana: 2, dia: "Lun", pilar: "DOLOR", formato: "Post", personaje: "Pablo", titulo: "23:47 un sábado", estado: "pendiente" },
   { n: 8, semana: 2, dia: "Mar", pilar: "EDUCATIVO", formato: "Reel", personaje: "Carmen", titulo: "Llamada perdida más cara", estado: "pendiente" },
   { n: 9, semana: 2, dia: "Mié", pilar: "EDUCATIVO", formato: "Carrusel", personaje: "Sergio", titulo: "Cómo Sergio analiza competencia", estado: "pendiente" },
-  { n: 10, semana: 2, dia: "Jue", pilar: "PRODUCTO", formato: "Post", personaje: "Eva", titulo: "Caso piloto recuperando ingresos", estado: "pendiente" },
+  { n: 10, semana: 2, dia: "Jue", pilar: "PRODUCTO", formato: "Post", personaje: "Eva", titulo: "Estimación: recuperar ingresos inactivos", estado: "pendiente" },
   { n: 11, semana: 2, dia: "Vie", pilar: "PRODUCTO", formato: "Reel", personaje: "Marta", titulo: "Calendario editorial visual", estado: "pendiente" },
   { n: 12, semana: 2, dia: "Sáb", pilar: "DETRÁS", formato: "Post", personaje: "Fundador", titulo: "Por qué montamos AI-Team", estado: "pendiente" },
   // Semana 3

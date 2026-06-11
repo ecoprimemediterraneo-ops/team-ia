@@ -13,7 +13,7 @@ export default function MockupShowcase() {
           Tu operación.<br />Automatizada.
         </h2>
         <p className="text-base text-black/40 mb-16 max-w-xl">
-          Un dashboard central. Ocho agentes trabajando en paralelo. Tú solo revisas y apruebas.
+          Un dashboard central. Seis agentes trabajando en paralelo. Tú solo revisas y apruebas.
         </p>
 
         {/* Grid de mockups */}

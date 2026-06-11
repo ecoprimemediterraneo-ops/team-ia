@@ -54,8 +54,8 @@ export default function VerticalCTA({
         </div>
         <h2 className="font-display text-5xl md:text-7xl mb-6">{headline}</h2>
         <p className="text-lg md:text-xl mb-10 text-white/80">
-          Regalo <span className="font-bold text-[color:var(--mustard)]">30 días gratis</span> a 5 negocios piloto a cambio de feedback honesto.
-          <span className="block mt-2 text-white/60 text-sm">Sin tarjeta. Si no te aporta, te vas. Si te aporta, sigues con precio fundador {priceFounder} para siempre.</span>
+          <span className="font-bold text-[color:var(--mustard)]">6 meses gratis</span> para 20 negocios fundadores, sin tarjeta.
+          <span className="block mt-2 text-white/60 text-sm">Si no te aporta, te vas. Si te aporta, sigues con precio fundador {priceFounder} para siempre.</span>
         </p>
 
         {status === "ok" ? (

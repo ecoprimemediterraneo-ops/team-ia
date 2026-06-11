@@ -62,7 +62,7 @@ He visto que tu clínica {{businessName}} en {{city}} tiene {{rating}} en Google
 
 Te escribo porque he montado un equipo de 6 asistentes IA específico para clínicas dentales de tu tamaño. Reducen no-shows un 50%, contestan WhatsApps 24/7 y suben tu Google con campañas automáticas de reseñas.
 
-Estoy regalando 30 días a 5 clínicas dentales de {{city}} a cambio de feedback.
+Estoy abriendo 20 plazas fundadoras: 6 meses gratis, sin tarjeta, a cambio de feedback.
 
 ¿Te enseño en 15 min cómo funciona?
 
@@ -75,7 +75,7 @@ https://aiteam.marketing/dentistas`,
         subject: "Re: idea rápida para {{businessName}}",
         body: `Hola {{firstName}},
 
-¿Has podido ver el email del lunes? No te robo más tiempo, solo confirmo si te interesa una de las 5 plazas piloto antes de que las cierre.
+¿Has podido ver el email del lunes? No te robo más tiempo, solo confirmo si te interesa una de las 20 plazas fundadoras antes de que las cierre.
 
 Si es no, perfecto, no insisto más.
 Si es sí, te paso enlace para reservar 15 min.
@@ -85,10 +85,10 @@ Cristóbal`,
       },
       {
         delayHours: 168,
-        subject: "Última: cerramos las plazas piloto el viernes",
+        subject: "Última: cerramos las plazas fundadoras el viernes",
         body: `Hola {{firstName}},
 
-Solo aviso de cierre. El viernes confirmo las 5 clínicas piloto que se llevan 30 días gratis con precio fundador 89€/mes después.
+Solo aviso de cierre. El viernes confirmo las 20 clínicas fundadoras que se llevan 6 meses gratis sin tarjeta, con precio fundador 99€/mes para siempre.
 
 Si te interesa, contesta SÍ y te llamo personalmente.
 Si no, te dejo en paz — palabra.
@@ -110,7 +110,7 @@ He visto {{businessName}} en {{city}}. Te escribo porque trabajo con peluquería
 
 Tengo un equipo de 6 asistentes IA que te contesta los WhatsApps en 12 segundos, te sube Instagram con reels semanales y recupera clientas que llevan 3 meses sin venir.
 
-Regalo 30 días a 5 salones de {{city}}. ¿Te lo enseño en 15 min?
+Abro 20 plazas fundadoras: 6 meses gratis, sin tarjeta. ¿Te lo enseño en 15 min?
 
 Un saludo,
 Cristóbal — AI-Team
@@ -124,7 +124,7 @@ https://aiteam.marketing/peluquerias`,
 • Pablo contesta WhatsApps 24/7 con tu tono
 • Marta sube 3 reels/semana automáticos
 • Rocío gestiona Google y reseñas
-• 59€/mes precio fundador (después 99€)
+• 99€/mes precio fundador (después 199€)
 
 ¿Llamada de 15 min esta semana?
 
@@ -144,7 +144,7 @@ He visto que tu restaurante {{businessName}} en {{city}} tiene {{rating}} en Goo
 
 He montado un equipo de 6 IAs que gestiona reservas WhatsApp 24/7, coge llamadas en español + inglés, responde TripAdvisor y publica fotos de tus platos en Instagram.
 
-Regalo 30 días a 5 restaurantes. ¿Te enseño en 15 min?
+Abro 20 plazas fundadoras: 6 meses gratis, sin tarjeta. ¿Te enseño en 15 min?
 
 Un saludo,
 Cristóbal — AI-Team

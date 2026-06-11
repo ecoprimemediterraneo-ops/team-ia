@@ -21,14 +21,14 @@ export default function AgentesPage() {
             <span className="inline-block bg-black text-[color:var(--mustard)] px-3 py-1 text-xs font-mono font-bold tracking-widest mb-4">
               EL EQUIPO COMPLETO
             </span>
-            <h1 className="font-stencil text-4xl md:text-6xl mb-4">Los 8 agentes</h1>
+            <h1 className="font-stencil text-4xl md:text-6xl mb-4">Los 6 agentes</h1>
             <p className="text-lg text-black/70 max-w-2xl">
               Cada uno especializado en un canal. Activa los que necesites.
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {agents.map((a) => (
+            {agents.filter((a) => a.slug !== "sergio").map((a) => (
               <Link key={a.slug} href={`/agentes/${a.slug}`} className="card-hard p-5 bg-white hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform flex flex-col">
                 <div className="relative aspect-square border-2 border-black mb-4 overflow-hidden" style={{ backgroundColor: a.color + "20" }}>
                   <Image src={a.avatar} alt={a.name} fill className="object-cover" sizes="(max-width: 640px) 100vw, 33vw" />

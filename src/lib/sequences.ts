@@ -67,7 +67,7 @@ export const SEQUENCES: Sequence[] = [
 <li>✅ +22 citas recuperadas al mes</li>
 <li>✅ WhatsApp contestado en &lt;2 min a cualquier hora</li>
 </ul>
-<p>Setup en 48h. Sin tocar Gesden ni Clinic Cloud. <strong>Precio fundador: 89€/mes para siempre.</strong></p>
+<p>Setup en 48h. Sin tocar Gesden ni Clinic Cloud. <strong>Precio fundador: 99€/mes para siempre.</strong></p>
 <p><a href="https://aiteam.marketing/casos" style="background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block">→ Ver caso completo</a></p>
 <p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
       },
@@ -78,7 +78,7 @@ export const SEQUENCES: Sequence[] = [
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")},</p>
 <p>Es mi último email. No quiero ser pesado.</p>
-<p>Solo quería ofreceros algo: <strong>30 días gratis de AI-Team</strong> a cambio de feedback honesto. Sin tarjeta, sin permanencia.</p>
+<p>Solo quería ofreceros algo: <strong>6 meses gratis de AI-Team</strong> (20 plazas fundadoras) a cambio de feedback honesto. Sin tarjeta, sin permanencia.</p>
 <p>Si al mes no veis valor, lo dejáis y no hay más emails. Promesa.</p>
 <p>Si les interesa, respondedme con "quiero probarlo" y os monto el acceso esta semana.</p>
 <p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
@@ -112,7 +112,7 @@ export const SEQUENCES: Sequence[] = [
 <p>El sábado a las 9h: el salón lleno, el teléfono sin parar, el WhatsApp con 20 mensajes sin contestar y tú cortando el pelo. ¿Te suena?</p>
 <p>Pablo (nuestro agente de WhatsApp) contesta por ti. Confirma citas, da precios, gestiona cancelaciones. 24/7.</p>
 <p>Marta lleva el Instagram: 3 posts semanales con fotos de tus trabajos, sin que toques el móvil.</p>
-<p>Todo por <strong>39,90€/mes</strong> (precio fundador para siempre).</p>
+<p>Todo por <strong>99€/mes</strong> (precio fundador para siempre).</p>
 <p><a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" style="background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block">→ Ver demo (15 min)</a></p>
 <p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
       },
@@ -140,7 +140,7 @@ export const SEQUENCES: Sequence[] = [
 <li>+28% clientas que repiten vs trimestre anterior</li>
 <li>8 horas/semana ahorradas en gestión de mensajes</li>
 </ul>
-<p>Inversión: 39,90€/mes.</p>
+<p>Inversión: 99€/mes.</p>
 <p><a href="https://aiteam.marketing/casos" style="background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block">→ Ver caso completo</a></p>
 <p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
       },
@@ -161,7 +161,7 @@ export const SEQUENCES: Sequence[] = [
 <p>Un turista a las 23h busca restaurante para mañana. Os escribe por WhatsApp. Nadie contesta. Reserva en el de al lado.</p>
 <p>Pablo contesta en segundos, en español e inglés. Confirma la reserva, manda recordatorio el día anterior, y si cancelan, libera la mesa automáticamente.</p>
 <p>Rocío responde cada reseña de TripAdvisor y Google en 24h. Marta publica fotos de los platos cada semana.</p>
-<p><strong>Todo por 39,90€/mes.</strong></p>
+<p><strong>Todo por 99€/mes.</strong></p>
 <p><a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" style="background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block">→ Demo gratis (15 min)</a></p>
 <p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
       },

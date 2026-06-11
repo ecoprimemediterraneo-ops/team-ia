@@ -1,22 +1,15 @@
 "use client";
 import { useState } from "react";
 
+// Home: 4 preguntas esenciales. El resto vive en /precios.
 const faqs = [
   {
     q: "¿Cuánto cuesta?",
-    a: "Tres planes: Esencial 89 €/mes (Pablo + Carmen + Rocío — WhatsApp, llamadas y reseñas) con resumen mensual incluido; Completo 189 €/mes con los 6 agentes activos (añade Lucía + Eva + Marta) e informe mensual con análisis y leads calientes; y Pro 389 €/mes (todo lo del Completo + multiusuario hasta 5 cuentas + soporte prioritario 4 h + auditoría mensual de negocio con recomendaciones estratégicas). Solo 20 plazas fundador con precio congelado de por vida.",
-  },
-  {
-    q: "¿Necesito instalar algo o saber de tecnología?",
-    a: "No. Reservas tu plaza en /beta, te damos de alta con tu email y un onboarding guiado paso a paso (15-20 min) para conectar tu WhatsApp Business, Gmail y Google Business. Sin código, sin configurar APIs raras.",
+    a: "Dos planes: Esencial 99 €/mes (Pablo + Carmen + Rocío — WhatsApp, llamadas y reseñas) con resumen mensual incluido; y Completo 189 €/mes con los 6 agentes activos (añade Lucía + Eva + Marta) e informe mensual con análisis y leads calientes. ¿Necesitas multiusuario o soporte prioritario? Hablamos con ventas. Solo 20 plazas fundador con precio congelado de por vida. Ver detalle en /precios.",
   },
   {
     q: "¿Va de verdad a publicar y contestar, o solo es chat con IA?",
     a: "Te lo cuento honesto. Hoy: Eva envía emails reales desde tu dominio (Resend integrado). Lucía lee tu Gmail real, lo resume con IA y crea borradores reales (OAuth de Google). Pablo está conectado a WhatsApp Business Cloud (Meta) y contesta en tu nombre. Carmen, Rocío y Marta funcionan en modo asistido: generan el contenido y tú lo publicas con un click, mientras terminamos las aprobaciones de Vapi (voz), Google Business Profile (reseñas) y Meta para Instagram/Facebook. Te indicamos en cada agente qué está automático y qué es asistido. Sin humo.",
-  },
-  {
-    q: "¿En qué idiomas trabaja?",
-    a: "Español nativo (ES, MX, AR, CO, CL) e inglés. Carmen es bilingüe en sus guiones de llamada. Otros idiomas bajo demanda.",
   },
   {
     q: "¿Puedo cancelar cuando quiera?",
@@ -25,10 +18,6 @@ const faqs = [
   {
     q: "¿Mis datos están seguros?",
     a: "Servidores en la UE, cifrado en tránsito, cumplimiento RGPD. Las conexiones a Gmail/WhatsApp/etc usan los protocolos oficiales (OAuth) — nadie de AI-Team puede leer tus correos ni tus chats. Tu información no se usa para entrenar modelos.",
-  },
-  {
-    q: "¿Funciona con mi software actual (Gesden, ClinicCloud, etc.)?",
-    a: "AI-Team vive 'al lado', no 'dentro' de tu software. Trabajamos con tu calendario (Google Calendar o Cal.com), tu WhatsApp Business y tu Gmail. Las integraciones directas con software vertical (Gesden, ClinicCloud, Treatwell, Booksy, TheFork…) están disponibles en el plan Pro o se preparan bajo demanda.",
   },
 ];
 

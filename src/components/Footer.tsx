@@ -9,7 +9,7 @@ export default function Footer() {
           <div>
             <Logo size="sm" />
             <p className="text-sm text-black/70 mt-4 max-w-xs">
-              Sistema operativo de empleados IA para PYMES. Desde 89€/mes.
+              Tu equipo de empleados IA. Seis agentes desde 99€/mes.
             </p>
           </div>
 
@@ -44,7 +44,7 @@ export default function Footer() {
           <div className="flex gap-5 text-xs font-semibold uppercase tracking-wider">
             <a href="/legal/privacidad" className="hover:text-[color:var(--red)]">Privacidad</a>
             <a href="/legal/terminos" className="hover:text-[color:var(--red)]">Términos</a>
-            <a href="mailto:ecoprimemediterraneo@gmail.com" className="hover:text-[color:var(--red)]">Contacto</a>
+            <a href="mailto:hola@aiteam.marketing" className="hover:text-[color:var(--red)]">Contacto</a>
           </div>
         </div>
       </div>

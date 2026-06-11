@@ -24,7 +24,7 @@ export default function ROICalc() {
     const recuperaInactivos = Math.round(perdidaInactivos * 0.7); // 70% del potencial
 
     const recuperacionTotal = recuperaNoShows + recuperaPresupuestos + recuperaInactivos;
-    const costeAITeam = 149; // pack Crecimiento dental
+    const costeAITeam = 189; // plan Completo (recuperar inactivos requiere a Eva)
     const beneficioNeto = recuperacionTotal - costeAITeam;
     const roi = costeAITeam > 0 ? Math.round((beneficioNeto / costeAITeam) * 100) : 0;
 

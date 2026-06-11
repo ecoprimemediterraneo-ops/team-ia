@@ -6,7 +6,7 @@ import EsteticaCTA from "@/components/estetica/EsteticaCTA";
 export const metadata = {
   title: "AI-Team para Clínicas Estéticas — Automatiza WhatsApp, reseñas, Instagram y email",
   description:
-    "El equipo de IA para centros de estética. Responde consultas 24/7, sube tu Google, publica antes/después y reactiva clientes con bonos sin usar. Desde 89€/mes.",
+    "El equipo de IA para centros de estética. Responde consultas 24/7, sube tu Google, publica antes/después y reactiva clientes con bonos sin usar. Desde 99€/mes.",
 };
 
 const esteticaPains = [
@@ -40,7 +40,7 @@ const esteticaAgents: Record<string, { titulo: string; bullets: string[] }> = {
     bullets: [
       "Tras cada sesión, envía WhatsApp personalizado pidiendo reseña",
       "Responde cada nueva reseña con el tono de tu centro en menos de 1 minuto",
-      "Clínicas piloto: de 3.6★ a 4.8★ en 8 semanas con Rocío activa",
+      "Objetivo estimado: de 3.6★ a 4.8★ en 8 semanas",
     ],
   },
   lucia: {
@@ -56,7 +56,7 @@ const esteticaAgents: Record<string, { titulo: string; bullets: string[] }> = {
     bullets: [
       "Detecta clientes con bonos sin usar y les manda secuencia de reactivación",
       "Envía newsletter mensual con promociones estacionales y nuevos tratamientos",
-      "Recupera de media un 12% de clientes inactivos por campaña",
+      "Objetivo estimado: recuperar un 12% de inactivos por campaña",
     ],
   },
   marta: {
@@ -82,8 +82,8 @@ const esteticaDay = [
 const esteticaPacks = [
   {
     name: "Esencial",
-    priceFounder: "89",
-    priceRegular: "189",
+    priceFounder: "99",
+    priceRegular: "199",
     tagline: "Automatización de canales de atención",
     agents: ["Pablo — WhatsApp 24/7", "Carmen — Llamadas entrantes", "Rocío — Reseñas Google"],
     cta: "Activar Esencial",
@@ -96,14 +96,6 @@ const esteticaPacks = [
     agents: ["Todo lo del plan Esencial", "Lucía — Correo y calendario", "Eva — Email marketing", "Marta — Redes sociales"],
     cta: "Activar Completo",
     featured: true,
-  },
-  {
-    name: "Pro",
-    priceFounder: "389",
-    priceRegular: "789",
-    tagline: "Completo + multiusuario + soporte prioritario.",
-    agents: ["Todo lo del plan Completo", "Multiusuario hasta 5 cuentas", "Soporte prioritario email (4 h)", "Auditoría mensual de negocio con recomendaciones"],
-    cta: "Hablar con ventas",
   },
 ];
 
@@ -155,7 +147,7 @@ export default function EsteticaPage() {
 
             <h1 className="font-stencil text-3xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05]">
               <span className="block">UN CENTRO.</span>
-              <span className="block">OCHO</span>
+              <span className="block">SEIS</span>
               <span className="block">ESPECIALISTAS.</span>
               <span className="inline-block barred mt-4 px-3 py-1">UN SUELDO.</span>
             </h1>
@@ -180,7 +172,7 @@ export default function EsteticaPage() {
               </a>
             </div>
             <p className="mt-4 text-xs text-white/35 tracking-widest font-mono">
-              DESDE 89 €/MES · OPERATIVO EN 24H · 6 MESES SIN TARJETA
+              DESDE 99 €/MES · OPERATIVO EN 24H · 6 MESES SIN TARJETA
             </p>
           </div>
 
@@ -231,7 +223,7 @@ export default function EsteticaPage() {
               <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">AGENTES ESPECIALIZADOS</span>
             </div>
             <h2 className="font-stencil text-5xl md:text-7xl mb-4">
-              Ocho agentes.<br />Un sistema.
+              Seis agentes.<br />Un sistema.
             </h2>
             <p className="text-lg max-w-2xl mb-14 text-black/70">
               Cada agente gestiona un canal de forma autónoma, entrenado específicamente para centros de estética.
@@ -315,7 +307,7 @@ export default function EsteticaPage() {
                 <div className="p-4 text-center text-white/50">RECEP. + CM</div>
               </div>
               {[
-                ["Coste mensual", "89–389 €", "1.400–2.200 €"],
+                ["Coste mensual", "99–189 €", "1.400–2.200 €"],
                 ["Horario", "24/7 inc. fines de semana", "Lun-Vie 9-18h"],
                 ["WhatsApp fuera de horario", "Responde siempre", "Sin cobertura"],
                 ["Llamadas en cabina", "Carmen lo gestiona", "Buzón o pérdida"],
@@ -346,7 +338,7 @@ export default function EsteticaPage() {
             <p className="text-lg max-w-2xl mb-12 text-black/70">
               La misma operación que un equipo de 1.400–2.200 €/mes. Sin nóminas, sin contratos, sin fricciones de gestión.
             </p>
-            <div className="grid md:grid-cols-3 gap-5">
+            <div className="grid sm:grid-cols-2 gap-5 max-w-3xl">
               {esteticaPacks.map((p) => (
                 <article key={p.name} className={`card-hard p-6 flex flex-col relative ${p.featured ? "bg-[color:var(--mustard)]" : "bg-white"}`}>
                   {p.featured && (
@@ -380,6 +372,10 @@ export default function EsteticaPage() {
             </div>
             <p className="text-center text-xs text-black/50 mt-8 font-mono uppercase tracking-widest">
               6 meses de prueba · cancela en un click · sin permanencia · precio fundador para siempre
+            </p>
+            <p className="text-center text-sm text-black/60 mt-4">
+              ¿Necesitas multiusuario o soporte prioritario?{" "}
+              <a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-[color:var(--red)]">Hablar con ventas →</a>
             </p>
           </div>
         </section>

@@ -37,7 +37,7 @@ export default function AgentOS() {
           Tres módulos.<br />Seis agentes.
         </h2>
         <p className="text-base text-white/40 mb-16 max-w-xl font-mono">
-          Cada agente es un proceso autónomo. Cada módulo cubre una función crítica del negocio. El sistema opera en paralelo, sin supervisión.
+          Cada agente es un proceso autónomo. Cada módulo cubre una función crítica del negocio. El sistema opera en paralelo: tú decides con un click.
         </p>
 
         {/* Grid de módulos */}

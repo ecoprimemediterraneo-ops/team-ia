@@ -16,7 +16,7 @@ export default function PrivacidadPage() {
           <p className="text-sm text-black/60 mb-8">Última actualización: 11 de mayo de 2026</p>
 
           <h2 className="font-stencil text-2xl mt-8 mb-3">1. Responsable del tratamiento</h2>
-          <p>AI-Team (en adelante &quot;el Servicio&quot;), gestionado por Cristóbal Serrano. Contacto: <a className="underline" href="mailto:ecoprimemediterraneo@gmail.com">ecoprimemediterraneo@gmail.com</a></p>
+          <p>AI-Team (en adelante &quot;el Servicio&quot;), gestionado por Cristóbal Serrano. Contacto: <a className="underline" href="mailto:hola@aiteam.marketing">hola@aiteam.marketing</a></p>
 
           <h2 className="font-stencil text-2xl mt-8 mb-3">2. Datos que recogemos</h2>
           <ul className="list-disc pl-6 space-y-1">
@@ -62,7 +62,7 @@ export default function PrivacidadPage() {
             <li>Portabilidad.</li>
             <li>Oposición al tratamiento.</li>
           </ul>
-          <p>Para ejercerlos, escríbenos a <a className="underline" href="mailto:ecoprimemediterraneo@gmail.com">ecoprimemediterraneo@gmail.com</a> y te respondemos en menos de 30 días.</p>
+          <p>Para ejercerlos, escríbenos a <a className="underline" href="mailto:hola@aiteam.marketing">hola@aiteam.marketing</a> y te respondemos en menos de 30 días.</p>
 
           <h2 className="font-stencil text-2xl mt-8 mb-3">7. Seguridad</h2>
           <p>Datos cifrados en tránsito (HTTPS/TLS). Tokens OAuth cifrados en almacenamiento. Servidores en la UE con cumplimiento RGPD. Auditorías de seguridad periódicas.</p>

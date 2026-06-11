@@ -1,23 +1,31 @@
 import { agents } from "@/lib/agents";
 
-// Agentes secundarios — incluidos pero no en el grid principal.
-// Tomás no está en el catálogo agents.ts (es soporte), así que va aparte.
-const secondary = [
+// Tres módulos funcionales como intro breve, y debajo las 6 tarjetas de agentes
+// con sus citas. Sección única (antes estaba duplicada con AgentOS).
+const modules = [
   {
-    slug: "sergio",
-    name: "Sergio",
-    role: "Vigila a tu competencia 24/7",
-    avatar: "/agentes/sergio.webp",
-    color: "#3B82F6",
-    href: "/agentes/sergio",
+    label: "Ventas",
+    desc: "Captura leads, responde consultas y cierra citas.",
+    agents: [
+      { name: "Pablo", role: "WhatsApp 24/7", color: "#25D366" },
+      { name: "Carmen", role: "Llamadas entrantes", color: "#A88BE8" },
+    ],
   },
   {
-    slug: "tomas",
-    name: "Tomás",
-    role: "Soporte 24/7 dentro del producto",
-    avatar: "/agentes/tomas/tomas.webp",
-    color: "#A88BE8",
-    href: null, // Tomás no tiene página propia
+    label: "Soporte",
+    desc: "Gestiona reseñas, responde correos y cuida al cliente.",
+    agents: [
+      { name: "Rocío", role: "Reseñas Google", color: "#FBBF24" },
+      { name: "Lucía", role: "Correo y gestión", color: "#F5C518" },
+    ],
+  },
+  {
+    label: "Operaciones",
+    desc: "Publica contenido, envía campañas y ejecuta secuencias.",
+    agents: [
+      { name: "Marta", role: "Redes sociales", color: "#FF7A59" },
+      { name: "Eva", role: "Email marketing", color: "#60A5FA" },
+    ],
   },
 ];
 
@@ -26,24 +34,44 @@ export default function Team() {
     <section id="equipo" className="py-24 border-t-[3px] border-black bg-[color:var(--cream)]">
       <div className="max-w-6xl mx-auto px-5">
         <div className="flex items-center gap-2 mb-8 text-[10px] font-mono tracking-[0.2em]">
-          <span className="bg-black text-[color:var(--mustard)] px-3 py-1 font-bold">MÓDULO 01</span>
-          <span className="border border-black/30 px-3 py-1 text-black/50">AGENTES ESPECIALIZADOS</span>
+          <span className="bg-black text-[color:var(--mustard)] px-3 py-1 font-bold">TRES MÓDULOS</span>
+          <span className="border border-black/30 px-3 py-1 text-black/50">SEIS AGENTES</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-6xl mb-4 leading-tight">
           Seis agentes.<br />Un sistema.
         </h2>
-        <p className="text-base max-w-xl mb-16 text-black/50">
-          Cada agente gestiona un canal de forma autónoma. Operan en paralelo, sin supervisión, sin interrupciones.
+        <p className="text-base max-w-xl mb-10 text-black/50">
+          Tres módulos cubren tu negocio de punta a punta. Cada agente gestiona un canal de forma
+          autónoma: tú apruebas, ellos ejecutan.
         </p>
 
-        {/* Grid principal: 6 agentes */}
-        <div className="grid md:grid-cols-2 gap-10 mt-16">
+        {/* Intro: los tres módulos */}
+        <div className="grid md:grid-cols-3 gap-px bg-black/10 border-2 border-black mb-16">
+          {modules.map((m) => (
+            <div key={m.label} className="p-5 bg-white">
+              <div className="text-[10px] font-mono tracking-[0.2em] text-black/40 mb-1">MÓDULO</div>
+              <div className="font-stencil text-2xl mb-2">{m.label}</div>
+              <p className="text-xs text-black/55 leading-relaxed mb-4">{m.desc}</p>
+              <div className="space-y-1.5">
+                {m.agents.map((a) => (
+                  <div key={a.name} className="flex items-center gap-2 border border-black/10 px-2.5 py-1.5">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: a.color }} />
+                    <span className="font-stencil text-sm">{a.name}</span>
+                    <span className="text-[10px] text-black/40 font-mono">{a.role}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Las 6 tarjetas de agentes con sus citas */}
+        <div className="grid md:grid-cols-2 gap-10">
           {agents.filter((a) => a.showOnHome).map((a) => (
             <article
               key={a.slug}
               className="dossier pt-14 p-6 hover:-translate-y-1 transition relative overflow-hidden"
             >
-              {/* Pestaña decorativa superior (color mostaza, sin texto militar) */}
               <div className="absolute top-1 left-4 right-4 flex items-center z-10 text-black/70 text-[10px] font-mono tracking-widest">
                 <span>{a.name.toUpperCase()}</span>
               </div>
@@ -85,52 +113,6 @@ export default function Team() {
               </blockquote>
             </article>
           ))}
-        </div>
-
-        {/* Agentes secundarios — cards más pequeñas (~65% del tamaño principal) */}
-        <div className="mt-16 pt-10 border-t-2 border-black/15">
-          <div className="text-[10px] font-mono tracking-[0.25em] text-black/40 uppercase mb-6 text-center">
-            También incluidos
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
-            {secondary.map((a) => {
-              const CardInner = (
-                <div className="flex items-center gap-3 p-4 bg-white border-2 border-black/80 shadow-[4px_4px_0_#000] hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000] transition h-full">
-                  <div
-                    className="relative w-16 h-16 rounded-full border-[3px] border-black overflow-hidden shrink-0"
-                    style={{ background: a.color }}
-                  >
-                    {/* Fallback (inicial) detrás — se ve si la imagen falla */}
-                    <span
-                      className="absolute inset-0 flex items-center justify-center font-stencil text-2xl text-white"
-                      aria-hidden="true"
-                    >
-                      {a.name.charAt(0)}
-                    </span>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={a.avatar}
-                      alt={a.name}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-stencil text-lg leading-tight">{a.name}</div>
-                    <div className="text-[11px] text-black/55 leading-snug">{a.role}</div>
-                  </div>
-                </div>
-              );
-
-              return a.href ? (
-                <a key={a.slug} href={a.href} className="block">
-                  {CardInner}
-                </a>
-              ) : (
-                <div key={a.slug}>{CardInner}</div>
-              );
-            })}
-          </div>
         </div>
       </div>
     </section>

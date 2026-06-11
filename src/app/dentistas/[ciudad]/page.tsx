@@ -89,7 +89,7 @@ export default async function DentistasCiudadPage({ params }: { params: Promise<
         <section className="py-16 bg-[color:var(--cream)] border-b-[3px] border-black">
           <div className="max-w-4xl mx-auto px-5 text-center">
             <h2 className="font-stencil text-3xl md:text-4xl mb-4">
-              8 agentes trabajando por tu clínica en {ciudad.nombre}
+              6 agentes trabajando por tu clínica en {ciudad.nombre}
             </h2>
             <p className="text-black/70 mb-10 max-w-2xl mx-auto">
               Cada uno especializado en una tarea. Trabajan en cadena, 24/7, sin vacaciones.
@@ -117,9 +117,9 @@ export default async function DentistasCiudadPage({ params }: { params: Promise<
         <section className="py-12 border-b-[3px] border-black bg-black text-white">
           <div className="max-w-3xl mx-auto px-5 text-center">
             <p className="font-stencil text-2xl md:text-3xl mb-2">
-              "En 30 días redujimos los no-shows un 40% y subimos de 4.2 a 4.7 en Google"
+              Objetivo estimado: reducir no-shows ~40% y subir de 4.2 a 4.7 en Google
             </p>
-            <p className="text-white/60 text-sm">— Clínica piloto real</p>
+            <p className="text-white/60 text-sm">— Estimación objetivo en los primeros meses</p>
           </div>
         </section>
 
@@ -128,12 +128,12 @@ export default async function DentistasCiudadPage({ params }: { params: Promise<
           <div className="max-w-2xl mx-auto px-5">
             <div className="text-center mb-8">
               <h2 className="font-stencil text-3xl md:text-4xl mb-2">
-                30 días gratis para clínicas de {ciudad.nombre}
+                6 meses gratis para clínicas de {ciudad.nombre}
               </h2>
-              <p className="text-black/70">Sin tarjeta. Sin permanencia. Precio fundador 89€/mes después.</p>
+              <p className="text-black/70">20 plazas · sin tarjeta · sin permanencia · 99€/mes fundador para siempre.</p>
             </div>
             <a href={`/dentistas#waitlist-dental`} className="btn-mustard text-lg inline-block">{v.cta} →</a>
-            <p className="text-sm text-black/60 mt-3">Sin tarjeta · 30 días gratis · Precio fundador 89€/mes después</p>
+            <p className="text-sm text-black/60 mt-3">20 plazas · 6 meses gratis · sin tarjeta · 99€/mes fundador para siempre</p>
           </div>
         </section>
 

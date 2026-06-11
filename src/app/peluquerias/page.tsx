@@ -82,8 +82,8 @@ const peluDay = [
 const peluPacks = [
   {
     name: "Esencial",
-    priceFounder: "89",
-    priceRegular: "189",
+    priceFounder: "99",
+    priceRegular: "199",
     tagline: "Para peluquería de 1 estilista, sin recepción",
     agents: ["Pablo (WhatsApp)", "Carmen (llamadas)", "Rocío (reseñas)"],
     cta: "Empezar Esencial",
@@ -96,14 +96,6 @@ const peluPacks = [
     agents: ["Todo lo del plan Esencial", "+ Lucía (correo y calendario)", "+ Eva (recuperar clientas)", "+ Marta (Instagram + reels)"],
     cta: "Quiero crecer",
     featured: true,
-  },
-  {
-    name: "Pro",
-    priceFounder: "389",
-    priceRegular: "789",
-    tagline: "Completo + multiusuario + soporte prioritario.",
-    agents: ["Todo lo del plan Completo", "+ Multiusuario hasta 5 cuentas", "+ Soporte prioritario email (4 h)", "+ Auditoría mensual de negocio con recomendaciones"],
-    cta: "Hablar con ventas",
   },
 ];
 
@@ -144,7 +136,7 @@ export default function PeluqueriasPage() {
             </div>
             <h1 className="font-stencil text-3xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05]">
               <span className="block">UN SALÓN.</span>
-              <span className="block">OCHO</span>
+              <span className="block">SEIS</span>
               <span className="block">ESPECIALISTAS.</span>
               <span className="inline-block barred mt-4 px-3 py-1">UN SUELDO.</span>
             </h1>
@@ -159,8 +151,8 @@ export default function PeluqueriasPage() {
               <span className="block mt-2 font-bold text-white">Tú vuelves a la silla. Ellos hacen lo demás.</span>
             </p>
             <div className="mt-10 flex flex-col items-center gap-3">
-              <a href="#waitlist-pelu" className="btn-mustard text-lg">Quiero una de las 5 plazas</a>
-              <p className="text-sm text-white/60">5 plazas gratis 30 días para peluquerías · Después 59€/mes fundador</p>
+              <a href="#waitlist-pelu" className="btn-mustard text-lg">Quiero una de las 20 plazas</a>
+              <p className="text-sm text-white/60">20 plazas · 6 meses gratis · sin tarjeta · 99€/mes fundador para siempre</p>
             </div>
           </div>
 
@@ -198,7 +190,7 @@ export default function PeluqueriasPage() {
 
         <section className="py-24 border-t-[3px] border-black bg-[color:var(--cream)]">
           <div className="max-w-6xl mx-auto px-5">
-            <h2 className="font-stencil text-5xl md:text-7xl mb-4">Los 8 especialistas<br />de tu salón</h2>
+            <h2 className="font-stencil text-5xl md:text-7xl mb-4">Los 6 especialistas<br />de tu salón</h2>
             <p className="text-lg max-w-2xl mb-14 text-black/70">Cada uno con su misión, entrenado para peluquería y estética. No genérico.</p>
             <div className="grid md:grid-cols-2 gap-8">
               {agents.map((a) => {
@@ -256,7 +248,7 @@ export default function PeluqueriasPage() {
           <div className="max-w-6xl mx-auto px-5">
             <h2 className="font-stencil text-5xl md:text-7xl mb-4">Elige tu pack salón</h2>
             <p className="text-lg max-w-2xl mb-12 text-black/70">Una peluquería media pierde 1.000-2.500€/mes en huecos vacíos, clientas que no vuelven y reseñas mal gestionadas.</p>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid sm:grid-cols-2 gap-5 max-w-3xl">
               {peluPacks.map((p) => (
                 <article key={p.name} className={`card-hard p-6 flex flex-col relative ${p.featured ? "bg-[color:var(--mustard)]" : "bg-white"}`}>
                   {p.featured && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[color:var(--red)] text-white text-xs font-bold tracking-widest px-3 py-1 border-2 border-black">★ MÁS VENDIDO</div>}
@@ -279,6 +271,10 @@ export default function PeluqueriasPage() {
                 </article>
               ))}
             </div>
+            <p className="text-center text-sm text-black/60 mt-6">
+              ¿Necesitas multiusuario o soporte prioritario?{" "}
+              <a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-[color:var(--red)]">Hablar con ventas →</a>
+            </p>
           </div>
         </section>
 
@@ -304,9 +300,9 @@ export default function PeluqueriasPage() {
           sector="Peluquería / estética"
           city=""
           emoji="💇‍♀️"
-          headline="Reserva tu plaza piloto"
-          plazas="5 plazas piloto · 30 días gratis"
-          priceFounder="59€/mes"
+          headline="Reserva tu plaza fundadora"
+          plazas="20 plazas · 6 meses gratis"
+          priceFounder="99€/mes"
           ctaLabel="Salón"
         />
       </main>

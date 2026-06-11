@@ -41,7 +41,7 @@ const dentalAgents: Record<string, { titulo: string; bullets: string[] }> = {
     bullets: [
       "Tras cada cita, manda WhatsApp pidiendo reseña al paciente contento",
       "Cuando llega una nueva, redacta respuesta con tu tono en 30 segundos",
-      "De 4.2★ a 4.7★ en 3 meses (caso piloto)",
+      "Objetivo estimado: de 4.2★ a 4.7★ en 3 meses",
     ],
   },
   lucia: {
@@ -83,8 +83,8 @@ const dentalDay = [
 const dentalPacks = [
   {
     name: "Esencial",
-    priceFounder: "89",
-    priceRegular: "189",
+    priceFounder: "99",
+    priceRegular: "199",
     tagline: "Para clínica de 1 dentista, sin recepcionista",
     agents: ["Pablo (WhatsApp urgencias)", "Carmen (llamadas)", "Rocío (reseñas Google)"],
     cta: "Empezar Esencial",
@@ -97,14 +97,6 @@ const dentalPacks = [
     agents: ["Todo lo del plan Esencial", "+ Lucía (correo y calendario)", "+ Eva (recuperar pacientes inactivos)", "+ Marta (redes sociales)"],
     cta: "Quiero crecer",
     featured: true,
-  },
-  {
-    name: "Pro",
-    priceFounder: "389",
-    priceRegular: "789",
-    tagline: "Completo + multiusuario + soporte prioritario.",
-    agents: ["Todo lo del plan Completo", "+ Multiusuario hasta 5 cuentas", "+ Soporte prioritario email (4 h)", "+ Auditoría mensual de negocio con recomendaciones"],
-    cta: "Hablar con ventas",
   },
 ];
 
@@ -135,7 +127,7 @@ const dentalFAQ = [
   },
   {
     q: "¿En cuánto tiempo veo resultados?",
-    a: "Semana 1: Pablo y Carmen ya contestan. Semana 2-3: las primeras reseñas de Rocío empiezan a llegar. Mes 1: 5-15 pacientes inactivos vuelven gracias a Eva. Mes 2-3: tu Google sube 0.3-0.5★ y la agenda se llena con menos hueco. Caso real piloto: una clínica recuperó 3.200€ el primer mes.",
+    a: "Semana 1: Pablo y Carmen ya contestan. Semana 2-3: las primeras reseñas de Rocío empiezan a llegar. Mes 1: 5-15 pacientes inactivos vuelven gracias a Eva. Mes 2-3: tu Google sube 0.3-0.5★ y la agenda se llena con menos hueco. Estimación objetivo: recuperar ~3.200€ el primer mes.",
   },
 ];
 
@@ -155,7 +147,7 @@ export default function DentistasPage() {
 
             <h1 className="font-stencil text-3xl sm:text-5xl md:text-7xl lg:text-8xl leading-[1.05]">
               <span className="block">UNA CLÍNICA.</span>
-              <span className="block">OCHO</span>
+              <span className="block">SEIS</span>
               <span className="block">ESPECIALISTAS.</span>
               <span className="inline-block barred mt-4 px-3 py-1">UN SUELDO.</span>
             </h1>
@@ -173,8 +165,8 @@ export default function DentistasPage() {
             </p>
 
             <div className="mt-10 flex flex-col items-center gap-3">
-              <a href="#waitlist-dental" className="btn-mustard text-lg">Quiero una de las 5 plazas</a>
-              <p className="text-sm text-white/60">5 plazas gratis 30 días para clínicas dentales · Después 89€/mes fundador</p>
+              <a href="#waitlist-dental" className="btn-mustard text-lg">Quiero una de las 20 plazas</a>
+              <p className="text-sm text-white/60">20 plazas · 6 meses gratis · sin tarjeta · 99€/mes fundador para siempre</p>
             </div>
           </div>
 
@@ -229,7 +221,7 @@ export default function DentistasPage() {
               <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">UNIDAD ASIGNADA</span>
             </div>
             <h2 className="font-stencil text-5xl md:text-7xl mb-4">
-              Los 8 especialistas<br />de tu clínica
+              Los 6 especialistas<br />de tu clínica
             </h2>
             <p className="text-lg max-w-2xl mb-14 text-black/70">
               Cada uno con su misión, entrenado para clínica dental de 1-3 dentistas. No genérico.
@@ -329,7 +321,7 @@ export default function DentistasPage() {
                 </thead>
                 <tbody>
                   {[
-                    ["Coste mes", "89-389€", "1.200€", "+400-800€"],
+                    ["Coste mes", "99-189€", "1.200€", "+400-800€"],
                     ["Horario", "24/7 incluido sábados y domingos", "Lun-Vie 9-18h", "Solo entregas"],
                     ["WhatsApp en vacaciones", "Contesta igual", "Nadie", "Nada"],
                     ["Llamadas nuevas", "Coge todas", "Si está libre", "No coge"],
@@ -348,7 +340,7 @@ export default function DentistasPage() {
                   ))}
                   <tr className="bg-[color:var(--red)] text-white font-bold">
                     <td className="border-2 border-black p-3">TOTAL/mes</td>
-                    <td className="border-2 border-black p-3 bg-[color:var(--mustard)] text-black">89 €</td>
+                    <td className="border-2 border-black p-3 bg-[color:var(--mustard)] text-black">99 €</td>
                     <td className="border-2 border-black p-3" colSpan={2}>1.600 - 2.000 €</td>
                   </tr>
                 </tbody>
@@ -362,14 +354,14 @@ export default function DentistasPage() {
           <div className="max-w-6xl mx-auto px-5">
             <div className="flex items-center gap-3 mb-6 text-xs font-mono flex-wrap">
               <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">PRECIOS FUNDADORES DENTAL</span>
-              <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">5 PLAZAS PILOTO</span>
+              <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">20 PLAZAS · 6 MESES GRATIS</span>
             </div>
             <h2 className="font-stencil text-5xl md:text-7xl mb-4">Elige tu pack dental</h2>
             <p className="text-lg max-w-2xl mb-12 text-black/70">
               Una clínica media pierde 2.000-5.000€/mes en citas que se caen, presupuestos no cerrados y pacientes que no vuelven. AI-Team cuesta una fracción.
             </p>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid sm:grid-cols-2 gap-5 max-w-3xl">
               {dentalPacks.map((p) => (
                 <article key={p.name} className={`card-hard p-6 flex flex-col relative ${p.featured ? "bg-[color:var(--mustard)]" : "bg-white"}`}>
                   {p.featured && (
@@ -402,7 +394,11 @@ export default function DentistasPage() {
               ))}
             </div>
             <p className="text-center text-xs text-black/50 mt-8 font-mono uppercase tracking-widest">
-              30 días gratis para 5 clínicas piloto · cancelas en un click · sin permanencia
+              6 meses gratis para 20 clínicas fundadoras · cancelas en un click · sin permanencia
+            </p>
+            <p className="text-center text-sm text-black/60 mt-4">
+              ¿Necesitas multiusuario o soporte prioritario?{" "}
+              <a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-[color:var(--red)]">Hablar con ventas →</a>
             </p>
           </div>
         </section>

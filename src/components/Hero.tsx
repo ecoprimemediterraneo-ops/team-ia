@@ -80,7 +80,7 @@ export default function Hero() {
           <p className="text-base md:text-lg max-w-xl mx-auto text-white/70 leading-relaxed font-sans">
             Cubren WhatsApp, llamadas, reseñas, correo, redes y email marketing mientras duermes.
             <span className="block mt-2 text-white/90 font-semibold">
-              Desde 89 €/mes. Operativo en 24 horas.
+              Desde 99 €/mes. Operativo en 24 horas.
             </span>
           </p>
 

@@ -94,7 +94,7 @@ Debilidades detectadas: ${competitor.weaknesses.join(", ")}
 El pitch debe:
 1. Mencionar una debilidad específica del competidor sin nombrarlo
 2. Explicar cómo AI-Team lo resuelve con ejemplos concretos
-3. Terminar con una llamada a la acción urgente (30 días gratis)
+3. Terminar con una llamada a la acción urgente (20 plazas fundadoras · 6 meses gratis)
 
 Tono: directo, sin rodeos, en español de España.`,
       }],

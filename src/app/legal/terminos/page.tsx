@@ -65,7 +65,7 @@ export default function TerminosPage() {
           <p>Estos términos se rigen por la ley española. Jurisdicción: tribunales de Málaga.</p>
 
           <h2 className="font-stencil text-2xl mt-8 mb-3">10. Contacto</h2>
-          <p><a className="underline" href="mailto:ecoprimemediterraneo@gmail.com">ecoprimemediterraneo@gmail.com</a></p>
+          <p><a className="underline" href="mailto:hola@aiteam.marketing">hola@aiteam.marketing</a></p>
         </article>
       </main>
       <Footer />

@@ -9,17 +9,15 @@ const SITE_URL = "https://aiteam.marketing";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export const metadata: Metadata = {
   title: {
-    default: "AI-Team — El sistema operativo de empleados IA para tu negocio",
+    default: "AI-Team — Tu equipo de empleados IA. Seis agentes desde 99€/mes.",
     template: "%s | AI-Team",
   },
   description:
-    "Seis agentes IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Sin nóminas. Desde 89€/mes. 6 meses gratis.",
+    "Seis agentes IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Sin nóminas. Desde 99€/mes. 6 meses gratis.",
   metadataBase: new URL(SITE_URL),
   openGraph: {
     type: "website",
@@ -28,13 +26,13 @@ export const metadata: Metadata = {
     siteName: "AI-Team",
     title: "AI-Team — Seis agentes IA para tu negocio",
     description:
-      "Seis agentes IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Sin nóminas. Desde 89€/mes. 6 meses gratis.",
+      "Seis agentes IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Sin nóminas. Desde 99€/mes. 6 meses gratis.",
   },
   twitter: {
     card: "summary_large_image",
     title: "AI-Team — Seis agentes IA para tu negocio",
     description:
-      "Seis agentes IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Sin nóminas. Desde 89€/mes. 6 meses gratis.",
+      "Seis agentes IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Sin nóminas. Desde 99€/mes. 6 meses gratis.",
   },
   alternates: { canonical: SITE_URL },
   robots: { index: true, follow: true },
@@ -59,7 +57,7 @@ export default function RootLayout({
               url: SITE_URL,
               logo: `${SITE_URL}/logo.png`,
               description:
-                "Sistema operativo de empleados IA para PYMES: WhatsApp, llamadas, reseñas, correo, redes sociales, email marketing e inteligencia competitiva.",
+                "Tu equipo de empleados IA para PYMES: WhatsApp, llamadas, reseñas, correo, redes sociales, email marketing e inteligencia competitiva.",
               contactPoint: [
                 {
                   "@type": "ContactPoint",

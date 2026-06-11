@@ -44,7 +44,7 @@ export default function EsteticaCTA() {
           Tu clínica.<br />Operativa<br />esta semana.
         </h2>
         <p className="text-base md:text-lg mb-4 text-white/50 max-w-md mx-auto">
-          Desde <span className="text-white font-semibold">89 €/mes</span>, precio fundador congelado de por vida.
+          Desde <span className="text-white font-semibold">99 €/mes</span>, precio fundador congelado de por vida.
         </p>
         <p className="text-sm mb-10 text-white/30 max-w-sm mx-auto">
           6 meses gratis, sin tarjeta. Setup en 15 minutos. Sin código.

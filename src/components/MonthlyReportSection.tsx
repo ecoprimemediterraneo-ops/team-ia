@@ -8,7 +8,7 @@
 //
 // Estética: card-hard + sombras retro, paleta cream/mustard/red/ink.
 
-export default function MonthlyReportSection() {
+export default function MonthlyReportSection({ compact = false }: { compact?: boolean }) {
   return (
     <section
       id="informe-mensual"
@@ -40,7 +40,7 @@ export default function MonthlyReportSection() {
         <div className="mb-14 md:mb-16">
           <div className="max-w-3xl mx-auto card-hard bg-white p-6 md:p-8 relative">
             <div className="absolute -top-3 left-6 bg-[color:var(--red)] text-white text-[10px] font-bold tracking-widest px-3 py-1 border-2 border-black">
-              EJEMPLO REAL
+              EJEMPLO ILUSTRATIVO
             </div>
             {/* Cabecera del mockup */}
             <div className="flex items-center gap-2 text-[9px] font-mono tracking-[0.25em] mb-4 text-black/60 mt-1">
@@ -104,28 +104,41 @@ export default function MonthlyReportSection() {
         {/* El detalle por plan (Resumen / Informe / Auditoría) está dentro de
             cada tarjeta de la sección PRECIOS — no se duplica aquí. */}
 
-        {/* Mensaje diferenciador final */}
-        <div className="mt-14 md:mt-16 text-center max-w-3xl mx-auto">
-          <div className="card-hard bg-black text-white p-6 md:p-8 relative">
-            <span className="absolute -top-3 left-6 bg-[color:var(--mustard)] text-black text-[10px] font-bold tracking-widest px-3 py-1 border-2 border-black">
-              LO QUE NOS HACE DIFERENTES
-            </span>
-            <p className="font-stencil text-2xl md:text-3xl leading-snug mt-2">
-              Tu equipo IA <span className="text-[color:var(--mustard)]">no se queda igual.</span><br />
-              Aprende y mejora cada mes.
+        {compact ? (
+          /* Home: una línea (idea de "mejora cada mes") + link a /precios */
+          <div className="text-center max-w-3xl mx-auto">
+            <p className="text-base md:text-lg text-black/70 leading-relaxed">
+              Tu equipo IA <span className="font-bold">no se queda igual</span>: cada informe trae
+              lo que afinamos el mes siguiente. Lo que pagues este mes, vale más el siguiente.
             </p>
-            <p className="text-sm md:text-base text-white/70 mt-4 max-w-2xl mx-auto leading-relaxed">
-              Cada informe trae lo que vamos a afinar el mes siguiente: respuestas
-              que conviene reescribir, horarios donde respondemos lento, sectores
-              donde captamos más. Lo que pagues este mes, vale más el siguiente.
-            </p>
-            <div className="mt-6">
-              <a href="/beta" className="btn-mustard inline-block text-sm px-8 py-3">
-                Reservar mi plaza beta →
-              </a>
+            <a href="/precios" className="inline-block mt-5 underline font-bold text-black hover:text-[color:var(--red)]">
+              Ver qué incluye cada plan →
+            </a>
+          </div>
+        ) : (
+          /* Mensaje diferenciador final (versión completa, /precios) */
+          <div className="mt-14 md:mt-16 text-center max-w-3xl mx-auto">
+            <div className="card-hard bg-black text-white p-6 md:p-8 relative">
+              <span className="absolute -top-3 left-6 bg-[color:var(--mustard)] text-black text-[10px] font-bold tracking-widest px-3 py-1 border-2 border-black">
+                LO QUE NOS HACE DIFERENTES
+              </span>
+              <p className="font-stencil text-2xl md:text-3xl leading-snug mt-2">
+                Tu equipo IA <span className="text-[color:var(--mustard)]">no se queda igual.</span><br />
+                Aprende y mejora cada mes.
+              </p>
+              <p className="text-sm md:text-base text-white/70 mt-4 max-w-2xl mx-auto leading-relaxed">
+                Cada informe trae lo que vamos a afinar el mes siguiente: respuestas
+                que conviene reescribir, horarios donde respondemos lento, sectores
+                donde captamos más. Lo que pagues este mes, vale más el siguiente.
+              </p>
+              <div className="mt-6">
+                <a href="/beta" className="btn-mustard inline-block text-sm px-8 py-3">
+                  Reservar mi plaza beta →
+                </a>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

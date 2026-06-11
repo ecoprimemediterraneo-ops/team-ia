@@ -25,7 +25,7 @@ const demos: { slug: string; scenario: string; input: string; output: string }[]
     slug: "eva",
     scenario: "Email de seguimiento 72h después del primer contacto",
     input: "(Automático — sin acción del negocio)",
-    output: "Asunto: Re: idea rápida para Clínica Dental Sonrisa\n\n¿Has podido ver el email del lunes? No te robo más tiempo, solo confirmo si te interesa una de las 5 plazas piloto antes de que las cierre.\n\nSi es no, perfecto, no insisto más.\nSi es sí, te paso enlace para reservar 15 min.",
+    output: "Asunto: Re: idea rápida para Clínica Dental Sonrisa\n\n¿Has podido ver el email del lunes? No te robo más tiempo, solo confirmo si te interesa una de las 20 plazas fundadoras antes de que las cierre.\n\nSi es no, perfecto, no insisto más.\nSi es sí, te paso enlace para reservar 15 min.",
   },
   {
     slug: "lucia",
@@ -111,7 +111,7 @@ export default function DemoPage() {
             <a href="/#waitlist" className="btn-mustard text-lg inline-block">
               SOLICITAR ACCESO GRATIS →
             </a>
-            <p className="text-xs text-black/50">30 días gratis · Sin tarjeta · Sin compromiso</p>
+            <p className="text-xs text-black/50">20 plazas · 6 meses gratis · sin tarjeta · precio fundador para siempre</p>
           </div>
         </div>
       </main>

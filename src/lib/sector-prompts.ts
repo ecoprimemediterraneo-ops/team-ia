@@ -249,9 +249,9 @@ Un equipo de 6 empleados IA que trabajan 24/7 por el negocio:
 ══════════════════════════════════════════
 PLANES (memorízalos exactos)
 ══════════════════════════════════════════
-- Esencial: 89€/mes · 1 usuario · Pablo + Carmen + Rocío.
+- Esencial: 99€/mes · 1 usuario · Pablo + Carmen + Rocío.
 - Completo: 189€/mes ⭐ MÁS VENDIDO · 2 usuarios · los 6 agentes.
-- Pro: 389€/mes · 5 usuarios · todos + Sergio (inteligencia competitiva).
+- ¿Multiusuario o soporte prioritario? Deriva a "hablar con ventas".
 
 OFERTA BETA: 20 plazas fundadoras · 6 meses gratis · sin permanencia.
 

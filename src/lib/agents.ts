@@ -69,7 +69,7 @@ export const agents: Agent[] = [
   {
     slug: "lucia",
     name: "Lucía",
-    role: "Agenda y gestión",
+    role: "Correo y gestión",
     short: "Procesa la bandeja de entrada, prioriza correos y genera borradores de respuesta con tu estilo.",
     emoji: "📬",
     quote:

@@ -37,15 +37,15 @@ export default function DentalCTA() {
     <section id="waitlist-dental" className="py-24 border-t-[3px] border-black bg-black text-[color:var(--cream)]">
       <div className="max-w-3xl mx-auto px-5 text-center">
         <div className="flex flex-wrap justify-center items-center gap-3 text-xs font-mono mb-6">
-          <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">5 PLAZAS PILOTO</span>
-          <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">30 DÍAS GRATIS</span>
+          <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">20 PLAZAS</span>
+          <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">6 MESES GRATIS</span>
         </div>
         <h2 className="font-display text-5xl md:text-7xl mb-6">
-          Reserva tu<br />plaza piloto
+          Reserva tu<br />plaza fundadora
         </h2>
         <p className="text-lg md:text-xl mb-10 text-white/80">
-          Regalo <span className="font-bold text-[color:var(--mustard)]">30 días gratis</span> a 5 clínicas dentales a cambio de feedback honesto.
-          <span className="block mt-2 text-white/60 text-sm">Sin tarjeta. Si no te aporta, te vas. Si te aporta, sigues con precio fundador 89€/mes para siempre.</span>
+          <span className="font-bold text-[color:var(--mustard)]">6 meses gratis</span> para 20 clínicas fundadoras, sin tarjeta.
+          <span className="block mt-2 text-white/60 text-sm">Si no te aporta, te vas. Si te aporta, sigues con precio fundador 99€/mes para siempre.</span>
         </p>
 
         {status === "ok" ? (
