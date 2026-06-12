@@ -2,7 +2,7 @@
 // Motor de imagen de Marta para el flujo de publicación (modo MEZCLA).
 // =============================================================================
 //
-//   generatePostImage()  → NO hay foto: Marta crea la imagen con IA (DALL·E 3)
+//   generatePostImage()  → NO hay foto: Marta crea la imagen con IA (gpt-image-1)
 //                          usando TODA la ficha del cliente (sector, servicios,
 //                          tono, público, estilo). Devuelve URL durable + el
 //                          prompt usado (para auditar).
@@ -68,7 +68,7 @@ export async function generatePostImage(opts: {
     return { ok: false, reason: "no_api_key", detail: "Falta ANTHROPIC_API_KEY." };
   }
   if (!process.env.OPENAI_API_KEY) {
-    return { ok: false, reason: "no_api_key", detail: "Falta OPENAI_API_KEY (DALL·E)." };
+    return { ok: false, reason: "no_api_key", detail: "Falta OPENAI_API_KEY (gpt-image-1)." };
   }
 
   const ficha = await getFicha(opts.tenantId);
@@ -89,14 +89,14 @@ export async function generatePostImage(opts: {
     const r = await anthropic.messages.create({
       model: MODELS.fast,
       max_tokens: 320,
-      system: `Eres director de arte de una agencia. Te dan la FICHA de un negocio real y un tema, y devuelves UN prompt EN INGLÉS para DALL·E 3 que genere la imagen de un post de Instagram para ESE negocio.
+      system: `Eres director de arte de una agencia. Te dan la FICHA de un negocio real y un tema, y devuelves UN prompt EN INGLÉS para gpt-image-1 que genere la imagen de un post de Instagram para ESE negocio.
 
 REGLAS CRÍTICAS:
 - La imagen debe representar EL NEGOCIO Y SU SERVICIO concreto (mira sector y servicios clave de la ficha). Si es una clínica dental, muestra sonrisas, dientes sanos, consulta dental, instrumental limpio; si es estética, tratamientos faciales/corporales, cabina, piel cuidada; etc.
 - PROHIBIDO devolver imágenes genéricas o fuera de contexto (paisajes, montañas, objetos al azar) que no tengan que ver con el negocio.
 - Refleja al público objetivo y el tono de marca de la ficha.
 - Estilo visual a aplicar: ${styleDir}.
-- Sin texto, logos ni marcas de agua en la imagen (DALL·E no escribe texto bien).
+- Sin texto, logos ni marcas de agua en la imagen (el modelo no escribe texto bien).
 - Composición cuadrada/limpia, lista para Instagram.
 
 Devuelve SOLO el prompt en inglés, una sola línea, sin comillas ni explicaciones.`,
@@ -119,30 +119,31 @@ Devuelve SOLO el prompt en inglés, una sola línea, sin comillas ni explicacion
     return { ok: false, reason: "ai_error", detail: `Haiku: ${err instanceof Error ? err.message : String(err)}` };
   }
 
-  // Paso 2 — DALL·E 3 genera la imagen.
-  const size = opts.mediaType === "STORIES_IMAGE" ? "1024x1792" : "1024x1024";
-  let tempUrl: string | undefined;
+  // Paso 2 — gpt-image-1 genera la imagen.
+  // (DALL·E 3 fue retirado de la API de OpenAI el 12-may-2026.) gpt-image-1
+  // devuelve la imagen en base64, no en URL; tamaños: 1024x1024 (post) y
+  // 1024x1536 (story vertical); quality low|medium|high.
+  const size = opts.mediaType === "STORIES_IMAGE" ? "1024x1536" : "1024x1024";
+  let b64: string | undefined;
   try {
     const img = await openai.images.generate({
-      model: "dall-e-3",
+      model: "gpt-image-1",
       prompt: dallePrompt,
       n: 1,
       size,
-      quality: "standard",
+      quality: "medium",
     });
-    tempUrl = img.data?.[0]?.url;
+    b64 = img.data?.[0]?.b64_json;
   } catch (err) {
-    return { ok: false, reason: "ai_error", detail: `DALL·E: ${err instanceof Error ? err.message : String(err)}` };
+    return { ok: false, reason: "ai_error", detail: `gpt-image-1: ${err instanceof Error ? err.message : String(err)}` };
   }
-  if (!tempUrl) {
-    return { ok: false, reason: "ai_error", detail: "DALL·E no devolvió URL de imagen." };
+  if (!b64) {
+    return { ok: false, reason: "ai_error", detail: "gpt-image-1 no devolvió imagen (b64_json vacío)." };
   }
 
-  // Paso 3 — descargar los bytes y servirlos desde nuestra URL durable.
+  // Paso 3 — decodificar y servir desde nuestra URL durable.
   try {
-    const resp = await fetch(tempUrl);
-    if (!resp.ok) throw new Error(`fetch DALL·E url status ${resp.status}`);
-    const buf = Buffer.from(await resp.arrayBuffer());
+    const buf = Buffer.from(b64, "base64");
     const id = await storeImage(buf, "image/png");
     return { ok: true, url: imageUrlFor(id, opts.baseUrl), prompt: dallePrompt };
   } catch (err) {
