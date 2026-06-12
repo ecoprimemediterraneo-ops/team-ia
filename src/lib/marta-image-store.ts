@@ -5,13 +5,14 @@
 // nos da una URL accesible que podemos pasar a WhatsApp (para enseñar al
 // cliente) e Instagram (para publicar).
 //
-// IMPORTANTE: es memoria de proceso. Sobrevive a HMR de Next pero no a un
-// restart del server ni a un cold start de serverless. Para producción real
-// hay que mover esto a un object store (Supabase Storage / S3). Para la
-// fase actual (arranque + calendario + stories en local + tenant fundador
-// en prod) basta.
+// Persistencia: si hay Supabase configurado, la imagen se guarda como base64
+// en kv_store (clave `marta-img:<id>`) para que la URL siga viva entre
+// invocaciones serverless (p. ej. cuando se publica horas después de crearse
+// la propuesta). En local sin Supabase cae a memoria de proceso (suficiente
+// para revisar en el dev server).
 
 import "server-only";
+import { kvGet, kvSet, supabaseEnabled } from "./supabase";
 
 type StoredImage = {
   bytes: Buffer;
@@ -43,26 +44,53 @@ function gc() {
   }
 }
 
-export function storeImage(bytes: Buffer, mimeType = "image/jpeg"): string {
+type PersistedImage = { b64: string; mimeType: string; createdAt: number; expiresAt: number };
+const kvKey = (id: string) => `marta-img:${id}`;
+
+export async function storeImage(bytes: Buffer, mimeType = "image/jpeg"): Promise<string> {
   gc();
   const id = `img_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-  store.set(id, {
-    bytes,
-    mimeType,
-    createdAt: Date.now(),
-    expiresAt: Date.now() + TTL_MS,
-  });
+  const now = Date.now();
+  store.set(id, { bytes, mimeType, createdAt: now, expiresAt: now + TTL_MS });
+  if (supabaseEnabled()) {
+    try {
+      await kvSet(kvKey(id), {
+        b64: bytes.toString("base64"),
+        mimeType,
+        createdAt: now,
+        expiresAt: now + TTL_MS,
+      } satisfies PersistedImage);
+    } catch (err) {
+      console.error("[marta-image-store] no se pudo persistir en Supabase:", err);
+    }
+  }
   return id;
 }
 
-export function getStoredImage(id: string): StoredImage | null {
+export async function getStoredImage(id: string): Promise<StoredImage | null> {
+  // 1) memoria (rápido, mismo proceso)
   const e = store.get(id);
-  if (!e) return null;
-  if (e.expiresAt < Date.now()) {
-    store.delete(id);
-    return null;
+  if (e && e.expiresAt >= Date.now()) return e;
+  if (e) store.delete(id);
+  // 2) Supabase (sobrevive a cold starts / otra invocación)
+  if (supabaseEnabled()) {
+    try {
+      const p = await kvGet<PersistedImage>(kvKey(id));
+      if (p && p.expiresAt >= Date.now()) {
+        const rebuilt: StoredImage = {
+          bytes: Buffer.from(p.b64, "base64"),
+          mimeType: p.mimeType,
+          createdAt: p.createdAt,
+          expiresAt: p.expiresAt,
+        };
+        store.set(id, rebuilt); // cachea en memoria para siguientes lecturas
+        return rebuilt;
+      }
+    } catch (err) {
+      console.error("[marta-image-store] no se pudo leer de Supabase:", err);
+    }
   }
-  return e;
+  return null;
 }
 
 export function imageUrlFor(id: string, baseUrl?: string): string {

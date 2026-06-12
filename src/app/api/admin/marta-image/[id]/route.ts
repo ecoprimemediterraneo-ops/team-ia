@@ -8,7 +8,7 @@ export async function GET(
   ctx: { params: Promise<{ id: string }> },
 ) {
   const { id } = await ctx.params;
-  const e = getStoredImage(id);
+  const e = await getStoredImage(id);
   if (!e) return new NextResponse("not found", { status: 404 });
   return new NextResponse(e.bytes as unknown as BodyInit, {
     status: 200,

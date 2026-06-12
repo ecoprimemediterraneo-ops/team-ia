@@ -5,17 +5,19 @@
 // resuelve desde la sesión — hoy todo va al tenant fundador (single-tenant
 // real en producción); cuando exista mapping email→tenantId se cambia aquí.
 
+import { headers } from "next/headers";
 import { getSession } from "@/lib/auth";
 import { DEFAULT_TENANT_ID } from "@/lib/tenants";
 import { generateArranque } from "@/lib/marta-arranque";
 import { generarCaption } from "@/lib/marta-caption";
 import { createProposal } from "@/lib/marta-proposals";
+import { generatePostImage, styleExistingPhoto } from "@/lib/marta-image-gen";
 import {
   sendWhatsAppImage,
   sendWhatsAppText,
   sendWhatsAppVideo,
 } from "@/lib/whatsapp-sender";
-import type { ProposalMediaType } from "@/lib/marta-proposals";
+import type { ProposalMediaType, MartaProposal } from "@/lib/marta-proposals";
 import type { ArranqueState, ProposalState } from "./types";
 
 async function gateTenantId(): Promise<string | null> {
@@ -93,13 +95,69 @@ export async function nuevaPropuestaClientAction(
       detail: "Pon tu número con prefijo (ej. 34600111222) para recibir la propuesta y aprobarla.",
     };
   }
-  if (!/^https?:\/\//.test(imageUrl)) {
+  const hasUrl = /^https?:\/\//.test(imageUrl);
+
+  // Vídeo (reel / story vídeo): el cliente DEBE subir el vídeo. No se genera.
+  if (isVideo && !hasUrl) {
     return {
       ts: Date.now(),
       variant: "error",
-      title: "URL no válida",
-      detail: "Debe empezar por https:// y ser pública (JPG/PNG para post/story imagen; MP4 para reel/story vídeo).",
+      title: "Falta el vídeo",
+      detail: "Para reels y stories de vídeo tienes que pegar la URL pública del MP4 (no se genera con IA).",
     };
+  }
+
+  // -------------------------------------------------------------------------
+  // MODO MEZCLA — resolver la imagen final:
+  //   imagen + URL  → estilizar la foto del cliente con el estilo de la ficha
+  //   imagen sin URL → generar con IA (DALL·E) usando toda la ficha
+  //   vídeo          → usar la URL tal cual (subida por el cliente)
+  // -------------------------------------------------------------------------
+  const h = await headers();
+  const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
+  const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
+  const baseUrl = `${proto}://${host}`;
+
+  let finalUrl = imageUrl;
+  let imageSource: MartaProposal["imageSource"] = "subida";
+  let imagePrompt: string | undefined;
+
+  if (!isVideo) {
+    const isStory = mediaType === "STORIES_IMAGE";
+    if (hasUrl) {
+      // Estilizar la foto pegada con el estilo de la ficha (si falla, original).
+      const styled = await styleExistingPhoto({ tenantId, url: imageUrl, baseUrl });
+      if (styled.ok) {
+        finalUrl = styled.url;
+        imageSource = "subida_estilizada";
+      } else {
+        finalUrl = imageUrl;
+        imageSource = "subida";
+        console.warn(`[dashboard/marta/action] estilizado falló, uso foto original: ${styled.detail}`);
+      }
+    } else {
+      // Generar con IA usando TODA la ficha.
+      const gen = await generatePostImage({
+        tenantId,
+        tema: tema || undefined,
+        contexto: contexto || undefined,
+        mediaType: isStory ? "STORIES_IMAGE" : "IMAGE",
+        baseUrl,
+      });
+      if (!gen.ok) {
+        return {
+          ts: Date.now(),
+          variant: "error",
+          title: "No se pudo generar la imagen",
+          detail: `[${gen.reason}] ${gen.detail}`,
+        };
+      }
+      finalUrl = gen.url;
+      imageSource = "generada_ia";
+      imagePrompt = gen.prompt;
+    }
+  } else {
+    imageSource = "video_subido";
   }
 
   // 1) Caption desde la ficha.
@@ -115,19 +173,21 @@ export async function nuevaPropuestaClientAction(
   }
   const caption = cap.caption;
 
-  // 2) Crear propuesta.
+  // 2) Crear propuesta (con auditoría del origen de la imagen).
   const proposal = await createProposal({
     tenantId,
     recipientWhatsapp: recipient,
-    imageUrl,
+    imageUrl: finalUrl,
     caption,
     mediaType,
+    imageSource,
+    imagePrompt,
   });
 
   // 3) Mandar al cliente por WhatsApp (imagen/vídeo + caption + pregunta).
   const mediaRes = isVideo
-    ? await sendWhatsAppVideo(recipient, imageUrl, caption)
-    : await sendWhatsAppImage(recipient, imageUrl, caption);
+    ? await sendWhatsAppVideo(recipient, finalUrl, caption)
+    : await sendWhatsAppImage(recipient, finalUrl, caption);
   if (!mediaRes.ok) {
     return {
       ts: Date.now(),
@@ -152,12 +212,21 @@ export async function nuevaPropuestaClientAction(
     `¿Publico este ${askLabel}? Responde OK para publicar o dime qué cambiar (foto, texto o descartar).`,
   );
 
+  const sourceLabel =
+    imageSource === "generada_ia"
+      ? "🎨 Imagen generada con IA desde tu ficha."
+      : imageSource === "subida_estilizada"
+        ? "🖼️ Tu foto, con el estilo de la ficha aplicado."
+        : imageSource === "video_subido"
+          ? "🎬 Vídeo que subiste."
+          : "🖼️ Tu foto.";
+
   return {
     ts: Date.now(),
     variant: "ok",
     title: "Propuesta enviada a tu WhatsApp ✅",
     detail:
-      "Cuando respondas OK, Marta publica en Instagram. Si quieres cambios, dile lo que cambiarías y prepara otra.",
+      `${sourceLabel} Cuando respondas OK, Marta publica en Instagram. Si quieres cambios, dile lo que cambiarías y prepara otra.`,
     caption,
     proposalId: proposal.id,
     recipient,

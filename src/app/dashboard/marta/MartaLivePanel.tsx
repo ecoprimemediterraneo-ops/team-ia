@@ -121,17 +121,19 @@ function NuevoPostBlock({ defaultRecipient }: { defaultRecipient?: string }) {
 
       <div>
         <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
-          URL pública de la imagen / vídeo *
+          URL de la imagen / vídeo
         </label>
         <input
           type="url"
           name="imageUrl"
-          required
-          placeholder="https://… .jpg/.png (post/story) o .mp4 (reel/story vídeo)"
+          placeholder="https://… .jpg/.png · o déjalo VACÍO y Marta crea la imagen"
           className="border-2 border-black px-3 py-2 text-sm w-full font-mono"
         />
         <p className="text-[11px] text-black/50 mt-1">
-          Tiene que ser accesible públicamente. Post: JPG/PNG ≤ 5 MB. Reel/Story vídeo: MP4 vertical 9:16.
+          <strong>Posts/stories de foto:</strong> pega una URL pública (se le aplica el estilo de tu ficha) o
+          <strong> déjalo vacío</strong> y Marta genera la imagen con IA a partir de tu ficha.
+          <br />
+          <strong>Reels / stories de vídeo:</strong> la URL del MP4 (9:16) es obligatoria — el vídeo no se genera.
         </p>
       </div>
 
@@ -301,6 +303,25 @@ function HistorialBlock({ proposals }: { proposals: MartaProposal[] }) {
             <span className="text-[11px] text-black/45">{new Date(p.createdAt).toLocaleString("es-ES")}</span>
           </div>
           <p className="text-xs text-black/75 whitespace-pre-wrap line-clamp-4">{p.caption}</p>
+          {p.imageSource && (
+            <div className="mt-2 text-[10px] font-mono">
+              <span className="inline-block bg-black/5 border border-black/15 px-1.5 py-0.5">
+                {p.imageSource === "generada_ia"
+                  ? "🎨 IMAGEN IA"
+                  : p.imageSource === "subida_estilizada"
+                    ? "🖼️ FOTO + ESTILO FICHA"
+                    : p.imageSource === "video_subido"
+                      ? "🎬 VÍDEO SUBIDO"
+                      : "🖼️ FOTO SUBIDA"}
+              </span>
+              {p.imagePrompt && (
+                <details className="mt-1">
+                  <summary className="cursor-pointer text-black/45 select-none">prompt IA (auditar) ▸</summary>
+                  <p className="mt-1 text-black/60 whitespace-pre-wrap break-words">{p.imagePrompt}</p>
+                </details>
+              )}
+            </div>
+          )}
           {p.igPermalink && (
             <a href={p.igPermalink} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-xs font-bold underline">
               Ver post en Instagram →

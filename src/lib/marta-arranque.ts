@@ -219,7 +219,7 @@ export async function generateArranque(
       const baseBuf = await fetchSeedImage(seed);
       const styled = await styleImageForTenant(baseBuf, estilo);
       if (styled.aiError) errors.push(`Imagen IA "${t.tema}": ${styled.aiError} (se usa solo preset sharp)`);
-      const imageId = storeImage(styled.bytes, "image/jpeg");
+      const imageId = await storeImage(styled.bytes, "image/jpeg");
       drafts.push({
         id: `draft_${Date.now()}_${i}`,
         tema: t.tema,
