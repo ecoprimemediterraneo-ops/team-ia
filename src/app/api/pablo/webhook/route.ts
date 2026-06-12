@@ -37,6 +37,7 @@ import { classifyClientReply } from "@/lib/marta-intent";
 import { getRoute, openRoute, closeRoute } from "@/lib/wa-route";
 import { regenerateProposal, MAX_REGEN } from "@/lib/marta-regen";
 import { sendWhatsAppImage, sendWhatsAppVideo } from "@/lib/whatsapp-sender";
+import { kvTryLock, supabaseEnabled } from "@/lib/supabase";
 import {
   tryAgendarFromText,
   detectAppointmentIntent,
@@ -64,6 +65,25 @@ async function safeLogEvent(...args: Parameters<typeof logEvent>): Promise<void>
   } catch (err) {
     console.error("[pablo/webhook] event log error:", err);
   }
+}
+
+// Idempotencia por id de mensaje de Meta. WhatsApp Cloud API REINTENTA la
+// entrega si el webhook no responde 200 rápido — y la regeneración de Marta
+// tarda (Haiku + gpt-image-1). Sin esto, cada reintento del MISMO mensaje
+// reejecutaba la regeneración → 3 propuestas encadenadas. Reclamamos el msg.id
+// UNA sola vez (lock atómico en Supabase; Set en memoria en local): los
+// reintentos posteriores se ignoran.
+const seenLocal = new Set<string>();
+async function claimMessageOnce(msgId: string): Promise<boolean> {
+  if (!msgId) return true; // sin id no podemos deduplicar; procesamos
+  if (supabaseEnabled()) {
+    // kvTryLock inserta atómicamente; si ya existe y está fresco → false.
+    return await kvTryLock(`wa-msg:${msgId}`, 10 * 60 * 1000, "pablo");
+  }
+  if (seenLocal.has(msgId)) return false;
+  seenLocal.add(msgId);
+  if (seenLocal.size > 2000) seenLocal.clear();
+  return true;
 }
 
 // Idempotencia: ¿ya hay una cita registrada para este teléfono a esa hora?
@@ -189,6 +209,14 @@ export async function POST(req: Request) {
           // Solo texto por ahora
           if (msg.type !== "text" || !msg.text?.body) {
             console.log(`[pablo/webhook] mensaje no-texto ignorado: ${msg.type}`);
+            continue;
+          }
+
+          // Idempotencia: procesa cada mensaje UNA sola vez. Los reintentos de
+          // Meta (cuando la regeneración tarda) se ignoran aquí → no se encadenan
+          // varias generaciones para el mismo mensaje.
+          if (!(await claimMessageOnce(msg.id))) {
+            console.log(`[pablo/webhook] mensaje duplicado (reintento de Meta) ignorado: ${msg.id}`);
             continue;
           }
 
