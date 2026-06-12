@@ -22,7 +22,7 @@ import {
   getConversation,
   type Conversation,
 } from "@/lib/conversation-store";
-import { logEvent, makeEventId } from "@/lib/event-log";
+import { logEvent, makeEventId, getMonthEvents, monthKey } from "@/lib/event-log";
 import { resolveTenantFromMeta, getTenantSector } from "@/lib/tenants";
 import { getFicha, fichaToPromptContext } from "@/lib/ficha";
 import { buildSectorSystem, getSectorPrompt } from "@/lib/sector-prompts";
@@ -36,6 +36,7 @@ import { publishToInstagram } from "@/lib/marta-publish";
 import { classifyClientReply } from "@/lib/marta-intent";
 import {
   tryAgendarFromText,
+  detectAppointmentIntent,
   missingFieldsToQuestion,
   formatStartHumanES,
 } from "@/lib/appointment-intent";
@@ -59,6 +60,29 @@ async function safeLogEvent(...args: Parameters<typeof logEvent>): Promise<void>
     await logEvent(...args);
   } catch (err) {
     console.error("[pablo/webhook] event log error:", err);
+  }
+}
+
+// Idempotencia: ¿ya hay una cita registrada para este teléfono a esa hora?
+// Evita que, al detectar la cita sobre el transcript completo, se vuelva a
+// reservar el mismo hueco en cada mensaje posterior del cliente.
+async function alreadyBookedForPhone(
+  tenantId: string,
+  phone: string,
+  startIso: string,
+): Promise<boolean> {
+  try {
+    const months = new Set([monthKey(startIso), monthKey(new Date().toISOString())]);
+    const evs = (
+      await Promise.all([...months].map((m) => getMonthEvents(tenantId, m)))
+    ).flat();
+    return evs.some((e) => {
+      if (e.type !== "appointment_set") return false;
+      const m = (e.meta ?? {}) as Record<string, unknown>;
+      return m.customerPhone === phone && (m.fechaIso === startIso || m.horaIso === startIso);
+    });
+  } catch {
+    return false;
   }
 }
 
@@ -324,8 +348,37 @@ export async function POST(req: Request) {
           } catch { /* por defecto intentamos agendar */ }
 
           if (sectorAgenda) try {
+            // Los datos de la cita (nombre + servicio + día/hora) se reúnen a lo
+            // largo de VARIOS turnos. Detectamos sobre el TRANSCRIPT completo de
+            // la conversación + el mensaje actual, no solo el último mensaje
+            // (eso es lo que hacía que Pablo "confirmara" sin registrar nada).
+            const convForIntent = await getConversation("pablo", from);
+            const histTurns = (convForIntent?.turns ?? []).slice(-8);
+            const transcript = [
+              ...histTurns.map((t) => `${t.role === "user" ? "Cliente" : "Pablo"}: ${t.text}`),
+              `Cliente: ${text}`,
+            ].join("\n");
+
+            // Detección única sobre el transcript.
+            const intent = await detectAppointmentIntent(transcript);
+            if (!intent.fields.nombre && customerName) {
+              intent.fields.nombre = customerName;
+              intent.missing = intent.missing.filter((m) => m !== "nombre");
+            }
+
+            // Guard de idempotencia: si esta cita ya está registrada para este
+            // teléfono y esa hora, no la volvemos a reservar — caemos al flujo
+            // normal para que Pablo responda con naturalidad.
+            const complete =
+              intent.wantsAppointment && intent.missing.length === 0 && !!intent.fields.startIso;
+            if (complete && (await alreadyBookedForPhone(tenantId, from, intent.fields.startIso!))) {
+              // ya reservada → no re-reservar; sigue al flujo normal de Pablo.
+              throw { __skip: true };
+            }
+
             const agRes = await tryAgendarFromText({
-              text,
+              text: transcript,
+              intentOverride: intent,
               agenteOrigen: "pablo",
               redirectUri: `https://aiteam.marketing/api/lucia/callback`,
               customerPhone: from,
@@ -371,7 +424,10 @@ export async function POST(req: Request) {
             }
             // kind === "no_intent" o "error" → caemos al flujo normal de Pablo
           } catch (err) {
-            console.error("[pablo/webhook] interceptor agenda falló:", err);
+            // `__skip` = cita ya registrada (idempotencia); no es un error.
+            if (!(err && typeof err === "object" && "__skip" in err)) {
+              console.error("[pablo/webhook] interceptor agenda falló:", err);
+            }
           }
 
           // Memoria de conversación: si no hay turnos (o estaba stale → ya limpiado
