@@ -34,6 +34,9 @@ import {
 } from "@/lib/marta-proposals";
 import { publishToInstagram } from "@/lib/marta-publish";
 import { classifyClientReply } from "@/lib/marta-intent";
+import { getRoute, openRoute, closeRoute } from "@/lib/wa-route";
+import { regenerateProposal, MAX_REGEN } from "@/lib/marta-regen";
+import { sendWhatsAppImage, sendWhatsAppVideo } from "@/lib/whatsapp-sender";
 import {
   tryAgendarFromText,
   detectAppointmentIntent,
@@ -200,9 +203,17 @@ export async function POST(req: Request) {
             `[pablo/webhook] RX from=${from} name=${customerName ?? "?"} text="${text}"`,
           );
 
+          // === SESIÓN DE RUTEO ===
+          // Si este número está en mitad de un flujo con un agente, sus
+          // respuestas SIGUIENTES van a ESE agente hasta que el flujo termine
+          // (aunque el clasificador falle o la propuesta deje de estar pending).
+          const route = await getRoute(from);
+          const forceMarta = route?.agent === "marta";
+
           // === INTERCEPTOR: ¿propuesta de Rocío pendiente (respuesta a reseña)? ===
           // Antes que Marta para no mezclar. Aprobación → publica en Google.
-          try {
+          // Se salta si hay una sesión activa de Marta para este número.
+          if (!forceMarta) try {
             const rocioP = await findPendingRocioByWhatsapp(from);
             if (rocioP) {
               const cls = await classifyClientReply(text);
@@ -250,12 +261,18 @@ export async function POST(req: Request) {
           //   feedback_general → "Vale, lo ajusto. Cuéntame qué cambias."
           try {
             const proposal = await findPendingProposalByWhatsapp(from);
+            if (!proposal && forceMarta) {
+              // Sesión de Marta activa pero sin propuesta pendiente: el flujo ya
+              // terminó. Limpiamos y dejamos pasar al flujo normal de Pablo.
+              await closeRoute(from);
+            }
             if (proposal) {
               const cls = await classifyClientReply(text);
               await recordClientReply(proposal, text, cls.intent);
               console.log(
-                `[pablo/webhook] Marta proposal id=${proposal.id} intent=${cls.intent} (conf=${cls.confidence.toFixed(2)}, src=${cls.source})`,
+                `[pablo/webhook] Marta proposal id=${proposal.id} intent=${cls.intent} foto=${cls.changeFoto} caption=${cls.changeCaption} (conf=${cls.confidence.toFixed(2)}, src=${cls.source})`,
               );
+              const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://aiteam.marketing";
 
               if (cls.intent === "ok") {
                 const pub = await publishToInstagram({
@@ -288,6 +305,7 @@ export async function POST(req: Request) {
                     ? `¡Publicado! 🎉\n\nVer post: ${permalink}`
                     : `¡Publicado! 🎉`;
                   await sendWhatsAppText(from, ack);
+                  await closeRoute(from); // flujo terminado
                 } else if ("skipped" in pub && pub.skipped) {
                   await sendWhatsAppText(
                     from,
@@ -301,16 +319,6 @@ export async function POST(req: Request) {
                     "Recibí tu OK, pero Instagram me ha rechazado la publicación. Lo revisamos y volvemos a intentarlo.",
                   );
                 }
-              } else if (cls.intent === "cambiar_foto") {
-                await sendWhatsAppText(
-                  from,
-                  "Vale, cambio la foto 📸 Cuéntame qué quieres distinto: otra escena, otro estilo, otra luz… y te paso una nueva.",
-                );
-              } else if (cls.intent === "cambiar_caption") {
-                await sendWhatsAppText(
-                  from,
-                  "Hecho, reescribo el texto ✍️ Dime qué cambias: más corto, más informal, sin hashtags, más directo… y te lo mando.",
-                );
               } else if (cls.intent === "rechazar") {
                 await markProposalRejected(proposal);
                 // Propaga al calendario si la propuesta venía de allí.
@@ -318,16 +326,63 @@ export async function POST(req: Request) {
                   const calEntry = await findEntryByProposalId(proposal.tenantId, proposal.id);
                   if (calEntry) await markCalendarEntryRejected(proposal.tenantId, calEntry.id);
                 } catch { /* noop */ }
+                await closeRoute(from); // flujo terminado
                 await sendWhatsAppText(
                   from,
                   "Sin problema, descartado 👌 Cuando quieras otra propuesta me dices.",
                 );
-              } else {
-                // feedback_general
+              } else if (!(cls.changeFoto ?? false) && !(cls.changeCaption ?? false)) {
+                // feedback_general SIN cambio concreto → pedir aclaración (no
+                // regenerar a ciegas). La sesión sigue activa con Marta.
                 await sendWhatsAppText(
                   from,
-                  "Vale, lo ajusto 👍 Cuéntame qué quieres cambiar y preparo otra propuesta.",
+                  "Vale 👍 Dime exactamente qué cambio: la foto, el texto, o ambos — y qué quieres distinto.",
                 );
+                await openRoute(from, "marta", proposal.id);
+              } else {
+                // === CAMBIOS: regenerar DE VERDAD (foto y/o texto) ===
+                const changeFoto = cls.changeFoto ?? (cls.intent === "cambiar_foto");
+                const changeCaption = cls.changeCaption ?? (cls.intent === "cambiar_caption");
+                await sendWhatsAppText(from, "Vale, lo rehago con esos cambios… dame un momento 🎨");
+                const regen = await regenerateProposal({
+                  proposal,
+                  changeFoto,
+                  changeCaption,
+                  feedback: text,
+                  baseUrl: SITE,
+                });
+                if (regen.kind === "ok") {
+                  const isVid = proposal.mediaType === "REELS" || proposal.mediaType === "STORIES_VIDEO";
+                  if (isVid) await sendWhatsAppVideo(from, regen.imageUrl, regen.caption);
+                  else await sendWhatsAppImage(from, regen.imageUrl, regen.caption);
+                  const partes = [regen.changedFoto ? "imagen" : null, regen.changedCaption ? "texto" : null]
+                    .filter(Boolean)
+                    .join(" y ");
+                  await sendWhatsAppText(
+                    from,
+                    `Aquí tienes la nueva versión${partes ? ` (${partes})` : ""}. ¿La publico? Responde OK o dime qué más cambio.`,
+                  );
+                  await openRoute(from, "marta", regen.proposal.id); // sigue el flujo
+                } else if (regen.kind === "limit") {
+                  await sendWhatsAppText(
+                    from,
+                    `Llevamos ${MAX_REGEN} versiones 😅 Para no marear, dime "ok" para publicar la última o te llamo y lo cerramos juntos.`,
+                  );
+                  await openRoute(from, "marta", proposal.id);
+                } else if (regen.kind === "needs_video") {
+                  await sendWhatsAppText(
+                    from,
+                    "Para cambiar el vídeo, pásame el MP4 nuevo (vertical 9:16) y lo preparo. El texto sí puedo reescribirlo si me dices cómo.",
+                  );
+                  await openRoute(from, "marta", proposal.id);
+                } else {
+                  console.error(`[pablo/webhook] regen falló: ${regen.detail}`);
+                  await sendWhatsAppText(
+                    from,
+                    "Uy, se me atascó al rehacerlo. Dime otra vez qué cambias y lo intento de nuevo.",
+                  );
+                  await openRoute(from, "marta", proposal.id);
+                }
               }
               // Saltamos el flujo normal de Pablo para este mensaje.
               continue;

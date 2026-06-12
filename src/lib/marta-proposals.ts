@@ -42,6 +42,10 @@ export type MartaProposal = {
   // Auditoría del origen de la imagen.
   imageSource?: "generada_ia" | "subida_estilizada" | "subida" | "video_subido";
   imagePrompt?: string;    // prompt de DALL·E si la imagen se generó con IA
+  // Para regenerar manteniendo el asunto + limitar el bucle de ediciones.
+  tema?: string;
+  contexto?: string;
+  regenCount?: number;     // nº de regeneraciones aplicadas (límite de coste)
   createdAt: string; // ISO
   publishedAt?: string;
   igMediaId?: string;
@@ -125,6 +129,9 @@ export async function createProposal(input: {
   mediaType?: ProposalMediaType;
   imageSource?: MartaProposal["imageSource"];
   imagePrompt?: string;
+  tema?: string;
+  contexto?: string;
+  regenCount?: number;
 }): Promise<MartaProposal> {
   const now = new Date().toISOString();
   const proposal: MartaProposal = {
@@ -137,6 +144,9 @@ export async function createProposal(input: {
     status: "pending",
     ...(input.imageSource ? { imageSource: input.imageSource } : {}),
     ...(input.imagePrompt ? { imagePrompt: input.imagePrompt } : {}),
+    ...(input.tema ? { tema: input.tema } : {}),
+    ...(input.contexto ? { contexto: input.contexto } : {}),
+    ...(typeof input.regenCount === "number" ? { regenCount: input.regenCount } : {}),
     createdAt: now,
   };
   await writeOne(key(input.tenantId, input.recipientWhatsapp), proposal);

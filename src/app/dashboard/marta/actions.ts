@@ -12,6 +12,7 @@ import { generateArranque } from "@/lib/marta-arranque";
 import { generarCaption } from "@/lib/marta-caption";
 import { createProposal } from "@/lib/marta-proposals";
 import { generatePostImage, styleExistingPhoto } from "@/lib/marta-image-gen";
+import { openRoute } from "@/lib/wa-route";
 import {
   sendWhatsAppImage,
   sendWhatsAppText,
@@ -173,7 +174,7 @@ export async function nuevaPropuestaClientAction(
   }
   const caption = cap.caption;
 
-  // 2) Crear propuesta (con auditoría del origen de la imagen).
+  // 2) Crear propuesta (con auditoría del origen + tema/contexto para regenerar).
   const proposal = await createProposal({
     tenantId,
     recipientWhatsapp: recipient,
@@ -182,7 +183,12 @@ export async function nuevaPropuestaClientAction(
     mediaType,
     imageSource,
     imagePrompt,
+    tema: tema || undefined,
+    contexto: contexto || undefined,
+    regenCount: 0,
   });
+  // Abrimos la sesión de ruteo: las respuestas de este número irán a Marta.
+  await openRoute(recipient, "marta", proposal.id);
 
   // 3) Mandar al cliente por WhatsApp (imagen/vídeo + caption + pregunta).
   const mediaRes = isVideo

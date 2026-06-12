@@ -22,6 +22,7 @@ import {
   markCalendarEntryFailed,
 } from "@/lib/marta-calendar";
 import { createProposal } from "@/lib/marta-proposals";
+import { openRoute } from "@/lib/wa-route";
 import {
   sendWhatsAppImage,
   sendWhatsAppText,
@@ -60,6 +61,8 @@ export async function POST(req: Request) {
         imageUrl: entry.imageUrl,
         caption: entry.caption,
         mediaType: entry.mediaType,
+        tema: entry.tema,
+        regenCount: 0,
       });
 
       const sendMedia =
@@ -72,6 +75,9 @@ export async function POST(req: Request) {
         processed.push({ entryId: entry.id, ok: false, reason: sendMedia.reason });
         continue;
       }
+
+      // Abrimos la sesión de ruteo: las respuestas de este número van a Marta.
+      await openRoute(to, "marta", proposal.id);
       await sendWhatsAppText(
         to,
         `¿Publico este ${entry.mediaType === "REELS" ? "Reel" : "post"}? Responde OK para publicar o dime qué cambiar (foto, texto o descartar).`,
