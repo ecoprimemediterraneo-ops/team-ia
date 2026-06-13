@@ -13,6 +13,7 @@ import { generarCaption } from "@/lib/marta-caption";
 import { createProposal } from "@/lib/marta-proposals";
 import { generatePostImage, styleExistingPhoto } from "@/lib/marta-image-gen";
 import { openRoute } from "@/lib/wa-route";
+import { resolveTopic } from "@/lib/marta-topics";
 import {
   sendWhatsAppImage,
   sendWhatsAppText,
@@ -75,8 +76,14 @@ export async function nuevaPropuestaClientAction(
 
   const recipient = String(formData.get("recipient") || "").replace(/\D/g, "");
   const imageUrl = String(formData.get("imageUrl") || "").trim();
-  const tema = String(formData.get("tema") || "").trim();
-  const contexto = String(formData.get("contexto") || "").trim();
+  // "tema" ahora es la KEY de un tema predefinido (desplegable).
+  const topic = resolveTopic(String(formData.get("tema") || "auto").trim());
+  const contextoTexto = String(formData.get("contextoTexto") || "").trim();
+  const fotoBriefUser = String(formData.get("fotoBrief") || "").trim();
+  // Asunto del caption = el del tema (vacío en "auto" → lo elige la IA).
+  const tema = topic.captionTema;
+  // Contexto de imagen = guion visual del tema + lo que escriba el cliente.
+  const fotoBrief = [topic.imageBrief, fotoBriefUser].filter(Boolean).join(" ");
   const mediaTypeRaw = String(formData.get("mediaType") || "IMAGE").trim().toUpperCase();
   const mediaType: ProposalMediaType =
     mediaTypeRaw === "REELS"
@@ -141,7 +148,7 @@ export async function nuevaPropuestaClientAction(
       const gen = await generatePostImage({
         tenantId,
         tema: tema || undefined,
-        contexto: contexto || undefined,
+        contexto: fotoBrief || undefined, // guion visual del tema + descripción del cliente
         mediaType: isStory ? "STORIES_IMAGE" : "IMAGE",
         baseUrl,
       });
@@ -162,7 +169,7 @@ export async function nuevaPropuestaClientAction(
   }
 
   // 1) Caption desde la ficha.
-  const cap = await generarCaption({ tenantId, tema: tema || undefined, contexto: contexto || undefined });
+  const cap = await generarCaption({ tenantId, tema: tema || undefined, contexto: contextoTexto || undefined });
   if (!cap.ok) {
     console.error(`[dashboard/marta/action] generarCaption falló: reason=${cap.reason} detail=${cap.detail}`);
     return {
@@ -184,7 +191,8 @@ export async function nuevaPropuestaClientAction(
     imageSource,
     imagePrompt,
     tema: tema || undefined,
-    contexto: contexto || undefined,
+    contexto: contextoTexto || undefined,
+    fotoBrief: fotoBrief || undefined,
     regenCount: 0,
   });
   // Abrimos la sesión de ruteo: las respuestas de este número irán a Marta.

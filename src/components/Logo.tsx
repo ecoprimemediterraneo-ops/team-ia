@@ -1,14 +1,22 @@
 export default function Logo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const w = size === "lg" ? 380 : size === "sm" ? 260 : 380;
-  const h = (w * 110) / 380;
   return (
     <svg
       viewBox="0 0 380 110"
-      width={w}
-      height={h}
       aria-label="AI-Team"
       role="img"
-      style={{ transform: "rotate(-2deg)" }}
+      preserveAspectRatio="xMidYMid meet"
+      style={{
+        // Responsive: ocupa el ancho disponible pero nunca más que su tamaño
+        // intrínseco → en la tarjeta estrecha del login se escala y no desborda;
+        // donde hay sitio (footer/navbar) se ve igual que antes.
+        width: "100%",
+        height: "auto",
+        maxWidth: w,
+        display: "block",
+        transform: "rotate(-2deg)",
+        transformOrigin: "center",
+      }}
     >
       {/* Borde exterior del sello */}
       <rect x="2" y="2" width="376" height="106" rx="4"

@@ -44,7 +44,8 @@ export type MartaProposal = {
   imagePrompt?: string;    // prompt de DALL·E si la imagen se generó con IA
   // Para regenerar manteniendo el asunto + limitar el bucle de ediciones.
   tema?: string;
-  contexto?: string;
+  contexto?: string;       // detalles para el TEXTO (caption)
+  fotoBrief?: string;      // guion visual para la IMAGEN
   regenCount?: number;     // nº de regeneraciones aplicadas (límite de coste)
   createdAt: string; // ISO
   publishedAt?: string;
@@ -131,6 +132,7 @@ export async function createProposal(input: {
   imagePrompt?: string;
   tema?: string;
   contexto?: string;
+  fotoBrief?: string;
   regenCount?: number;
 }): Promise<MartaProposal> {
   const now = new Date().toISOString();
@@ -146,6 +148,7 @@ export async function createProposal(input: {
     ...(input.imagePrompt ? { imagePrompt: input.imagePrompt } : {}),
     ...(input.tema ? { tema: input.tema } : {}),
     ...(input.contexto ? { contexto: input.contexto } : {}),
+    ...(input.fotoBrief ? { fotoBrief: input.fotoBrief } : {}),
     ...(typeof input.regenCount === "number" ? { regenCount: input.regenCount } : {}),
     createdAt: now,
   };

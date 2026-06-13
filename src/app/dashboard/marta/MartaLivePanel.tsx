@@ -9,6 +9,7 @@ import {
   type ProposalState,
 } from "./types";
 import type { MartaProposal } from "@/lib/marta-proposals";
+import { MARTA_TOPICS } from "@/lib/marta-topics";
 
 type Tab = "nuevo" | "arranque" | "historial";
 
@@ -139,26 +140,47 @@ function NuevoPostBlock({ defaultRecipient }: { defaultRecipient?: string }) {
 
       <div>
         <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
-          Tema (opcional)
+          Tema del post
         </label>
-        <input
-          type="text"
+        <select
           name="tema"
-          placeholder="Promo · novedad · consejo · servicio estrella…"
+          defaultValue="auto"
           className="border-2 border-black px-3 py-2 text-sm w-full"
+        >
+          {MARTA_TOPICS.map((t) => (
+            <option key={t.key} value={t.key}>{t.label}</option>
+          ))}
+        </select>
+        <p className="text-[11px] text-black/50 mt-1">
+          Cada tema lleva un guion visual por detrás; combinado con tu ficha genera imágenes específicas de tu negocio.
+        </p>
+      </div>
+
+      <div>
+        <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
+          Detalles del texto (opcional)
+        </label>
+        <textarea
+          name="contextoTexto"
+          rows={2}
+          placeholder="Para el CAPTION: oferta, fechas, precio, tono, lo que quieras destacar…"
+          className="border-2 border-black px-3 py-2 text-sm w-full font-mono leading-relaxed"
         />
       </div>
 
       <div>
         <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
-          Detalles extra (opcional)
+          Describe la foto a generar (opcional)
         </label>
         <textarea
-          name="contexto"
-          rows={3}
-          placeholder="Lo que quieras que Marta tenga en cuenta para el texto."
+          name="fotoBrief"
+          rows={2}
+          placeholder="Para la IMAGEN: «una pareja joven, ambiente navideño, luces cálidas». Se combina con tu sector y estilo de marca."
           className="border-2 border-black px-3 py-2 text-sm w-full font-mono leading-relaxed"
         />
+        <p className="text-[11px] text-black/50 mt-1">
+          Solo aplica si Marta genera la imagen (campo URL vacío). Si pegaste una foto, no se usa.
+        </p>
       </div>
 
       <button

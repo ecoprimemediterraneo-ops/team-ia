@@ -131,7 +131,7 @@ Devuelve SOLO el prompt en inglés, una sola línea, sin comillas ni explicacion
       prompt: dallePrompt,
       n: 1,
       size,
-      quality: "medium",
+      quality: "high",
     });
     b64 = img.data?.[0]?.b64_json;
   } catch (err) {

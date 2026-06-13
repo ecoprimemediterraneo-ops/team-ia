@@ -52,15 +52,15 @@ export async function regenerateProposal(opts: {
     if (!opts.changeCaption) return { kind: "needs_video" };
   }
 
-  // Combinamos el contexto guardado con el nuevo feedback para no perder el tema.
-  const contextoRegen = [p.contexto, `Cambios pedidos por el cliente: ${opts.feedback}`]
-    .filter(Boolean)
-    .join("\n");
+  const feedbackLine = `Cambios pedidos por el cliente: ${opts.feedback}`;
+  // Caption usa los detalles del TEXTO; imagen usa el guion visual (fotoBrief).
+  const contextoTexto = [p.contexto, feedbackLine].filter(Boolean).join("\n");
+  const contextoFoto = [p.fotoBrief, feedbackLine].filter(Boolean).join("\n");
 
   // --- Caption ---
   let caption = p.caption;
   if (opts.changeCaption) {
-    const cap = await generarCaption({ tenantId: p.tenantId, tema: p.tema, contexto: contextoRegen });
+    const cap = await generarCaption({ tenantId: p.tenantId, tema: p.tema, contexto: contextoTexto });
     if (!cap.ok) return { kind: "error", detail: `caption: [${cap.reason}] ${cap.detail}` };
     caption = cap.caption;
   }
@@ -74,7 +74,7 @@ export async function regenerateProposal(opts: {
     const gen = await generatePostImage({
       tenantId: p.tenantId,
       tema: p.tema,
-      contexto: contextoRegen,
+      contexto: contextoFoto,
       mediaType: p.mediaType === "STORIES_IMAGE" ? "STORIES_IMAGE" : "IMAGE",
       baseUrl: opts.baseUrl,
     });
@@ -95,6 +95,7 @@ export async function regenerateProposal(opts: {
     imagePrompt,
     tema: p.tema,
     contexto: p.contexto,
+    fotoBrief: p.fotoBrief,
     regenCount: already + 1,
   });
 
