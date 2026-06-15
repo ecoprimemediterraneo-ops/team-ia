@@ -29,6 +29,19 @@ export async function kvSet(key: string, value: unknown): Promise<void> {
     .upsert({ key, value, updated_at: new Date().toISOString() });
 }
 
+// Lista los valores cuyas claves empiezan por `prefix`. Para colecciones
+// pequeñas (propuestas de Marta, ≤ pocas decenas). Devuelve [{key, value}].
+export async function kvListByPrefix<T>(prefix: string): Promise<{ key: string; value: T }[]> {
+  const sb = getSupabase();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (sb.from("kv_store") as any)
+    .select("key,value")
+    .like("key", `${prefix}%`);
+  if (error || !data) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data as any[]).map((r) => ({ key: r.key as string, value: r.value as T }));
+}
+
 const USE_SUPABASE = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
 
 /** ¿Hay backend Supabase configurado? Si no, el lock distribuido es no-op. */

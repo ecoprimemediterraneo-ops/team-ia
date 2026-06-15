@@ -1,7 +1,14 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { arranqueClientAction, nuevaPropuestaClientAction } from "./actions";
+import { useActionState, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import {
+  arranqueClientAction,
+  nuevaPropuestaClientAction,
+  aprobarYPublicarAction,
+  pedirCambiosAction,
+  descartarAction,
+} from "./actions";
 import {
   IDLE_ARRANQUE,
   IDLE_PROPOSAL,
@@ -43,7 +50,12 @@ export default function MartaLivePanel({
         <TabBtn id="historial" active={tab} setTab={setTab}>Historial</TabBtn>
       </div>
 
-      {tab === "nuevo" && <NuevoPostBlock defaultRecipient={defaultRecipient} />}
+      {tab === "nuevo" && (
+        <NuevoPostBlock
+          defaultRecipient={defaultRecipient}
+          onReviewInApp={() => setTab("historial")}
+        />
+      )}
       {tab === "arranque" && <ArranqueBlock />}
       {tab === "historial" && <HistorialBlock proposals={initialProposals} />}
     </div>
@@ -79,11 +91,25 @@ function TabBtn({
 // Nuevo post / reel / story
 // ============================================================================
 
-function NuevoPostBlock({ defaultRecipient }: { defaultRecipient?: string }) {
+function NuevoPostBlock({
+  defaultRecipient,
+  onReviewInApp,
+}: {
+  defaultRecipient?: string;
+  onReviewInApp?: () => void;
+}) {
   const [state, formAction, pending] = useActionState<ProposalState, FormData>(
     nuevaPropuestaClientAction,
     IDLE_PROPOSAL,
   );
+  const [canal, setCanal] = useState<"app" | "whatsapp">("app");
+
+  // Cuando la propuesta se genera para revisar en la app, saltar al Historial,
+  // donde aparece arriba con su imagen + caption + botones de acción.
+  useEffect(() => {
+    if (state.variant === "ok" && state.reviewInApp) onReviewInApp?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.ts]);
 
   return (
     <form action={formAction} className="card-hard bg-white p-5 space-y-4">
@@ -104,21 +130,43 @@ function NuevoPostBlock({ defaultRecipient }: { defaultRecipient?: string }) {
       </div>
 
       <div>
-        <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
-          Tu WhatsApp (para aprobar la propuesta) *
-        </label>
-        <input
-          type="text"
-          name="recipient"
-          required
-          defaultValue={defaultRecipient || ""}
-          placeholder="34600111222"
+        <div className="text-[10px] font-mono uppercase tracking-widest text-black/55 mb-2">
+          ¿Cómo quieres revisar la propuesta?
+        </div>
+        <select
+          name="canal"
+          value={canal}
+          onChange={(e) => setCanal(e.target.value as "app" | "whatsapp")}
           className="border-2 border-black px-3 py-2 text-sm w-full font-mono"
-        />
+        >
+          <option value="app">🖥 Revisar aquí en la app (recomendado)</option>
+          <option value="whatsapp">📲 Enviar a mi WhatsApp</option>
+        </select>
         <p className="text-[11px] text-black/50 mt-1">
-          Con prefijo internacional, sin espacios. Marta te enviará ahí la propuesta.
+          {canal === "app"
+            ? "Marta crea el post y aparece abajo con botones para Publicar, Pedir cambios o Descartar. No necesitas WhatsApp."
+            : "Marta te enviará la propuesta a tu WhatsApp y la apruebas respondiendo ahí."}
         </p>
       </div>
+
+      {canal === "whatsapp" && (
+        <div>
+          <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
+            Tu WhatsApp (para aprobar la propuesta) *
+          </label>
+          <input
+            type="text"
+            name="recipient"
+            required={canal === "whatsapp"}
+            defaultValue={defaultRecipient || ""}
+            placeholder="34600111222"
+            className="border-2 border-black px-3 py-2 text-sm w-full font-mono"
+          />
+          <p className="text-[11px] text-black/50 mt-1">
+            Con prefijo internacional, sin espacios. Marta te enviará ahí la propuesta.
+          </p>
+        </div>
+      )}
 
       <div>
         <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
@@ -188,7 +236,11 @@ function NuevoPostBlock({ defaultRecipient }: { defaultRecipient?: string }) {
         disabled={pending}
         className="btn-mustard text-sm px-6 py-3 disabled:opacity-50"
       >
-        {pending ? "Generando…" : "Generar y enviar a mi WhatsApp →"}
+        {pending
+          ? "Generando…"
+          : canal === "app"
+            ? "Generar y revisar en la app →"
+            : "Generar y enviar a mi WhatsApp →"}
       </button>
 
       {state.variant !== "idle" && (
@@ -316,14 +368,25 @@ function HistorialBlock({ proposals }: { proposals: MartaProposal[] }) {
     <ul className="space-y-3">
       {proposals.map((p) => (
         <li key={p.id} className="card-hard bg-white p-4 text-sm">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
+          <div className="flex items-center gap-2 flex-wrap mb-2">
             <StatusChip status={p.status} />
             <span className="text-[10px] font-mono text-black/40">{p.mediaType}</span>
             <span className="text-black/40">·</span>
-            <span className="text-[11px] text-black/55">→ +{p.recipientWhatsapp}</span>
+            <span className="text-[11px] text-black/55">
+              {p.recipientWhatsapp ? `→ +${p.recipientWhatsapp}` : "📲 revisión en la app"}
+            </span>
             <span className="text-black/40">·</span>
             <span className="text-[11px] text-black/45">{new Date(p.createdAt).toLocaleString("es-ES")}</span>
           </div>
+          {/* Miniatura de la imagen (no para vídeo) */}
+          {p.imageUrl && p.mediaType !== "REELS" && p.mediaType !== "STORIES_VIDEO" && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={p.imageUrl}
+              alt="propuesta"
+              className="w-full max-w-[260px] border-2 border-black mb-2 object-cover"
+            />
+          )}
           <p className="text-xs text-black/75 whitespace-pre-wrap line-clamp-4">{p.caption}</p>
           {p.imageSource && (
             <div className="mt-2 text-[10px] font-mono">
@@ -354,6 +417,7 @@ function HistorialBlock({ proposals }: { proposals: MartaProposal[] }) {
               Tu última respuesta: &ldquo;{p.lastClientReply}&rdquo;
             </p>
           )}
+          {p.status === "pending" && <ProposalActions proposalId={p.id} />}
         </li>
       ))}
     </ul>
@@ -372,5 +436,88 @@ function StatusChip({ status }: { status: string }) {
     <span className={`text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 font-bold ${m.c}`}>
       {m.t}
     </span>
+  );
+}
+
+// ============================================================================
+// Acciones in-app sobre una propuesta pendiente (aprobar / cambios / descartar)
+// ============================================================================
+
+function ProposalActions({ proposalId }: { proposalId: string }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [showChanges, setShowChanges] = useState(false);
+  const [instr, setInstr] = useState("");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  function run(fn: () => Promise<{ ok: boolean; message: string }>) {
+    setMsg(null);
+    startTransition(async () => {
+      const r = await fn();
+      setMsg({ ok: r.ok, text: r.message });
+      if (r.ok) {
+        setShowChanges(false);
+        setInstr("");
+        router.refresh();
+      }
+    });
+  }
+
+  return (
+    <div className="mt-3 border-t-2 border-black/10 pt-3 space-y-2">
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => run(() => aprobarYPublicarAction(proposalId))}
+          className="text-xs uppercase tracking-widest font-bold border-2 border-black px-3 py-1.5 bg-green-600 text-white disabled:opacity-50"
+        >
+          ✅ Publicar
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => setShowChanges((s) => !s)}
+          className="text-xs uppercase tracking-widest font-bold border-2 border-black px-3 py-1.5 bg-[color:var(--mustard)] disabled:opacity-50"
+        >
+          ✏️ Pedir cambios
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => run(() => descartarAction(proposalId))}
+          className="text-xs uppercase tracking-widest font-bold border-2 border-black px-3 py-1.5 bg-white hover:bg-black/5 disabled:opacity-50"
+        >
+          🗑 Descartar
+        </button>
+      </div>
+
+      {showChanges && (
+        <div className="space-y-2">
+          <textarea
+            value={instr}
+            onChange={(e) => setInstr(e.target.value)}
+            rows={2}
+            placeholder="Qué cambias: «la foto más luminosa», «texto más corto sin hashtags», «cambia foto y texto: pon una pareja joven»…"
+            className="border-2 border-black px-3 py-2 text-sm w-full font-mono leading-relaxed"
+          />
+          <button
+            type="button"
+            disabled={pending || !instr.trim()}
+            onClick={() => run(() => pedirCambiosAction(proposalId, instr))}
+            className="text-xs uppercase tracking-widest font-bold border-2 border-black px-3 py-1.5 bg-black text-white disabled:opacity-50"
+          >
+            {pending ? "Rehaciendo…" : "Rehacer propuesta →"}
+          </button>
+        </div>
+      )}
+
+      {pending && <p className="text-[11px] text-black/50">Procesando…</p>}
+      {msg && (
+        <p className={`text-[11px] ${msg.ok ? "text-green-700" : "text-[color:var(--red)]"} break-words`}>
+          {msg.text}
+        </p>
+      )}
+    </div>
   );
 }

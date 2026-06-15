@@ -21,7 +21,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import { kvGet, kvSet } from "./supabase";
+import { kvGet, kvSet, kvListByPrefix } from "./supabase";
 
 export type ProposalStatus = "pending" | "published" | "expired" | "cancelled";
 
@@ -70,6 +70,15 @@ const TTL_HOURS = clampInt(process.env.MARTA_PROPOSAL_TTL_HRS, 48, 1, 24 * 30);
 
 function key(tenantId: string, recipient: string): string {
   return `marta-proposal:${tenantId}:${recipient}`;
+}
+
+// Clave de almacenamiento de una propuesta:
+//  - Con WhatsApp: por número (una pendiente por número; nueva reemplaza).
+//  - Sin WhatsApp (revisión in-app): por id (cada propuesta es única).
+function proposalKey(p: MartaProposal): string {
+  return p.recipientWhatsapp
+    ? key(p.tenantId, p.recipientWhatsapp)
+    : `marta-proposal:${p.tenantId}:app:${p.id}`;
 }
 
 function isStale(p: MartaProposal): boolean {
@@ -152,7 +161,7 @@ export async function createProposal(input: {
     ...(typeof input.regenCount === "number" ? { regenCount: input.regenCount } : {}),
     createdAt: now,
   };
-  await writeOne(key(input.tenantId, input.recipientWhatsapp), proposal);
+  await writeOne(proposalKey(proposal), proposal);
   return proposal;
 }
 
@@ -210,7 +219,7 @@ export async function markProposalPublished(
     igMediaId,
     igPermalink,
   };
-  await writeOne(key(proposal.tenantId, proposal.recipientWhatsapp), updated);
+  await writeOne(proposalKey(updated), updated);
   return updated;
 }
 
@@ -225,13 +234,13 @@ export async function recordClientReply(
     lastClientReplyAt: new Date().toISOString(),
     lastIntent: intent,
   };
-  await writeOne(key(proposal.tenantId, proposal.recipientWhatsapp), updated);
+  await writeOne(proposalKey(updated), updated);
   return updated;
 }
 
 export async function markProposalRejected(proposal: MartaProposal): Promise<MartaProposal> {
   const updated: MartaProposal = { ...proposal, status: "cancelled" };
-  await writeOne(key(proposal.tenantId, proposal.recipientWhatsapp), updated);
+  await writeOne(proposalKey(updated), updated);
   return updated;
 }
 
@@ -247,14 +256,31 @@ export async function cancelProposal(
 
 /** Lista propuestas (pendientes + recientes) de un tenant, ordenadas por fecha desc. */
 export async function listProposalsByTenant(tenantId: string): Promise<MartaProposal[]> {
-  if (USE_SUPABASE) return [];
-  const all = await readAllLocal();
-  const out: MartaProposal[] = [];
-  for (const [k, p] of Object.entries(all)) {
-    if (!k.startsWith(`marta-proposal:${tenantId}:`)) continue;
-    out.push(p);
+  let out: MartaProposal[] = [];
+  if (USE_SUPABASE) {
+    const rows = await kvListByPrefix<MartaProposal>(`marta-proposal:${tenantId}:`);
+    out = rows.map((r) => r.value).filter(Boolean);
+  } else {
+    const all = await readAllLocal();
+    for (const [k, p] of Object.entries(all)) {
+      if (!k.startsWith(`marta-proposal:${tenantId}:`)) continue;
+      out.push(p);
+    }
   }
   return out.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
+/** Busca una propuesta por id dentro de un tenant (para acciones in-app). */
+export async function findProposalById(
+  tenantId: string,
+  id: string,
+): Promise<MartaProposal | null> {
+  // Ruta rápida: propuestas in-app se guardan por id.
+  const direct = await readOne(`marta-proposal:${tenantId}:app:${id}`);
+  if (direct && direct.id === id) return direct;
+  // Si no, escaneamos (propuestas de WhatsApp van por número).
+  const all = await listProposalsByTenant(tenantId);
+  return all.find((p) => p.id === id) ?? null;
 }
 
 // -----------------------------------------------------------------------------

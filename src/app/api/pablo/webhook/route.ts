@@ -28,11 +28,10 @@ import { getFicha, fichaToPromptContext } from "@/lib/ficha";
 import { buildSectorSystem, getSectorPrompt } from "@/lib/sector-prompts";
 import {
   findPendingProposalByWhatsapp,
-  markProposalPublished,
   markProposalRejected,
   recordClientReply,
 } from "@/lib/marta-proposals";
-import { publishToInstagram } from "@/lib/marta-publish";
+import { publishProposal } from "@/lib/marta-publish-flow";
 import { classifyClientReply } from "@/lib/marta-intent";
 import { getRoute, openRoute, closeRoute } from "@/lib/wa-route";
 import { regenerateProposal, MAX_REGEN } from "@/lib/marta-regen";
@@ -46,7 +45,6 @@ import {
 } from "@/lib/appointment-intent";
 import {
   findEntryByProposalId,
-  markCalendarEntryPublished,
   markCalendarEntryRejected,
 } from "@/lib/marta-calendar";
 import {
@@ -303,45 +301,20 @@ export async function POST(req: Request) {
               const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://aiteam.marketing";
 
               if (cls.intent === "ok") {
-                const pub = await publishToInstagram({
-                  mediaType: proposal.mediaType,
-                  mediaUrl: proposal.imageUrl,
-                  caption: proposal.caption,
-                });
-                if ("ok" in pub && pub.ok) {
-                  let permalink: string | undefined;
-                  try {
-                    const tk = process.env.INSTAGRAM_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN;
-                    if (tk) {
-                      const r = await fetch(
-                        `https://graph.facebook.com/v21.0/${pub.igMediaId}?fields=permalink`,
-                        { headers: { Authorization: `Bearer ${tk}` } },
-                      );
-                      if (r.ok) {
-                        const j = (await r.json()) as { permalink?: string };
-                        permalink = j.permalink;
-                      }
-                    }
-                  } catch { /* noop */ }
-                  await markProposalPublished(proposal, pub.igMediaId, permalink);
-                  // Si esta propuesta venía de un entry del calendario, márcalo.
-                  try {
-                    const calEntry = await findEntryByProposalId(proposal.tenantId, proposal.id);
-                    if (calEntry) await markCalendarEntryPublished(proposal.tenantId, calEntry.id, pub.igMediaId);
-                  } catch { /* noop */ }
-                  const ack = permalink
-                    ? `¡Publicado! 🎉\n\nVer post: ${permalink}`
+                const pub = await publishProposal(proposal);
+                if (pub.ok) {
+                  const ack = pub.permalink
+                    ? `¡Publicado! 🎉\n\nVer post: ${pub.permalink}`
                     : `¡Publicado! 🎉`;
                   await sendWhatsAppText(from, ack);
-                  await closeRoute(from); // flujo terminado
-                } else if ("skipped" in pub && pub.skipped) {
+                  // publishProposal ya cerró la sesión de ruteo.
+                } else if (pub.kind === "disabled") {
                   await sendWhatsAppText(
                     from,
                     "Recibí tu OK, pero la publicación está desactivada ahora mismo. Te aviso en cuanto se reactive.",
                   );
                 } else {
-                  const reason = "detail" in pub ? pub.detail : "error desconocido";
-                  console.error(`[pablo/webhook] publish falló: ${reason}`);
+                  console.error(`[pablo/webhook] publish falló: ${pub.detail}`);
                   await sendWhatsAppText(
                     from,
                     "Recibí tu OK, pero Instagram me ha rechazado la publicación. Lo revisamos y volvemos a intentarlo.",

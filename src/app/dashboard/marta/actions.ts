@@ -10,8 +10,12 @@ import { getSession } from "@/lib/auth";
 import { DEFAULT_TENANT_ID } from "@/lib/tenants";
 import { generateArranque } from "@/lib/marta-arranque";
 import { generarCaption } from "@/lib/marta-caption";
-import { createProposal } from "@/lib/marta-proposals";
+import { revalidatePath } from "next/cache";
+import { createProposal, findProposalById, markProposalRejected } from "@/lib/marta-proposals";
 import { generatePostImage, styleExistingPhoto } from "@/lib/marta-image-gen";
+import { publishProposal } from "@/lib/marta-publish-flow";
+import { regenerateProposal } from "@/lib/marta-regen";
+import { classifyClientReply } from "@/lib/marta-intent";
 import { openRoute } from "@/lib/wa-route";
 import { resolveTopic } from "@/lib/marta-topics";
 import {
@@ -74,6 +78,8 @@ export async function nuevaPropuestaClientAction(
   const tenantId = await gateTenantId();
   if (!tenantId) return { ts: Date.now(), variant: "error", title: "Inicia sesión" };
 
+  // Canal de aprobación: "app" (revisar en el panel) o "whatsapp".
+  const canal = String(formData.get("canal") || "app").trim() === "whatsapp" ? "whatsapp" : "app";
   const recipient = String(formData.get("recipient") || "").replace(/\D/g, "");
   const imageUrl = String(formData.get("imageUrl") || "").trim();
   // "tema" ahora es la KEY de un tema predefinido (desplegable).
@@ -95,12 +101,13 @@ export async function nuevaPropuestaClientAction(
           : "IMAGE";
   const isVideo = mediaType === "REELS" || mediaType === "STORIES_VIDEO";
 
-  if (!recipient) {
+  // El número solo es obligatorio si la aprobación va por WhatsApp.
+  if (canal === "whatsapp" && !recipient) {
     return {
       ts: Date.now(),
       variant: "error",
       title: "Falta tu número de WhatsApp",
-      detail: "Pon tu número con prefijo (ej. 34600111222) para recibir la propuesta y aprobarla.",
+      detail: "Pon tu número con prefijo (ej. 34600111222) o cambia a «Revisar en la app».",
     };
   }
   const hasUrl = /^https?:\/\//.test(imageUrl);
@@ -181,10 +188,11 @@ export async function nuevaPropuestaClientAction(
   }
   const caption = cap.caption;
 
-  // 2) Crear propuesta (con auditoría del origen + tema/contexto para regenerar).
+  // 2) Crear propuesta. En modo "app" NO guardamos número (se revisa en el
+  //    panel); en modo "whatsapp" sí, para el flujo de aprobación por chat.
   const proposal = await createProposal({
     tenantId,
-    recipientWhatsapp: recipient,
+    recipientWhatsapp: canal === "whatsapp" ? recipient : "",
     imageUrl: finalUrl,
     caption,
     mediaType,
@@ -195,10 +203,23 @@ export async function nuevaPropuestaClientAction(
     fotoBrief: fotoBrief || undefined,
     regenCount: 0,
   });
-  // Abrimos la sesión de ruteo: las respuestas de este número irán a Marta.
-  await openRoute(recipient, "marta", proposal.id);
 
-  // 3) Mandar al cliente por WhatsApp (imagen/vídeo + caption + pregunta).
+  // 3a) Modo APP: la propuesta queda lista para revisar/aprobar en el panel.
+  if (canal === "app") {
+    revalidatePath("/dashboard/marta");
+    return {
+      ts: Date.now(),
+      variant: "ok",
+      title: "Propuesta lista para revisar ✅",
+      detail: "Ábrela abajo: puedes publicarla, pedir cambios o descartarla sin salir de la app.",
+      caption,
+      proposalId: proposal.id,
+      reviewInApp: true,
+    };
+  }
+
+  // 3b) Modo WHATSAPP: abrir sesión de ruteo + enviar al cliente.
+  await openRoute(recipient, "marta", proposal.id);
   const mediaRes = isVideo
     ? await sendWhatsAppVideo(recipient, finalUrl, caption)
     : await sendWhatsAppImage(recipient, finalUrl, caption);
@@ -245,4 +266,79 @@ export async function nuevaPropuestaClientAction(
     proposalId: proposal.id,
     recipient,
   };
+}
+
+// =============================================================================
+// Acciones IN-APP sobre una propuesta (sin WhatsApp).
+// Devuelven { ok, message } y revalidan el panel.
+// =============================================================================
+
+export type InAppResult = { ok: boolean; message: string };
+
+function baseUrlFromEnv(): string {
+  return process.env.NEXT_PUBLIC_SITE_URL || "https://aiteam.marketing";
+}
+
+/** Aprobar y publicar la propuesta en Instagram desde la app. */
+export async function aprobarYPublicarAction(proposalId: string): Promise<InAppResult> {
+  const tenantId = await gateTenantId();
+  if (!tenantId) return { ok: false, message: "Inicia sesión." };
+  const proposal = await findProposalById(tenantId, proposalId);
+  if (!proposal) return { ok: false, message: "No encuentro esa propuesta." };
+  if (proposal.status !== "pending") return { ok: false, message: "Esta propuesta ya no está pendiente." };
+
+  const pub = await publishProposal(proposal);
+  revalidatePath("/dashboard/marta");
+  if (pub.ok) {
+    return { ok: true, message: pub.permalink ? `¡Publicado! ${pub.permalink}` : "¡Publicado! 🎉" };
+  }
+  if (pub.kind === "disabled") {
+    return { ok: false, message: "La publicación está desactivada (MARTA_PUBLISH_ENABLED). Actívala para publicar." };
+  }
+  return { ok: false, message: `Instagram rechazó la publicación: ${pub.detail}` };
+}
+
+/** Pedir cambios in-app: regenera la propuesta con la instrucción dada. */
+export async function pedirCambiosAction(proposalId: string, instruccion: string): Promise<InAppResult> {
+  const tenantId = await gateTenantId();
+  if (!tenantId) return { ok: false, message: "Inicia sesión." };
+  const instr = (instruccion || "").trim();
+  if (!instr) return { ok: false, message: "Escribe qué quieres cambiar." };
+  const proposal = await findProposalById(tenantId, proposalId);
+  if (!proposal) return { ok: false, message: "No encuentro esa propuesta." };
+  if (proposal.status !== "pending") return { ok: false, message: "Esta propuesta ya no está pendiente." };
+
+  // Clasificamos la instrucción para saber qué regenerar (foto/caption).
+  const cls = await classifyClientReply(instr);
+  const changeFoto = cls.changeFoto ?? (cls.intent === "cambiar_foto");
+  const changeCaption = cls.changeCaption ?? (cls.intent === "cambiar_caption");
+  // Si no marcó nada concreto, regeneramos ambos (es una petición de cambio explícita).
+  const regen = await regenerateProposal({
+    proposal,
+    changeFoto: changeFoto || (!changeFoto && !changeCaption),
+    changeCaption: changeCaption || (!changeFoto && !changeCaption),
+    feedback: instr,
+    baseUrl: baseUrlFromEnv(),
+  });
+
+  if (regen.kind === "ok") {
+    // La nueva propuesta (nuevo id) es la pendiente; cancelamos la anterior in-app.
+    if (!proposal.recipientWhatsapp) await markProposalRejected(proposal);
+    revalidatePath("/dashboard/marta");
+    return { ok: true, message: "Nueva versión lista. Revísala abajo." };
+  }
+  if (regen.kind === "limit") return { ok: false, message: "Llegaste al límite de regeneraciones. Publica o descarta." };
+  if (regen.kind === "needs_video") return { ok: false, message: "Para cambiar el vídeo, sube un MP4 nuevo." };
+  return { ok: false, message: `No se pudo regenerar: ${regen.detail}` };
+}
+
+/** Descartar la propuesta. */
+export async function descartarAction(proposalId: string): Promise<InAppResult> {
+  const tenantId = await gateTenantId();
+  if (!tenantId) return { ok: false, message: "Inicia sesión." };
+  const proposal = await findProposalById(tenantId, proposalId);
+  if (!proposal) return { ok: false, message: "No encuentro esa propuesta." };
+  await markProposalRejected(proposal);
+  revalidatePath("/dashboard/marta");
+  return { ok: true, message: "Propuesta descartada." };
 }

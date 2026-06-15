@@ -25,6 +25,7 @@ export type ProposalState = {
   caption?: string;
   proposalId?: string;
   recipient?: string;
+  reviewInApp?: boolean; // true → la propuesta se revisa en el panel (pestaña Historial)
 };
 
 export const IDLE_PROPOSAL: ProposalState = { ts: 0, variant: "idle", title: "" };
