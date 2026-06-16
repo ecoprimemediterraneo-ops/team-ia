@@ -17,6 +17,17 @@ import { publishProposal } from "@/lib/marta-publish-flow";
 import { regenerateProposal } from "@/lib/marta-regen";
 import { classifyClientReply } from "@/lib/marta-intent";
 import { saveSchedule, runSchedule, type ApprovalMode } from "@/lib/marta-schedule";
+import {
+  saveCommentRule,
+  deleteCommentRule,
+  setCommentRuleEnabled,
+  getCommentRules,
+  findMatchingRule,
+  renderDmTemplate,
+  isCommentDmEnabled,
+  type CommentRule,
+  type MatchMode,
+} from "@/lib/marta-comment-rules";
 import { openRoute } from "@/lib/wa-route";
 import { resolveTopic } from "@/lib/marta-topics";
 import {
@@ -405,5 +416,137 @@ export async function ejecutarProgramacionAhoraAction(): Promise<InAppResult> {
   return {
     ok: false,
     message: `No se generó ninguna propuesta. ${res.details.join(" · ") || "Revisa las API keys de imagen/caption."}`,
+  };
+}
+
+// =============================================================================
+// Comentario → DM (pestaña "Comentarios → DM") — la función estrella de ManyChat
+// =============================================================================
+
+function parseKeywords(raw: string): string[] {
+  return (raw || "")
+    .split(/[\n,]+/)
+    .map((k) => k.trim())
+    .filter(Boolean);
+}
+
+export type ReglaComentarioInput = {
+  id?: string;
+  enabled: boolean;
+  keywordsRaw: string; // separadas por coma o salto de línea
+  matchMode: MatchMode;
+  dmMessage: string;
+  scope: string; // "all" o un media id concreto
+  replyPublic: boolean;
+  publicReplyText?: string;
+};
+
+/** Crear / actualizar una regla de Comentario → DM. */
+export async function guardarReglaComentarioAction(
+  input: ReglaComentarioInput,
+): Promise<InAppResult & { rule?: CommentRule }> {
+  const tenantId = await gateTenantId();
+  if (!tenantId) return { ok: false, message: "Inicia sesión." };
+
+  const keywords = parseKeywords(input.keywordsRaw);
+  if (keywords.length === 0) {
+    return { ok: false, message: "Añade al menos una palabra clave que dispare el DM." };
+  }
+  if (!input.dmMessage.trim()) {
+    return { ok: false, message: "Escribe el mensaje del primer DM." };
+  }
+
+  const rule = await saveCommentRule(tenantId, {
+    id: input.id,
+    enabled: input.enabled,
+    keywords,
+    matchMode: input.matchMode === "exacto" ? "exacto" : "contiene",
+    dmMessage: input.dmMessage.trim(),
+    scope: input.scope?.trim() || "all",
+    replyPublic: !!input.replyPublic,
+    publicReplyText: input.publicReplyText,
+  });
+
+  revalidatePath("/dashboard/marta");
+  return { ok: true, message: input.id ? "Regla actualizada ✅" : "Regla creada ✅", rule };
+}
+
+/** Activar / desactivar una regla. */
+export async function toggleReglaComentarioAction(
+  id: string,
+  enabled: boolean,
+): Promise<InAppResult> {
+  const tenantId = await gateTenantId();
+  if (!tenantId) return { ok: false, message: "Inicia sesión." };
+  const r = await setCommentRuleEnabled(tenantId, id, enabled);
+  if (!r) return { ok: false, message: "No encuentro esa regla." };
+  revalidatePath("/dashboard/marta");
+  return { ok: true, message: enabled ? "Regla activada ✅" : "Regla desactivada." };
+}
+
+/** Eliminar una regla. */
+export async function eliminarReglaComentarioAction(id: string): Promise<InAppResult> {
+  const tenantId = await gateTenantId();
+  if (!tenantId) return { ok: false, message: "Inicia sesión." };
+  const ok = await deleteCommentRule(tenantId, id);
+  revalidatePath("/dashboard/marta");
+  return ok
+    ? { ok: true, message: "Regla eliminada." }
+    : { ok: false, message: "No encuentro esa regla." };
+}
+
+export type ProbarComentarioResult = {
+  ok: boolean;
+  message: string;
+  matched: boolean;
+  ruleId?: string;
+  dm?: string;
+  willSend?: boolean;
+  replyPublic?: boolean;
+  publicReplyText?: string;
+};
+
+/**
+ * Simula un comentario (dry-run): comprueba qué regla casaría y muestra el DM
+ * que Marta enviaría — SIN llamar a Meta. Es el equivalente al "Ejecutar ahora"
+ * de la programación, pero seguro: nunca manda nada real.
+ */
+export async function probarComentarioAction(input: {
+  text: string;
+  mediaId?: string;
+}): Promise<ProbarComentarioResult> {
+  const tenantId = await gateTenantId();
+  if (!tenantId) return { ok: false, matched: false, message: "Inicia sesión." };
+
+  const text = (input.text || "").trim();
+  if (!text) {
+    return { ok: false, matched: false, message: "Escribe un comentario de prueba." };
+  }
+
+  const rules = await getCommentRules(tenantId);
+  const mediaId = input.mediaId && input.mediaId.trim() ? input.mediaId.trim() : undefined;
+  const rule = findMatchingRule(rules, text, mediaId);
+
+  if (!rule) {
+    return {
+      ok: true,
+      matched: false,
+      message: "Ninguna regla casa con ese comentario. Revisa palabras clave, modo y el post (scope).",
+    };
+  }
+
+  const dm = renderDmTemplate(rule.dmMessage, { usuario: "cliente_demo" });
+  const willSend = isCommentDmEnabled();
+  return {
+    ok: true,
+    matched: true,
+    ruleId: rule.id,
+    dm,
+    willSend,
+    replyPublic: rule.replyPublic,
+    publicReplyText: rule.publicReplyText,
+    message: willSend
+      ? "✅ Coincide. En real, Marta enviaría este DM al instante:"
+      : "✅ Coincide. (Envío aún desactivado hasta el App Review de Meta — este es el DM que mandaría)",
   };
 }

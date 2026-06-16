@@ -10,6 +10,11 @@ import {
   descartarAction,
   guardarProgramacionAction,
   ejecutarProgramacionAhoraAction,
+  guardarReglaComentarioAction,
+  toggleReglaComentarioAction,
+  eliminarReglaComentarioAction,
+  probarComentarioAction,
+  type ProbarComentarioResult,
 } from "./actions";
 import {
   IDLE_ARRANQUE,
@@ -19,9 +24,10 @@ import {
 } from "./types";
 import type { MartaProposal } from "@/lib/marta-proposals";
 import type { MartaSchedule } from "@/lib/marta-schedule";
+import type { CommentRule, MatchMode } from "@/lib/marta-comment-rules";
 import { MARTA_TOPICS } from "@/lib/marta-topics";
 
-type Tab = "nuevo" | "arranque" | "historial" | "programacion";
+type Tab = "nuevo" | "arranque" | "historial" | "programacion" | "comentarios";
 
 export default function MartaLivePanel({
   initialProposals,
@@ -30,6 +36,8 @@ export default function MartaLivePanel({
   initialSchedule,
   directPublishEnabled,
   cronDaily,
+  initialCommentRules,
+  commentDmEnabled,
 }: {
   initialProposals: MartaProposal[];
   enabled: boolean;
@@ -37,6 +45,8 @@ export default function MartaLivePanel({
   initialSchedule: MartaSchedule;
   directPublishEnabled: boolean;
   cronDaily: boolean;
+  initialCommentRules: CommentRule[];
+  commentDmEnabled: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("nuevo");
 
@@ -56,6 +66,7 @@ export default function MartaLivePanel({
       <div className="card-hard bg-white p-1 flex gap-1 text-xs font-mono uppercase tracking-widest flex-wrap">
         <TabBtn id="nuevo" active={tab} setTab={setTab}>Nuevo post</TabBtn>
         <TabBtn id="programacion" active={tab} setTab={setTab}>Programación</TabBtn>
+        <TabBtn id="comentarios" active={tab} setTab={setTab}>Comentarios → DM</TabBtn>
         <TabBtn id="arranque" active={tab} setTab={setTab}>Arranque</TabBtn>
         <TabBtn id="historial" active={tab} setTab={setTab}>Historial</TabBtn>
       </div>
@@ -72,6 +83,12 @@ export default function MartaLivePanel({
           directPublishEnabled={directPublishEnabled}
           cronDaily={cronDaily}
           onGenerated={() => setTab("historial")}
+        />
+      )}
+      {tab === "comentarios" && (
+        <ComentariosBlock
+          initialRules={initialCommentRules}
+          commentDmEnabled={commentDmEnabled}
         />
       )}
       {tab === "arranque" && <ArranqueBlock />}
@@ -773,6 +790,442 @@ function ProgramacionBlock({
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Comentario → DM (la función estrella de ManyChat)
+// ============================================================================
+
+function ComentariosBlock({
+  initialRules,
+  commentDmEnabled,
+}: {
+  initialRules: CommentRule[];
+  commentDmEnabled: boolean;
+}) {
+  const [editing, setEditing] = useState<CommentRule | null>(null);
+  const [creating, setCreating] = useState(initialRules.length === 0);
+
+  return (
+    <div className="space-y-5">
+      {!commentDmEnabled && (
+        <div className="card-hard bg-white p-4 border-[3px] border-[color:var(--mustard)] text-sm">
+          <div className="font-bold mb-1">Envío de DM en pausa (App Review pendiente)</div>
+          <p className="text-xs text-black/70 leading-snug">
+            Puedes crear y <strong>probar</strong> tus reglas ya mismo. El envío automático
+            del DM se activará cuando Meta apruebe los permisos{" "}
+            <code className="text-[10px]">instagram_manage_comments</code> y{" "}
+            <code className="text-[10px]">instagram_business_manage_messages</code>. Hasta
+            entonces, Marta detecta la palabra clave y la registra, pero no manda nada.
+          </p>
+        </div>
+      )}
+
+      <div className="card-hard bg-white p-5 space-y-2">
+        <div className="font-stencil text-2xl leading-none">Comentario → DM automático</div>
+        <p className="text-sm text-black/60 leading-snug">
+          Cuando alguien comenta una <strong>palabra clave</strong> en uno de tus posts,
+          Marta le manda al instante un <strong>DM privado</strong> con tu mensaje. Si
+          contesta, sigue la conversación con IA. Es la función estrella de ManyChat.
+        </p>
+        <p className="text-[11px] text-black/45">
+          El primer DM es una plantilla fija que tú escribes (control total). Usa{" "}
+          <code className="text-[10px] bg-black/5 px-1">{"{usuario}"}</code> para citar a quien comenta.
+        </p>
+      </div>
+
+      {/* Lista de reglas */}
+      {initialRules.length > 0 && (
+        <ul className="space-y-3">
+          {initialRules.map((r) => (
+            <ReglaCard
+              key={r.id}
+              rule={r}
+              onEdit={() => {
+                setEditing(r);
+                setCreating(false);
+              }}
+            />
+          ))}
+        </ul>
+      )}
+
+      {/* Editor (crear o editar) */}
+      {(creating || editing) && (
+        <ReglaEditor
+          key={editing?.id ?? "nueva"}
+          rule={editing}
+          onDone={() => {
+            setEditing(null);
+            setCreating(false);
+          }}
+        />
+      )}
+
+      {!creating && !editing && (
+        <button
+          type="button"
+          onClick={() => setCreating(true)}
+          className="btn-mustard text-sm px-6 py-3"
+        >
+          + Nueva regla
+        </button>
+      )}
+
+      {/* Probador */}
+      <ProbadorComentario commentDmEnabled={commentDmEnabled} />
+    </div>
+  );
+}
+
+function ReglaCard({ rule, onEdit }: { rule: CommentRule; onEdit: () => void }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [msg, setMsg] = useState<string | null>(null);
+
+  function toggle() {
+    setMsg(null);
+    startTransition(async () => {
+      const r = await toggleReglaComentarioAction(rule.id, !rule.enabled);
+      if (r.ok) router.refresh();
+      else setMsg(r.message);
+    });
+  }
+
+  function eliminar() {
+    setMsg(null);
+    startTransition(async () => {
+      const r = await eliminarReglaComentarioAction(rule.id);
+      if (r.ok) router.refresh();
+      else setMsg(r.message);
+    });
+  }
+
+  return (
+    <li className="card-hard bg-white p-4 text-sm">
+      <div className="flex items-center gap-2 flex-wrap mb-2">
+        <span
+          className={`text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 font-bold ${
+            rule.enabled ? "bg-[#14B8A6] text-white" : "bg-black/30 text-white"
+          }`}
+        >
+          {rule.enabled ? "ACTIVA" : "PAUSADA"}
+        </span>
+        <span className="text-[10px] font-mono text-black/50">
+          {rule.matchMode === "exacto" ? "coincidencia exacta" : "contiene la palabra"}
+        </span>
+        <span className="text-black/40">·</span>
+        <span className="text-[10px] font-mono text-black/50">
+          {rule.scope === "all" ? "todos los posts" : `post ${rule.scope.slice(0, 12)}…`}
+        </span>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-2">
+        {rule.keywords.map((k) => (
+          <span
+            key={k}
+            className="text-[11px] font-mono bg-[color:var(--mustard)] text-black border-2 border-black px-2 py-0.5"
+          >
+            {k}
+          </span>
+        ))}
+      </div>
+
+      <div className="bg-black/[0.03] border-2 border-black/10 p-3">
+        <div className="text-[10px] font-mono uppercase tracking-widest text-black/45 mb-1">
+          Primer DM
+        </div>
+        <p className="text-xs text-black/80 whitespace-pre-wrap leading-relaxed">{rule.dmMessage}</p>
+      </div>
+
+      {rule.replyPublic && (
+        <p className="text-[11px] text-black/55 mt-2">
+          💬 Respuesta pública al comentario:{" "}
+          <span className="italic">
+            &ldquo;{rule.publicReplyText || "¡Te acabo de escribir por privado! 📩"}&rdquo;
+          </span>
+        </p>
+      )}
+
+      <div className="mt-3 border-t-2 border-black/10 pt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={onEdit}
+          className="text-xs uppercase tracking-widest font-bold border-2 border-black px-3 py-1.5 bg-white hover:bg-black/5 disabled:opacity-50"
+        >
+          ✏️ Editar
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={toggle}
+          className="text-xs uppercase tracking-widest font-bold border-2 border-black px-3 py-1.5 bg-[color:var(--mustard)] disabled:opacity-50"
+        >
+          {rule.enabled ? "⏸ Pausar" : "▶ Activar"}
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={eliminar}
+          className="text-xs uppercase tracking-widest font-bold border-2 border-black px-3 py-1.5 bg-white hover:bg-black/5 disabled:opacity-50"
+        >
+          🗑 Eliminar
+        </button>
+      </div>
+      {msg && <p className="text-[11px] text-[color:var(--red)] mt-2">{msg}</p>}
+    </li>
+  );
+}
+
+function ReglaEditor({ rule, onDone }: { rule: CommentRule | null; onDone: () => void }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const [enabled, setEnabled] = useState(rule?.enabled ?? true);
+  const [keywordsRaw, setKeywordsRaw] = useState((rule?.keywords ?? []).join(", "));
+  const [matchMode, setMatchMode] = useState<MatchMode>(rule?.matchMode ?? "contiene");
+  const [dmMessage, setDmMessage] = useState(
+    rule?.dmMessage ??
+      "¡Hola {usuario}! 🙌 Gracias por tu interés. Te paso toda la info por aquí: …",
+  );
+  const [scope, setScope] = useState(rule?.scope ?? "all");
+  const [replyPublic, setReplyPublic] = useState(rule?.replyPublic ?? false);
+  const [publicReplyText, setPublicReplyText] = useState(rule?.publicReplyText ?? "");
+
+  function guardar() {
+    setMsg(null);
+    startTransition(async () => {
+      const r = await guardarReglaComentarioAction({
+        id: rule?.id,
+        enabled,
+        keywordsRaw,
+        matchMode,
+        dmMessage,
+        scope: scope.trim() || "all",
+        replyPublic,
+        publicReplyText,
+      });
+      setMsg({ ok: r.ok, text: r.message });
+      if (r.ok) {
+        router.refresh();
+        onDone();
+      }
+    });
+  }
+
+  return (
+    <div className="card-hard bg-white p-5 space-y-4 border-[3px] border-black">
+      <div className="font-stencil text-xl leading-none">
+        {rule ? "Editar regla" : "Nueva regla Comentario → DM"}
+      </div>
+
+      {/* Palabras clave */}
+      <div>
+        <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
+          Palabras clave (separadas por coma)
+        </label>
+        <input
+          type="text"
+          value={keywordsRaw}
+          onChange={(e) => setKeywordsRaw(e.target.value)}
+          placeholder="QUIERO, INFO, PRECIO"
+          className="border-2 border-black px-3 py-2 text-sm w-full font-mono"
+        />
+        <p className="text-[11px] text-black/50 mt-1">
+          Si el comentario casa con cualquiera de ellas, salta el DM. No distingue mayúsculas ni tildes.
+        </p>
+      </div>
+
+      {/* Modo */}
+      <div>
+        <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
+          Cómo casar
+        </label>
+        <select
+          value={matchMode}
+          onChange={(e) => setMatchMode(e.target.value as MatchMode)}
+          className="border-2 border-black px-3 py-2 text-sm w-full font-mono"
+        >
+          <option value="contiene">El comentario CONTIENE la palabra</option>
+          <option value="exacto">El comentario es EXACTAMENTE la palabra</option>
+        </select>
+      </div>
+
+      {/* DM */}
+      <div>
+        <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
+          Primer DM (plantilla fija) *
+        </label>
+        <textarea
+          value={dmMessage}
+          onChange={(e) => setDmMessage(e.target.value)}
+          rows={3}
+          className="border-2 border-black px-3 py-2 text-sm w-full font-mono leading-relaxed"
+        />
+        <p className="text-[11px] text-black/50 mt-1">
+          Usa <code className="text-[10px] bg-black/5 px-1">{"{usuario}"}</code> para citar a quien comenta.
+          La conversación posterior la lleva la IA.
+        </p>
+      </div>
+
+      {/* Scope */}
+      <div>
+        <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
+          ¿En qué posts aplica?
+        </label>
+        <select
+          value={scope === "all" ? "all" : "media"}
+          onChange={(e) => setScope(e.target.value === "all" ? "all" : "")}
+          className="border-2 border-black px-3 py-2 text-sm w-full font-mono"
+        >
+          <option value="all">Todos los posts</option>
+          <option value="media">Un post concreto (por media id)</option>
+        </select>
+        {scope !== "all" && (
+          <input
+            type="text"
+            value={scope}
+            onChange={(e) => setScope(e.target.value)}
+            placeholder="media id de Instagram (ej. 17912345678901234)"
+            className="border-2 border-black px-3 py-2 text-sm w-full font-mono mt-2"
+          />
+        )}
+      </div>
+
+      {/* Respuesta pública */}
+      <div>
+        <label className="flex items-center gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={replyPublic}
+            onChange={(e) => setReplyPublic(e.target.checked)}
+            className="w-5 h-5 accent-black"
+          />
+          <span className="text-sm font-bold">También responder públicamente al comentario</span>
+        </label>
+        {replyPublic && (
+          <input
+            type="text"
+            value={publicReplyText}
+            onChange={(e) => setPublicReplyText(e.target.value)}
+            placeholder="¡Te acabo de escribir por privado! 📩"
+            className="border-2 border-black px-3 py-2 text-sm w-full font-mono mt-2"
+          />
+        )}
+      </div>
+
+      {/* On/off */}
+      <label className="flex items-center gap-3 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => setEnabled(e.target.checked)}
+          className="w-5 h-5 accent-black"
+        />
+        <span className="text-sm font-bold">
+          {enabled ? "Regla ACTIVADA" : "Regla desactivada"}
+        </span>
+      </label>
+
+      <div className="border-t-2 border-black/10 pt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={guardar}
+          className="btn-mustard text-sm px-6 py-3 disabled:opacity-50"
+        >
+          {pending ? "Guardando…" : "Guardar regla"}
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={onDone}
+          className="text-sm font-bold border-2 border-black px-5 py-3 bg-white hover:bg-black/5 disabled:opacity-50"
+        >
+          Cancelar
+        </button>
+      </div>
+      {msg && (
+        <p className={`text-[12px] ${msg.ok ? "text-green-700" : "text-[color:var(--red)]"} break-words`}>
+          {msg.text}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ProbadorComentario({ commentDmEnabled }: { commentDmEnabled: boolean }) {
+  const [pending, startTransition] = useTransition();
+  const [text, setText] = useState("");
+  const [mediaId, setMediaId] = useState("");
+  const [res, setRes] = useState<ProbarComentarioResult | null>(null);
+
+  function probar() {
+    setRes(null);
+    startTransition(async () => {
+      const r = await probarComentarioAction({ text, mediaId: mediaId.trim() || undefined });
+      setRes(r);
+    });
+  }
+
+  return (
+    <div className="card-hard bg-white p-5 space-y-3">
+      <div className="font-stencil text-xl leading-none">Probar una regla</div>
+      <p className="text-[12px] text-black/55 leading-snug">
+        Escribe un comentario de ejemplo y comprueba qué regla saltaría y qué DM mandaría Marta.
+        Es una simulación: <strong>no envía nada</strong>.
+      </p>
+      <input
+        type="text"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder='Ej. "Quiero info del precio"'
+        className="border-2 border-black px-3 py-2 text-sm w-full font-mono"
+      />
+      <input
+        type="text"
+        value={mediaId}
+        onChange={(e) => setMediaId(e.target.value)}
+        placeholder="(opcional) media id del post — vacío = simula un post cualquiera"
+        className="border-2 border-black px-3 py-2 text-sm w-full font-mono"
+      />
+      <button
+        type="button"
+        disabled={pending || !text.trim()}
+        onClick={probar}
+        className="text-sm font-bold border-2 border-black px-5 py-2.5 bg-white hover:bg-black/5 disabled:opacity-50"
+      >
+        {pending ? "Probando…" : "▶ Probar coincidencia"}
+      </button>
+
+      {res && (
+        <div
+          className={`p-4 border-2 border-black ${
+            res.matched ? "bg-[#14B8A6] text-white" : "bg-black/[0.04] text-black"
+          }`}
+        >
+          <p className="text-sm font-bold">{res.message}</p>
+          {res.matched && res.dm && (
+            <div className="mt-2 bg-white/20 border border-white/30 p-3">
+              <p className="text-sm whitespace-pre-wrap leading-relaxed">{res.dm}</p>
+            </div>
+          )}
+          {res.matched && res.replyPublic && (
+            <p className="text-[11px] mt-2 opacity-90">
+              + respuesta pública: &ldquo;{res.publicReplyText || "¡Te acabo de escribir por privado! 📩"}&rdquo;
+            </p>
+          )}
+          {res.matched && !commentDmEnabled && (
+            <p className="text-[11px] mt-2 opacity-90">
+              (El envío real está en pausa hasta el App Review de Meta.)
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

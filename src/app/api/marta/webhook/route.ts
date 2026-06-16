@@ -26,6 +26,13 @@ import {
 } from "@/lib/conversation-store";
 import { logEvent, makeEventId } from "@/lib/event-log";
 import { resolveTenantFromMeta } from "@/lib/tenants";
+import {
+  getCommentRules,
+  findMatchingRule,
+  renderDmTemplate,
+  markCommentProcessed,
+  isCommentDmEnabled,
+} from "@/lib/marta-comment-rules";
 
 async function safeLogEvent(...args: Parameters<typeof logEvent>): Promise<void> {
   try {
@@ -171,34 +178,14 @@ export async function POST(req: Request) {
         );
       }
 
-      // --- Comentarios ---
+      // --- Comentarios → DM (función estrella ManyChat) ---
       const changes = entry.changes ?? [];
       for (const change of changes) {
-        if (change.field === "comments") {
-          // TODO: comments
-          // Respuesta a comentario público de Instagram. Cuando lo activemos:
-          //   const commentId = change.value?.id;
-          //   const text = change.value?.text;
-          //   const reply = await generateReply(text);
-          //   await fetch(
-          //     `https://graph.facebook.com/${GRAPH_VERSION}/${commentId}/replies`,
-          //     {
-          //       method: "POST",
-          //       headers: {
-          //         Authorization: `Bearer ${token}`,
-          //         "Content-Type": "application/json",
-          //       },
-          //       body: JSON.stringify({ message: reply }),
-          //     },
-          //   );
-          // De momento solo loggeamos para no responder por accidente en público.
-          console.log(
-            `[marta/webhook] comentario recibido (stub, no respondemos):`,
-            JSON.stringify(change.value).slice(0, 300),
-          );
+        if (change.field !== "comments") {
+          console.log(`[marta/webhook] change field no soportado: ${change.field}`);
           continue;
         }
-        console.log(`[marta/webhook] change field no soportado: ${change.field}`);
+        await handleCommentChange(tenantId, entry.id, change);
       }
     }
   } catch (err) {
@@ -207,6 +194,117 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true });
+}
+
+// -----------------------------------------------------------------------------
+// Comentario → DM (la función estrella de ManyChat)
+// -----------------------------------------------------------------------------
+//
+// Cuando alguien comenta una palabra clave en un post de Marta:
+//   1. Ignoramos comentarios propios de la cuenta y duplicados (dedup por id).
+//   2. Buscamos la primera regla habilitada que casa (keyword + scope).
+//   3. Enviamos el PRIMER DM = plantilla fija de la regla, vía PRIVATE REPLY
+//      (recipient.comment_id → exento de la ventana de 24h, mecanismo ManyChat).
+//   4. Sembramos la conversación con ese DM como turno "assistant", para que si
+//      el usuario responde por privado, el motor de IA de DMs siga el hilo.
+//   5. Opcional: respuesta PÚBLICA al comentario.
+//
+// El envío real está gated por MARTA_COMMENT_DM_ENABLED (App Review pendiente:
+// instagram_manage_comments + instagram_business_manage_messages). Mientras esté
+// apagado, detectamos y registramos la coincidencia pero NO llamamos a Meta.
+async function handleCommentChange(
+  tenantId: string,
+  entryId: string | undefined,
+  change: IGCommentChange,
+): Promise<void> {
+  const v = change.value ?? {};
+  const commentId = v.id;
+  const text = v.text ?? "";
+  const fromId = v.from?.id;
+  const username = v.from?.username;
+  const mediaId = v.media?.id;
+
+  if (!commentId || !text.trim()) {
+    console.log("[marta/webhook] comentario sin id/texto ignorado");
+    return;
+  }
+
+  // 1a. Ignorar comentarios de la propia cuenta (no autorresponderse).
+  const ownId = entryId || process.env.INSTAGRAM_USER_ID;
+  if (fromId && ownId && fromId === ownId) {
+    console.log("[marta/webhook] comentario propio ignorado");
+    return;
+  }
+
+  // 1b. Dedup por comment.id (anti doble-DM si Meta reentrega el webhook).
+  const isNew = await markCommentProcessed(tenantId, commentId);
+  if (!isNew) {
+    console.log(`[marta/webhook] comentario duplicado ignorado id=${commentId}`);
+    return;
+  }
+
+  // 2. ¿Hay regla que case?
+  const rules = await getCommentRules(tenantId);
+  const rule = findMatchingRule(rules, text, mediaId);
+  if (!rule) {
+    console.log(
+      `[marta/webhook] comentario sin regla que case: "${text.slice(0, 80)}" (media=${mediaId ?? "?"})`,
+    );
+    return;
+  }
+
+  const dm = renderDmTemplate(rule.dmMessage, { usuario: username });
+  const rxTs = new Date().toISOString();
+  console.log(
+    `[marta/webhook] COMMENT match rule=${rule.id} from=${fromId ?? "?"} "${text.slice(0, 80)}"`,
+  );
+
+  // Registrar el comentario entrante (idempotente por commentId).
+  await safeLogEvent(tenantId, {
+    id: makeEventId("comment_in", "marta", commentId),
+    ts: rxTs,
+    type: "message_in",
+    channel: "marta",
+    senderId: fromId,
+    meta: { kind: "comment", commentId, mediaId, ruleId: rule.id },
+  });
+
+  // 3. Envío del DM (gated hasta App Review).
+  if (!isCommentDmEnabled()) {
+    console.log(
+      "[marta/webhook] comment-to-DM GATED (MARTA_COMMENT_DM_ENABLED != true). " +
+        `Habría enviado este DM a comment ${commentId}: "${dm.slice(0, 200)}"`,
+    );
+    return;
+  }
+
+  const sendResult = await sendInstagramPrivateReply(commentId, dm);
+  console.log(`[marta/webhook] private reply TX:`, JSON.stringify(sendResult).slice(0, 300));
+
+  // 4. Sembrar la conversación para que la IA continúe el hilo por DM.
+  if (fromId) {
+    try {
+      await appendTurn("marta", fromId, "assistant", dm, username);
+    } catch (err) {
+      console.error("[marta/webhook] no se pudo sembrar la conversación:", err);
+    }
+  }
+
+  await safeLogEvent(tenantId, {
+    id: makeEventId("comment_dm_out", "marta", commentId),
+    type: "message_out",
+    channel: "marta",
+    senderId: fromId,
+    meta: { kind: "comment_dm", commentId, ruleId: rule.id },
+  });
+
+  // 5. Respuesta pública opcional al comentario.
+  if (rule.replyPublic) {
+    const publicText =
+      (rule.publicReplyText || "").trim() || "¡Te acabo de escribir por privado! 📩";
+    const pubRes = await replyToComment(commentId, publicText);
+    console.log(`[marta/webhook] public reply TX:`, JSON.stringify(pubRes).slice(0, 200));
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -279,14 +377,23 @@ async function getPageAccessToken(userToken: string, pageId: string): Promise<st
 }
 
 // -----------------------------------------------------------------------------
-// Enviar DM vía Instagram Graph API
+// Enviar mensajes vía Instagram Graph API (DM normal o private reply a comentario)
 // -----------------------------------------------------------------------------
-async function sendInstagramDM(recipientId: string, text: string): Promise<unknown> {
+
+// El destinatario puede ser un usuario por IGSID (DM normal) o un comentario
+// por comment_id (PRIVATE REPLY — exento de la ventana de 24h, mecanismo ManyChat).
+type IGRecipient = { id: string } | { comment_id: string };
+
+function getSystemUserToken(): string | undefined {
+  return process.env.INSTAGRAM_ACCESS_TOKEN && process.env.INSTAGRAM_ACCESS_TOKEN.length > 0
+    ? process.env.INSTAGRAM_ACCESS_TOKEN
+    : process.env.WHATSAPP_ACCESS_TOKEN;
+}
+
+/** Envía un mensaje (DM o private reply) vía POST /{PAGE_ID}/messages. */
+async function sendInstagramMessage(recipient: IGRecipient, text: string): Promise<unknown> {
   const pageId = process.env.FACEBOOK_PAGE_ID;
-  const systemUserToken =
-    process.env.INSTAGRAM_ACCESS_TOKEN && process.env.INSTAGRAM_ACCESS_TOKEN.length > 0
-      ? process.env.INSTAGRAM_ACCESS_TOKEN
-      : process.env.WHATSAPP_ACCESS_TOKEN;
+  const systemUserToken = getSystemUserToken();
 
   if (!pageId) {
     console.warn(
@@ -302,7 +409,7 @@ async function sendInstagramDM(recipientId: string, text: string): Promise<unkno
 
   const endpoint = `https://graph.facebook.com/${GRAPH_VERSION}/${pageId}/messages`;
   const payload = {
-    recipient: { id: recipientId },
+    recipient,
     message: { text },
     messaging_product: "instagram",
   };
@@ -361,6 +468,55 @@ async function sendInstagramDM(recipientId: string, text: string): Promise<unkno
     return json;
   } catch (err) {
     console.error("[marta/webhook] fetch Graph API falló:", err);
+    return { error: err instanceof Error ? err.message : "fetch failed" };
+  }
+}
+
+/** DM normal a un usuario por IGSID. */
+async function sendInstagramDM(recipientId: string, text: string): Promise<unknown> {
+  return sendInstagramMessage({ id: recipientId }, text);
+}
+
+/**
+ * PRIVATE REPLY a un comentario (DM disparado por un comentario). Exento de la
+ * ventana de 24h de Meta — es el mecanismo que usa ManyChat para Comment-to-DM.
+ */
+async function sendInstagramPrivateReply(commentId: string, text: string): Promise<unknown> {
+  return sendInstagramMessage({ comment_id: commentId }, text);
+}
+
+/** Respuesta PÚBLICA a un comentario (POST /{comment-id}/replies). */
+async function replyToComment(commentId: string, text: string): Promise<unknown> {
+  const pageId = process.env.FACEBOOK_PAGE_ID;
+  const systemUserToken = getSystemUserToken();
+  if (!pageId || !systemUserToken) {
+    return { skipped: "missing page id or token" };
+  }
+  let pageToken: string;
+  try {
+    pageToken = await getPageAccessToken(systemUserToken, pageId);
+  } catch (err) {
+    console.error("[marta/webhook] reply page token error:", err instanceof Error ? err.message : err);
+    return { error: "page_token_error" };
+  }
+  const endpoint = `https://graph.facebook.com/${GRAPH_VERSION}/${commentId}/replies`;
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${pageToken}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ message: text }).toString(),
+    });
+    if (!res.ok) {
+      const bodyText = await res.text();
+      console.error(`[marta/webhook] reply graph error status=${res.status} body=${bodyText}`);
+      return { error: "graph_error", status: res.status, body: bodyText };
+    }
+    return await res.json().catch(() => ({}));
+  } catch (err) {
+    console.error("[marta/webhook] reply fetch falló:", err);
     return { error: err instanceof Error ? err.message : "fetch failed" };
   }
 }

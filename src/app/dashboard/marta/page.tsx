@@ -6,6 +6,7 @@ import { DEFAULT_TENANT_ID } from "@/lib/tenants";
 import { listProposalsByTenant } from "@/lib/marta-proposals";
 import { isPublishEnabled } from "@/lib/marta-publish";
 import { getSchedule, DIRECT_PUBLISH_ENABLED, CRON_GRANULARITY } from "@/lib/marta-schedule";
+import { getCommentRules, isCommentDmEnabled } from "@/lib/marta-comment-rules";
 import MartaLivePanel from "./MartaLivePanel";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,8 @@ export default async function MartaPage() {
   const proposals = await listProposalsByTenant(tenantId);
   const enabled = isPublishEnabled();
   const schedule = await getSchedule(tenantId);
+  const commentRules = await getCommentRules(tenantId);
+  const commentDmEnabled = isCommentDmEnabled();
 
   return (
     <section className="space-y-4">
@@ -52,6 +55,8 @@ export default async function MartaPage() {
         initialSchedule={schedule}
         directPublishEnabled={DIRECT_PUBLISH_ENABLED}
         cronDaily={CRON_GRANULARITY === "daily"}
+        initialCommentRules={commentRules}
+        commentDmEnabled={commentDmEnabled}
       />
     </section>
   );
