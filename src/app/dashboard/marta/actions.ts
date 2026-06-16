@@ -16,6 +16,7 @@ import { generatePostImage, styleExistingPhoto } from "@/lib/marta-image-gen";
 import { publishProposal } from "@/lib/marta-publish-flow";
 import { regenerateProposal } from "@/lib/marta-regen";
 import { classifyClientReply } from "@/lib/marta-intent";
+import { saveSchedule, runSchedule, type ApprovalMode } from "@/lib/marta-schedule";
 import { openRoute } from "@/lib/wa-route";
 import { resolveTopic } from "@/lib/marta-topics";
 import {
@@ -341,4 +342,68 @@ export async function descartarAction(proposalId: string): Promise<InAppResult> 
   await markProposalRejected(proposal);
   revalidatePath("/dashboard/marta");
   return { ok: true, message: "Propuesta descartada." };
+}
+
+// =============================================================================
+// Programación automática (pestaña "Programación")
+// =============================================================================
+
+export type ProgramacionInput = {
+  enabled: boolean;
+  daysOfWeek: number[]; // 0=Domingo … 6=Sábado
+  hour: number; // 0-23 hora Europe/Madrid
+  mode: ApprovalMode;
+  postsPerRun: number;
+  tema: string;
+};
+
+/** Guardar la regla de programación del cliente. */
+export async function guardarProgramacionAction(input: ProgramacionInput): Promise<InAppResult> {
+  const tenantId = await gateTenantId();
+  if (!tenantId) return { ok: false, message: "Inicia sesión." };
+
+  const hour = Math.min(Math.max(Math.trunc(input.hour ?? 10), 0), 23);
+  const days = [...new Set((input.daysOfWeek ?? []).filter((d) => d >= 0 && d <= 6))].sort();
+  const postsPerRun = Math.min(Math.max(Math.trunc(input.postsPerRun ?? 1), 1), 3);
+  // Solo "avisar" está operativo; "directo" se acepta pero el runtime lo trata
+  // como "avisar" hasta confirmar instagram_content_publish.
+  const mode: ApprovalMode = input.mode === "directo" ? "directo" : "avisar";
+
+  if (input.enabled && days.length === 0) {
+    return { ok: false, message: "Elige al menos un día de la semana." };
+  }
+
+  await saveSchedule(tenantId, {
+    enabled: !!input.enabled,
+    daysOfWeek: days,
+    hour,
+    mode,
+    postsPerRun,
+    tema: input.tema || "auto",
+  });
+  revalidatePath("/dashboard/marta");
+  return { ok: true, message: "Programación guardada ✅" };
+}
+
+/** Ejecutar la programación AHORA (ignora día/hora) para probar el ciclo. */
+export async function ejecutarProgramacionAhoraAction(): Promise<InAppResult> {
+  const tenantId = await gateTenantId();
+  if (!tenantId) return { ok: false, message: "Inicia sesión." };
+  const h = await headers();
+  const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
+  const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
+  const baseUrl = `${proto}://${host}`;
+
+  const res = await runSchedule(tenantId, { baseUrl, force: true });
+  revalidatePath("/dashboard/marta");
+  if (res.created > 0) {
+    return {
+      ok: true,
+      message: `Generada(s) ${res.created} propuesta(s) pendiente(s). Ábrelas en Historial para aprobar.`,
+    };
+  }
+  return {
+    ok: false,
+    message: `No se generó ninguna propuesta. ${res.details.join(" · ") || "Revisa las API keys de imagen/caption."}`,
+  };
 }

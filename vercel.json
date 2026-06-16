@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/eva-dispatcher",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/marta-publicar",
+      "schedule": "0 * * * *"
     }
   ]
 }

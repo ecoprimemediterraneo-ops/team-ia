@@ -8,6 +8,8 @@ import {
   aprobarYPublicarAction,
   pedirCambiosAction,
   descartarAction,
+  guardarProgramacionAction,
+  ejecutarProgramacionAhoraAction,
 } from "./actions";
 import {
   IDLE_ARRANQUE,
@@ -16,18 +18,23 @@ import {
   type ProposalState,
 } from "./types";
 import type { MartaProposal } from "@/lib/marta-proposals";
+import type { MartaSchedule } from "@/lib/marta-schedule";
 import { MARTA_TOPICS } from "@/lib/marta-topics";
 
-type Tab = "nuevo" | "arranque" | "historial";
+type Tab = "nuevo" | "arranque" | "historial" | "programacion";
 
 export default function MartaLivePanel({
   initialProposals,
   enabled,
   defaultRecipient,
+  initialSchedule,
+  directPublishEnabled,
 }: {
   initialProposals: MartaProposal[];
   enabled: boolean;
   defaultRecipient?: string;
+  initialSchedule: MartaSchedule;
+  directPublishEnabled: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("nuevo");
 
@@ -44,8 +51,9 @@ export default function MartaLivePanel({
         </div>
       )}
 
-      <div className="card-hard bg-white p-1 flex gap-1 text-xs font-mono uppercase tracking-widest">
+      <div className="card-hard bg-white p-1 flex gap-1 text-xs font-mono uppercase tracking-widest flex-wrap">
         <TabBtn id="nuevo" active={tab} setTab={setTab}>Nuevo post</TabBtn>
+        <TabBtn id="programacion" active={tab} setTab={setTab}>Programación</TabBtn>
         <TabBtn id="arranque" active={tab} setTab={setTab}>Arranque</TabBtn>
         <TabBtn id="historial" active={tab} setTab={setTab}>Historial</TabBtn>
       </div>
@@ -54,6 +62,13 @@ export default function MartaLivePanel({
         <NuevoPostBlock
           defaultRecipient={defaultRecipient}
           onReviewInApp={() => setTab("historial")}
+        />
+      )}
+      {tab === "programacion" && (
+        <ProgramacionBlock
+          initialSchedule={initialSchedule}
+          directPublishEnabled={directPublishEnabled}
+          onGenerated={() => setTab("historial")}
         />
       )}
       {tab === "arranque" && <ArranqueBlock />}
@@ -518,6 +533,236 @@ function ProposalActions({ proposalId }: { proposalId: string }) {
           {msg.text}
         </p>
       )}
+    </div>
+  );
+}
+
+// ============================================================================
+// Programación automática (días fijos → propuesta pendiente para aprobar)
+// ============================================================================
+
+const DOW_OPTIONS: { value: number; label: string }[] = [
+  { value: 1, label: "Lun" },
+  { value: 2, label: "Mar" },
+  { value: 3, label: "Mié" },
+  { value: 4, label: "Jue" },
+  { value: 5, label: "Vie" },
+  { value: 6, label: "Sáb" },
+  { value: 0, label: "Dom" },
+];
+
+function ProgramacionBlock({
+  initialSchedule,
+  directPublishEnabled,
+  onGenerated,
+}: {
+  initialSchedule: MartaSchedule;
+  directPublishEnabled: boolean;
+  onGenerated?: () => void;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [running, startRun] = useTransition();
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const [enabled, setEnabled] = useState(initialSchedule.enabled);
+  const [days, setDays] = useState<number[]>(initialSchedule.daysOfWeek ?? []);
+  const [hour, setHour] = useState<number>(initialSchedule.hour ?? 10);
+  const [postsPerRun, setPostsPerRun] = useState<number>(initialSchedule.postsPerRun ?? 1);
+  const [tema, setTema] = useState<string>(initialSchedule.tema ?? "auto");
+  // El modo "directo" está desactivado; solo "avisar" operativo.
+  const mode = initialSchedule.mode === "directo" && directPublishEnabled ? "directo" : "avisar";
+
+  function toggleDay(d: number) {
+    setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
+  }
+
+  function guardar() {
+    setMsg(null);
+    startTransition(async () => {
+      const r = await guardarProgramacionAction({
+        enabled,
+        daysOfWeek: days,
+        hour,
+        mode,
+        postsPerRun,
+        tema,
+      });
+      setMsg({ ok: r.ok, text: r.message });
+      if (r.ok) router.refresh();
+    });
+  }
+
+  function ejecutarAhora() {
+    setMsg(null);
+    startRun(async () => {
+      const r = await ejecutarProgramacionAhoraAction();
+      setMsg({ ok: r.ok, text: r.message });
+      if (r.ok) {
+        router.refresh();
+        onGenerated?.();
+      }
+    });
+  }
+
+  const diasResumen =
+    days.length === 0
+      ? "ningún día"
+      : DOW_OPTIONS.filter((o) => days.includes(o.value)).map((o) => o.label).join(", ");
+
+  return (
+    <div className="card-hard bg-white p-5 space-y-5">
+      <div>
+        <div className="font-stencil text-2xl leading-none">Publicación automática</div>
+        <p className="text-sm text-black/60 mt-1 leading-snug">
+          Marta genera un post sola en los días que elijas y te deja una <strong>propuesta pendiente</strong>:
+          la apruebas con un clic en <strong>Historial</strong>. No se publica nada sin tu OK.
+        </p>
+      </div>
+
+      {/* On/off */}
+      <label className="flex items-center gap-3 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => setEnabled(e.target.checked)}
+          className="w-5 h-5 accent-black"
+        />
+        <span className="text-sm font-bold">
+          {enabled ? "Programación ACTIVADA" : "Programación desactivada"}
+        </span>
+      </label>
+
+      {/* Días */}
+      <div>
+        <div className="text-[10px] font-mono uppercase tracking-widest text-black/55 mb-2">
+          Días de publicación
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {DOW_OPTIONS.map((o) => {
+            const on = days.includes(o.value);
+            return (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => toggleDay(o.value)}
+                className={`text-xs font-bold border-2 border-black px-3 py-1.5 uppercase tracking-widest ${
+                  on ? "bg-black text-[color:var(--mustard)]" : "bg-white hover:bg-black/5"
+                }`}
+              >
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Hora */}
+      <div className="flex flex-wrap gap-4">
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
+            Hora (España)
+          </div>
+          <select
+            value={hour}
+            onChange={(e) => setHour(Number(e.target.value))}
+            className="border-2 border-black px-3 py-2 text-sm font-mono"
+          >
+            {Array.from({ length: 24 }, (_, h) => (
+              <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
+            Posts por día
+          </div>
+          <select
+            value={postsPerRun}
+            onChange={(e) => setPostsPerRun(Number(e.target.value))}
+            className="border-2 border-black px-3 py-2 text-sm font-mono"
+          >
+            {[1, 2, 3].map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Tema */}
+      <div>
+        <div className="text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
+          Tema de los posts
+        </div>
+        <select
+          value={tema}
+          onChange={(e) => setTema(e.target.value)}
+          className="border-2 border-black px-3 py-2 text-sm w-full"
+        >
+          {MARTA_TOPICS.map((t) => (
+            <option key={t.key} value={t.key}>{t.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Modo de aprobación */}
+      <div>
+        <div className="text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
+          Aprobación
+        </div>
+        <div className="border-2 border-black px-3 py-2 text-sm bg-black/[0.03]">
+          <div className="font-bold">✅ Avisar antes y aprobar en la app</div>
+          <p className="text-[12px] text-black/60 mt-0.5 leading-snug">
+            Marta crea la propuesta y la dejas lista en Historial para publicar con un clic.
+          </p>
+        </div>
+        <p className="text-[11px] text-black/45 mt-1">
+          🔒 «Publicar directo» (sin aprobación) está {directPublishEnabled ? "disponible" : "desactivado de momento"} — se habilitará cuando se confirme el permiso de Instagram con Meta.
+        </p>
+      </div>
+
+      {/* Resumen + acciones */}
+      <div className="border-t-2 border-black/10 pt-4 space-y-3">
+        <p className="text-[12px] text-black/60">
+          Resumen:{" "}
+          {enabled ? (
+            <span className="font-bold text-black">
+              {postsPerRun} post/día · {diasResumen} · {String(hour).padStart(2, "0")}:00 · aprobar en la app
+            </span>
+          ) : (
+            <span className="italic">desactivada (no publicará automáticamente)</span>
+          )}
+        </p>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={guardar}
+            className="btn-mustard text-sm px-6 py-3 disabled:opacity-50"
+          >
+            {pending ? "Guardando…" : "Guardar programación"}
+          </button>
+          <button
+            type="button"
+            disabled={running}
+            onClick={ejecutarAhora}
+            className="text-sm font-bold border-2 border-black px-5 py-3 bg-white hover:bg-black/5 disabled:opacity-50"
+          >
+            {running ? "Generando…" : "▶ Ejecutar ahora (probar)"}
+          </button>
+        </div>
+        <p className="text-[11px] text-black/45">
+          «Ejecutar ahora» genera ya mismo el/los post(s) sin esperar al día programado, para que veas el resultado en Historial.
+        </p>
+
+        {msg && (
+          <p className={`text-[12px] ${msg.ok ? "text-green-700" : "text-[color:var(--red)]"} break-words`}>
+            {msg.text}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
