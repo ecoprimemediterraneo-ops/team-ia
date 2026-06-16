@@ -5,7 +5,7 @@ import { agentBySlug } from "@/lib/agents";
 import { DEFAULT_TENANT_ID } from "@/lib/tenants";
 import { listProposalsByTenant } from "@/lib/marta-proposals";
 import { isPublishEnabled } from "@/lib/marta-publish";
-import { getSchedule, DIRECT_PUBLISH_ENABLED } from "@/lib/marta-schedule";
+import { getSchedule, DIRECT_PUBLISH_ENABLED, CRON_GRANULARITY } from "@/lib/marta-schedule";
 import MartaLivePanel from "./MartaLivePanel";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +51,7 @@ export default async function MartaPage() {
         enabled={enabled}
         initialSchedule={schedule}
         directPublishEnabled={DIRECT_PUBLISH_ENABLED}
+        cronDaily={CRON_GRANULARITY === "daily"}
       />
     </section>
   );

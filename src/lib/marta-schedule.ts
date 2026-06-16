@@ -28,6 +28,14 @@ import { resolveTopic } from "./marta-topics";
 // modo "directo" se trata como "avisar" (se crea propuesta pendiente).
 export const DIRECT_PUBLISH_ENABLED = false;
 
+// Granularidad del cron según el plan de Vercel:
+//  - "daily":  Hobby (1 cron/día, ver vercel.json `0 8 * * *`). isDue NO exige
+//              hora exacta: publica el día configurado a la franja del cron
+//              (~mañana España). La `hour` de la regla queda informativa.
+//  - "hourly": Pro (cron `0 * * * *`). isDue exige hora exacta → hora por
+//              cliente. Para pasar a Pro: poner "hourly" aquí + cron horario.
+export const CRON_GRANULARITY: "daily" | "hourly" = "daily";
+
 export type ApprovalMode = "avisar" | "directo";
 
 export type MartaSchedule = {
@@ -160,7 +168,9 @@ export function isDue(sched: MartaSchedule, now: Date): boolean {
   if (!sched.enabled) return false;
   const { dateStr, hour, dow } = madridParts(now);
   if (!sched.daysOfWeek.includes(dow)) return false;
-  if (hour !== sched.hour) return false;
+  // En plan Hobby (cron diario) no exigimos hora exacta: el guard lastRunDate
+  // evita duplicados. En Pro (cron horario) sí casamos la hora por cliente.
+  if (CRON_GRANULARITY === "hourly" && hour !== sched.hour) return false;
   if (sched.lastRunDate === dateStr) return false; // ya corrió hoy
   return true;
 }

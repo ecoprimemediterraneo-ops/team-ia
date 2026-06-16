@@ -29,12 +29,14 @@ export default function MartaLivePanel({
   defaultRecipient,
   initialSchedule,
   directPublishEnabled,
+  cronDaily,
 }: {
   initialProposals: MartaProposal[];
   enabled: boolean;
   defaultRecipient?: string;
   initialSchedule: MartaSchedule;
   directPublishEnabled: boolean;
+  cronDaily: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("nuevo");
 
@@ -68,6 +70,7 @@ export default function MartaLivePanel({
         <ProgramacionBlock
           initialSchedule={initialSchedule}
           directPublishEnabled={directPublishEnabled}
+          cronDaily={cronDaily}
           onGenerated={() => setTab("historial")}
         />
       )}
@@ -554,10 +557,12 @@ const DOW_OPTIONS: { value: number; label: string }[] = [
 function ProgramacionBlock({
   initialSchedule,
   directPublishEnabled,
+  cronDaily,
   onGenerated,
 }: {
   initialSchedule: MartaSchedule;
   directPublishEnabled: boolean;
+  cronDaily: boolean;
   onGenerated?: () => void;
 }) {
   const router = useRouter();
@@ -689,6 +694,11 @@ function ProgramacionBlock({
           </select>
         </div>
       </div>
+      {cronDaily && (
+        <p className="text-[11px] text-black/45 -mt-2">
+          En el plan actual la publicación se prepara <strong>una vez al día, por la mañana</strong> (≈10:00 España). La hora exacta por cliente se aplicará al pasar a plan Pro.
+        </p>
+      )}
 
       {/* Tema */}
       <div>
@@ -728,7 +738,7 @@ function ProgramacionBlock({
           Resumen:{" "}
           {enabled ? (
             <span className="font-bold text-black">
-              {postsPerRun} post/día · {diasResumen} · {String(hour).padStart(2, "0")}:00 · aprobar en la app
+              {postsPerRun} post/día · {diasResumen} · {cronDaily ? "por la mañana" : `${String(hour).padStart(2, "0")}:00`} · aprobar en la app
             </span>
           ) : (
             <span className="italic">desactivada (no publicará automáticamente)</span>
