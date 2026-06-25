@@ -7,7 +7,6 @@ import MonthlyReportSection from "@/components/MonthlyReportSection";
 import Packs from "@/components/Packs";
 import Comparador from "@/components/Comparador";
 import FAQ from "@/components/FAQ";
-import FinalCTA from "@/components/FinalCTA";
 import Footer from "@/components/Footer";
 import type { Metadata } from "next";
 
@@ -48,8 +47,6 @@ export default function Home() {
         <Comparador />
         {/* FAQ */}
         <FAQ />
-        {/* CTA final */}
-        <FinalCTA />
       </main>
       <Footer />
     </>

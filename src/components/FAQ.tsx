@@ -38,15 +38,15 @@ export default function FAQ() {
     <section id="faq" className="py-16 md:py-24 border-t-[3px] border-black bg-white">
       <div className="max-w-3xl mx-auto px-5">
         {/* Bloque de confianza (único) */}
-        <div className="card-hard bg-[color:var(--cream)] p-5 md:p-6 mb-8">
+        <div className="card-hard bg-black p-5 md:p-6 mb-8">
           <div className="flex flex-wrap gap-2 mb-3">
             {garantias.map((g) => (
-              <span key={g} className="text-[11px] font-bold tracking-wide bg-black text-[color:var(--mustard)] px-2 py-1">
+              <span key={g} className="text-[11px] font-bold tracking-wide bg-[color:var(--mustard)] text-black px-2 py-1">
                 {g}
               </span>
             ))}
           </div>
-          <p className="text-sm text-black/70 leading-snug">
+          <p className="text-sm text-[color:var(--cream)]/80 leading-snug">
             Tras pedir tu demo te escribimos para enseñarte el sistema con tu caso y resolver dudas.
             Sin compromiso ni tarjeta.{" "}
             <a href="/casos" className="underline font-bold hover:text-[color:var(--red)]">
