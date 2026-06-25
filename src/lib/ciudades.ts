@@ -50,7 +50,7 @@ export const VERTICALS: Record<string, VerticalCiudad> = {
     sector: "Clínica Dental",
     titulo: (ciudad) => `IA para Clínicas Dentales en ${ciudad}`,
     descripcion: (ciudad, demonym) =>
-      `El equipo de 8 agentes IA que las clínicas dentales de ${ciudad} necesitan. Reduce no-shows, contesta WhatsApp 24/7 y sube tu Google sin contratar a nadie.`,
+      `El sistema operativo que las clínicas dentales de ${ciudad} necesitan: contesta WhatsApp 24/7, coge llamadas, reduce no-shows y sube tu Google. Un único sistema integrado, sin contratar a nadie.`,
     pains: [
       "WhatsApp sin contestar a las 22h un viernes",
       "3 de cada 10 citas se caen sin avisar",
@@ -65,7 +65,7 @@ export const VERTICALS: Record<string, VerticalCiudad> = {
     sector: "Peluquería",
     titulo: (ciudad) => `IA para Peluquerías en ${ciudad}`,
     descripcion: (ciudad, demonym) =>
-      `Automatiza WhatsApp, Instagram y recordatorios de cita en tu peluquería de ${ciudad}. Sin contratar community manager ni recepcionista extra.`,
+      `El sistema operativo para tu peluquería de ${ciudad}: WhatsApp, reservas, recordatorios e Instagram en un único sistema integrado, sin contratar community manager ni recepcionista extra.`,
     pains: [
       "WhatsApp explotado el sábado por la mañana",
       "Clientas que no confirman y dejan huecos vacíos",
@@ -80,7 +80,7 @@ export const VERTICALS: Record<string, VerticalCiudad> = {
     sector: "Restaurante",
     titulo: (ciudad) => `IA para Restaurantes en ${ciudad}`,
     descripcion: (ciudad, demonym) =>
-      `Gestiona reservas por WhatsApp 24/7, responde en inglés a turistas y sube tus reseñas en TripAdvisor y Google. Para restaurantes de ${ciudad}.`,
+      `El sistema operativo para tu restaurante de ${ciudad}: gestiona reservas por WhatsApp 24/7, responde en inglés a turistas y sube tus reseñas en TripAdvisor y Google. Un único sistema integrado.`,
     pains: [
       "Turistas que llaman en inglés y nadie les atiende",
       "Reservas que llegan por WhatsApp a las 23h",

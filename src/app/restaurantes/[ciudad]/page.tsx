@@ -84,17 +84,18 @@ export default async function RestaurantesCiudadPage({ params }: { params: Promi
 
         <section className="py-16 bg-[color:var(--cream)] border-b-[3px] border-black">
           <div className="max-w-4xl mx-auto px-5 text-center">
-            <h2 className="font-stencil text-3xl md:text-4xl mb-4">
-              6 agentes para tu restaurante en {ciudad.nombre}
+            <h2 className="font-stencil text-3xl md:text-4xl mb-2">
+              Un sistema para tu restaurante en {ciudad.nombre}
             </h2>
+            <p className="text-sm text-black/70 mb-4 max-w-2xl mx-auto">Todas las funciones conectadas en un único sistema integrado, no herramientas sueltas. Y se adelanta: te avisa de los mensajes y reservas sin atender.</p>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-left mt-8">
               {[
-                { emoji: "💬", name: "Pablo", desc: "Gestiona reservas por WhatsApp en español e inglés 24/7" },
-                { emoji: "⭐", name: "Rocío", desc: "Responde reseñas en Google y TripAdvisor automáticamente" },
-                { emoji: "📧", name: "Eva", desc: "Manda confirmaciones y recordatorios de reserva" },
-                { emoji: "📬", name: "Lucía", desc: "Gestiona el email del restaurante y filtra lo urgente" },
-                { emoji: "📸", name: "Marta", desc: "Publica fotos de tus platos en Instagram y Facebook" },
-                { emoji: "📞", name: "Carmen", desc: "Atiende llamadas en español, inglés y alemán" },
+                { emoji: "💬", name: "WhatsApp", desc: "Gestiona reservas por WhatsApp en español e inglés 24/7" },
+                { emoji: "⭐", name: "Reseñas de Google", desc: "Responde reseñas en Google y TripAdvisor automáticamente" },
+                { emoji: "✉️", name: "Email marketing", desc: "Manda confirmaciones y recordatorios de reserva" },
+                { emoji: "📬", name: "Correo y agenda", desc: "Gestiona el email del restaurante y filtra lo urgente" },
+                { emoji: "📱", name: "Instagram y redes", desc: "Publica solo las fotos de tus platos en Instagram y Facebook" },
+                { emoji: "📞", name: "Llamadas", desc: "Atiende llamadas en español e inglés" },
               ].map((a) => (
                 <div key={a.name} className="card-hard p-4">
                   <div className="text-2xl mb-2">{a.emoji}</div>
@@ -109,9 +110,9 @@ export default async function RestaurantesCiudadPage({ params }: { params: Promi
         <section className="py-12 border-b-[3px] border-black bg-black text-white">
           <div className="max-w-3xl mx-auto px-5 text-center">
             <p className="font-stencil text-2xl md:text-3xl mb-2">
-              Objetivo estimado: más reservas de turistas con Carmen atendiendo las llamadas.
+              Tus competidores en {ciudad.nombre} ya están automatizados. El cliente espera respuesta al instante: sin un sistema así, te quedas fuera.
             </p>
-            <p className="text-white/60 text-sm">— Estimación objetivo en los primeros meses</p>
+            <p className="text-white/60 text-sm">Automatización de verdad, no la de hace diez años.</p>
           </div>
         </section>
 
@@ -120,7 +121,7 @@ export default async function RestaurantesCiudadPage({ params }: { params: Promi
             <h2 className="font-stencil text-3xl md:text-4xl mb-2">
               6 meses gratis para restaurantes de {ciudad.nombre}
             </h2>
-            <p className="text-black/70 mb-6">20 plazas · sin tarjeta · sin permanencia · 99€/mes fundador para siempre.</p>
+            <p className="text-black/70 mb-6">20 plazas · sin tarjeta · sin permanencia · 149€/mes fundador para siempre.</p>
             <a href="/restaurantes#waitlist-resto" className="btn-mustard text-lg">{v.cta} →</a>
           </div>
         </section>

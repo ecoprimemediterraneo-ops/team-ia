@@ -35,7 +35,7 @@ const STEPS: {
   {
     key: "publico",
     title: "¿Quién es tu cliente ideal?",
-    hint: "Edad, perfil, ubicación, poder adquisitivo. Esto ayuda a Marta a publicar contenido relevante.",
+    hint: "Edad, perfil, ubicación, poder adquisitivo. Esto ayuda al sistema a publicar contenido relevante.",
     placeholder: "Familias del barrio (30-55 años), expats británicos, jubilados con seguro privado",
     type: "textarea",
   },

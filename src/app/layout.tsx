@@ -13,26 +13,26 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "AI-Team — Tu equipo de empleados IA. Seis agentes desde 99€/mes.",
+    default: "AI-Team — El sistema operativo de tu clínica o PyME de servicios",
     template: "%s | AI-Team",
   },
   description:
-    "Seis agentes IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Sin nóminas. Desde 99€/mes. 6 meses gratis.",
+    "Un único sistema operativo gestiona WhatsApp, llamadas, reseñas, correo, agenda y redes de tu negocio, de forma integrada y proactiva. Desde 149€/mes. 6 meses gratis.",
   metadataBase: new URL(SITE_URL),
   openGraph: {
     type: "website",
     locale: "es_ES",
     url: SITE_URL,
     siteName: "AI-Team",
-    title: "AI-Team — Seis agentes IA para tu negocio",
+    title: "AI-Team — El sistema operativo de tu negocio",
     description:
-      "Seis agentes IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Sin nóminas. Desde 99€/mes. 6 meses gratis.",
+      "Un único sistema operativo gestiona WhatsApp, llamadas, reseñas, correo, agenda y redes de tu negocio, de forma integrada y proactiva. Desde 149€/mes. 6 meses gratis.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI-Team — Seis agentes IA para tu negocio",
+    title: "AI-Team — El sistema operativo de tu negocio",
     description:
-      "Seis agentes IA gestionan WhatsApp, llamadas, reseñas, correo, redes y email marketing. Sin nóminas. Desde 99€/mes. 6 meses gratis.",
+      "Un único sistema operativo gestiona WhatsApp, llamadas, reseñas, correo, agenda y redes de tu negocio, de forma integrada y proactiva. Desde 149€/mes. 6 meses gratis.",
   },
   alternates: { canonical: SITE_URL },
   robots: { index: true, follow: true },
@@ -82,9 +82,9 @@ export default function RootLayout({
               offers: {
                 "@type": "AggregateOffer",
                 priceCurrency: "EUR",
-                lowPrice: "39",
-                highPrice: "299",
-                offerCount: "4",
+                lowPrice: "149",
+                highPrice: "398",
+                offerCount: "2",
               },
             }),
           }}

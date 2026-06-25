@@ -44,7 +44,7 @@ export default function EsteticaCTA() {
           Tu clínica.<br />Operativa<br />esta semana.
         </h2>
         <p className="text-base md:text-lg mb-4 text-white/50 max-w-md mx-auto">
-          Desde <span className="text-white font-semibold">99 €/mes</span>, precio fundador congelado de por vida.
+          Desde <span className="text-white font-semibold">149 €/mes</span> (50% fundador sobre 299€), precio congelado de por vida.
         </p>
         <p className="text-sm mb-10 text-white/30 max-w-sm mx-auto">
           6 meses gratis, sin tarjeta. Setup en 15 minutos. Sin código.
@@ -79,7 +79,7 @@ export default function EsteticaCTA() {
             />
             <button type="submit" disabled={status === "loading"}
               className="bg-[color:var(--mustard)] text-black font-bold text-base py-4 px-6 border-[3px] border-[color:var(--mustard)] hover:bg-transparent hover:text-[color:var(--mustard)] transition-colors mt-2 tracking-wide">
-              {status === "loading" ? "Procesando..." : "Activar mi equipo IA →"}
+              {status === "loading" ? "Procesando..." : "Pide tu demo →"}
             </button>
             {status === "error" && <p className="text-red-400 text-center text-sm">{msg}</p>}
           </form>
@@ -89,7 +89,7 @@ export default function EsteticaCTA() {
           <span>·</span>
           <span>CANCELA CUANDO QUIERAS</span>
           <span>·</span>
-          <span>DATOS EN LA UE · RGPD</span>
+          <span>CUMPLIMIENTO RGPD</span>
         </div>
       </div>
     </section>

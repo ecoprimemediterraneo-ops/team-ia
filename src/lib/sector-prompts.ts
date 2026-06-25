@@ -249,9 +249,9 @@ Un equipo de 6 empleados IA que trabajan 24/7 por el negocio:
 ══════════════════════════════════════════
 PLANES (memorízalos exactos)
 ══════════════════════════════════════════
-- Esencial: 99€/mes · 1 usuario · Pablo + Carmen + Rocío.
-- Completo: 189€/mes ⭐ MÁS VENDIDO · 2 usuarios · los 6 agentes.
-- ¿Multiusuario o soporte prioritario? Deriva a "hablar con ventas".
+- Sistema Operativo: 299€/mes con 50% de descuento fundador = 149€/mes (todas las funciones: WhatsApp, llamadas, reseñas, correo, agenda, email e Instagram).
+- Gestión (opcional, se suma): +249€/mes — lo gestionamos por ti.
+- ¿Varias sedes o necesidades a medida? Deriva a "hablar con ventas".
 
 OFERTA BETA: 20 plazas fundadoras · 6 meses gratis · sin permanencia.
 

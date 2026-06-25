@@ -319,3 +319,27 @@ html, body {
   border-bottom: none;
 }
 }
+
+/* === Accesibilidad === */
+/* Foco visible por teclado (rojo de marca: contrasta en claro y oscuro). */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--red);
+  outline-offset: 2px;
+}
+
+/* Respeta prefers-reduced-motion: corta animaciones llamativas (marquee, pulse…). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .marquee-track { animation: none !important; }
+}

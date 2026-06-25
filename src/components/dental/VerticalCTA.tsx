@@ -70,7 +70,7 @@ export default function VerticalCTA({
             <input required type="email" placeholder="tu@correo.com *" value={email} onChange={(e) => setEmail(e.target.value)} className="card-hard text-black px-4 py-3 text-base font-semibold focus:outline-none" />
             <input required type="text" placeholder="Ciudad *" value={cityValue} onChange={(e) => setCityValue(e.target.value)} className="card-hard text-black px-4 py-3 text-base font-semibold focus:outline-none" />
             <button type="submit" disabled={status === "loading"} className="btn-mustard text-lg mt-2">
-              {status === "loading" ? "RESERVANDO..." : "RESERVAR MI PLAZA"}
+              {status === "loading" ? "ENVIANDO..." : "PIDE TU DEMO"}
             </button>
             {status === "error" && <p className="text-red-300 text-center">{msg}</p>}
           </form>

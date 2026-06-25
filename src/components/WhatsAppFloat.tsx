@@ -1,8 +1,14 @@
-// Botón flotante de WhatsApp, visible en todas las páginas (montado en layout.tsx).
-// El número se gestiona en src/lib/constants.ts (WHATSAPP_NUMBER / WHATSAPP_LINK).
+"use client";
+// Botón flotante de WhatsApp, visible en todas las páginas (montado en layout.tsx),
+// EXCEPTO en /beta, donde la página ya es el formulario y el flotante taparía
+// el botón de envío en móvil. El número se gestiona en src/lib/constants.ts.
+import { usePathname } from "next/navigation";
 import { WHATSAPP_LINK } from "@/lib/constants";
 
 export default function WhatsAppFloat() {
+  const pathname = usePathname();
+  if (pathname === "/beta") return null;
+
   return (
     <a
       href={WHATSAPP_LINK}

@@ -16,16 +16,16 @@ export default function PrivacidadPage() {
           <p className="text-sm text-black/60 mb-8">Última actualización: 11 de mayo de 2026</p>
 
           <h2 className="font-stencil text-2xl mt-8 mb-3">1. Responsable del tratamiento</h2>
-          <p>AI-Team (en adelante &quot;el Servicio&quot;), gestionado por Cristóbal Serrano. Contacto: <a className="underline" href="mailto:hola@aiteam.marketing">hola@aiteam.marketing</a></p>
+          <p>AI-Team (en adelante &quot;el Servicio&quot;). Contacto del responsable del tratamiento: <a className="underline" href="mailto:hola@aiteam.marketing">hola@aiteam.marketing</a></p>
 
           <h2 className="font-stencil text-2xl mt-8 mb-3">2. Datos que recogemos</h2>
           <ul className="list-disc pl-6 space-y-1">
             <li><strong>Cuenta:</strong> email, nombre, sector y ciudad de tu negocio.</li>
-            <li><strong>Briefing:</strong> tono, servicios, público, precios — para que los agentes respondan en tu nombre.</li>
-            <li><strong>Conversaciones con agentes:</strong> mensajes que escribes en el chat con cada agente.</li>
-            <li><strong>Conexiones OAuth (opcionales):</strong> Gmail (lectura/borradores) si activas Lucía.</li>
-            <li><strong>Contactos de tu lista:</strong> emails de pacientes/clientes que tú añades para Eva.</li>
-            <li><strong>Métricas de uso:</strong> qué agentes usas, cuándo, para mejorar el servicio.</li>
+            <li><strong>Briefing:</strong> tono, servicios, público, precios — para que el sistema responda en tu nombre.</li>
+            <li><strong>Conversaciones con el sistema:</strong> mensajes que escribes en el chat.</li>
+            <li><strong>Conexiones OAuth (opcionales):</strong> Gmail (lectura/borradores) si activas la función de correo y agenda.</li>
+            <li><strong>Contactos de tu lista:</strong> emails de pacientes/clientes que tú añades para la función de email marketing.</li>
+            <li><strong>Métricas de uso:</strong> qué funciones usas, cuándo, para mejorar el servicio.</li>
           </ul>
 
           <h2 className="font-stencil text-2xl mt-8 mb-3">3. Para qué los usamos</h2>
@@ -39,8 +39,8 @@ export default function PrivacidadPage() {
           <h2 className="font-stencil text-2xl mt-8 mb-3">4. Con quién los compartimos</h2>
           <ul className="list-disc pl-6 space-y-1">
             <li><strong>Anthropic (Claude):</strong> envío de prompts para generar respuestas. Servidores EU/US. Anthropic firma DPA y no entrena con datos.</li>
-            <li><strong>OpenAI (DALL-E + voz):</strong> generación de imágenes para Marta y audio para Carmen.</li>
-            <li><strong>Resend:</strong> envío de emails transaccionales y campañas de Eva. Servidor EU.</li>
+            <li><strong>OpenAI (DALL-E + voz):</strong> generación de imágenes para la función de redes y audio para la función de llamadas.</li>
+            <li><strong>Resend:</strong> envío de emails transaccionales y campañas de la función de email marketing. Servidor EU.</li>
             <li><strong>Google (OAuth):</strong> si conectas Gmail, accedemos solo a leer mensajes y crear borradores en tu cuenta. Cumple Google API Services User Data Policy.</li>
             <li><strong>Vercel:</strong> hosting del servicio. Servidores EU (Frankfurt).</li>
           </ul>

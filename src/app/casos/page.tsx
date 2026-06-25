@@ -23,7 +23,7 @@ export default function CasosPage() {
               Los primeros casos<br />reales, en camino
             </h1>
             <p className="text-lg text-black/70 max-w-2xl mx-auto mb-3">
-              Estamos lanzando con <strong>20 fundadores beta</strong>. Los primeros resultados reales se publicarán aquí en los próximos meses, con métricas verificables y nombre del negocio.
+              Estamos lanzando con <strong>20 fundadores beta</strong> el sistema operativo de su negocio. Los primeros resultados reales se publicarán aquí en los próximos meses, con métricas verificables y nombre del negocio.
             </p>
             <p className="text-sm text-black/50 max-w-xl mx-auto">
               Sin testimonios inventados. Sin números inflados. Cuando un cliente nos autorice a publicar su caso, lo subimos aquí tal cual.
@@ -37,14 +37,17 @@ export default function CasosPage() {
               ¿Quieres ser uno de ellos?
             </h2>
             <p className="text-base text-black/70 mb-8 leading-relaxed">
-              Las 20 plazas fundadoras incluyen 6 meses gratis sin tarjeta y precio fundador congelado para siempre. A cambio te pedimos feedback honesto y, si los resultados son buenos, autorización para publicar tu caso aquí.
+              Las 20 plazas fundadoras incluyen el sistema operativo completo de tu negocio: 6 meses gratis sin tarjeta y precio fundador congelado para siempre. A cambio te pedimos feedback honesto y, si los resultados son buenos, autorización para publicar tu caso aquí.
+            </p>
+            <p className="text-sm text-black/50 mb-8 leading-relaxed">
+              El sistema detecta la oportunidad y ejecuta las acciones que tengas autorizadas.
             </p>
             <div className="flex flex-wrap gap-3">
               <a
                 href="/beta"
                 className="btn-mustard inline-block"
               >
-                Reservar plaza →
+                Pide tu demo →
               </a>
               <a
                 href="/precios"
@@ -59,7 +62,7 @@ export default function CasosPage() {
         <section className="py-16">
           <div className="max-w-3xl mx-auto px-5 grid sm:grid-cols-3 gap-6 text-sm">
             <div>
-              <div className="font-stencil text-4xl text-[color:var(--red)] mb-2">50</div>
+              <div className="font-stencil text-4xl text-[color:var(--red)] mb-2">20</div>
               <div className="font-bold mb-1">plazas fundadoras</div>
               <p className="text-black/60">Cuando se agoten, abren a precio normal.</p>
             </div>

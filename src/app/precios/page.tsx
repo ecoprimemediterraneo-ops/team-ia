@@ -1,28 +1,38 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Packs from "@/components/Packs";
+import Comparador from "@/components/Comparador";
 import MonthlyReportSection from "@/components/MonthlyReportSection";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Precios — Desde 99€/mes",
+  title: "Precios — El Sistema Operativo desde 149€/mes",
   description:
-    "Dos planes: Esencial y Completo. Precio fundador para siempre. 6 meses gratis, sin tarjeta, sin permanencia.",
+    "Un sistema único: 299€/mes con 50% de descuento fundador = 149€/mes. Gestión opcional +249€/mes. Precio fundador para siempre. 6 meses gratis, sin tarjeta, sin permanencia.",
   alternates: { canonical: "https://aiteam.marketing/precios" },
+  openGraph: {
+    title: "Precios — El Sistema Operativo desde 149€/mes",
+    description:
+      "299€/mes con 50% fundador = 149€/mes. Gestión opcional +249€/mes aparte. 6 meses gratis, sin tarjeta, sin permanencia.",
+    url: "https://aiteam.marketing/precios",
+    type: "website",
+    locale: "es_ES",
+    siteName: "AI-Team",
+  },
 };
 
 const faq = [
   {
-    q: "¿Puedo cambiar de plan más adelante?",
-    a: "Sí. Subes o bajas de plan en un click desde tu panel. El cambio se prorratea automáticamente.",
+    q: "¿Puedo añadir o quitar la Gestión más adelante?",
+    a: "Sí. El Sistema Operativo es el producto base (149€/mes fundador). La Gestión (+249€/mes) es opcional: la añades o la quitas en un click desde tu panel y se prorratea automáticamente.",
   },
   {
     q: "¿Qué es el precio fundador?",
-    a: "Los primeros 20 negocios mantienen su precio fundador para siempre, incluso si subimos las tarifas. No expira mientras tu suscripción siga activa.",
+    a: "El Sistema Operativo cuesta 299€/mes; los primeros 20 negocios entran con un 50% de descuento de por vida = 149€/mes. No expira mientras tu suscripción siga activa, aunque subamos las tarifas.",
   },
   {
     q: "¿Hay coste de instalación?",
-    a: "No. El alta es self-service en ambos planes — el asistente de configuración te guía por sector paso a paso. Tardas unos 15 minutos.",
+    a: "No. El alta del sistema es self-service — el asistente de configuración te guía por sector paso a paso. Tardas unos 15 minutos.",
   },
   {
     q: "¿Necesito instalar algo o saber de tecnología?",
@@ -30,7 +40,7 @@ const faq = [
   },
   {
     q: "¿En qué idiomas trabaja?",
-    a: "Español nativo (ES, MX, AR, CO, CL) e inglés. Carmen es bilingüe en sus guiones de llamada. Otros idiomas bajo demanda.",
+    a: "Español nativo (ES, MX, AR, CO, CL) e inglés. El sistema es bilingüe en sus guiones de llamada. Otros idiomas bajo demanda.",
   },
   {
     q: "¿Funciona con mi software actual (Gesden, ClinicCloud, etc.)?",
@@ -58,12 +68,14 @@ export default function PreciosPage() {
             </span>
             <h1 className="font-stencil text-4xl md:text-6xl mb-4">Precios sin sorpresas</h1>
             <p className="text-lg text-black/70 max-w-2xl mx-auto">
-              Desde 99€/mes. 6 meses gratis. Sin tarjeta para empezar. Sin permanencia. Cambia de plan cuando quieras.
+              El Sistema Operativo desde 149€/mes (50% fundador sobre 299€). 6 meses gratis. Sin tarjeta para empezar. Sin permanencia. Gestión opcional aparte.
             </p>
           </div>
         </section>
 
         <Packs />
+
+        <Comparador hidePreciosLink />
 
         <MonthlyReportSection />
 

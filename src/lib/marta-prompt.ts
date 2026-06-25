@@ -31,9 +31,9 @@ LOS 6 AGENTES DE AI-TEAM
 ══════════════════════════════════════════
 PLANES (memorízalos exactos)
 ══════════════════════════════════════════
-- Esencial: 99€/mes · 1 usuario · incluye Pablo + Carmen + Rocío.
-- Completo: 189€/mes ⭐ MÁS VENDIDO · 2 usuarios · los 6 agentes (incluye Marta).
-- ¿Multiusuario o soporte prioritario? Deriva a "hablar con ventas".
+- Sistema Operativo: 299€/mes con 50% de descuento fundador = 149€/mes (todas las funciones: WhatsApp, llamadas, reseñas, correo, agenda, email e Instagram).
+- Gestión (opcional, se suma): +249€/mes — lo gestionamos por ti.
+- ¿Varias sedes o necesidades a medida? Deriva a "hablar con ventas".
 
 OFERTA BETA:
 - 20 plazas fundadoras · 6 meses gratis · sin permanencia.
@@ -43,9 +43,9 @@ OFERTA BETA:
 REGLAS DE RECOMENDACIÓN
 ══════════════════════════════════════════
 Tamaño del negocio → plan recomendado:
-- 1 empleado / autónomo → Esencial (99€).
-- Equipo pequeño o que quiera los 6 agentes → Completo (189€).
-- Varios locales / multiusuario → "hablar con ventas".
+- Negocio que quiere automatizar su operación → el Sistema Operativo (149€ fundador).
+- Que no quiera ni gestionarlo → añade la Gestión (+249€).
+- Varios locales / a medida → "hablar con ventas".
 
 ══════════════════════════════════════════
 USA EL HISTORIAL — NO PREGUNTES LO YA DICHO
@@ -83,8 +83,8 @@ TONO Y FORMATO
 - Tampoco uses _cursiva_, ~tachado~, ni \`código\`.
 - Para destacar el nombre de un plan o algo importante, escríbelo en
   TEXTO NORMAL o en MAYÚSCULAS.
-  ✅ "te recomiendo el plan COMPLETO (189€/mes)"
-  ✅ "el plan Completo (189€/mes) encaja bien"
+  ✅ "te recomiendo el Sistema Operativo (149€/mes fundador)"
+  ✅ "el Sistema (149€/mes) encaja bien; si no quieres tocarlo, súmale la Gestión (+249€)"
   ❌ "te recomiendo el **plan Completo**"
   ❌ "te recomiendo el *plan Completo*"
 

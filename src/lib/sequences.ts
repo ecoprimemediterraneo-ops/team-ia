@@ -1,6 +1,9 @@
 /**
- * Secuencias de email automáticas para Eva.
+ * Secuencias de email automáticas (función de email del sistema).
  * Cada secuencia tiene N pasos con delay en días desde el primer contacto.
+ * Sin nombres de persona ni métricas/casos inventados: el protagonista es
+ * "el sistema". Los enlaces de cal.com llevan el slug personal del fundador
+ * (cuenta existente, no se puede cambiar sin recrearla).
  */
 
 export type SequenceStep = {
@@ -20,6 +23,10 @@ export type Sequence = {
 const v = (vars: Record<string, string>, key: string, fallback = "") =>
   vars[key] ?? fallback;
 
+const FOOT = `<p style="color:#999;font-size:12px">AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`;
+const BTN = "background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block";
+const CAL = "https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min";
+
 export const SEQUENCES: Sequence[] = [
   {
     id: "dental-cold",
@@ -29,16 +36,16 @@ export const SEQUENCES: Sequence[] = [
       {
         step: 1,
         delayDays: 0,
-        subject: "{{businessName}}: 3 de cada 10 citas se caen (y hay solución)",
+        subject: "{{businessName}}: las citas que se caen tienen solución",
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")} 👋</p>
-<p>Soy Eva, del equipo de AI-Team.</p>
+<p>Te escribo desde AI-Team.</p>
 <p>Veo que <strong>${v(vars, "businessName")}</strong> tiene ${v(vars, "reviewCount", "buenas")} reseñas en Google — eso es una clínica que cuida a sus pacientes. Por eso me permito escribir.</p>
-<p>El problema que veo en la mayoría de clínicas como la vuestra: <strong>WhatsApp sin contestar por las noches, no-shows que no avisan, y presupuestos que se pierden sin seguimiento.</strong></p>
-<p>Nosotros tenemos 8 agentes IA que se ocupan de todo eso: Pablo contesta WhatsApp 24/7, Carmen coge las llamadas cuando el dentista está con un paciente, Rocío pide reseñas tras cada visita.</p>
+<p>El problema que vemos en la mayoría de clínicas como la vuestra: <strong>WhatsApp sin contestar por las noches, no-shows que no avisan y presupuestos que se pierden sin seguimiento.</strong></p>
+<p>Tenemos un sistema operativo que se ocupa de todo eso a la vez: contesta WhatsApp 24/7, coge las llamadas cuando estáis con un paciente y pide reseñas tras cada visita. Un único sistema, no herramientas sueltas.</p>
 <p>¿Tiene sentido hablar 15 minutos esta semana?</p>
-<p><a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" style="background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block">→ Reservar demo gratis</a></p>
-<p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
+<p><a href="${CAL}" style="${BTN}">→ Pide tu demo gratis</a></p>
+${FOOT}`,
       },
       {
         step: 2,
@@ -46,54 +53,52 @@ export const SEQUENCES: Sequence[] = [
         subject: "Re: {{businessName}} — una pregunta rápida",
         bodyHtml: (vars) => `
 <p>Hola de nuevo ${v(vars, "contactName", "equipo")} 👋</p>
-<p>Solo quería saber si viste mi email anterior.</p>
-<p>Una pregunta directa: ¿cuántas citas perdéis al mes por no-shows o porque nadie contestó el WhatsApp a tiempo?</p>
-<p>La media en clínicas de 1-3 dentistas es <strong>8-12 citas/mes</strong>. A 80€ de media, son 640-960€/mes en humo.</p>
-<p>Pablo (nuestro agente de WhatsApp) lo resuelve en 48h de setup. Sin cambiar vuestro software dental.</p>
-<p><a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" style="background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block">→ Ver cómo funciona (15 min)</a></p>
-<p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
+<p>Solo quería saber si viste el email anterior.</p>
+<p>Una pregunta directa: ¿cuántas citas perdéis al mes por no-shows o porque nadie contestó el WhatsApp a tiempo? En muchas clínicas pequeñas son varias cada mes — dinero en humo.</p>
+<p>El sistema lo resuelve con un setup rápido, sin cambiar vuestro software dental.</p>
+<p><a href="${CAL}" style="${BTN}">→ Ver cómo funciona (15 min)</a></p>
+${FOOT}`,
       },
       {
         step: 3,
         delayDays: 7,
-        subject: "Caso real: una clínica con +22 citas/mes",
+        subject: "Lo que cambia cuando el sistema lleva la clínica",
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")},</p>
-<p>Hace 4 meses una clínica (similar a ${v(vars, "businessName")}) empezó con AI-Team.</p>
-<p>Resultados a los 90 días:</p>
+<p>Cómo cambia el día a día de una clínica con el sistema:</p>
 <ul>
-<li>✅ No-shows reducidos del 30% al 8%</li>
-<li>✅ +47 reseñas Google (de 4.1★ a 4.8★)</li>
-<li>✅ +22 citas recuperadas al mes</li>
-<li>✅ WhatsApp contestado en &lt;2 min a cualquier hora</li>
+<li>✅ Menos no-shows, con recordatorios automáticos</li>
+<li>✅ Más reseñas en Google, pedidas tras cada visita</li>
+<li>✅ Citas que antes se perdían por WhatsApp, recuperadas</li>
+<li>✅ WhatsApp contestado en minutos a cualquier hora</li>
 </ul>
-<p>Setup en 48h. Sin tocar Gesden ni Clinic Cloud. <strong>Precio fundador: 99€/mes para siempre.</strong></p>
-<p><a href="https://aiteam.marketing/casos" style="background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block">→ Ver caso completo</a></p>
-<p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
+<p>Setup rápido, sin tocar tu software dental. <strong>Precio fundador: 149€/mes para siempre.</strong></p>
+<p><a href="https://aiteam.marketing/casos" style="${BTN}">→ Ver cómo funciona</a></p>
+${FOOT}`,
       },
       {
         step: 4,
         delayDays: 14,
-        subject: "Último intento — regalo para {{businessName}}",
+        subject: "Último intento — una idea para {{businessName}}",
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")},</p>
-<p>Es mi último email. No quiero ser pesado.</p>
-<p>Solo quería ofreceros algo: <strong>6 meses gratis de AI-Team</strong> (20 plazas fundadoras) a cambio de feedback honesto. Sin tarjeta, sin permanencia.</p>
+<p>Es nuestro último email. No queremos ser pesados.</p>
+<p>Solo queríamos ofreceros algo: <strong>6 meses gratis</strong> (20 plazas fundadoras) a cambio de feedback honesto. Sin tarjeta, sin permanencia.</p>
 <p>Si al mes no veis valor, lo dejáis y no hay más emails. Promesa.</p>
-<p>Si les interesa, respondedme con "quiero probarlo" y os monto el acceso esta semana.</p>
-<p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
+<p>Si os interesa, respondednos con "quiero probarlo" y os montamos el acceso esta semana.</p>
+${FOOT}`,
       },
       {
         step: 5,
         delayDays: 30,
-        subject: "{{businessName}} — check-in de mayo",
+        subject: "{{businessName}} — seguimos por aquí",
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")},</p>
-<p>Hace un mes os escribí. Imagino que estáis a tope.</p>
-<p>Rápido: este mes hemos añadido integración con Cal.com para gestionar las citas directamente por WhatsApp. Funciona muy bien con clínicas dentales.</p>
+<p>Hace un tiempo os escribimos. Imagino que estáis a tope.</p>
+<p>Rápido: hemos mejorado la gestión de citas directamente por WhatsApp. Funciona muy bien con clínicas dentales.</p>
 <p>Si en algún momento queréis ver cómo lo hacemos, aquí estamos.</p>
-<p><a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min">Reservar 15 minutos →</a></p>
-<p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
+<p><a href="${CAL}">Reservar 15 minutos →</a></p>
+${FOOT}`,
       },
     ],
   },
@@ -108,13 +113,13 @@ export const SEQUENCES: Sequence[] = [
         subject: "{{businessName}}: el sábado por la mañana no tiene que ser un caos",
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")} 👋</p>
-<p>Soy Eva, de AI-Team.</p>
-<p>El sábado a las 9h: el salón lleno, el teléfono sin parar, el WhatsApp con 20 mensajes sin contestar y tú cortando el pelo. ¿Te suena?</p>
-<p>Pablo (nuestro agente de WhatsApp) contesta por ti. Confirma citas, da precios, gestiona cancelaciones. 24/7.</p>
-<p>Marta lleva el Instagram: 3 posts semanales con fotos de tus trabajos, sin que toques el móvil.</p>
-<p>Todo por <strong>99€/mes</strong> (precio fundador para siempre).</p>
-<p><a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" style="background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block">→ Ver demo (15 min)</a></p>
-<p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
+<p>Te escribo desde AI-Team.</p>
+<p>El sábado a las 9h: el salón lleno, el teléfono sin parar, el WhatsApp con mensajes sin contestar y tú cortando el pelo. ¿Te suena?</p>
+<p>El sistema contesta por ti: confirma citas, da precios y gestiona cancelaciones. 24/7.</p>
+<p>Y lleva tu Instagram: publica fotos de tus trabajos cada semana, sin que toques el móvil.</p>
+<p>Todo por <strong>149€/mes</strong> (precio fundador para siempre).</p>
+<p><a href="${CAL}" style="${BTN}">→ Pide tu demo (15 min)</a></p>
+${FOOT}`,
       },
       {
         step: 2,
@@ -122,27 +127,27 @@ export const SEQUENCES: Sequence[] = [
         subject: "¿Cuántas clientas no vuelven porque nadie las llama?",
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")},</p>
-<p>Un dato que calculamos con salones similares a ${v(vars, "businessName")}: el 35% de clientas no vuelven después de 8 semanas si nadie les manda un recordatorio.</p>
-<p>Eva (nuestra agente de email) manda un mensaje automático a las clientas que no han vuelto en 6 semanas. Recuperamos entre 3-5 clientas al mes sin hacer nada.</p>
+<p>Un patrón habitual en salones como ${v(vars, "businessName")}: muchas clientas no vuelven si nadie les manda un recordatorio a tiempo.</p>
+<p>El sistema manda un mensaje automático a las clientas que llevan semanas sin volver y reactiva el contacto sin que hagas nada.</p>
 <p>¿Cuánto vale una clienta fija para vosotros?</p>
 <p><a href="https://aiteam.marketing/peluquerias">Ver cómo funciona para salones →</a></p>
-<p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
+${FOOT}`,
       },
       {
         step: 3,
         delayDays: 10,
-        subject: "Un salón: +340 seguidores y +28% retención en 3 meses",
+        subject: "Tu Instagram y tu agenda, en piloto automático",
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")},</p>
-<p>Un salón (Salón Aura) lleva 3 meses con AI-Team. Sin community manager, sin recepcionista extra.</p>
+<p>Lo que un salón deja de hacer a mano con el sistema, sin community manager ni recepcionista extra:</p>
 <ul>
-<li>+340 seguidores reales en Instagram</li>
-<li>+28% clientas que repiten vs trimestre anterior</li>
-<li>8 horas/semana ahorradas en gestión de mensajes</li>
+<li>Instagram publicado cada semana, con fotos de tus trabajos</li>
+<li>Clientas que repiten más, gracias a recordatorios automáticos</li>
+<li>Horas a la semana que dejas de gastar gestionando mensajes</li>
 </ul>
-<p>Inversión: 99€/mes.</p>
-<p><a href="https://aiteam.marketing/casos" style="background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block">→ Ver caso completo</a></p>
-<p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
+<p>Inversión: 149€/mes.</p>
+<p><a href="https://aiteam.marketing/casos" style="${BTN}">→ Ver cómo funciona</a></p>
+${FOOT}`,
       },
     ],
   },
@@ -157,30 +162,29 @@ export const SEQUENCES: Sequence[] = [
         subject: "{{businessName}}: reservas por WhatsApp que llegan a las 23h",
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")} 👋</p>
-<p>Soy Eva, de AI-Team.</p>
+<p>Te escribo desde AI-Team.</p>
 <p>Un turista a las 23h busca restaurante para mañana. Os escribe por WhatsApp. Nadie contesta. Reserva en el de al lado.</p>
-<p>Pablo contesta en segundos, en español e inglés. Confirma la reserva, manda recordatorio el día anterior, y si cancelan, libera la mesa automáticamente.</p>
-<p>Rocío responde cada reseña de TripAdvisor y Google en 24h. Marta publica fotos de los platos cada semana.</p>
-<p><strong>Todo por 99€/mes.</strong></p>
-<p><a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min" style="background:#E8B84B;color:#000;padding:10px 20px;font-weight:bold;text-decoration:none;display:inline-block">→ Demo gratis (15 min)</a></p>
-<p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
+<p>El sistema contesta en segundos, en español e inglés. Confirma la reserva, manda recordatorio el día anterior y, si cancelan, libera la mesa automáticamente.</p>
+<p>Responde cada reseña de TripAdvisor y Google, y publica fotos de los platos cada semana.</p>
+<p><strong>Todo por 149€/mes.</strong></p>
+<p><a href="${CAL}" style="${BTN}">→ Pide tu demo (15 min)</a></p>
+${FOOT}`,
       },
       {
         step: 2,
         delayDays: 5,
-        subject: "+35% reservas online en 2 meses (caso Fuengirola)",
+        subject: "Más reservas online, sin cambiar tu forma de trabajar",
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")},</p>
-<p>Taberna El Puerto (Fuengirola) lleva 2 meses con AI-Team:</p>
+<p>Lo que cambia en un restaurante con el sistema:</p>
 <ul>
-<li>+35% reservas online vs mismo período año anterior</li>
-<li>100% reseñas respondidas (TripAdvisor + Google)</li>
-<li>Pablo atiende en inglés, alemán y francés</li>
-<li>Rating TripAdvisor: 4.7★</li>
+<li>Más reservas online, también fuera de horario</li>
+<li>Reseñas de TripAdvisor y Google respondidas</li>
+<li>Atención por WhatsApp en español e inglés</li>
 </ul>
 <p>Sin cambiar vuestra forma de trabajar. Sin contratar a nadie.</p>
-<p><a href="https://aiteam.marketing/casos">Ver caso completo →</a></p>
-<p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
+<p><a href="https://aiteam.marketing/casos">Ver cómo funciona →</a></p>
+${FOOT}`,
       },
     ],
   },
@@ -195,11 +199,11 @@ export const SEQUENCES: Sequence[] = [
         subject: "¿Seguís buscando solución para {{businessName}}?",
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")},</p>
-<p>Hace un mes hablamos sobre automatizar el WhatsApp y las reseñas de ${v(vars, "businessName")}.</p>
-<p>Hemos lanzado algo nuevo: <strong>onboarding en 24h</strong>. Pablo funcionando el mismo día que te das de alta.</p>
+<p>Hace un tiempo hablamos sobre automatizar el WhatsApp y las reseñas de ${v(vars, "businessName")}.</p>
+<p>Hemos mejorado algo: <strong>onboarding en 24h</strong>. El sistema funcionando el mismo día que te das de alta.</p>
 <p>¿Sigue siendo algo que os interesa?</p>
-<p><a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min">Reservar 15 min →</a></p>
-<p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
+<p><a href="${CAL}">Reservar 15 min →</a></p>
+${FOOT}`,
       },
     ],
   },
@@ -214,15 +218,15 @@ export const SEQUENCES: Sequence[] = [
         subject: "Nueva función para {{sector}}: {{businessName}}",
         bodyHtml: (vars) => `
 <p>Hola ${v(vars, "contactName", "equipo")},</p>
-<p>Hace 2 meses os escribí. Desde entonces hemos añadido:</p>
+<p>Hace un tiempo os escribimos. Desde entonces hemos añadido:</p>
 <ul>
-<li>✅ Integración Cal.com (citas directas por WhatsApp)</li>
-<li>✅ Respuesta automática en inglés y alemán (para turistas)</li>
+<li>✅ Gestión de citas directa por WhatsApp</li>
+<li>✅ Respuesta automática en inglés (para turistas)</li>
 <li>✅ Seguimiento de presupuestos dentales automático</li>
 </ul>
-<p>Si ahora es mejor momento, encantado de enseñaros en 15 minutos.</p>
-<p><a href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min">Ver demo →</a></p>
-<p style="color:#999;font-size:12px">Eva · AI-Team · <a href="{{unsubscribeUrl}}">Cancelar suscripción</a></p>`,
+<p>Si ahora es mejor momento, encantados de enseñaros en 15 minutos.</p>
+<p><a href="${CAL}">Ver demo →</a></p>
+${FOOT}`,
       },
     ],
   },

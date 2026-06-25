@@ -46,8 +46,9 @@ export function fillLeadVars(template: string, lead: Lead, extra?: Record<string
 }
 
 /**
- * Plantillas pre-hechas de outreach para SDR.
- * Cada una pensada para un escenario específico.
+ * Plantillas pre-hechas de outreach para captación.
+ * Cada una pensada para un escenario específico. Sin nombres de persona ni
+ * métricas inventadas: el protagonista es "el sistema".
  */
 export const OUTREACH_TEMPLATES: Record<string, { name: string; sequence: { delayHours: number; subject: string; body: string }[] }> = {
   dental_basic: {
@@ -60,14 +61,14 @@ export const OUTREACH_TEMPLATES: Record<string, { name: string; sequence: { dela
 
 He visto que tu clínica {{businessName}} en {{city}} tiene {{rating}} en Google con {{reviewCount}} reseñas — buen punto de partida.
 
-Te escribo porque he montado un equipo de 6 asistentes IA específico para clínicas dentales de tu tamaño. Reducen no-shows un 50%, contestan WhatsApps 24/7 y suben tu Google con campañas automáticas de reseñas.
+Te escribo porque tenemos un sistema operativo específico para clínicas dentales de tu tamaño: reduce los no-shows, contesta WhatsApp 24/7, coge las llamadas y sube tu Google con campañas de reseñas. Un único sistema, no herramientas sueltas.
 
-Estoy abriendo 20 plazas fundadoras: 6 meses gratis, sin tarjeta, a cambio de feedback.
+Estamos abriendo 20 plazas fundadoras: 6 meses gratis, sin tarjeta, a cambio de feedback.
 
-¿Te enseño en 15 min cómo funciona?
+¿Te enseñamos en 15 min cómo funciona?
 
 Un saludo,
-Cristóbal — AI-Team
+El equipo de AI-Team
 https://aiteam.marketing/dentistas`,
       },
       {
@@ -75,26 +76,26 @@ https://aiteam.marketing/dentistas`,
         subject: "Re: idea rápida para {{businessName}}",
         body: `Hola {{firstName}},
 
-¿Has podido ver el email del lunes? No te robo más tiempo, solo confirmo si te interesa una de las 20 plazas fundadoras antes de que las cierre.
+¿Has podido ver el email anterior? No te robamos más tiempo, solo confirmamos si te interesa una de las 20 plazas fundadoras antes de cerrarlas.
 
-Si es no, perfecto, no insisto más.
-Si es sí, te paso enlace para reservar 15 min.
+Si es no, perfecto, no insistimos.
+Si es sí, te pasamos enlace para reservar 15 min.
 
 Un saludo,
-Cristóbal`,
+El equipo de AI-Team`,
       },
       {
         delayHours: 168,
         subject: "Última: cerramos las plazas fundadoras el viernes",
         body: `Hola {{firstName}},
 
-Solo aviso de cierre. El viernes confirmo las 20 clínicas fundadoras que se llevan 6 meses gratis sin tarjeta, con precio fundador 99€/mes para siempre.
+Solo aviso de cierre. El viernes confirmamos las 20 clínicas fundadoras que se llevan 6 meses gratis sin tarjeta, con precio fundador 149€/mes para siempre.
 
-Si te interesa, contesta SÍ y te llamo personalmente.
-Si no, te dejo en paz — palabra.
+Si te interesa, contesta SÍ y te llamamos.
+Si no, te dejamos en paz — palabra.
 
 Un saludo,
-Cristóbal`,
+El equipo de AI-Team`,
       },
     ],
   },
@@ -106,29 +107,29 @@ Cristóbal`,
         subject: "{{firstName}}, ¿WhatsApp del sábado descontrolado?",
         body: `Hola {{firstName}},
 
-He visto {{businessName}} en {{city}}. Te escribo porque trabajo con peluquerías de tu tamaño que tienen el mismo problema: WhatsApp explotado en sábado y huecos vacíos a media mañana.
+He visto {{businessName}} en {{city}}. Te escribo porque trabajamos con peluquerías de tu tamaño que tienen el mismo problema: WhatsApp explotado en sábado y huecos vacíos a media mañana.
 
-Tengo un equipo de 6 asistentes IA que te contesta los WhatsApps en 12 segundos, te sube Instagram con reels semanales y recupera clientas que llevan 3 meses sin venir.
+Tenemos un sistema operativo que contesta los WhatsApp en segundos, publica en Instagram cada semana y recupera clientas que llevan tiempo sin venir. Todo en uno.
 
-Abro 20 plazas fundadoras: 6 meses gratis, sin tarjeta. ¿Te lo enseño en 15 min?
+Abrimos 20 plazas fundadoras: 6 meses gratis, sin tarjeta. ¿Te lo enseñamos en 15 min?
 
 Un saludo,
-Cristóbal — AI-Team
+El equipo de AI-Team
 https://aiteam.marketing/peluquerias`,
       },
       {
         delayHours: 72,
         subject: "Re: WhatsApp del sábado",
-        body: `{{firstName}}, ¿pude pillarte? Te dejo la info sin que tengas que pensar:
+        body: `{{firstName}}, ¿pudimos pillarte? Te dejamos la info sin que tengas que pensar:
 
-• Pablo contesta WhatsApps 24/7 con tu tono
-• Marta sube 3 reels/semana automáticos
-• Rocío gestiona Google y reseñas
-• 99€/mes precio fundador (después 199€)
+• Contesta los WhatsApp 24/7 con tu tono
+• Publica en Instagram automáticamente
+• Gestiona Google y las reseñas
+• 149€/mes precio fundador (después 299€)
 
 ¿Llamada de 15 min esta semana?
 
-Cristóbal`,
+El equipo de AI-Team`,
       },
     ],
   },
@@ -140,14 +141,14 @@ Cristóbal`,
         subject: "{{firstName}}, ¿reservas de turistas perdidas en {{businessName}}?",
         body: `Hola {{firstName}},
 
-He visto que tu restaurante {{businessName}} en {{city}} tiene {{rating}} en Google. Imagino que en temporada alta el WhatsApp arde y los turistas que llaman en inglés/alemán se pierden.
+He visto que tu restaurante {{businessName}} en {{city}} tiene {{rating}} en Google. Imagino que en temporada alta el WhatsApp arde y los turistas que llaman en inglés se pierden.
 
-He montado un equipo de 6 IAs que gestiona reservas WhatsApp 24/7, coge llamadas en español + inglés, responde TripAdvisor y publica fotos de tus platos en Instagram.
+Tenemos un sistema operativo que gestiona las reservas por WhatsApp 24/7, coge llamadas en español e inglés, responde TripAdvisor y publica fotos de tus platos en Instagram. Un único sistema.
 
-Abro 20 plazas fundadoras: 6 meses gratis, sin tarjeta. ¿Te enseño en 15 min?
+Abrimos 20 plazas fundadoras: 6 meses gratis, sin tarjeta. ¿Te enseñamos en 15 min?
 
 Un saludo,
-Cristóbal — AI-Team
+El equipo de AI-Team
 https://aiteam.marketing/restaurantes`,
       },
     ],

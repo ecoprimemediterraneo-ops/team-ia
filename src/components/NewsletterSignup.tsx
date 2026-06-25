@@ -29,12 +29,16 @@ export default function NewsletterSignup() {
 
   return (
     <form onSubmit={submit} className="space-y-2">
+      <label htmlFor="newsletter-email" className="sr-only">Tu correo para la newsletter</label>
       <input
+        id="newsletter-email"
         type="email"
         required
+        autoComplete="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="tu@email.com"
+        aria-label="Tu correo para la newsletter"
         className="w-full border-2 border-black px-3 py-2 text-sm bg-white"
       />
       <button

@@ -3,7 +3,7 @@
  *
  * Configurar:
  *  1. Crear cuenta en stripe.com
- *  2. Crear 2 productos: Esencial 99 / Completo 189 €/mes
+ *  2. Crear el producto Sistema Operativo (149€/mes fundador, 299€ normal) + extra Gestión (249€/mes)
  *  3. Para cada producto, crear un Price recurring monthly
  *  4. Copiar los price IDs y ponerlos en STRIPE_PRICES env var.
  *     (El enum interno aún usa local/digital/elite/pro como claves

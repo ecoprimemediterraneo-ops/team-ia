@@ -60,7 +60,8 @@ export default async function PeluqueriasCiudadPage({ params }: { params: Promis
               <p className="text-sm">
                 <strong>{ciudad.nombre}</strong> es {ciudad.highlight}.
                 Las peluquerías y salones de belleza de {ciudad.nombre} tienen una competencia feroz —
-                el que mejor gestiona su WhatsApp y su Instagram es el que llena la agenda.
+                y tus competidores ya están automatizados. Los clientes esperan respuesta al instante:
+                sin un sistema que gestione tu WhatsApp y tu Instagram solo, te quedas fuera.
               </p>
             </div>
           </div>
@@ -85,16 +86,19 @@ export default async function PeluqueriasCiudadPage({ params }: { params: Promis
         <section className="py-16 bg-[color:var(--cream)] border-b-[3px] border-black">
           <div className="max-w-4xl mx-auto px-5 text-center">
             <h2 className="font-stencil text-3xl md:text-4xl mb-4">
-              6 agentes para tu salón en {ciudad.nombre}
+              Un solo sistema para tu salón en {ciudad.nombre}
             </h2>
+            <p className="text-sm text-black/70 max-w-2xl mx-auto mb-2">
+              No son herramientas sueltas: es un único sistema integrado que se adelanta y actúa solo.
+            </p>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-left mt-8">
               {[
-                { emoji: "💬", name: "Pablo", desc: "Contesta WhatsApps de clientas y agenda citas en 12 segundos" },
-                { emoji: "⭐", name: "Rocío", desc: "Pide reseñas a tus clientas y responde las de Google" },
-                { emoji: "📧", name: "Eva", desc: "Reactiva clientas que llevan 3 meses sin venir" },
-                { emoji: "📬", name: "Lucía", desc: "Gestiona tu bandeja y filtra lo importante" },
-                { emoji: "📸", name: "Marta", desc: `Publica reels y posts en Instagram cada semana` },
-                { emoji: "📞", name: "Carmen", desc: "Atiende llamadas cuando estás con una clienta" },
+                { emoji: "💬", name: "WhatsApp", desc: "Contesta WhatsApps de clientas y agenda citas al instante" },
+                { emoji: "⭐", name: "Reseñas de Google", desc: "Pide reseñas a tus clientas y responde las de Google" },
+                { emoji: "✉️", name: "Email marketing", desc: "Reactiva clientas que llevan 3 meses sin venir" },
+                { emoji: "📬", name: "Correo y agenda", desc: "Gestiona tu bandeja y filtra lo importante" },
+                { emoji: "📱", name: "Instagram y redes", desc: `Publica reels y posts en Instagram cada semana` },
+                { emoji: "📞", name: "Llamadas", desc: "Atiende llamadas cuando estás con una clienta" },
               ].map((a) => (
                 <div key={a.name} className="card-hard p-4">
                   <div className="text-2xl mb-2">{a.emoji}</div>
@@ -103,6 +107,9 @@ export default async function PeluqueriasCiudadPage({ params }: { params: Promis
                 </div>
               ))}
             </div>
+            <p className="mt-8 font-display text-xl md:text-2xl text-[color:var(--red)]">
+              Mientras otros esperan a que les escribas, tu sistema ya actuó.
+            </p>
           </div>
         </section>
 
@@ -120,7 +127,7 @@ export default async function PeluqueriasCiudadPage({ params }: { params: Promis
             <h2 className="font-stencil text-3xl md:text-4xl mb-2">
               6 meses gratis para salones de {ciudad.nombre}
             </h2>
-            <p className="text-black/70 mb-6">20 plazas · sin tarjeta · sin permanencia · 99€/mes fundador para siempre.</p>
+            <p className="text-black/70 mb-6">20 plazas · sin tarjeta · sin permanencia · 149€/mes fundador para siempre.</p>
             <a href="/peluquerias#waitlist-pelu" className="btn-mustard text-lg">{v.cta} →</a>
           </div>
         </section>

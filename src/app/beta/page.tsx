@@ -4,22 +4,30 @@ import Footer from "@/components/Footer";
 import BetaForm from "./BetaForm";
 
 export const metadata: Metadata = {
-  title: "Reserva tu plaza · Beta privada",
+  title: "Pide tu demo · AI-Team",
   description:
-    "20 plazas fundador · 6 meses gratis · sin permanencia. Reserva la tuya en 30 segundos.",
+    "Demo de 15 min, sin compromiso. Te enseñamos el sistema operativo para tu negocio. 6 meses gratis, sin tarjeta, sin permanencia.",
   alternates: { canonical: "https://aiteam.marketing/beta" },
+  openGraph: {
+    title: "Pide tu demo · AI-Team",
+    description:
+      "Demo de 15 min, sin compromiso. El sistema operativo para clínicas y PyMEs de servicios. 6 meses gratis, sin tarjeta.",
+    url: "https://aiteam.marketing/beta",
+    type: "website",
+    locale: "es_ES",
+    siteName: "AI-Team",
+  },
 };
 
 const SECTORES = [
+  "Clínica (estética, fisio, podología…)",
   "Clínica dental",
-  "Clínica estética",
+  "Bufete de abogados",
+  "Estudio de arquitectura / ingeniería",
+  "Asesoría / gestoría",
   "Peluquería / salón",
   "Restaurante / bar",
-  "Fisioterapia",
-  "Podología",
   "Gimnasio",
-  "Bufete de abogados",
-  "Asesoría",
   "Inmobiliaria",
   "Otro",
 ];
@@ -40,10 +48,10 @@ export default function BetaPage() {
               </span>
             </div>
             <h1 className="font-stencil text-4xl md:text-6xl mb-4 leading-tight">
-              Reserva tu plaza
+              Pide tu demo
             </h1>
             <p className="text-base md:text-lg text-white/70 max-w-xl mx-auto">
-              20 negocios fundadores. 6 meses gratis sin tarjeta. Precio fundador congelado para siempre.
+              15 minutos, sin compromiso. Te enseñamos el sistema funcionando para tu negocio. 6 meses gratis, sin tarjeta, precio fundador para siempre.
             </p>
           </div>
         </section>
@@ -59,17 +67,17 @@ export default function BetaPage() {
             <div>
               <div className="font-stencil text-3xl mb-1">01</div>
               <div className="font-bold mb-1">Te contactamos</div>
-              <p className="text-black/60">En 24-48h te llamamos o escribimos para confirmar tu plaza.</p>
+              <p className="text-black/60">En menos de 24h te escribimos para agendar la demo de 15 min.</p>
             </div>
             <div>
               <div className="font-stencil text-3xl mb-1">02</div>
               <div className="font-bold mb-1">Setup en 15 min</div>
-              <p className="text-black/60">Conectas WhatsApp, Gmail y los agentes aprenden tu tono.</p>
+              <p className="text-black/60">Conectas WhatsApp y Gmail; el sistema aprende tu negocio y tu tono.</p>
             </div>
             <div>
               <div className="font-stencil text-3xl mb-1">03</div>
               <div className="font-bold mb-1">Operativo en 24h</div>
-              <p className="text-black/60">Tu equipo IA empieza a contestar, publicar y captar leads.</p>
+              <p className="text-black/60">Tu sistema empieza a contestar, agendar, publicar y captar.</p>
             </div>
           </div>
         </section>

@@ -8,6 +8,11 @@ export async function generateStaticParams() {
   return CIUDADES.map((c) => ({ ciudad: c.slug }));
 }
 
+// Descripción local coherente con "el sistema operativo" (sin referencias a "equipo de agentes").
+function descripcionLocal(ciudad: string) {
+  return `El sistema operativo que las clínicas dentales de ${ciudad} necesitan: contesta WhatsApp 24/7, coge llamadas, reduce no-shows y sube tu Google. Un único sistema integrado, sin contratar a nadie.`;
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ ciudad: string }> }): Promise<Metadata> {
   const { ciudad: slug } = await params;
   const ciudad = getCiudad(slug);
@@ -15,11 +20,11 @@ export async function generateMetadata({ params }: { params: Promise<{ ciudad: s
   const v = VERTICALS.dentistas;
   return {
     title: `${v.titulo(ciudad.nombre)} | AI-Team`,
-    description: v.descripcion(ciudad.nombre, ciudad.demonym),
+    description: descripcionLocal(ciudad.nombre),
     alternates: { canonical: `https://aiteam.marketing/dentistas/${slug}` },
     openGraph: {
       title: v.titulo(ciudad.nombre),
-      description: v.descripcion(ciudad.nombre, ciudad.demonym),
+      description: descripcionLocal(ciudad.nombre),
     },
   };
 }
@@ -49,7 +54,7 @@ export default async function DentistasCiudadPage({ params }: { params: Promise<
               {v.titulo(ciudad.nombre)}
             </h1>
             <p className="text-lg text-white/80 max-w-2xl mx-auto mb-8">
-              {v.descripcion(ciudad.nombre, ciudad.demonym)}
+              {descripcionLocal(ciudad.nombre)}
             </p>
             <a href="#cta" className="btn-mustard text-lg">{v.cta} →</a>
           </div>
@@ -85,41 +90,46 @@ export default async function DentistasCiudadPage({ params }: { params: Promise<
           </div>
         </section>
 
-        {/* Los 6 agentes operativos */}
+        {/* El sistema operativo: todas las funciones, una sola pieza */}
         <section className="py-16 bg-[color:var(--cream)] border-b-[3px] border-black">
           <div className="max-w-4xl mx-auto px-5 text-center">
             <h2 className="font-stencil text-3xl md:text-4xl mb-4">
-              6 agentes trabajando por tu clínica en {ciudad.nombre}
+              Un sistema operativo para tu clínica en {ciudad.nombre}
             </h2>
             <p className="text-black/70 mb-10 max-w-2xl mx-auto">
-              Cada uno especializado en una tarea. Trabajan en cadena, 24/7, sin vacaciones.
+              No son herramientas sueltas: es un único sistema integrado que lleva tu clínica. Trabaja en cadena, 24/7, sin vacaciones.
             </p>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-left">
               {[
-                { emoji: "💬", name: "Pablo", desc: `Contesta WhatsApps de pacientes de ${ciudad.nombre} en 12 segundos` },
-                { emoji: "⭐", name: "Rocío", desc: "Pide reseñas tras cada cita y responde las nuevas en Google" },
-                { emoji: "📧", name: "Eva", desc: "Manda recordatorios, seguimientos de presupuesto y reactiva inactivos" },
-                { emoji: "📬", name: "Lucía", desc: "Gestiona tu email y resume la bandeja cada mañana" },
-                { emoji: "📸", name: "Marta", desc: "Publica en Instagram y Facebook con contenido de tu clínica" },
-                { emoji: "📞", name: "Carmen", desc: `Atiende llamadas en español e inglés — ideal para ${ciudad.nombre}` },
-              ].map((a) => (
-                <div key={a.name} className="card-hard p-4">
-                  <div className="text-2xl mb-2">{a.emoji}</div>
-                  <div className="font-stencil text-lg mb-1">{a.name}</div>
-                  <p className="text-xs text-black/70">{a.desc}</p>
+                { emoji: "💬", funcion: "WhatsApp", desc: `Contesta los WhatsApps de pacientes de ${ciudad.nombre} al instante` },
+                { emoji: "⭐", funcion: "Reseñas de Google", desc: "Pide reseñas tras cada cita y responde las nuevas en Google" },
+                { emoji: "✉️", funcion: "Email marketing", desc: "Manda recordatorios, seguimientos de presupuesto y reactiva inactivos" },
+                { emoji: "📬", funcion: "Correo y agenda", desc: "Gestiona tu email y resume la bandeja cada mañana" },
+                { emoji: "📱", funcion: "Instagram y redes", desc: "Publica en Instagram y Facebook con contenido de tu clínica" },
+                { emoji: "📞", funcion: "Llamadas", desc: `Atiende llamadas en español e inglés — ideal para ${ciudad.nombre}` },
+              ].map((f) => (
+                <div key={f.funcion} className="card-hard p-4">
+                  <div className="text-2xl mb-2">{f.emoji}</div>
+                  <div className="font-stencil text-lg mb-1">{f.funcion}</div>
+                  <p className="text-xs text-black/70">{f.desc}</p>
                 </div>
               ))}
             </div>
+            <p className="mt-8 inline-block barred font-display text-base md:text-xl px-3 py-1">
+              Si tu software solo responde cuando le hablas, vive en los 90.
+            </p>
           </div>
         </section>
 
-        {/* Prueba social local */}
+        {/* Urgencia local */}
         <section className="py-12 border-b-[3px] border-black bg-black text-white">
           <div className="max-w-3xl mx-auto px-5 text-center">
             <p className="font-stencil text-2xl md:text-3xl mb-2">
-              Objetivo estimado: reducir no-shows ~40% y subir de 4.2 a 4.7 en Google
+              Objetivo: menos citas que se caen y una mejor ficha en Google, mes a mes
             </p>
-            <p className="text-white/60 text-sm">— Estimación objetivo en los primeros meses</p>
+            <p className="text-white/60 text-sm">
+              Tus competidores en {ciudad.nombre} ya están automatizados. Los pacientes esperan respuesta al instante: si no la das, los pierdes. (Estimación objetivo, no garantía.)
+            </p>
           </div>
         </section>
 
@@ -130,10 +140,10 @@ export default async function DentistasCiudadPage({ params }: { params: Promise<
               <h2 className="font-stencil text-3xl md:text-4xl mb-2">
                 6 meses gratis para clínicas de {ciudad.nombre}
               </h2>
-              <p className="text-black/70">20 plazas · sin tarjeta · sin permanencia · 99€/mes fundador para siempre.</p>
+              <p className="text-black/70">20 plazas · sin tarjeta · sin permanencia · 149€/mes fundador congelado de por vida.</p>
             </div>
             <a href={`/dentistas#waitlist-dental`} className="btn-mustard text-lg inline-block">{v.cta} →</a>
-            <p className="text-sm text-black/60 mt-3">20 plazas · 6 meses gratis · sin tarjeta · 99€/mes fundador para siempre</p>
+            <p className="text-sm text-black/60 mt-3">20 plazas · 6 meses gratis · sin tarjeta · 149€/mes fundador congelado de por vida</p>
           </div>
         </section>
 

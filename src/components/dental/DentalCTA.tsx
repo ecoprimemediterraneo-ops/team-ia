@@ -45,7 +45,7 @@ export default function DentalCTA() {
         </h2>
         <p className="text-lg md:text-xl mb-10 text-white/80">
           <span className="font-bold text-[color:var(--mustard)]">6 meses gratis</span> para 20 clínicas fundadoras, sin tarjeta.
-          <span className="block mt-2 text-white/60 text-sm">Si no te aporta, te vas. Si te aporta, sigues con precio fundador 99€/mes para siempre.</span>
+          <span className="block mt-2 text-white/60 text-sm">Si no te aporta, te vas. Si te aporta, sigues con precio fundador 149€/mes para siempre.</span>
         </p>
 
         {status === "ok" ? (
@@ -88,7 +88,7 @@ export default function DentalCTA() {
               className="card-hard text-black px-4 py-3 text-base font-semibold focus:outline-none"
             />
             <button type="submit" disabled={status === "loading"} className="btn-mustard text-lg mt-2">
-              {status === "loading" ? "RESERVANDO..." : "RESERVAR MI PLAZA"}
+              {status === "loading" ? "ENVIANDO..." : "PIDE TU DEMO"}
             </button>
             {status === "error" && <p className="text-red-300 text-center">{msg}</p>}
           </form>

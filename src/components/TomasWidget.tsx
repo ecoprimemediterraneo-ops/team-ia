@@ -5,7 +5,7 @@ type Msg = { role: "user" | "assistant"; content: string };
 
 const WELCOME: Msg = {
   role: "assistant",
-  content: "Hola, soy Tomás, soporte de AI-Team. ¿En qué te puedo ayudar?",
+  content: "Hola, soy el asistente de AI-Team. ¿En qué te puedo ayudar?",
 };
 
 export default function TomasWidget() {
@@ -94,16 +94,11 @@ export default function TomasWidget() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          aria-label="Abrir chat con Tomás"
-          className="fixed right-5 z-50 w-[72px] h-[72px] rounded-full overflow-hidden shadow-lg shadow-black/30 transition-transform duration-200 hover:scale-105 border-[3px] border-[color:var(--mustard)] bg-black"
+          aria-label="Abrir chat de soporte"
+          className="fixed right-5 z-50 w-[72px] h-[72px] rounded-full overflow-hidden shadow-lg shadow-black/30 transition-transform duration-200 hover:scale-105 border-[3px] border-[color:var(--mustard)] bg-black hidden sm:flex items-center justify-center"
           style={{ bottom: "92px" }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/agentes/tomas/tomas.webp"
-            alt="Tomás"
-            className="w-full h-full object-cover"
-          />
+          <span className="text-[color:var(--mustard)] text-3xl" aria-hidden>💬</span>
           <span className="absolute -top-1 -right-1 bg-[color:var(--red)] text-white text-[10px] font-bold tracking-widest px-1.5 py-0.5 border-2 border-black">
             24/7
           </span>
@@ -117,12 +112,12 @@ export default function TomasWidget() {
           className="fixed right-5 z-50 w-[92vw] sm:w-[360px] h-[480px] max-h-[80vh] flex flex-col bg-[color:var(--cream)] border-[3px] border-black shadow-2xl"
           style={{ bottom: "92px" }}
           role="dialog"
-          aria-label="Chat con Tomás"
+          aria-label="Chat de soporte de AI-Team"
         >
           {/* Header */}
           <header className="bg-black text-[color:var(--mustard)] px-4 py-3 flex items-center justify-between border-b-[3px] border-black">
             <div className="flex items-center gap-2">
-              <span className="font-stencil text-xl">Tomás</span>
+              <span className="font-stencil text-xl">Asistente</span>
               <span className="text-[10px] font-mono tracking-widest text-white/60">SOPORTE · 24/7</span>
             </div>
             <button

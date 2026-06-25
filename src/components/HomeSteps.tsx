@@ -1,9 +1,9 @@
 // "Qué pasa cuando te registras" — 3 pasos. Bloque propio en la home
 // (extraído del antiguo FinalCTA, que ahora es solo un banner a /beta).
 const nextSteps = [
-  { step: "01", text: "Recibes acceso a tu panel en menos de 2 minutos." },
-  { step: "02", text: "Videollamada de setup de 15 min. Los agentes aprenden tu negocio." },
-  { step: "03", text: "Operativo. Tu equipo IA trabaja desde esa noche." },
+  { step: "01", text: "Recibes acceso a tu sistema en menos de 2 minutos." },
+  { step: "02", text: "Videollamada de setup de 15 min. El sistema aprende tu negocio." },
+  { step: "03", text: "Operativo. Tu sistema trabaja —y se adelanta— desde esa noche." },
 ];
 
 export default function HomeSteps() {

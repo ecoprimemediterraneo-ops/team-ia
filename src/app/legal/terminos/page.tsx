@@ -15,7 +15,7 @@ export default function TerminosPage() {
           <p className="text-sm text-black/60 mb-8">Última actualización: 11 de mayo de 2026</p>
 
           <h2 className="font-stencil text-2xl mt-8 mb-3">1. Qué es AI-Team</h2>
-          <p>AI-Team es un servicio software que ofrece 6 asistentes de IA (Pablo, Lucía, Eva, Rocío, Marta, Carmen) para PYMEs. Operamos como SaaS por suscripción mensual.</p>
+          <p>AI-Team es un sistema operativo de software para clínicas y PyMEs de servicios: un único sistema que integra WhatsApp, llamadas, reseñas de Google, correo, agenda, email marketing e Instagram. Se presta por suscripción mensual.</p>
 
           <h2 className="font-stencil text-2xl mt-8 mb-3">2. Quién puede usarlo</h2>
           <p>Mayores de 18 años, con un negocio legal. No para uso personal/doméstico. No para sectores prohibidos por la AppStore de Apple/Google (apuestas, contenido adulto, drogas, etc.).</p>
@@ -24,7 +24,7 @@ export default function TerminosPage() {
           <ul className="list-disc pl-6 space-y-1">
             <li>Pago mensual. Sin permanencia.</li>
             <li>6 meses de prueba sin tarjeta. Puedes cancelar antes sin coste.</li>
-            <li>Plazas <strong>fundadoras</strong>: 50 primeros clientes con precio congelado de por vida.</li>
+            <li>Plazas <strong>fundadoras</strong>: 20 primeros clientes con precio congelado de por vida.</li>
             <li>Tras el lanzamiento general, los precios pueden subir para nuevos clientes (no para fundadores).</li>
             <li>Reembolsos: si en los primeros 6 meses no estás contento, devolvemos el 100%.</li>
           </ul>
@@ -35,15 +35,16 @@ export default function TerminosPage() {
           <h2 className="font-stencil text-2xl mt-8 mb-3">5. Lo que ofrecemos honestamente</h2>
           <p><strong>Estado actual del producto (mayo 2026):</strong></p>
           <ul className="list-disc pl-6 space-y-1">
-            <li><strong>Eva:</strong> envía emails reales por Resend desde tu dominio si lo conectas.</li>
-            <li><strong>Lucía:</strong> lee tu Gmail real con OAuth, te genera borradores en tu cuenta.</li>
-            <li><strong>Pablo, Rocío, Marta, Carmen:</strong> modo &quot;asistido&quot; — generan contenido (mensajes, respuestas, posts, voz) y tú los publicas con un click. La auto-publicación 100% requiere integraciones con APIs externas (Meta WhatsApp Business, Google Business Profile, Instagram Graph, Vapi) que estamos solicitando. Tiempos estimados: 2-12 semanas.</li>
+            <li><strong>Email marketing:</strong> el sistema envía emails reales por Resend desde tu dominio si lo conectas.</li>
+            <li><strong>Correo y agenda:</strong> lee tu Gmail real con OAuth y te genera borradores en tu cuenta.</li>
+            <li><strong>WhatsApp, reseñas de Google, Instagram y llamadas:</strong> modo &quot;asistido&quot; — el sistema genera el contenido (mensajes, respuestas, posts, voz) y tú lo publicas con un click. La auto-publicación 100% requiere integraciones con APIs externas (Meta WhatsApp Business, Google Business Profile, Instagram Graph, Vapi) que estamos solicitando. Tiempos estimados: 2-12 semanas.</li>
+            <li><strong>Capa proactiva</strong> (avisos y sugerencias): en activación por fases.</li>
           </ul>
-          <p>Te avisamos en cada agente exactamente qué está automatizado y qué es asistido. <strong>Sin humo.</strong></p>
+          <p>Te avisamos en cada función exactamente qué está automatizado y qué es asistido. <strong>Sin humo.</strong></p>
 
           <h2 className="font-stencil text-2xl mt-8 mb-3">6. Tus responsabilidades</h2>
           <ul className="list-disc pl-6 space-y-1">
-            <li>Revisar las respuestas que los agentes generan antes de publicarlas o enviarlas.</li>
+            <li>Revisar las respuestas que el sistema genera antes de publicarlas o enviarlas.</li>
             <li>Cumplir las leyes aplicables a tu negocio (RGPD, alérgenos, etc.).</li>
             <li>No usar el servicio para spam, fraude, contenido ilegal.</li>
             <li>Mantener tu cuenta segura.</li>
