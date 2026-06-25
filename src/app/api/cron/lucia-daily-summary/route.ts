@@ -5,21 +5,10 @@
  */
 
 import { NextResponse } from "next/server";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { Resend } from "resend";
-import type { UserData } from "@/lib/store";
-import { fetchInbox, getRedirectUri } from "@/lib/gmail";
+import { getAllUsers } from "@/lib/store";
+import { fetchInbox } from "@/lib/gmail";
 import { anthropic } from "@/lib/claude";
-
-const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
-const USERS_FILE = path.join(DATA_DIR, "users.json");
-
-async function readUsers(): Promise<Record<string, UserData>> {
-  try {
-    return JSON.parse(await fs.readFile(USERS_FILE, "utf-8"));
-  } catch { return {}; }
-}
 
 export async function GET(req: Request) {
   const auth = req.headers.get("authorization") || "";
@@ -28,7 +17,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const users = await readUsers();
+  const users = await getAllUsers();
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM || "Lucía (AI-Team) <lucia@aiteam.marketing>";
   if (!apiKey) return NextResponse.json({ error: "No Resend key" });

@@ -92,6 +92,7 @@ export type ScheduledEmail = {
   createdAt: string;
   sentAt?: string;
   error?: string;
+  attempts?: number; // intentos de envío (para reintentos con tope)
 };
 
 export type WelcomeSend = {
@@ -101,6 +102,7 @@ export type WelcomeSend = {
   sendAt: string;
   status: "pending" | "sent" | "failed" | "cancelled";
   sentAt?: string;
+  attempts?: number; // intentos de envío (para reintentos con tope)
 };
 
 export type LearnedPattern = {
@@ -160,6 +162,15 @@ async function writeAll(data: Record<string, UserData>) {
     await fs.mkdir(DATA_DIR, { recursive: true });
     await fs.writeFile(USERS_FILE, JSON.stringify(data, null, 2));
   }
+}
+
+/**
+ * Devuelve TODOS los usuarios (lectura). Para crons que iteran a todos.
+ * Enruta a Supabase (prod) o fichero (dev), igual que el resto del store —
+ * así los crons dejan de leer /tmp efímero y ven los datos reales.
+ */
+export async function getAllUsers(): Promise<Record<string, UserData>> {
+  return readAll();
 }
 
 export async function getUser(email: string): Promise<UserData> {

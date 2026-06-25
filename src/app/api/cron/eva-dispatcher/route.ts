@@ -1,28 +1,24 @@
 /**
- * Cron cada 15 min — dispara emails programados y welcome series pendientes.
+ * Cron — dispara emails programados y welcome series pendientes.
  *
- * Configurar en vercel.json:
- *   { "path": "/api/cron/eva-dispatcher", "schedule": "* /15 * * * *" }
+ * Lee y persiste el estado en el store central (Supabase en prod, fichero en dev)
+ * vía store.ts — NO en /tmp efímero.
+ *
+ * Política A ("nunca perder un email"):
+ *  - Comprueba el resultado de Resend: si `res.error` (Resend rechaza), el ítem
+ *    queda "failed" (NO "sent") y se REINTENTA en pasadas siguientes.
+ *  - Tope `MAX_ATTEMPTS` para no reintentar en bucle un email imposible; al
+ *    alcanzarlo, queda "failed" definitivo y se deja de intentar.
+ *  - Un envío OK marca "sent" y nunca se reprocesa.
+ *
+ * Disparo recomendado cada ~15 min (vía n8n / cron externo).
  */
 
 import { NextResponse } from "next/server";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { Resend } from "resend";
-import type { UserData } from "@/lib/store";
+import { getAllUsers, updateScheduledEmail, updateWelcomeSend } from "@/lib/store";
 
-const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
-const USERS_FILE = path.join(DATA_DIR, "users.json");
-
-async function readUsers(): Promise<Record<string, UserData>> {
-  try { return JSON.parse(await fs.readFile(USERS_FILE, "utf-8")); }
-  catch { return {}; }
-}
-
-async function writeUsers(data: Record<string, UserData>) {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(USERS_FILE, JSON.stringify(data, null, 2));
-}
+const MAX_ATTEMPTS = 5; // reintentos máximos antes de darlo por perdido
 
 function fillVars(text: string, vars: Record<string, string>): string {
   let out = text;
@@ -44,7 +40,7 @@ export async function GET(req: Request) {
   const resend = new Resend(apiKey);
   const from = process.env.RESEND_FROM || "Eva (AI-Team) <eva@aiteam.marketing>";
 
-  const users = await readUsers();
+  const users = await getAllUsers();
   const now = Date.now();
   let scheduledSent = 0;
   let welcomeSent = 0;
@@ -57,33 +53,45 @@ export async function GET(req: Request) {
     // 1. Scheduled emails que les ha llegado el momento
     const sched = user.scheduledEmails ?? [];
     for (const s of sched) {
-      if (s.status !== "pending") continue;
+      const attempts = s.attempts ?? 0;
+      // Procesa los pendientes y los "failed" que aún no agotaron reintentos.
+      const retriable = s.status === "pending" || (s.status === "failed" && attempts < MAX_ATTEMPTS);
+      if (!retriable) continue;
       if (new Date(s.scheduledFor).getTime() > now) continue;
+
+      const recipients: string[] = s.to === "all"
+        ? (user.contacts ?? []).map((c) => c.email)
+        : [s.to];
+      if (recipients.length === 0) {
+        // Sin destinatarios no es reintentble: lo marcamos terminal.
+        await updateScheduledEmail(userEmail, s.id, { status: "failed", error: "Sin destinatarios", attempts: MAX_ATTEMPTS });
+        failed++;
+        continue;
+      }
+
       try {
-        const recipients: string[] = s.to === "all"
-          ? (user.contacts ?? []).map((c) => c.email)
-          : [s.to];
-        if (recipients.length === 0) {
-          s.status = "failed";
-          s.error = "Sin destinatarios";
-          continue;
-        }
         for (const r of recipients) {
           const cName = user.contacts?.find((c) => c.email === r)?.name || "";
-          await resend.emails.send({
+          const res = await resend.emails.send({
             from,
             to: r,
             subject: fillVars(s.subject, { negocio, nombre: cName }),
             html: `<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:auto;padding:20px;white-space:pre-wrap">${fillVars(s.body, { negocio, nombre: cName }).replace(/\n/g, "<br>")}</div>`,
             replyTo: process.env.EVA_REPLY_TO || "cita@parse.aiteam.marketing",
           });
+          // Resend NO lanza excepción ante errores de API: los devuelve en res.error.
+          if (res.error) throw new Error(res.error.message || "Resend rechazó el envío");
         }
-        s.status = "sent";
-        s.sentAt = new Date().toISOString();
+        // Solo si TODOS los envíos fueron aceptados: marcar enviado.
+        await updateScheduledEmail(userEmail, s.id, { status: "sent", sentAt: new Date().toISOString() });
         scheduledSent++;
       } catch (e) {
-        s.status = "failed";
-        s.error = e instanceof Error ? e.message : "Error";
+        // Rechazo/error → failed + 1 intento. Se reintentará hasta MAX_ATTEMPTS.
+        await updateScheduledEmail(userEmail, s.id, {
+          status: "failed",
+          error: e instanceof Error ? e.message : "Error",
+          attempts: attempts + 1,
+        });
         failed++;
       }
     }
@@ -92,33 +100,38 @@ export async function GET(req: Request) {
     const sends = user.welcomeSends ?? [];
     const series = user.welcomeSeries;
     for (const w of sends) {
-      if (w.status !== "pending") continue;
+      const attempts = w.attempts ?? 0;
+      const retriable = w.status === "pending" || (w.status === "failed" && attempts < MAX_ATTEMPTS);
+      if (!retriable) continue;
       if (new Date(w.sendAt).getTime() > now) continue;
       if (!series || !series.enabled || !series.emails[w.stepIndex]) {
-        w.status = "cancelled";
+        await updateWelcomeSend(userEmail, w.id, { status: "cancelled" });
         continue;
       }
+
       try {
         const e = series.emails[w.stepIndex];
         const cName = user.contacts?.find((c) => c.email === w.contactEmail)?.name || "";
-        await resend.emails.send({
+        const res = await resend.emails.send({
           from,
           to: w.contactEmail,
           subject: fillVars(e.subject, { negocio, nombre: cName }),
           html: `<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:auto;padding:20px;white-space:pre-wrap">${fillVars(e.body, { negocio, nombre: cName }).replace(/\n/g, "<br>")}</div>`,
           replyTo: process.env.EVA_REPLY_TO || "cita@parse.aiteam.marketing",
         });
-        w.status = "sent";
-        w.sentAt = new Date().toISOString();
+        if (res.error) throw new Error(res.error.message || "Resend rechazó el envío");
+        await updateWelcomeSend(userEmail, w.id, { status: "sent", sentAt: new Date().toISOString() });
         welcomeSent++;
       } catch (e) {
-        w.status = "failed";
+        await updateWelcomeSend(userEmail, w.id, {
+          status: "failed",
+          attempts: attempts + 1,
+        });
         failed++;
         console.error("welcome send failed", e);
       }
     }
   }
 
-  await writeUsers(users);
   return NextResponse.json({ scheduledSent, welcomeSent, failed });
 }

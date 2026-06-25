@@ -78,7 +78,7 @@ export default function Hero() {
           {/* Capacidades del sistema (sustituye al subtítulo en párrafo) */}
           <ul className="mt-8 max-w-xl mx-auto flex flex-col gap-3 text-left text-base md:text-lg text-white/85 font-sans">
             {[
-              "Respondemos tus leads al instante, 24/7",
+              "Respondemos al instante 24/7 y convertimos más leads en clientes",
               "Atendemos WhatsApp, llamadas, Instagram, email y reseñas",
               "Agendamos tus citas solas, de la consulta a la confirmación",
               "Recuperamos las oportunidades que se te escapan",
