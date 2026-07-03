@@ -32,6 +32,9 @@ export default function Navbar() {
           <a href="/precios" className="hover:text-[color:var(--red)] transition-colors">
             Precios
           </a>
+          <a href="/diagnostico" className="hover:text-[color:var(--red)] transition-colors">
+            Diagnóstico
+          </a>
 
           {/* PYMEs dropdown (hover + click, sin overlay bloqueante) */}
           <div
@@ -121,6 +124,13 @@ export default function Navbar() {
             onClick={() => setMenuOpen(false)}
           >
             Precios
+          </a>
+          <a
+            href="/diagnostico"
+            className="block font-bold text-sm uppercase tracking-wider hover:text-[color:var(--red)]"
+            onClick={() => setMenuOpen(false)}
+          >
+            Diagnóstico
           </a>
           <a
             href="/casos"
