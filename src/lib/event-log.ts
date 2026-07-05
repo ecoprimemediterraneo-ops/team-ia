@@ -33,6 +33,7 @@ export type EventChannel =
   | "lucia"
   | "rocio"
   | "sergio"
+  | "booking"   // AI-Team Booking: reservas online del consumidor final
   | "dashboard"
   | "system";
 

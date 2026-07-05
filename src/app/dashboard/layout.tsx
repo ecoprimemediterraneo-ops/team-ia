@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import Logo from "@/components/Logo";
 import { agents, type AgentSlug } from "@/lib/agents";
@@ -9,7 +9,8 @@ import { agents, type AgentSlug } from "@/lib/agents";
 const LIVE_AGENTS = new Set<AgentSlug>(["pablo", "eva", "lucia", "marta"]);
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const session = await getSession();
+  // En producción exige sesión real; en desarrollo local entra con dueño por defecto.
+  const session = await getSessionLocal();
   if (!session) redirect("/login");
   const user = await getUser(session.email);
 
@@ -19,6 +20,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="max-w-7xl mx-auto flex items-center justify-between px-5 py-3">
           <a href="/dashboard"><Logo size="sm" /></a>
           <div className="flex items-center gap-4 text-sm">
+            {session.dev && (
+              <span className="text-[9px] uppercase tracking-widest font-bold bg-[color:var(--mustard)] border-2 border-black px-1.5 py-0.5" title="Sesión de desarrollo local (sin login). En producción exige magic link.">DEV</span>
+            )}
             <span className="hidden sm:inline font-mono text-black/60">{session.email}</span>
             <form action="/api/auth/logout" method="post">
               <button className="text-xs uppercase tracking-widest font-bold border-2 border-black px-2 py-1 hover:bg-black hover:text-white">Salir</button>

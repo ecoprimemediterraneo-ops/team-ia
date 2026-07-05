@@ -291,6 +291,32 @@ export async function createEvent(
 }
 
 // -----------------------------------------------------------------------------
+// Borrar evento — para cancelaciones (AI-Team Booking). Libera el hueco.
+// -----------------------------------------------------------------------------
+
+export type DeleteEventResult =
+  | { ok: true }
+  | { ok: false; reason: "no_tokens" | "api_error" | "not_found"; detail: string };
+
+export async function deleteEvent(
+  userEmail: string,
+  redirectUri: string,
+  eventId: string,
+): Promise<DeleteEventResult> {
+  const cal = await getAuthedCalendarClient(userEmail, redirectUri);
+  if (!cal) return { ok: false, reason: "no_tokens", detail: "Sin tokens para este usuario." };
+  try {
+    await cal.events.delete({ calendarId: PRIMARY, eventId, sendUpdates: "all" });
+    return { ok: true };
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    // Google devuelve 404/410 si el evento ya no existe → lo tratamos como borrado.
+    if (/not found|410|deleted|resource has been deleted/i.test(detail)) return { ok: true };
+    return { ok: false, reason: "api_error", detail };
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Función reutilizable: agendarCita()
 // -----------------------------------------------------------------------------
 
