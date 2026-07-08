@@ -7,7 +7,10 @@ import { WHATSAPP_LINK } from "@/lib/constants";
 
 export default function WhatsAppFloat() {
   const pathname = usePathname();
-  if (pathname === "/beta") return null;
+  // Oculto en /beta (taparía el botón de envío) y en la web pública de reservas
+  // /reservas/* (es un CTA de marketing de AI-Team, no del salón, y duplicaría con
+  // el chat propio "¿Dudas?"). Deja SOLO el botón amarillo en la página de reservas.
+  if (pathname === "/beta" || pathname?.startsWith("/reservas/")) return null;
 
   return (
     <a

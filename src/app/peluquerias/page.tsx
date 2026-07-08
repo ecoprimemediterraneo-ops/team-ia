@@ -119,7 +119,7 @@ const peluPacks = [
   },
   {
     name: "Gestión (opcional)",
-    priceFounder: "+249",
+    priceFounder: "+799",
     priceRegular: "",
     tagline: "Se suma al Sistema Operativo. Lo gestionamos por ti.",
     agents: [

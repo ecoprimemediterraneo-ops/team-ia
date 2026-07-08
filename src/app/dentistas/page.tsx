@@ -113,7 +113,7 @@ const dentalPacks = [
   },
   {
     name: "Gestión (opcional)",
-    priceFounder: "+249",
+    priceFounder: "+799",
     priceRegular: "—",
     tagline: "¿Prefieres que lo llevemos por ti? Se suma al Sistema Operativo, no lo incluye.",
     agents: [

@@ -130,7 +130,7 @@ const esteticaPlan = {
   },
   addon: {
     name: "Gestión",
-    priceMonthly: "249",
+    priceMonthly: "799",
     tagline: "Opcional. Nos encargamos nosotros de la puesta a punto y el día a día.",
     incluye: [
       "Configuración y entrenamiento continuo del sistema",

@@ -4,6 +4,7 @@
  * Schedule: cada día a las 04:00 UTC (después del scraper a las 03:00)
  */
 import { NextResponse } from "next/server";
+import { cronAuthError } from "@/lib/cron-auth";
 import { listChanges, listSources, acknowledgeChange, updateSource } from "@/lib/sergio-db";
 import type { Change } from "@/lib/sergio-db";
 import { analyzeChange } from "@/lib/sergio-analysis";
@@ -14,11 +15,8 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization") ?? "";
-  const secret = process.env.CRON_SECRET;
-  if (secret && !auth.includes(secret)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authErr = cronAuthError(req);
+  if (authErr) return authErr;
 
   // Get unacknowledged changes
   const pending = await listChanges({ acknowledged: false, limit: 20 });

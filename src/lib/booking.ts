@@ -25,6 +25,7 @@ import { kvGet, kvSet, kvListByPrefix, supabaseEnabled } from "./supabase";
 import { getTenant, DEFAULT_TENANT_ID } from "./tenants";
 import { freeBusyQuery, deleteEvent } from "./calendar";
 import { reservarSlotBooking } from "./booking-orchestrator";
+import { benditoArteSeed } from "./booking-seed-bendito";
 
 // -----------------------------------------------------------------------------
 // Tipos
@@ -75,6 +76,11 @@ export type BusinessBooking = {
   nombre: string;
   descripcion?: string;
   galeria?: string[]; // URLs de fotos (mini-web)
+  direccion?: string; // dirección física (ficha + mapa)
+  lat?: number; // coordenadas (para el mapa OSM); se autocompletan al guardar la dirección
+  lng?: number;
+  telefono?: string; // teléfono de contacto público
+  instagram?: string; // handle de Instagram (sin @); enlace en la ficha
   calendarEmail?: string; // enganche multi-cliente al calendario Google
   timezone: string; // "Europe/Madrid"
   categorias: Categoria[];
@@ -254,6 +260,25 @@ async function readConfigs(): Promise<ConfigMap> {
   if (!data || Object.keys(data).length === 0) {
     data = { ...seedBusinesses() };
     await writeConfigs(data);
+  }
+  // Auto-arreglo de la demo: si quedó persistida con el seed viejo (fotos picsum,
+  // sin mapa), la refresca una vez con el seed actual. Solo toca la "demo" y solo
+  // cuando lleva las URLs picsum (un salón real nunca las usa) → no pisa datos reales.
+  const d = data.demo;
+  if (d && (d.galeria || []).some((g) => g.includes("picsum"))) {
+    const seed = seedBusinesses();
+    if (seed.demo) { data.demo = seed.demo; await writeConfigs(data); }
+  }
+  // Alta ÚNICA del salón fundador "Bendito Arte". Se inyecta una sola vez: si ya
+  // está en configs no se toca (respeta ediciones del dueño); si se borró alguna
+  // vez, el flag KV evita re-inyectarlo. En local ya vive en el JSON → no aplica.
+  if (!data["bendito-arte"]) {
+    const yaSeed = supabaseEnabled() ? await kvGet<boolean>("booking:seed:bendito-arte") : false;
+    if (!yaSeed) {
+      data["bendito-arte"] = benditoArteSeed();
+      await writeConfigs(data);
+      if (supabaseEnabled()) await kvSet("booking:seed:bendito-arte", true);
+    }
   }
   return data;
 }
@@ -1321,10 +1346,14 @@ function seedBusinesses(): ConfigMap {
     nombre: "Clínica Bella (demo)",
     descripcion: "Centro de estética y belleza. Reserva online en segundos — cancelación gratis, sin comisiones.",
     galeria: [
-      "https://picsum.photos/seed/bella1/600/400",
-      "https://picsum.photos/seed/bella2/600/400",
-      "https://picsum.photos/seed/bella3/600/400",
+      "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=640&h=440&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=640&h=440&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1633681926022-84c23e8cb2d6?w=640&h=440&fit=crop&q=80",
     ],
+    direccion: "Av. Ricardo Soriano 42, 29601 Marbella, Málaga",
+    lat: 36.5085,
+    lng: -4.8878,
+    telefono: "+34 600 123 456",
     timezone: "Europe/Madrid",
     slotStepMin: 15,
     leadTimeMin: 60,

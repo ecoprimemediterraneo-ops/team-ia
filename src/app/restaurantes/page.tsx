@@ -109,7 +109,7 @@ const restoPacks = [
   },
   {
     name: "Gestión (opcional)",
-    priceFounder: "+249",
+    priceFounder: "+799",
     priceRegular: null,
     tagline: "Si no quieres ni revisar: lo gestionamos por ti. Se suma al Sistema Operativo.",
     funciones: [

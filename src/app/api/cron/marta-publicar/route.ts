@@ -17,16 +17,14 @@
 
 import { NextResponse } from "next/server";
 import { runDueSchedules } from "@/lib/marta-schedule";
+import { cronAuthError } from "@/lib/cron-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization");
-  const expected = `Bearer ${process.env.CRON_SECRET || "dev-secret"}`;
-  if (process.env.VERCEL && auth !== expected) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const authErr = cronAuthError(req);
+  if (authErr) return authErr;
 
   // baseUrl para que la generación de imágenes construya URLs absolutas.
   const h = req.headers;

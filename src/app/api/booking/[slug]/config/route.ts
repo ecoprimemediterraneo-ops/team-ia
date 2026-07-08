@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { saveBusiness, type BusinessBooking } from "@/lib/booking";
 import { authorizeOwner } from "@/lib/booking-owner";
+import { geocodeDireccion } from "@/lib/geocode";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -49,6 +50,10 @@ const schema = z.object({
   nombre: z.string().min(1).max(120).optional(),
   descripcion: z.string().max(600).optional(),
   galeria: z.array(z.string().url().max(500)).max(12).optional(),
+  direccion: z.string().max(200).optional(),
+  telefono: z.string().max(40).optional(),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
   slotStepMin: z.number().int().min(5).max(60).optional(),
   leadTimeMin: z.number().int().min(0).max(1440).optional(),
   cancelAntelacionMin: z.number().int().min(0).max(10080).optional(),
@@ -84,6 +89,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     nombre: parsed.data.nombre ?? cur.nombre,
     descripcion: parsed.data.descripcion ?? cur.descripcion,
     galeria: parsed.data.galeria ?? cur.galeria,
+    direccion: parsed.data.direccion ?? cur.direccion,
+    lat: parsed.data.lat ?? cur.lat,
+    lng: parsed.data.lng ?? cur.lng,
+    telefono: parsed.data.telefono ?? cur.telefono,
     slotStepMin: parsed.data.slotStepMin ?? cur.slotStepMin,
     leadTimeMin: parsed.data.leadTimeMin ?? cur.leadTimeMin,
     cancelAntelacionMin: parsed.data.cancelAntelacionMin ?? cur.cancelAntelacionMin,
@@ -92,6 +101,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     empleados: (parsed.data.empleados ?? cur.empleados) as BusinessBooking["empleados"],
     horario,
   };
+
+  // Mapa: si la dirección cambió (y no llegan coords explícitas), geocodifica en
+  // segundo plano con Nominatim (OSM, sin API key). Best-effort: si falla, se
+  // guarda sin coords y la web muestra solo la dirección enlazada.
+  const dir = (updated.direccion || "").trim();
+  if (!dir) {
+    updated.lat = undefined;
+    updated.lng = undefined;
+  } else if (parsed.data.lat == null && dir !== (cur.direccion || "").trim()) {
+    const geo = await geocodeDireccion(dir);
+    if (geo) { updated.lat = geo.lat; updated.lng = geo.lng; }
+  }
+
   const saved = await saveBusiness(updated);
   return NextResponse.json({ ok: true, business: saved });
 }

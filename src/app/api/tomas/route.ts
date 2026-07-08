@@ -30,7 +30,7 @@ Diferenciador: es PROACTIVO —no espera a que le escribas: te avisa de leads si
 
 PRECIOS
 - Sistema Operativo: 299€/mes, con 50% de descuento fundador = **149€/mes**.
-- Gestión (opcional, se SUMA): **+249€/mes** —lo operamos nosotros por el cliente. No está incluido en el sistema.
+- Gestión (opcional, se SUMA): **+799€/mes** —lo operamos nosotros por el cliente. No está incluido en el sistema.
 - Incluye: 6 meses gratis, sin tarjeta, sin permanencia, precio fundador congelado para siempre. Solo 20 plazas fundador.
 Para varias sedes o necesidades a medida, deriva a "hablar con ventas" (cal.com).
 

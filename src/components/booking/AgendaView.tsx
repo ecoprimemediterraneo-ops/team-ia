@@ -5,7 +5,7 @@
 // citas manuales (walk-in/teléfono) y bloqueos de tiempo. Lee y escribe en el
 // MISMO calendario que el flujo público (sin dobles reservas).
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BookingService, BookingRecord, EstadoCita, Empleado } from "@/lib/booking";
 import EsperaBanner from "./EsperaBanner";
 
@@ -52,11 +52,15 @@ const ACCIONES: Record<EstadoCita, [EstadoCita, string][]> = {
   no_show: [],
 };
 
+/** Evento externo del Google Calendar del owner (solo lectura). */
+type EventoExterno = { id: string; titulo: string; start: string; end: string; allDay: boolean };
+
 export default function AgendaView({ slug, nombre, timezone, servicios, empleados }: Props) {
   const empMap = useMemo(() => Object.fromEntries(empleados.map((e) => [e.id, e])) as Record<string, Empleado>, [empleados]);
-  const [vista, setVista] = useState<"dia" | "columnas" | "semana">("dia");
+  const [vista, setVista] = useState<"dia" | "rejilla" | "columnas" | "semana">("dia");
   const [dia, setDia] = useState<string>(HOY());
   const [records, setRecords] = useState<BookingRecord[]>([]);
+  const [externos, setExternos] = useState<EventoExterno[]>([]);
   const [cargando, setCargando] = useState(true);
   const [modal, setModal] = useState<null | "cita" | "bloqueo">(null);
   const [reprog, setReprog] = useState<BookingRecord | null>(null);
@@ -64,8 +68,9 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
   const [aviso, setAviso] = useState<{ tipo: "ok" | "err"; msg: string } | null>(null);
 
   const lunes = useMemo(() => mondayOf(dia), [dia]);
-  const rangeFrom = vista === "semana" ? lunes : dia;
-  const rangeTo = vista === "semana" ? addDays(lunes, 6) : dia;
+  const semanal = vista === "semana" || vista === "rejilla";
+  const rangeFrom = semanal ? lunes : dia;
+  const rangeTo = semanal ? addDays(lunes, 6) : dia;
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -79,7 +84,41 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
     } finally {
       setCargando(false);
     }
+    // Eventos externos de Google (solo lectura) — best-effort, no bloquean la agenda.
+    try {
+      const re = await fetch(`/api/booking/${slug}/agenda/externos?from=${rangeFrom}&to=${rangeTo}`, { cache: "no-store" });
+      const je = await re.json();
+      setExternos(re.ok && je.ok ? (je.eventos as EventoExterno[]) : []);
+    } catch {
+      setExternos([]);
+    }
   }, [slug, rangeFrom, rangeTo]);
+
+  // Reprograma (mover/redimensionar) desde la rejilla, con guardado optimista.
+  const reprogramarInline = useCallback(async (recordId: string, startIso: string, durationMin: number) => {
+    setAviso(null);
+    // optimista
+    setRecords((prev) => prev.map((x) => (x.id === recordId ? { ...x, startIso: `${startIso}:00`.slice(0, 19), durationMin } : x)));
+    try {
+      const r = await fetch(`/api/booking/${slug}/agenda`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reprogramar", recordId, startIso, durationMin }),
+      });
+      const j = await r.json();
+      if (r.ok && j.ok) {
+        setRecords((prev) => prev.map((x) => (x.id === recordId ? (j.record as BookingRecord) : x)));
+        setAviso({ tipo: "ok", msg: "Cita actualizada." });
+      } else {
+        if (j.reason === "slot_taken") setAviso({ tipo: "err", msg: "Ese hueco choca con otra cita/bloqueo." });
+        else if (j.reason === "no_calendar") setAviso({ tipo: "err", msg: "No hay calendario de Google conectado." });
+        else setAviso({ tipo: "err", msg: j.detail || "No se pudo mover la cita." });
+        cargar(); // revertir al estado real
+      }
+    } catch {
+      setAviso({ tipo: "err", msg: "Fallo de red al mover." });
+      cargar();
+    }
+  }, [slug, cargar]);
 
   useEffect(() => { cargar(); }, [cargar]);
   useEffect(() => {
@@ -112,20 +151,20 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
       {/* Controles */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <div className="inline-flex border-[3px] border-black">
-          {(empleados.length > 0 ? (["dia", "columnas", "semana"] as const) : (["dia", "semana"] as const)).map((v) => (
+          {(empleados.length > 0 ? (["dia", "rejilla", "columnas", "semana"] as const) : (["dia", "rejilla", "semana"] as const)).map((v) => (
             <button
               key={v}
               onClick={() => setVista(v)}
               className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest ${vista === v ? "bg-black text-white" : "bg-white hover:bg-[color:var(--cream)]"}`}
             >
-              {v === "dia" ? "Día" : v === "columnas" ? "Personal" : "Semana"}
+              {v === "dia" ? "Día" : v === "rejilla" ? "Rejilla" : v === "columnas" ? "Personal" : "Semana"}
             </button>
           ))}
         </div>
         <div className="inline-flex items-center gap-1">
-          <button onClick={() => setDia(addDays(dia, vista === "semana" ? -7 : -1))} className="w-8 h-8 border-[3px] border-black bg-white font-bold hover:bg-[color:var(--cream)]" aria-label="Anterior">‹</button>
+          <button onClick={() => setDia(addDays(dia, semanal ? -7 : -1))} className="w-8 h-8 border-[3px] border-black bg-white font-bold hover:bg-[color:var(--cream)]" aria-label="Anterior">‹</button>
           <button onClick={() => setDia(HOY())} className="px-2 h-8 border-[3px] border-black bg-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--cream)]">Hoy</button>
-          <button onClick={() => setDia(addDays(dia, vista === "semana" ? 7 : 1))} className="w-8 h-8 border-[3px] border-black bg-white font-bold hover:bg-[color:var(--cream)]" aria-label="Siguiente">›</button>
+          <button onClick={() => setDia(addDays(dia, semanal ? 7 : 1))} className="w-8 h-8 border-[3px] border-black bg-white font-bold hover:bg-[color:var(--cream)]" aria-label="Siguiente">›</button>
         </div>
         <div className="ml-auto flex gap-2">
           <button onClick={() => setModal("cita")} className="btn-mustard text-xs">＋ Cita</button>
@@ -136,7 +175,7 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
       <EsperaBanner slug={slug} />
 
       <div className="mb-3 font-stencil text-2xl capitalize leading-none">
-        {vista === "semana" ? `Semana del ${humanDia(lunes, { day: "numeric", month: "long" })}` : humanDia(dia)}
+        {semanal ? `Semana del ${humanDia(lunes, { day: "numeric", month: "long" })}` : humanDia(dia)}
       </div>
 
       {aviso && (
@@ -149,6 +188,17 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
         <div className="animate-pulse font-mono text-sm text-black/40 py-8 text-center">Cargando agenda…</div>
       ) : vista === "dia" ? (
         <DiaLista records={delDia(dia)} onEstado={cambiarEstado} onMover={setReprog} empMap={empMap} />
+      ) : vista === "rejilla" ? (
+        <RejillaSemana
+          lunes={lunes}
+          records={records}
+          externos={externos}
+          empMap={empMap}
+          timezone={timezone}
+          slotStepMin={15}
+          onReprogramar={reprogramarInline}
+          onSelect={setDetalle}
+        />
       ) : vista === "columnas" ? (
         <ColumnasDia dia={dia} records={records} empleados={empleados} onSelect={setDetalle} />
       ) : (
@@ -666,6 +716,218 @@ function BloqueoModal({ slug, dia, onClose, onDone, onError }: {
       <input value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Motivo (opcional)" className="card-hard w-full px-3 py-2 mb-4 bg-white" />
       <button onClick={enviar} disabled={enviando} className="btn-mustard w-full disabled:opacity-60">{enviando ? "Bloqueando…" : "Bloquear"}</button>
     </Overlay>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Vista "Rejilla" — semana con arrastrar/redimensionar (Booksy). Mueve hora Y día,
+// redimensiona duración, guarda vía reprogramar. Pinta eventos externos de Google
+// (solo lectura) para no solaparse con reservas nuevas.
+// -----------------------------------------------------------------------------
+type ExternoBlk = { id: string; date: string; min: number; dur: number; titulo: string };
+type Ghost = { id: string; date: string; min: number; dur: number };
+
+const clampN = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+const minFromIso = (iso: string) => Number(iso.slice(11, 13)) * 60 + Number(iso.slice(14, 16));
+const hhmm = (m: number) => `${p2(Math.floor(m / 60))}:${p2(m % 60)}`;
+
+/** ISO con zona (Google) → { date:"YYYY-MM-DD", min } en la zona del negocio (DST-correcto). */
+function localPartsTz(iso: string, tz: string): { date: string; min: number } | null {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz, hour12: false, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+  }).formatToParts(d).reduce((a, x) => ((a[x.type] = x.value), a), {} as Record<string, string>);
+  const hh = parts.hour === "24" ? 0 : Number(parts.hour);
+  return { date: `${parts.year}-${parts.month}-${parts.day}`, min: hh * 60 + Number(parts.minute) };
+}
+
+function RejillaSemana({ lunes, records, externos, empMap, timezone, slotStepMin, onReprogramar, onSelect }: {
+  lunes: string;
+  records: BookingRecord[];
+  externos: { id: string; titulo: string; start: string; end: string; allDay: boolean }[];
+  empMap: Record<string, Empleado>;
+  timezone: string;
+  slotStepMin: number;
+  onReprogramar: (recordId: string, startIso: string, durationMin: number) => void;
+  onSelect: (r: BookingRecord) => void;
+}) {
+  const step = slotStepMin || 15;
+  const PX = 0.8;
+  const AX = 46; // ancho del eje horario (px)
+  const dias = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(lunes, i)), [lunes]);
+
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<null | { id: string; mode: "move" | "resize"; startX: number; startY: number; origDate: string; origMin: number; origDur: number; moved: boolean }>(null);
+  const ghostRef = useRef<Ghost | null>(null);
+  const [ghost, setGhost] = useState<Ghost | null>(null);
+  const setGh = (g: Ghost | null) => { ghostRef.current = g; setGhost(g); };
+
+  // Bloques de nuestras reservas (excluye canceladas). Movible = pendiente/confirmada.
+  const nuestros = useMemo(() =>
+    records
+      .filter((r) => r.estado !== "cancelada")
+      .map((r) => ({ id: r.id, date: r.startIso.slice(0, 10), min: minFromIso(r.startIso), dur: Math.max(step, r.durationMin), r })),
+    [records, step]);
+
+  // Eventos externos con hora (los de día completo se listan aparte arriba).
+  const ext = useMemo(() => {
+    const out: ExternoBlk[] = [];
+    for (const e of externos) {
+      if (e.allDay) continue;
+      const s = localPartsTz(e.start, timezone);
+      const en = localPartsTz(e.end, timezone);
+      if (!s) continue;
+      let dur = en && en.date === s.date ? en.min - s.min : 24 * 60 - s.min;
+      if (dur < 15) dur = 15;
+      out.push({ id: e.id, date: s.date, min: s.min, dur, titulo: e.titulo });
+    }
+    return out;
+  }, [externos, timezone]);
+  const extAllDay = externos.filter((e) => e.allDay);
+
+  // Rango vertical dinámico (por defecto 9:00–20:00, se estira a lo que haya).
+  const { lo, hi, H, horas } = useMemo(() => {
+    const all = [...nuestros, ...ext].flatMap((b) => [b.min, b.min + b.dur]);
+    let l = Math.min(9 * 60, ...(all.length ? all : [9 * 60]));
+    let h = Math.max(20 * 60, ...(all.length ? all : [20 * 60]));
+    l = Math.floor(l / 60) * 60; h = Math.ceil(h / 60) * 60;
+    const hrs: number[] = [];
+    for (let m = l; m <= h; m += 60) hrs.push(m);
+    return { lo: l, hi: h, H: (h - l) * PX, horas: hrs };
+  }, [nuestros, ext]);
+
+  // Aplica el ghost (arrastre en curso) al bloque afectado.
+  const efNuestros = ghost ? nuestros.map((b) => (b.id === ghost.id ? { ...b, date: ghost.date, min: ghost.min, dur: ghost.dur } : b)) : nuestros;
+
+  const onMove = useCallback((e: PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dx = e.clientX - d.startX, dy = e.clientY - d.startY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) d.moved = true;
+    const deltaMin = Math.round(dy / PX / step) * step;
+    if (d.mode === "move") {
+      const newMin = clampN(d.origMin + deltaMin, lo, hi - d.origDur);
+      const rect = wrapRef.current?.getBoundingClientRect();
+      let idx = dias.indexOf(d.origDate);
+      if (rect) {
+        const colW = (rect.width - AX) / 7;
+        idx = clampN(Math.floor((e.clientX - rect.left - AX) / colW), 0, 6);
+      }
+      setGh({ id: d.id, date: dias[idx], min: newMin, dur: d.origDur });
+    } else {
+      const newDur = clampN(d.origDur + deltaMin, step, hi - d.origMin);
+      setGh({ id: d.id, date: d.origDate, min: d.origMin, dur: newDur });
+    }
+  }, [dias, lo, hi, step]);
+
+  const onUp = useCallback(() => {
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    const d = dragRef.current; dragRef.current = null;
+    const g = ghostRef.current; setGh(null);
+    if (!d) return;
+    if (!d.moved) { // fue un clic → abrir detalle
+      const rec = records.find((r) => r.id === d.id);
+      if (rec) onSelect(rec);
+      return;
+    }
+    if (!g) return;
+    const cambiaTiempo = g.date !== d.origDate || g.min !== d.origMin;
+    const cambiaDur = g.dur !== d.origDur;
+    if (!cambiaTiempo && !cambiaDur) return;
+    onReprogramar(d.id, `${g.date}T${hhmm(g.min)}`, g.dur);
+  }, [onMove, records, onSelect, onReprogramar]);
+
+  function startDrag(e: React.PointerEvent, blk: { id: string; date: string; min: number; dur: number }, mode: "move" | "resize") {
+    e.preventDefault(); e.stopPropagation();
+    dragRef.current = { id: blk.id, mode, startX: e.clientX, startY: e.clientY, origDate: blk.date, origMin: blk.min, origDur: blk.dur, moved: false };
+    setGh({ id: blk.id, date: blk.date, min: blk.min, dur: blk.dur });
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
+
+  useEffect(() => () => { window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); }, [onMove, onUp]);
+
+  const esArrastrando = !!ghost;
+
+  return (
+    <div>
+      {extAllDay.length > 0 && (
+        <div className="mb-2 text-[11px] text-black/50 flex flex-wrap gap-2">
+          {extAllDay.map((e) => <span key={e.id} className="border-2 border-black/30 bg-black/5 px-1.5 py-0.5">📅 {e.titulo}</span>)}
+        </div>
+      )}
+      <div ref={wrapRef} className="border-2 border-black bg-white select-none" style={{ touchAction: esArrastrando ? "none" : "auto" }}>
+        {/* Cabecera de días */}
+        <div className="flex border-b-2 border-black">
+          <div className="shrink-0 border-r-2 border-black/15" style={{ width: AX }} />
+          {dias.map((f) => {
+            const esHoy = f === HOY();
+            return (
+              <div key={f} className={`flex-1 text-center py-1 text-[11px] font-bold uppercase tracking-wide border-l border-black/10 ${esHoy ? "bg-[color:var(--mustard)]" : ""}`}>
+                {humanDia(f, { weekday: "short", day: "numeric" })}
+              </div>
+            );
+          })}
+        </div>
+        {/* Cuerpo */}
+        <div className="flex" style={{ height: H }}>
+          {/* Eje horario */}
+          <div className="shrink-0 relative border-r-2 border-black/15" style={{ width: AX, height: H }}>
+            {horas.map((m) => (
+              <div key={m} className="absolute right-1 text-[10px] font-mono text-black/40" style={{ top: (m - lo) * PX - 5 }}>{p2(Math.floor(m / 60))}:{p2(m % 60)}</div>
+            ))}
+          </div>
+          {/* Columnas de día */}
+          {dias.map((f) => {
+            const dosNuestros = efNuestros.filter((b) => b.date === f);
+            const dosExt = ext.filter((b) => b.date === f);
+            return (
+              <div key={f} className="flex-1 relative border-l border-black/10" style={{ height: H }}>
+                {horas.map((m) => <div key={m} className="absolute left-0 right-0 border-t border-black/10" style={{ top: (m - lo) * PX }} />)}
+                {/* Externos (solo lectura) */}
+                {dosExt.map((b) => (
+                  <div key={b.id} title={b.titulo}
+                    className="absolute left-0.5 right-0.5 overflow-hidden border-2 border-black/30 px-1 py-0.5 text-[9px] leading-tight text-black/50"
+                    style={{ top: (b.min - lo) * PX, height: Math.max(b.dur * PX, 16), background: "repeating-linear-gradient(45deg,#e5e5e5,#e5e5e5 4px,#f3f3f3 4px,#f3f3f3 8px)" }}>
+                    🔒 {b.titulo}
+                  </div>
+                ))}
+                {/* Nuestras reservas */}
+                {dosNuestros.map((b) => {
+                  const r = b.r;
+                  const movible = r.estado === "pendiente" || r.estado === "confirmada";
+                  const emp = r.empleadoId ? empMap[r.empleadoId] : undefined;
+                  const est = ESTADO[r.estado];
+                  const bg = r.tipo === "bloqueo" ? "#4b5563" : emp?.color || est.bg;
+                  const fg = r.tipo === "bloqueo" ? "#fff" : emp?.color ? "#fff" : est.fg;
+                  const arrastrando = ghost?.id === b.id;
+                  return (
+                    <div key={b.id}
+                      onPointerDown={(e) => movible && startDrag(e, b, "move")}
+                      onClick={() => !movible && onSelect(r)}
+                      className={`absolute left-0.5 right-0.5 overflow-hidden border-2 border-black px-1 py-0.5 ${movible ? "cursor-grab active:cursor-grabbing" : "opacity-60 cursor-pointer"} ${arrastrando ? "ring-2 ring-black z-20 shadow-lg" : ""}`}
+                      style={{ top: (b.min - lo) * PX, height: Math.max(b.dur * PX, 18), background: bg, color: fg, touchAction: "none" }}>
+                      <div className="text-[9px] font-bold leading-none">{hhmm(b.min)}{r.estado === "completada" ? " ✓" : r.estado === "no_show" ? " ✗" : ""}</div>
+                      <div className="text-[9px] leading-tight truncate">{r.tipo === "bloqueo" ? `⛔ ${r.nota || "Bloqueo"}` : (r.cliente?.nombre || r.servicioNombre)}</div>
+                      {b.dur * PX > 34 && r.tipo !== "bloqueo" && <div className="text-[8px] leading-tight truncate opacity-80">{r.servicioNombre}</div>}
+                      {/* Tirador de redimensionar */}
+                      {movible && (
+                        <div onPointerDown={(e) => startDrag(e, b, "resize")}
+                          className="absolute left-0 right-0 bottom-0 h-2 cursor-ns-resize bg-black/20 hover:bg-black/40"
+                          style={{ touchAction: "none" }} title="Redimensionar" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <p className="mt-2 text-[11px] text-black/40">Arrastra una cita para moverla de día/hora · tira del borde inferior para cambiar la duración · los bloques 🔒 en gris son eventos de tu Google Calendar (solo lectura).</p>
+    </div>
   );
 }
 

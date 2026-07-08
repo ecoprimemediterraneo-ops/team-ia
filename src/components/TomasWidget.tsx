@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -15,6 +16,7 @@ export default function TomasWidget() {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -52,6 +54,10 @@ export default function TomasWidget() {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
+
+  // En la página pública de reservas usamos el chat propio "¿Dudas?" (Haiku).
+  // Ocultamos aquí el asistente general de AI-Team para no duplicar chats.
+  if (pathname?.startsWith("/reservas/")) return null;
 
   async function send() {
     const text = input.trim();

@@ -8,6 +8,7 @@
 // =============================================================================
 
 import { useEffect, useMemo, useState } from "react";
+import ChatDudas from "./ChatDudas";
 
 type Variante = { id: string; nombre: string; durationMin: number; precioEUR: number };
 type AddOn = { id: string; nombre: string; durationMin: number; precioEUR: number };
@@ -17,7 +18,21 @@ type Servicio = {
 };
 type Categoria = { id: string; nombre: string };
 type EmpleadoPub = { id: string; nombre: string; color?: string; serviceIds: string[] };
-type Negocio = { slug: string; nombre: string; descripcion?: string; galeria: string[]; timezone: string; categorias: Categoria[]; servicios: Servicio[]; empleados?: EmpleadoPub[] };
+type DiaHorario = { abierto: boolean; franjas: { desde: string; hasta: string }[] };
+type Negocio = { slug: string; nombre: string; descripcion?: string; galeria: string[]; direccion?: string; lat?: number; lng?: number; telefono?: string; instagram?: string; horario?: Record<string, DiaHorario>; timezone: string; categorias: Categoria[]; servicios: Servicio[]; empleados?: EmpleadoPub[] };
+
+// Mapa OSM incrustable (sin API key). Bounding box pequeño alrededor del punto + marcador.
+function osmEmbedSrc(lat: number, lng: number): string {
+  const d = 0.0035;
+  const bbox = `${lng - d},${lat - d},${lng + d},${lat + d}`;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${lat},${lng}`;
+}
+
+// Orden Lun→Dom para pintar el horario (las claves del horario son 0=domingo … 6=sábado).
+const ORDEN_DIAS: { n: number; label: string }[] = [
+  { n: 1, label: "Lun" }, { n: 2, label: "Mar" }, { n: 3, label: "Mié" },
+  { n: 4, label: "Jue" }, { n: 5, label: "Vie" }, { n: 6, label: "Sáb" }, { n: 0, label: "Dom" },
+];
 
 const DIAS_C = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 const MESES_C = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -167,8 +182,16 @@ export default function BookingFlow({ slug }: { slug: string }) {
   if (errNegocio || !negocio) return <Centro><div className="card-hard p-6 bg-white text-center max-w-sm"><div className="text-4xl mb-2">🔍</div><p className="font-bold">{errNegocio || "Negocio no disponible."}</p></div></Centro>;
 
   const cats = negocio.categorias;
-  const serviciosFiltrados = catActiva === "todos" ? negocio.servicios : negocio.servicios.filter((s) => s.categoriaId === catActiva);
-  const nombreCat = (id?: string) => cats.find((c) => c.id === id)?.nombre;
+  // Servicios AGRUPADOS por categoría (en el orden de las categorías del tenant),
+  // con cabecera por sección. Funciona para cualquier salón. Si hay un filtro de
+  // categoría activo, solo se muestra ese grupo. Los servicios sin categoría (o con
+  // categoría desconocida) caen en un grupo "Otros" al final (solo en la vista "Todos").
+  const catsParaMostrar = catActiva === "todos" ? cats : cats.filter((c) => c.id === catActiva);
+  const grupos: { id: string; nombre: string; items: Servicio[] }[] = catsParaMostrar
+    .map((c) => ({ id: c.id, nombre: c.nombre, items: negocio.servicios.filter((s) => s.categoriaId === c.id) }))
+    .filter((g) => g.items.length > 0);
+  const sinCat = negocio.servicios.filter((s) => !s.categoriaId || !cats.some((c) => c.id === s.categoriaId));
+  if (catActiva === "todos" && sinCat.length) grupos.push({ id: "__otros", nombre: "Otros", items: sinCat });
   const empleadosElegibles = servicio ? (negocio.empleados || []).filter((e) => !e.serviceIds?.length || e.serviceIds.includes(servicio.id)) : [];
 
   return (
@@ -189,6 +212,63 @@ export default function BookingFlow({ slug }: { slug: string }) {
         </div>
       )}
 
+      {/* Ficha del negocio: mapa + dirección + teléfono + horario (solo en la landing) */}
+      {paso === 1 && (negocio.direccion || negocio.telefono || negocio.horario) && (
+        <div className="border-[3px] border-black mb-5">
+          {negocio.lat != null && negocio.lng != null && (
+            <iframe
+              title="Mapa del salón"
+              src={osmEmbedSrc(negocio.lat, negocio.lng)}
+              className="block w-full h-40 border-b-[3px] border-black"
+              loading="lazy"
+            />
+          )}
+          <div className="p-3 space-y-2 text-sm">
+            {negocio.direccion && (
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(negocio.direccion)}`}
+                target="_blank" rel="noreferrer"
+                className="flex items-start gap-2"
+              >
+                <span aria-hidden>📍</span>
+                <span className="underline decoration-black/30 hover:decoration-black">{negocio.direccion}</span>
+              </a>
+            )}
+            {negocio.telefono && (
+              <a href={`tel:${negocio.telefono.replace(/\s+/g, "")}`} className="flex items-center gap-2">
+                <span aria-hidden>📞</span>
+                <span className="underline decoration-black/30 hover:decoration-black">{negocio.telefono}</span>
+              </a>
+            )}
+            {negocio.instagram && (
+              <a href={`https://instagram.com/${negocio.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2">
+                <span aria-hidden>📸</span>
+                <span className="underline decoration-black/30 hover:decoration-black">@{negocio.instagram.replace(/^@/, "")}</span>
+              </a>
+            )}
+            {negocio.horario && (
+              <div className="flex items-start gap-2">
+                <span aria-hidden>🕑</span>
+                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 flex-1">
+                  {ORDEN_DIAS.map(({ n, label }) => {
+                    const d = negocio.horario?.[String(n)];
+                    const abierto = !!(d?.abierto && d.franjas.length > 0);
+                    return (
+                      <div key={n} className="contents">
+                        <dt className="font-mono uppercase text-[11px] tracking-wider text-black/45 pt-px">{label}</dt>
+                        <dd className={abierto ? "text-black/80" : "text-black/35"}>
+                          {abierto ? d!.franjas.map((f) => `${f.desde}–${f.hasta}`).join(", ") : "Cerrado"}
+                        </dd>
+                      </div>
+                    );
+                  })}
+                </dl>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {paso > 1 && paso < 5 && <Pasos paso={paso} tieneOpciones={!!(servicio?.variantes.length || servicio?.addons.length)} />}
 
       {error && paso !== 5 ? <div className="mb-4 border-[3px] border-[color:var(--red)] bg-white text-[color:var(--red)] text-sm font-bold px-3 py-2">⚠ {error}</div> : null}
@@ -206,23 +286,33 @@ export default function BookingFlow({ slug }: { slug: string }) {
               ))}
             </div>
           )}
-          <div className="space-y-3">
-            {serviciosFiltrados.map((s) => (
-              <button key={s.id} onClick={() => elegirServicio(s)} className="w-full text-left card-hard bg-white overflow-hidden hover:translate-x-[1px] hover:translate-y-[1px] transition-transform flex">
-                {s.fotoUrl ? <img src={s.fotoUrl} alt="" className="w-24 h-auto object-cover border-r-[3px] border-black shrink-0" onError={(e) => (e.currentTarget.style.display = "none")} /> : null}
-                <div className="p-4 flex items-center justify-between gap-3 flex-1 min-w-0">
-                  <div className="min-w-0">
-                    {cats.length > 1 && nombreCat(s.categoriaId) && <div className="text-[10px] font-mono uppercase tracking-wider text-black/35">{nombreCat(s.categoriaId)}</div>}
-                    <div className="font-bold leading-snug">{s.nombre}</div>
-                    {s.descripcion && <div className="text-xs text-black/55 mt-0.5 line-clamp-2">{s.descripcion}</div>}
-                    <div className="text-xs text-black/50 mt-1">{s.variantes.length ? "varias opciones" : dur(s.durationMin)}{s.addons.length ? " · + extras" : ""}</div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {precioServicio(s) && <span className="font-stencil text-lg whitespace-nowrap">{precioServicio(s)}</span>}
-                    <span className="text-[color:var(--red)] font-bold text-xl">›</span>
-                  </div>
+          <div className="space-y-6">
+            {grupos.map((g) => (
+              <div key={g.id}>
+                {/* Cabecera de categoría */}
+                <h3 className="font-stencil text-xl leading-none mb-3 pb-1.5 border-b-[3px] border-black flex items-center justify-between">
+                  <span>{g.nombre}</span>
+                  <span className="text-xs font-mono text-black/40 tracking-wider">{g.items.length}</span>
+                </h3>
+                <div className="space-y-3">
+                  {g.items.map((s) => (
+                    <button key={s.id} onClick={() => elegirServicio(s)} className="w-full text-left card-hard bg-white overflow-hidden hover:translate-x-[1px] hover:translate-y-[1px] transition-transform flex">
+                      {s.fotoUrl ? <img src={s.fotoUrl} alt="" className="w-24 h-auto object-cover border-r-[3px] border-black shrink-0" onError={(e) => (e.currentTarget.style.display = "none")} /> : null}
+                      <div className="p-4 flex items-center justify-between gap-3 flex-1 min-w-0">
+                        <div className="min-w-0">
+                          <div className="font-bold leading-snug">{s.nombre}</div>
+                          {s.descripcion && <div className="text-xs text-black/55 mt-0.5 line-clamp-2">{s.descripcion}</div>}
+                          <div className="text-xs text-black/50 mt-1">{s.variantes.length ? "varias opciones" : dur(s.durationMin)}{s.addons.length ? " · + extras" : ""}</div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {precioServicio(s) && <span className="font-stencil text-lg whitespace-nowrap">{precioServicio(s)}</span>}
+                          <span className="text-[color:var(--red)] font-bold text-xl">›</span>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </section>
@@ -379,6 +469,17 @@ export default function BookingFlow({ slug }: { slug: string }) {
       )}
 
       <footer className="mt-10 text-center text-[10px] font-mono uppercase tracking-widest text-black/30">Reservas con AI-Team · sin comisiones</footer>
+
+      {/* Chat de dudas (Haiku) — contexto = servicios/precios/horario/dirección del salón */}
+      <ChatDudas
+        slug={slug}
+        nombre={negocio.nombre}
+        onReservar={() => {
+          setHecho(null);
+          setPaso(1);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+      />
     </div>
   );
 }

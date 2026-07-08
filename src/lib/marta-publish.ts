@@ -396,3 +396,44 @@ function humanReadable(reason: PublishErrorReason, detail: string): string {
 export function isPublishEnabled(): boolean {
   return isEnabled();
 }
+
+// -----------------------------------------------------------------------------
+// Diagnóstico "listo para publicar": comprueba el flag, el token y —en vivo contra
+// Graph API— si el permiso `instagram_content_publish` está CONCEDIDO (indicador de
+// que el App Review de Meta está aprobado). Solo lectura, no publica nada.
+// -----------------------------------------------------------------------------
+export type PublishReadiness = {
+  flagEnabled: boolean;
+  tokenConfigured: boolean;
+  graph:
+    | { ok: true; contentPublishGranted: boolean; permissions: { permission: string; status: string }[] }
+    | { ok: false; error: string; code?: number }
+    | { skipped: "no_token" };
+};
+
+export async function checkPublishReadiness(): Promise<PublishReadiness> {
+  const flagEnabled = isEnabled();
+  const token = getToken();
+  if (!token) return { flagEnabled, tokenConfigured: false, graph: { skipped: "no_token" } };
+  try {
+    const res = await fetch(`${GRAPH}/me/permissions?access_token=${encodeURIComponent(token)}`);
+    if (!res.ok) {
+      const e = await readGraphError(res);
+      return { flagEnabled, tokenConfigured: true, graph: { ok: false, error: e.message, code: e.code } };
+    }
+    const data = (await res.json()) as { data?: { permission: string; status: string }[] };
+    const permissions = data.data || [];
+    const cp = permissions.find((p) => p.permission === "instagram_content_publish");
+    return {
+      flagEnabled,
+      tokenConfigured: true,
+      graph: { ok: true, contentPublishGranted: cp?.status === "granted", permissions },
+    };
+  } catch (e) {
+    return {
+      flagEnabled,
+      tokenConfigured: true,
+      graph: { ok: false, error: e instanceof Error ? e.message : "network_error" },
+    };
+  }
+}

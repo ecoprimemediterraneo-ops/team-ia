@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { listSources, createSource, updateSource, deleteSource } from "@/lib/sergio-db";
+import { scrapeAllActiveSources } from "@/lib/sergio-scraping";
 
 const ALLOWED = ["ecoprimemediterraneo@gmail.com", "crisasky@gmail.com"];
 
@@ -32,6 +33,13 @@ export async function POST(req: Request) {
   if (action === "toggle") {
     await updateSource(id, { active: data.active });
     return NextResponse.json({ ok: true });
+  }
+  // Lanzar el scraping a demanda desde el panel. Autenticado por SESIÓN (founder),
+  // así el CRON_SECRET nunca viaja al bundle del cliente (antes se llamaba al cron
+  // con NEXT_PUBLIC_CRON_SECRET, que se compilaba al navegador).
+  if (action === "scrape") {
+    const result = await scrapeAllActiveSources();
+    return NextResponse.json({ ok: true, ...result });
   }
 
   const source = await createSource({

@@ -263,7 +263,7 @@ export default async function AgentePage({ params }: { params: Promise<{ slug: s
               Sistema Operativo: <span className="line-through opacity-60">299€/mes</span>{" "}
               <span className="font-stencil text-[color:var(--red)]">149€/mes</span> precio fundador.
             </p>
-            <p className="text-base mb-8 text-black/70">Gestión opcional: +249€/mes.</p>
+            <p className="text-base mb-8 text-black/70">Gestión opcional: +799€/mes.</p>
             <Link href="/beta" className="btn-mustard bg-black text-[color:var(--mustard)] hover:bg-[color:var(--red)] hover:text-white inline-block">
               Pide tu demo →
             </Link>

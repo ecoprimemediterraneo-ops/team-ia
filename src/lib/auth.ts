@@ -1,10 +1,29 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const SECRET = new TextEncoder().encode(
-  process.env.AUTH_SECRET || "team-ia-dev-secret-change-in-prod"
-);
 const COOKIE = "team_ia_session";
+
+// Clave de firma de los JWT de sesión. En producción DEBE venir de AUTH_SECRET;
+// si falta, abortamos (fail-safe) en vez de firmar con un secreto público conocido
+// —eso permitiría a cualquiera forjar sesiones—. En desarrollo local se admite un
+// valor por defecto para poder arrancar sin configurar nada.
+//
+// LAZY a propósito: se resuelve al firmar/verificar (runtime), NO al importar el
+// módulo. Así el `next build` (que importa este módulo para recopilar metadatos, en
+// un entorno donde AUTH_SECRET puede no estar) no rompe; solo una petición real en
+// producción sin AUTH_SECRET fallará.
+let _secret: Uint8Array | null = null;
+function getSecret(): Uint8Array {
+  if (_secret) return _secret;
+  const raw = process.env.AUTH_SECRET || (isLocalDev() ? "team-ia-dev-secret-change-in-prod" : null);
+  if (!raw) {
+    throw new Error(
+      "AUTH_SECRET no está configurada en producción. Abortando: no firmamos JWT con un secreto por defecto público.",
+    );
+  }
+  _secret = new TextEncoder().encode(raw);
+  return _secret;
+}
 
 // Dueño por defecto para desarrollo local (coincide con el fallback de tenants.ts).
 const DEV_OWNER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
@@ -26,7 +45,7 @@ export async function createSession(email: string) {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("30d")
-    .sign(SECRET);
+    .sign(getSecret());
   const c = await cookies();
   c.set(COOKIE, token, {
     httpOnly: true,
@@ -46,7 +65,7 @@ export async function getSession(): Promise<{ email: string } | null> {
   const token = c.get(COOKIE)?.value;
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getSecret());
     return { email: payload.email as string };
   } catch {
     return null;

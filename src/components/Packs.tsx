@@ -1,7 +1,7 @@
 // Precio resumido del posicionamiento (Sistema Operativo):
 //   - Producto principal: el SISTEMA. 299€/mes tachado → 149€/mes fundador.
-//   - Add-on OPCIONAL: GESTIÓN +249€/mes (lo operamos por el cliente). Se SUMA.
-//     Sistema + Gestión = 398€/mes. La Gestión NO está incluida en los 149€.
+//   - Add-on OPCIONAL: GESTIÓN +799€/mes (lo operamos por el cliente). Se SUMA.
+//     Sistema + Gestión = 948€/mes. La Gestión NO está incluida en los 149€.
 // Prop `compact`: en la home se muestran menos bullets; en /precios, todos.
 
 const SISTEMA_FEATURES = [
@@ -80,14 +80,14 @@ export default function Packs({ compact = false }: { compact?: boolean }) {
             <p className="text-xs text-black/60 leading-snug">La operamos nosotros por ti: revisamos, aprobamos y ajustamos campañas y respuestas.</p>
           </div>
           <div className="text-right shrink-0">
-            <div className="font-stencil text-2xl leading-none">+249€</div>
+            <div className="font-stencil text-2xl leading-none">+799€</div>
             <div className="text-[10px] text-black/50">/mes</div>
           </div>
         </div>
 
         <p className="text-sm text-black/70 mt-6 border-l-4 border-[color:var(--mustard)] pl-3 max-w-md mx-auto leading-snug">
           <strong>149€/mes</strong> (fundador; normal 299€): 6 meses gratis, sin permanencia. La
-          Gestión (+249€) es opcional y aparte → Sistema + Gestión = <strong>398€/mes</strong>.
+          Gestión (+799€) es opcional y aparte → Sistema + Gestión = <strong>948€/mes</strong>.
         </p>
 
         <p className="text-sm text-black/60 mt-6 text-center">

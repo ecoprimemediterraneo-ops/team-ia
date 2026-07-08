@@ -6,7 +6,7 @@ import { useState } from "react";
 const faqs = [
   {
     q: "¿Cuánto cuesta?",
-    a: "El Sistema cuesta 149 €/mes en precio fundador (normal 299 €), con 6 meses gratis, sin tarjeta para empezar y cobro solo tras el periodo. Sin permanencia. La Gestión es opcional (+249 €/mes); Sistema + Gestión = 398 €/mes. Solo 20 plazas fundador con precio congelado. Detalle de planes en /precios.",
+    a: "El Sistema cuesta 149 €/mes en precio fundador (normal 299 €), con 6 meses gratis, sin tarjeta para empezar y cobro solo tras el periodo. Sin permanencia. La Gestión es opcional (+799 €/mes); Sistema + Gestión = 948 €/mes. Solo 20 plazas fundador con precio congelado. Detalle de planes en /precios.",
   },
   {
     q: "¿Qué incluye?",

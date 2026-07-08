@@ -68,7 +68,13 @@ export default function SergioFuentesPanel({ sources, pendingChanges }: { source
 
   async function scrapeNow(sourceId: string) {
     setLoading(sourceId);
-    await fetch("/api/cron/sergio-scraper", { headers: { authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET ?? ""}` } });
+    // Trigger server-side autenticado por sesión (founder). El CRON_SECRET no sale
+    // del servidor: nunca se expone al bundle del navegador.
+    await fetch("/api/sergio/sources", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "scrape" }),
+    });
     setLoading("");
   }
 

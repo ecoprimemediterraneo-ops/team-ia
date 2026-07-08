@@ -4,6 +4,7 @@
  * Schedule: cada hora (0 * * * *)
  */
 import { NextResponse } from "next/server";
+import { cronAuthError } from "@/lib/cron-auth";
 import { Resend } from "resend";
 import { kvGet, kvSet } from "@/lib/supabase";
 import { getSequence, getSequenceForSector } from "@/lib/sequences";
@@ -20,11 +21,8 @@ async function writeEnrollments(data: SequenceEnrollment[]) {
 }
 
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization") ?? "";
-  const secret = process.env.CRON_SECRET;
-  if (secret && !auth.includes(secret)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authErr = cronAuthError(req);
+  if (authErr) return authErr;
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return NextResponse.json({ skipped: "no resend key" });

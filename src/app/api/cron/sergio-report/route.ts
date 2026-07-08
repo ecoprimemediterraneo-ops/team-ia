@@ -4,6 +4,7 @@
  * Schedule: cada lunes a las 09:00 UTC
  */
 import { NextResponse } from "next/server";
+import { cronAuthError } from "@/lib/cron-auth";
 import { listChanges, listSources, createInsight } from "@/lib/sergio-db";
 import { generateWeeklyReport } from "@/lib/sergio-analysis";
 import { sendWeeklyReport } from "@/lib/sergio-alerts";
@@ -12,11 +13,8 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization") ?? "";
-  const secret = process.env.CRON_SECRET;
-  if (secret && !auth.includes(secret)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authErr = cronAuthError(req);
+  if (authErr) return authErr;
 
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 86400000);

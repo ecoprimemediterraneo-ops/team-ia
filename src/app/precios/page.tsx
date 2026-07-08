@@ -8,12 +8,12 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Precios — El Sistema Operativo desde 149€/mes",
   description:
-    "Un sistema único: 299€/mes con 50% de descuento fundador = 149€/mes. Gestión opcional +249€/mes. Precio fundador para siempre. 6 meses gratis, sin tarjeta, sin permanencia.",
+    "Un sistema único: 299€/mes con 50% de descuento fundador = 149€/mes. Gestión opcional +799€/mes. Precio fundador para siempre. 6 meses gratis, sin tarjeta, sin permanencia.",
   alternates: { canonical: "https://aiteam.marketing/precios" },
   openGraph: {
     title: "Precios — El Sistema Operativo desde 149€/mes",
     description:
-      "299€/mes con 50% fundador = 149€/mes. Gestión opcional +249€/mes aparte. 6 meses gratis, sin tarjeta, sin permanencia.",
+      "299€/mes con 50% fundador = 149€/mes. Gestión opcional +799€/mes aparte. 6 meses gratis, sin tarjeta, sin permanencia.",
     url: "https://aiteam.marketing/precios",
     type: "website",
     locale: "es_ES",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 const faq = [
   {
     q: "¿Puedo añadir o quitar la Gestión más adelante?",
-    a: "Sí. El Sistema Operativo es el producto base (149€/mes fundador). La Gestión (+249€/mes) es opcional: la añades o la quitas en un click desde tu panel y se prorratea automáticamente.",
+    a: "Sí. El Sistema Operativo es el producto base (149€/mes fundador). La Gestión (+799€/mes) es opcional: la añades o la quitas en un click desde tu panel y se prorratea automáticamente.",
   },
   {
     q: "¿Qué es el precio fundador?",

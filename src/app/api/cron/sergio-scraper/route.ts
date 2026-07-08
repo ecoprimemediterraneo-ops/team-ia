@@ -5,16 +5,14 @@
  */
 import { NextResponse } from "next/server";
 import { scrapeAllActiveSources } from "@/lib/sergio-scraping";
+import { cronAuthError } from "@/lib/cron-auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization") ?? "";
-  const secret = process.env.CRON_SECRET;
-  if (secret && !auth.includes(secret)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authErr = cronAuthError(req);
+  if (authErr) return authErr;
 
   try {
     const result = await scrapeAllActiveSources();
