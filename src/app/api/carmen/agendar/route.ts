@@ -48,13 +48,6 @@ export const runtime = "nodejs";
 
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
 
-type RetellFunctionBody = {
-  // Retell envuelve los argumentos de la función bajo `args`; toleramos raíz también.
-  args?: Record<string, unknown>;
-  call?: { call_id?: string; from_number?: string };
-  name?: string;
-  [k: string]: unknown;
-};
 
 function safeEqual(a: string, b: string): boolean {
   const ab = Buffer.from(a);
@@ -220,29 +213,61 @@ export async function POST(req: Request) {
   }
 
   // 2) Parsear payload de la Function de Retell
-  let body: RetellFunctionBody;
+  let body: Record<string, unknown>;
   try {
-    body = (await req.json()) as RetellFunctionBody;
+    body = (await req.json()) as Record<string, unknown>;
   } catch {
     return NextResponse.json({ success: false, message: "Solicitud no válida.", error: "bad_json" }, { status: 400 });
   }
 
-  const args = (body.args && typeof body.args === "object" ? body.args : {}) as Record<string, unknown>;
+  // LOG del body CRUDO → para saber EXACTAMENTE qué estructura y nombres manda Retell.
+  try {
+    console.log("[carmen/agendar] RAW keys:", Object.keys(body).join(","));
+    console.log("[carmen/agendar] RAW body:", JSON.stringify(body).slice(0, 1800));
+  } catch { /* noop */ }
+
+  // Retell puede anidar los argumentos bajo distintas claves (args/arguments/parameters/
+  // function.arguments/tool.arguments/call.arguments…) y a veces como STRING JSON.
+  // Reunimos todos los contenedores posibles + la raíz en un único lookup ordenado.
+  const asObj = (v: unknown): Record<string, unknown> | null => {
+    if (v && typeof v === "object" && !Array.isArray(v)) return v as Record<string, unknown>;
+    if (typeof v === "string" && v.trim().startsWith("{")) {
+      try { const o = JSON.parse(v); if (o && typeof o === "object") return o as Record<string, unknown>; } catch { /* noop */ }
+    }
+    return null;
+  };
+  const fn = asObj(body.function) || {};
+  const tool = asObj(body.tool) || {};
+  const call = asObj(body.call) || {};
+  const containers = [
+    asObj(body.args),
+    asObj(body.arguments),
+    asObj(body.parameters),
+    asObj(body.params),
+    asObj(fn.arguments),
+    asObj(tool.arguments),
+    asObj(call.arguments),
+    body, // raíz al final
+  ].filter((c): c is Record<string, unknown> => c !== null);
+
   const get = (...keys: string[]): string | undefined => {
-    for (const k of keys) {
-      const v = (args[k] ?? (body as Record<string, unknown>)[k]) as unknown;
-      if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+    for (const src of containers) {
+      for (const k of keys) {
+        const v = src[k];
+        if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+      }
     }
     return undefined;
   };
 
-  const nombre = get("nombre", "customer_name", "name");
-  const motivo = get("motivo", "appointment_motivo", "reason");
-  const fechaRaw = get("fecha_hora", "appointment_datetime", "datetime", "start", "startIso");
-  const telefono = get("telefono", "customer_phone", "phone") || body.call?.from_number || undefined;
-  const durationMin = Number(get("duracion_min", "duration_min")) || 30;
+  const nombre = get("nombre", "customer_name", "name", "cliente", "nombre_cliente");
+  const motivo = get("motivo", "appointment_motivo", "reason", "servicio", "asunto", "tratamiento", "descripcion");
+  const fechaRaw = get("fecha_hora", "fechaHora", "appointment_datetime", "datetime", "date_time", "fecha", "hora", "when", "cuando", "start", "startIso", "start_time");
+  const fromNumber = String(call.from_number ?? "").trim() || undefined;
+  const telefono = get("telefono", "customer_phone", "phone", "telefono_cliente", "numero") || fromNumber;
+  const durationMin = Number(get("duracion_min", "duration_min", "duracion", "minutos")) || 30;
 
-  console.log("[carmen/agendar] in:", JSON.stringify({ nombre, motivo, fechaRaw, telefono, durationMin, call: body.call?.call_id }).slice(0, 800));
+  console.log("[carmen/agendar] parsed:", JSON.stringify({ nombre, motivo, fechaRaw, telefono, durationMin, call: call.call_id }).slice(0, 800));
 
   // 3) Validaciones → respuestas hablables (200, para que Carmen siga la conversación)
   if (!nombre || !motivo || !fechaRaw) {
