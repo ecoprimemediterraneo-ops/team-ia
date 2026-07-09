@@ -136,7 +136,8 @@ function parseHoraEs(textLow: string): { hour: number; min: number } | null {
   if (mer) {
     if (mer === "tarde") { if (hour >= 1 && hour < 12) hour += 12; }
     else if (mer === "noche") { if (hour >= 1 && hour < 12) hour += 12; else if (hour === 12) hour = 0; }
-    else if (mer === "madrugada" || mer === "manana") { if (hour === 12) hour = 0; }
+    else if (mer === "madrugada") { if (hour === 12) hour = 0; } // "12 de la madrugada" = 00:00
+    // "de la mañana": AM tal cual; "las 12 de la mañana" = mediodía → se queda 12.
     else if (mer === "mediodia") hour = 12;
   }
   if (min > 59) return null;
