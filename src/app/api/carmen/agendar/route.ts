@@ -2,10 +2,10 @@
 // POST /api/carmen/agendar — FUNCTION DE RETELL (en directo, durante la llamada)
 //
 // Carmen (agente de voz en Retell) llama a esta URL como "Custom Function"
-// MIENTRAS habla con el cliente. Reutiliza el MISMO punto de reserva que Lucía
-// (reservarSlot → agendarCita → Google Calendar `primary` del dueño), así que la
-// cita se crea de verdad donde Lucía las crea, con comprobación de hueco libre y
-// lock anti-doble-reserva.
+// MIENTRAS habla con el cliente. Reserva por el MOTOR DE BOOKING (crearReservaManual):
+// crea un BookingRecord con `slug` → la cita sale en /dashboard/reservas del salón, en
+// el MISMO Google Calendar (un solo evento, sin duplicar) y con el anti-doble-reserva
+// del booking. El `slug` llega en el body de Retell; si no viene, cae a "bendito-arte".
 //
 // A diferencia de /api/carmen/webhook (post-call, al colgar), esto responde EN
 // DIRECTO con un mensaje "hablable" para que Carmen confirme o proponga otra hora.
@@ -40,13 +40,14 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { timingSafeEqual } from "node:crypto";
 import * as chrono from "chrono-node";
-import { reservarSlot } from "@/lib/orchestrator";
+import { crearReservaManual } from "@/lib/booking";
 import { getRedirectUri } from "@/lib/gmail";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
+// Salón por defecto si Retell no envía `slug` (la cuenta piloto de Carmen).
+const DEFAULT_SLUG = "bendito-arte";
 
 
 function safeEqual(a: string, b: string): boolean {
@@ -266,8 +267,11 @@ export async function POST(req: Request) {
   const fromNumber = String(call.from_number ?? "").trim() || undefined;
   const telefono = get("telefono", "customer_phone", "phone", "telefono_cliente", "numero") || fromNumber;
   const durationMin = Number(get("duracion_min", "duration_min", "duracion", "minutos")) || 30;
+  // Salón (tenant) al que pertenece la cita. Retell lo manda en `slug`; si no viene,
+  // caemos al salón piloto por defecto.
+  const slug = get("slug", "salon", "negocio", "business", "tenant", "salon_slug") || DEFAULT_SLUG;
 
-  console.log("[carmen/agendar] parsed:", JSON.stringify({ nombre, motivo, fechaRaw, telefono, durationMin, call: call.call_id }).slice(0, 800));
+  console.log("[carmen/agendar] parsed:", JSON.stringify({ nombre, motivo, fechaRaw, telefono, durationMin, slug, call: call.call_id }).slice(0, 800));
 
   // 3) Validaciones → respuestas hablables (200, para que Carmen siga la conversación)
   if (!nombre || !motivo || !fechaRaw) {
@@ -287,30 +291,30 @@ export async function POST(req: Request) {
     });
   }
 
-  // 4) Reservar por el ORQUESTADOR (mismo sitio donde agenda Lucía)
+  // 4) Reservar por el MOTOR DE BOOKING (crearReservaManual) → crea un BookingRecord
+  // con `slug`, así la cita sale en /dashboard/reservas del salón, en el MISMO Google
+  // Calendar (sin duplicar el evento) y con el anti-doble-reserva del booking.
   const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
   const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
   const redirectUri = getRedirectUri(host, proto);
 
-  const result = await reservarSlot({
-    userEmail: FOUNDER_EMAIL,
-    redirectUri,
-    nombre,
-    motivo,
+  const result = await crearReservaManual({
+    slug,
     startIso,
-    durationMin,
-    agenteOrigen: "carmen",
-    customerPhone: telefono,
+    cliente: { nombre, telefono: telefono || "" },
+    customNombre: motivo,
+    customDurationMin: durationMin,
+    redirectUri,
   });
 
-  // 5) Traducir el resultado a algo que Carmen pueda decir
+  // 5) Traducir el resultado a algo que Carmen pueda decir (misma forma que antes)
   if (result.ok) {
     return NextResponse.json({
       success: true,
-      message: `Perfecto, te he agendado ${formatoHumano(startIso)}. ¡Te esperamos!`,
-      eventId: result.eventId,
-      htmlLink: result.htmlLink,
-      eventLogId: result.eventLogId,
+      message: `Perfecto, te he agendado ${formatoHumano(result.record.startIso)}. ¡Te esperamos!`,
+      eventId: result.record.eventId,
+      htmlLink: result.record.htmlLink,
+      bookingId: result.record.id,
     });
   }
 
@@ -331,7 +335,7 @@ export async function POST(req: Request) {
       message: "Dame un segundo, estoy confirmando ese hueco. ¿Te lo confirmo en un momento?",
     });
   }
-  // error (incluye agenda no conectada / sin tokens de Google)
+  // error (incluye agenda no conectada / sin tokens de Google, o salón no encontrado)
   return NextResponse.json({
     success: false,
     reason: "error",
