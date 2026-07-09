@@ -123,13 +123,12 @@ export default function Comparador({ hidePreciosLink = false }: { hidePreciosLin
 
             <div className="border-2 border-black bg-[color:var(--red)] text-white p-3 mb-3">
               <p className="text-sm leading-snug">
-                Una sola persona <strong>NO puede con todo</strong>: llamadas + WhatsApp + Instagram +
-                analítica + email + diseño + agenda. Es imposible para una persona.
+                Una sola persona <strong>no puede con todo</strong>: llamadas, WhatsApp, Instagram,
+                email, reseñas y agenda a la vez.
               </p>
             </div>
             <p className="text-sm font-bold leading-snug mt-auto">
-              Y trabaja 8 horas al día, 5 días a la semana. No de noche, no en festivos, no en
-              vacaciones.
+              Y solo 8 h al día, de lunes a viernes.
             </p>
           </article>
 

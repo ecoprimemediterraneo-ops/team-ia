@@ -41,8 +41,9 @@ export default function Footer() {
 
         <div className="border-t border-black/20 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-black/60">© {new Date().getFullYear()} AI-Team · Hecho en España para el mundo hispano</p>
-          <div className="flex gap-5 text-xs font-semibold uppercase tracking-wider">
-            <a href="/legal/privacidad" className="hover:text-[color:var(--red)]">Privacidad</a>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold uppercase tracking-wider">
+            <a href="/privacy" className="hover:text-[color:var(--red)]">Privacidad</a>
+            <a href="/data-deletion" className="hover:text-[color:var(--red)]">Borrado de datos</a>
             <a href="/legal/terminos" className="hover:text-[color:var(--red)]">Términos</a>
             <a href="mailto:hola@aiteam.marketing" className="hover:text-[color:var(--red)]">Contacto</a>
           </div>

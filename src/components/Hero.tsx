@@ -65,31 +65,22 @@ export default function Hero() {
             </span>
           </div>
 
-          {/* H1 principal — propuesta concreta (aria-label para lectura limpia) */}
+          {/* H1 principal (aria-label para lectura limpia) */}
           <h1
-            aria-label="Todo tu negocio: respondido, agendado y mejorando solo."
-            className="font-stencil text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.02] tracking-tight"
+            aria-label="El sistema operativo que consigue y atiende a tus clientes."
+            className="font-stencil text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.03] tracking-tight"
           >
-            <span className="block text-white">TODO TU NEGOCIO:</span>
-            <span className="block text-white mt-2">RESPONDIDO, AGENDADO</span>
-            <span className="block text-white mt-2">Y <span className="text-[color:var(--mustard)]">MEJORANDO SOLO.</span></span>
+            <span className="block text-white">EL SISTEMA OPERATIVO</span>
+            <span className="block text-white mt-2">QUE <span className="text-[color:var(--mustard)]">CONSIGUE Y ATIENDE</span></span>
+            <span className="block text-white mt-2">A TUS CLIENTES.</span>
           </h1>
 
-          {/* Capacidades del sistema (sustituye al subtítulo en párrafo) */}
-          <ul className="mt-8 max-w-xl mx-auto flex flex-col gap-3 text-left text-base md:text-lg text-white/85 font-sans">
-            {[
-              "Respondemos al instante 24/7 y convertimos más leads en clientes",
-              "Atendemos WhatsApp, llamadas, Instagram, email y reseñas",
-              "Agendamos tus citas solas, de la consulta a la confirmación",
-              "Recuperamos las oportunidades que se te escapan",
-              "Mejoramos tu negocio cada mes con lo que aprende toda la red",
-            ].map((punto) => (
-              <li key={punto} className="flex items-start gap-3 leading-snug">
-                <span aria-hidden="true" className="text-[color:var(--mustard)] font-stencil text-lg leading-none mt-[2px]">✓</span>
-                <span>{punto}</span>
-              </li>
-            ))}
-          </ul>
+          {/* Subtítulo */}
+          <p className="mt-7 max-w-2xl mx-auto text-base md:text-lg text-white/85 font-sans leading-relaxed">
+            Los demás software te organizan por dentro. El nuestro{" "}
+            <strong className="text-white font-semibold">habla con tus clientes</strong>: WhatsApp,
+            llamadas, Instagram, email y reseñas.
+          </p>
 
           {/* CTA — primaria de conversión: Pide tu demo; secundaria: bajar a cómo funciona */}
           <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">

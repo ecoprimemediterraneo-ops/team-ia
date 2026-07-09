@@ -1,9 +1,8 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
-import ColmenaNeuronal from "@/components/ColmenaNeuronal";
 import EjemploHome from "@/components/EjemploHome";
 import Team from "@/components/Team";
-import MonthlyReportSection from "@/components/MonthlyReportSection";
+import Derribo from "@/components/Derribo";
 import Packs from "@/components/Packs";
 import Comparador from "@/components/Comparador";
 import FAQ from "@/components/FAQ";
@@ -33,14 +32,12 @@ export default function Home() {
       <main className="flex-1">
         {/* Hero — propuesta concreta + CTA */}
         <Hero />
-        {/* La Colmena Neuronal: el diferencial de red */}
-        <ColmenaNeuronal />
         {/* Ejemplo ilustrativo del sistema en acción */}
         <EjemploHome />
-        {/* Cómo funciona (tres módulos) */}
+        {/* Cómo funciona — qué hace cada canal */}
         <Team />
-        {/* Informe mensual + capa proactiva (fusionado, compacto) */}
-        <MonthlyReportSection compact />
+        {/* Derribo — diferenciación corta */}
+        <Derribo />
         {/* Precio resumido */}
         <Packs compact />
         {/* Comparador 3 columnas */}
