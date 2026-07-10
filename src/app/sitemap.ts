@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const ciudadPages = CIUDADES.flatMap((c) => [
     { url: `${BASE}/dentistas/${c.slug}`, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 0.75 },
     { url: `${BASE}/peluquerias/${c.slug}`, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 0.75 },
+    { url: `${BASE}/restaurantes/${c.slug}`, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 0.75 },
   ]);
 
   const blogPages = posts.map((p) => ({
@@ -36,7 +37,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/peluquerias`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     ...ciudadPages,
     ...blogPages,
-    { url: `${BASE}/legal/privacidad`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE}/beta`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },
+    { url: `${BASE}/diagnostico`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/estetica`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/restaurantes`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/inmobiliarias`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/abogados`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/privacy`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE}/data-deletion`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
     { url: `${BASE}/legal/terminos`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
   ];
 }

@@ -10,14 +10,14 @@ import Footer from "@/components/Footer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "AI-Team — El sistema operativo de tu clínica o PyME de servicios",
+  title: "AI-Team — Agentes IA para clínicas y negocios de servicios",
   description:
-    "Un único sistema que gestiona WhatsApp, llamadas, agenda, reseñas, email e Instagram de tu negocio, integrado y proactivo: se adelanta por ti. Desde 149€/mes.",
+    "Un equipo de agentes IA atiende tu WhatsApp, tus llamadas, tu Instagram y tu agenda desde un único panel. Tu negocio sigue respondiendo aunque estés ocupado. Desde 149€/mes.",
   alternates: { canonical: "https://aiteam.marketing/" },
   openGraph: {
-    title: "AI-Team — El sistema operativo de tu negocio de servicios",
+    title: "AI-Team — Tu negocio sigue respondiendo aunque estés ocupado",
     description:
-      "Atiende WhatsApp y llamadas, agenda citas y recupera clientes automáticamente. Un único sistema integrado y proactivo. Desde 149€/mes.",
+      "WhatsApp, llamadas, Instagram y agenda, gestionados por un equipo de agentes IA desde un único panel. Desde 149€/mes.",
     url: "https://aiteam.marketing/",
     type: "website",
     locale: "es_ES",
@@ -30,12 +30,12 @@ export default function Home() {
     <>
       <Navbar />
       <main className="flex-1">
-        {/* Hero — propuesta concreta + CTA */}
+        {/* Hero — titular + CTA */}
         <Hero />
-        {/* Ejemplo ilustrativo del sistema en acción */}
-        <EjemploHome />
-        {/* Cómo funciona — qué hace cada canal */}
+        {/* Tu equipo — 4 agentes protagonistas (id: como-funciona) */}
         <Team />
+        {/* Demo ilustrativa del sistema en acción */}
+        <EjemploHome />
         {/* Derribo — diferenciación corta */}
         <Derribo />
         {/* Precio resumido */}

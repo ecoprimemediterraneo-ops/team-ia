@@ -67,16 +67,16 @@ export default function BetaPage() {
             <div>
               <div className="font-stencil text-3xl mb-1">01</div>
               <div className="font-bold mb-1">Te contactamos</div>
-              <p className="text-black/60">En menos de 24h te escribimos para agendar la demo de 15 min.</p>
+              <p className="text-black/60">Revisamos tu solicitud y te escribimos para agendar la demo de 15 min.</p>
             </div>
             <div>
               <div className="font-stencil text-3xl mb-1">02</div>
-              <div className="font-bold mb-1">Setup en 15 min</div>
+              <div className="font-bold mb-1">Setup guiado</div>
               <p className="text-black/60">Conectas WhatsApp y Gmail; el sistema aprende tu negocio y tu tono.</p>
             </div>
             <div>
               <div className="font-stencil text-3xl mb-1">03</div>
-              <div className="font-bold mb-1">Operativo en 24h</div>
+              <div className="font-bold mb-1">Sistema en marcha</div>
               <p className="text-black/60">Tu sistema empieza a contestar, agendar, publicar y captar.</p>
             </div>
           </div>

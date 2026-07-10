@@ -87,7 +87,7 @@ export default function Navbar() {
           </a>
         </div>
 
-        {/* CTA — primaria "Pide tu demo"; "Acceder" como enlace secundario */}
+        {/* CTA — primaria "Solicitar plaza"; "Acceder" como enlace secundario */}
         <div className="flex items-center gap-3">
           <a
             href="/login"
@@ -96,7 +96,7 @@ export default function Navbar() {
             Acceder
           </a>
           <a href="/beta" className="btn-mustard text-xs sm:text-sm px-3 sm:px-4">
-            Pide tu demo
+            Solicitar plaza
           </a>
 
           {/* Mobile menu button */}
@@ -174,7 +174,7 @@ export default function Navbar() {
               className="btn-mustard inline-block text-sm text-center"
               onClick={() => setMenuOpen(false)}
             >
-              Pide tu demo
+              Solicitar plaza
             </a>
             <a
               href="/login"

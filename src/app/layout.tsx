@@ -1,10 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { Anton } from "next/font/google";
 import "./globals.css";
 import CookieBanner from "@/components/CookieBanner";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import TomasWidget from "@/components/TomasWidget";
 
 const SITE_URL = "https://aiteam.marketing";
+
+// Fuente de marca para titulares/logo (display). Se auto-hospeda en build; cae a Impact si no carga.
+const anton = Anton({ weight: "400", subsets: ["latin"], variable: "--font-anton-loaded", display: "swap" });
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -13,26 +17,26 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "AI-Team — El sistema operativo de tu clínica o PyME de servicios",
+    default: "AI-Team — Agentes IA para clínicas y negocios de servicios",
     template: "%s | AI-Team",
   },
   description:
-    "Un único sistema operativo gestiona WhatsApp, llamadas, reseñas, correo, agenda y redes de tu negocio, de forma integrada y proactiva. Desde 149€/mes. 6 meses gratis.",
+    "Un equipo de agentes IA atiende tu WhatsApp, tus llamadas, tu Instagram y tu agenda desde un único panel. Tu negocio sigue respondiendo aunque estés ocupado. Desde 149€/mes.",
   metadataBase: new URL(SITE_URL),
   openGraph: {
     type: "website",
     locale: "es_ES",
     url: SITE_URL,
     siteName: "AI-Team",
-    title: "AI-Team — El sistema operativo de tu negocio",
+    title: "AI-Team — Tu negocio sigue respondiendo aunque estés ocupado",
     description:
-      "Un único sistema operativo gestiona WhatsApp, llamadas, reseñas, correo, agenda y redes de tu negocio, de forma integrada y proactiva. Desde 149€/mes. 6 meses gratis.",
+      "WhatsApp, llamadas, Instagram y agenda, gestionados por un equipo de agentes IA desde un único panel. Desde 149€/mes.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI-Team — El sistema operativo de tu negocio",
+    title: "AI-Team — Tu negocio sigue respondiendo aunque estés ocupado",
     description:
-      "Un único sistema operativo gestiona WhatsApp, llamadas, reseñas, correo, agenda y redes de tu negocio, de forma integrada y proactiva. Desde 149€/mes. 6 meses gratis.",
+      "WhatsApp, llamadas, Instagram y agenda, gestionados por un equipo de agentes IA desde un único panel. Desde 149€/mes.",
   },
   alternates: { canonical: SITE_URL },
   robots: { index: true, follow: true },
@@ -44,7 +48,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className="h-full antialiased"
+      className={`h-full antialiased ${anton.variable}`}
     >
       <head>
         <script
@@ -55,7 +59,7 @@ export default function RootLayout({
               "@type": "Organization",
               name: "AI-Team",
               url: SITE_URL,
-              logo: `${SITE_URL}/logo.png`,
+              logo: `${SITE_URL}/logo-ai-team.png`,
               description:
                 "Tu equipo de empleados IA para PYMES: WhatsApp, llamadas, reseñas, correo, redes sociales, email marketing e inteligencia competitiva.",
               contactPoint: [

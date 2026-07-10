@@ -1,28 +1,44 @@
-// Precio resumido del posicionamiento (Sistema Operativo):
+// Precio resumido del posicionamiento (Sistema Operativo). Todos los números salen de
+// src/lib/oferta.ts (fuente única). NO hardcodear precios aquí.
 //   - Producto principal: el SISTEMA. 299€/mes tachado → 149€/mes fundador.
-//   - Add-on OPCIONAL: GESTIÓN +799€/mes (lo operamos por el cliente). Se SUMA.
-//     Sistema + Gestión = 948€/mes. La Gestión NO está incluida en los 149€.
-// Prop `compact`: en la home se muestran menos bullets; en /precios, todos.
+//   - Add-on OPCIONAL: GESTIÓN +799€/mes (lo operamos por el cliente). Se SUMA → 948€/mes.
+// Prop `compact`: en la home mostramos SOLO los 4 canales núcleo; en /precios, el stack completo.
+import {
+  PRECIO_FUNDADOR,
+  PRECIO_NORMAL,
+  GESTION_PRECIO,
+  TOTAL_SISTEMA_GESTION,
+  DESCUENTO_PCT,
+  BETA,
+  CTA,
+} from "@/lib/oferta";
 
-const SISTEMA_FEATURES = [
+// Home (compact): los 4 canales núcleo, en llano.
+const CORE_FEATURES = [
   "WhatsApp: responde, agenda y capta leads 24/7",
-  "Llamadas: atiende el teléfono y agenda citas",
+  "Llamadas: coge el teléfono y agenda citas",
+  "Instagram: responde mensajes directos y publica",
+  "Agenda: todas tus citas en un sitio, sin dobles reservas",
+];
+
+// /precios (full): además, todo lo que va incluido en el Sistema.
+const SISTEMA_FEATURES = [
+  ...CORE_FEATURES,
   "Reseñas de Google: pide y responde por ti",
-  "Correo y agenda: tu bandeja y tu día, ordenados",
   "Email marketing: campañas y reactivación de clientes",
-  "Instagram y redes: prepara y programa contenido según tu configuración",
+  "Análisis de competencia: alertas de precios y promos",
   "Capa proactiva: te avisa y se adelanta (en activación)",
-  "Informe mensual: el dinero y el tiempo que te ahorra",
 ];
 
 export default function Packs({ compact = false }: { compact?: boolean }) {
+  const feats = compact ? CORE_FEATURES : SISTEMA_FEATURES;
   return (
     <section id="packs" className="py-16 md:py-24 border-t-[3px] border-black bg-white">
       <div className="max-w-3xl mx-auto px-5">
         <div className="flex items-center gap-3 mb-6 text-xs font-mono flex-wrap">
           <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">PRECIO FUNDADOR</span>
           <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 font-bold tracking-widest">PARA SIEMPRE</span>
-          <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">SOLO 20 PLAZAS</span>
+          <span className="bg-black text-[color:var(--mustard)] px-2 py-1 font-bold tracking-widest">SOLO {BETA.plazas} PLAZAS</span>
         </div>
         <h2 className="font-stencil text-5xl md:text-7xl mb-4">
           Un sistema.<br />Un precio.
@@ -39,24 +55,24 @@ export default function Packs({ compact = false }: { compact?: boolean }) {
           </div>
           <div className="flex items-center justify-between gap-2 mb-1 mt-1">
             <div className="font-stencil text-3xl">Sistema Operativo</div>
-            <span className="text-[9px] font-bold tracking-widest bg-black text-[color:var(--mustard)] px-1.5 py-0.5">50% FUNDADOR</span>
+            <span className="text-[9px] font-bold tracking-widest bg-black text-[color:var(--mustard)] px-1.5 py-0.5">{DESCUENTO_PCT}% FUNDADOR</span>
           </div>
           <p className="text-xs text-black/60 leading-tight mb-4">El sistema completo que lleva tu negocio, integrado y proactivo.</p>
 
           <div className="mb-4">
             <div className="flex items-baseline gap-2">
-              <span className="font-stencil text-5xl">149</span>
+              <span className="font-stencil text-5xl">{PRECIO_FUNDADOR}</span>
               <span className="text-sm font-bold">€/mes</span>
             </div>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-black/50 line-through">299 €</span>
-              <span className="text-[10px] font-bold tracking-widest bg-[color:var(--red)] text-white px-1.5 py-0.5">FUNDADOR · 50%</span>
+              <span className="text-xs text-black/50 line-through">{PRECIO_NORMAL} €</span>
+              <span className="text-[10px] font-bold tracking-widest bg-[color:var(--red)] text-white px-1.5 py-0.5">FUNDADOR · {DESCUENTO_PCT}%</span>
             </div>
           </div>
 
           <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-black/55 mb-2">Incluido en el Sistema</div>
           <ul className="space-y-1.5 mb-4 text-sm">
-            {(compact ? SISTEMA_FEATURES.slice(0, 3) : SISTEMA_FEATURES).map((a) => (
+            {feats.map((a) => (
               <li key={a} className="flex items-start gap-2">
                 <span className="text-[color:var(--red)] font-bold leading-snug">▸</span>
                 <span className="leading-snug">{a}</span>
@@ -64,10 +80,10 @@ export default function Packs({ compact = false }: { compact?: boolean }) {
             ))}
           </ul>
 
-          <a href="/beta" className="btn-mustard text-xs text-center block bg-black text-[color:var(--mustard)] border-black hover:bg-transparent hover:text-black">
-            Pide tu demo →
+          <a href={CTA.primaria.href} className="btn-mustard text-xs text-center block bg-black text-[color:var(--mustard)] border-black hover:bg-transparent hover:text-black">
+            {CTA.primaria.label} →
           </a>
-          <p className="text-[10px] text-black/50 text-center mt-1 font-mono">* El cobro se activa tras 6 meses gratis</p>
+          <p className="text-[10px] text-black/50 text-center mt-1 font-mono">* El cobro se activa tras {BETA.mesesGratis} meses gratis</p>
         </article>
 
         {/* Add-on opcional: GESTIÓN (fila compacta, no tarjeta) */}
@@ -80,25 +96,25 @@ export default function Packs({ compact = false }: { compact?: boolean }) {
             <p className="text-xs text-black/60 leading-snug">La operamos nosotros por ti: revisamos, aprobamos y ajustamos campañas y respuestas.</p>
           </div>
           <div className="text-right shrink-0">
-            <div className="font-stencil text-2xl leading-none">+799€</div>
+            <div className="font-stencil text-2xl leading-none">+{GESTION_PRECIO}€</div>
             <div className="text-[10px] text-black/50">/mes</div>
           </div>
         </div>
 
         <p className="text-sm text-black/70 mt-6 border-l-4 border-[color:var(--mustard)] pl-3 max-w-md mx-auto leading-snug">
-          <strong>149€/mes</strong> (fundador; normal 299€): 6 meses gratis, sin permanencia. La
-          Gestión (+799€) es opcional y aparte → Sistema + Gestión = <strong>948€/mes</strong>.
+          <strong>{PRECIO_FUNDADOR}€/mes</strong> (fundador; normal {PRECIO_NORMAL}€): {BETA.mesesGratis} meses gratis, sin permanencia. La
+          Gestión (+{GESTION_PRECIO}€) es opcional y aparte → Sistema + Gestión = <strong>{TOTAL_SISTEMA_GESTION}€/mes</strong>.
         </p>
 
         <p className="text-sm text-black/60 mt-6 text-center">
           ¿Varias sedes o necesidades a medida?{" "}
           <a
-            href="https://cal.com/cristobal-serrano-hrj2pu/demo-ai-team-15-min"
+            href={CTA.ventas.href}
             target="_blank"
             rel="noopener noreferrer"
             className="underline font-bold hover:text-[color:var(--red)]"
           >
-            Hablar con ventas →
+            {CTA.ventas.label} →
           </a>
         </p>
       </div>

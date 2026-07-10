@@ -41,7 +41,7 @@ El problema no es responderlos. El problema es responderlos **en menos de 10 min
 
 Los chatbots clásicos basados en árboles de decisión funcionan en menos del 30% de las conversaciones reales. La gente escribe como habla, no como un formulario.
 
-Un agente IA bien afinado (con tu catálogo, precios y agenda como contexto) supera el 85% de resolución sin intervención humana — y deriva al humano sin fricción cuando no sabe.
+Un agente IA bien afinado (con tu catálogo, precios y agenda como contexto) resuelve por sí solo más del 85% de las consultas — y deriva a una persona sin fricción cuando no sabe.
 
 ## Las tres reglas que sí funcionan
 
@@ -226,7 +226,7 @@ Pero la mayoría de clínicas gasta 90% de su presupuesto en captación y 10% en
 - Lucía (correo): clasifica respuestas para que tú solo veas las importantes
 - Rocío (reseñas): dispara solicitud justo después de la cita
 
-Activación en 24h con plan **Élite** (249€/mes) o **Pro** (449€/mes).`,
+Activación en 24h con el Sistema Operativo (149€/mes, precio fundador).`,
   },
   {
     slug: "automatizacion-restaurante-zona-turistica",
@@ -267,7 +267,7 @@ Los agentes detectan y derivan a humano. No intentes que la IA cierre todo.
 - Reseñas/semana: 4 → 11
 - Tiempo del propietario en gestión digital: 6h/sem → 30 min revisión
 
-Plan recomendado para restaurantes medianos: **Élite** (249€/mes).`,
+Todo esto va incluido en el Sistema Operativo (149€/mes, precio fundador).`,
   },
   {
     slug: "peluquerias-instagram-treatwell",
@@ -297,7 +297,7 @@ El propietario medio dedica **3-5 horas al día** a estos canales. No al pelo.
 
 **Mes 2: Redes + email.** Marta + Eva. Sube tu Instagram y empieza a fidelizar BBDD.
 
-**Mes 3: Llamadas + auditoría continua.** Carmen + auditoría mensual del Pro. Cierras el círculo: ya no hay canal sin cobertura.
+**Mes 3: Llamadas + auditoría continua.** Carmen + auditoría mensual del sistema. Cierras el círculo: ya no hay canal sin cobertura.
 
 ## Lo que NO funciona
 
@@ -314,7 +314,7 @@ El propietario medio dedica **3-5 horas al día** a estos canales. No al pelo.
 | WhatsApp: respuesta en 1-3h | Respuesta en 8 seg |
 | Instagram: 1 post/semana | 4-5 posts/semana + reels |
 
-Pack recomendado para peluquerías: **Élite** (249€/mes) o **Local** (79€) si solo quieres WhatsApp + llamadas + reseñas para empezar.`,
+Todo esto va incluido en el Sistema Operativo (149€/mes, precio fundador): WhatsApp, llamadas, reseñas, redes y más, sin packs sueltos.`,
   },
   {
     slug: "agentes-ia-vs-empleados-pyme",
@@ -331,7 +331,7 @@ Un empleado a jornada completa en España con salario bruto de 1.800€/mes le c
 
 Y eso es por **una persona, cubriendo 8h, 5 días a la semana**.
 
-## Lo que cubre un equipo IA por 249€/mes (plan Élite)
+## Lo que cubre un equipo IA por 149€/mes (el Sistema Operativo)
 
 - WhatsApp 24/7 (Pablo)
 - Llamadas entrantes (Carmen)
@@ -355,9 +355,9 @@ La PYME bien montada en 2026 tiene **un equipo humano más pequeño, mejor pagad
 
 ## El cálculo final
 
-| Concepto | Empleado | AI-Team Élite |
+| Concepto | Empleado | AI-Team |
 |---|---|---|
-| Coste mensual | 3.200€ | 249€ |
+| Coste mensual | 3.200€ | 149€ |
 | Horas cubiertas | 40h/sem | 168h/sem |
 | Canales atendidos | 1-2 | 6 |
 | Vacaciones / bajas | Sí | No |

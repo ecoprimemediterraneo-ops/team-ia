@@ -25,7 +25,7 @@ const esteticaFunciones: {
     titulo: "El sistema gestiona consultas y reservas por WhatsApp",
     bullets: [
       "«¿Cuánto cuesta la depilación láser?» a las 22h — respuesta en segundos",
-      "Envía menú de tratamientos, precios y disponibilidad sin intervención humana",
+      "Envía el menú de tratamientos, precios y disponibilidad de forma automática",
       "Agenda citas y envía confirmación + recordatorio automático 24h antes",
     ],
   },

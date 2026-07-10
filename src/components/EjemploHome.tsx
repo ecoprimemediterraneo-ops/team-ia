@@ -48,8 +48,8 @@ export default function EjemploHome() {
               Contesta, propone y agenda.<br /><span className="text-[color:var(--red)]">Con las reglas que tú definas.</span>
             </h2>
             <p className="text-base text-black/70 leading-relaxed">
-              El mismo sistema que atiende WhatsApp coge las llamadas, pide reseñas, prepara tu agenda
-              y centraliza tus canales. Todo conectado, con las reglas y aprobaciones que tú definas.
+              El mismo sistema que atiende WhatsApp coge las llamadas, gestiona tu Instagram y prepara
+              tu agenda. Todo conectado, con las reglas y aprobaciones que tú definas.
             </p>
           </div>
         </div>

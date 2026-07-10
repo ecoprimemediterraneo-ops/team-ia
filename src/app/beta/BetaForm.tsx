@@ -9,9 +9,16 @@ export default function BetaForm({ sectores }: { sectores: string[] }) {
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [msg, setMsg] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot anti-spam (invisible para humanos)
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Honeypot: si un bot rellena el campo oculto, fingimos éxito sin enviar nada.
+    if (website) {
+      setStatus("ok");
+      setMsg("Revisaremos tu solicitud y te contactamos para preparar la demo.");
+      return;
+    }
     if (!consent) {
       setStatus("error");
       setMsg("Marca la casilla de consentimiento para continuar.");
@@ -28,7 +35,7 @@ export default function BetaForm({ sectores }: { sectores: string[] }) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "No hemos podido registrar tu demo. Inténtalo de nuevo.");
       setStatus("ok");
-      setMsg("¡Recibido! Te contactamos en menos de 24h.");
+      setMsg("Revisaremos tu solicitud y te contactamos para preparar la demo.");
     } catch (err) {
       setStatus("error");
       setMsg(err instanceof Error ? err.message : "Algo falló. Inténtalo en unos minutos.");
@@ -120,6 +127,20 @@ export default function BetaForm({ sectores }: { sectores: string[] }) {
         </select>
       </div>
 
+      {/* Honeypot anti-spam: fuera de pantalla y oculto a lectores; los humanos no lo ven */}
+      <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+        <label htmlFor="bf-website">No rellenar</label>
+        <input
+          id="bf-website"
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+        />
+      </div>
+
       {/* Consentimiento RGPD */}
       <div className="flex items-start gap-2.5">
         <input
@@ -134,7 +155,7 @@ export default function BetaForm({ sectores }: { sectores: string[] }) {
         />
         <label htmlFor="bf-consent" className="text-xs text-black/65 leading-snug">
           Acepto que AI-Team trate mis datos para contactarme sobre la demo. Sin spam. Consulta la{" "}
-          <a href="/legal/privacidad" className="underline font-bold hover:text-[color:var(--red)]">
+          <a href="/privacy" className="underline font-bold hover:text-[color:var(--red)]">
             política de privacidad
           </a>.
         </label>
@@ -145,12 +166,12 @@ export default function BetaForm({ sectores }: { sectores: string[] }) {
         disabled={status === "loading"}
         className="mt-1 bg-black text-[color:var(--mustard)] font-bold text-sm tracking-widest uppercase py-3.5 px-4 border-2 border-black hover:bg-[color:var(--red)] hover:text-white transition-colors disabled:opacity-60"
       >
-        {status === "loading" ? "Enviando…" : "Pide tu demo →"}
+        {status === "loading" ? "Enviando…" : "Enviar solicitud →"}
       </button>
 
       {/* Qué pasa tras enviar */}
       <p className="text-xs text-black/60 text-center leading-snug">
-        Te contactamos en <strong>menos de 24h</strong> para enseñarte el sistema en una demo de
+        Revisamos tu solicitud y te contactamos para enseñarte el sistema en una demo de
         15 min, <strong>sin compromiso</strong>.
       </p>
 
