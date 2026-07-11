@@ -635,6 +635,65 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
 }
 
 // -----------------------------------------------------------------------------
+// Unificación de canales — Pablo/Carmen reservan por el orquestador general
+// (reservarSlot). Estos helpers permiten que ESA cita quede TAMBIÉN como
+// BookingRecord (con token, visible/gestionable en el panel) apuntando al MISMO
+// evento de Google, SIN crear un segundo evento.
+// -----------------------------------------------------------------------------
+
+/** Primer negocio (BusinessBooking) de un tenant. null si el tenant no tiene ninguno. */
+export async function getBusinessByTenant(tenantId: string): Promise<BusinessBooking | null> {
+  const all = await listBusinesses();
+  return all.find((b) => b.tenantId === tenantId) ?? null;
+}
+
+export type RegistrarRecordInput = {
+  slug: string;
+  startIso: string; // hora de inicio (local del negocio)
+  durationMin: number;
+  motivo: string; // texto del servicio/motivo (el orquestador no usa serviceId)
+  cliente: { nombre: string; telefono: string; email?: string };
+  eventId?: string; // evento YA creado en Google por el orquestador
+  htmlLink?: string;
+};
+
+/**
+ * Persiste un BookingRecord a partir de una cita YA creada en Google por el
+ * orquestador general (Pablo/Carmen). NO llama a Google → cero evento duplicado.
+ * Idempotente por eventId (protege ante reintentos de webhook). Devuelve null si
+ * el tenant no tiene business → se comporta como hoy, sin regresión.
+ */
+export async function registrarRecordDeCita(input: RegistrarRecordInput): Promise<BookingRecord | null> {
+  const business = await getBusinessBySlug(input.slug);
+  if (!business) return null;
+  // Idempotencia: si ya existe un record con este eventId, no dupliques.
+  if (input.eventId) {
+    const existente = (await listRecords()).find((r) => r.eventId === input.eventId);
+    if (existente) return existente;
+  }
+  const startNorm = input.startIso.length === 16 ? `${input.startIso}:00` : input.startIso;
+  const record: BookingRecord = {
+    id: nuevoId("bk"),
+    token: crypto.randomBytes(16).toString("hex"),
+    slug: business.slug,
+    tenantId: business.tenantId,
+    serviceId: "",
+    servicioNombre: input.motivo || "Cita",
+    durationMin: input.durationMin,
+    startIso: startNorm,
+    cliente: input.cliente,
+    eventId: input.eventId,
+    htmlLink: input.htmlLink,
+    estado: "confirmada",
+    origen: "online",
+    tipo: "cita",
+    creadaEn: new Date().toISOString(),
+  };
+  await saveRecord(record);
+  return record;
+}
+
+// -----------------------------------------------------------------------------
 // Cancelar reserva — borra de Google (libera el hueco + padding) + marca estado.
 // Respeta la antelación mínima de cancelación del negocio.
 // -----------------------------------------------------------------------------

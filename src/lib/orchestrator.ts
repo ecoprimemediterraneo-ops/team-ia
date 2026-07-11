@@ -146,7 +146,7 @@ export async function reservarSlot(input: ReservaInput): Promise<ReservaResult> 
   const durationMin = input.durationMin ?? DEFAULT_DURATION_MIN;
   const slotKey = `${tenantId}|${input.startIso}|${durationMin}`;
 
-  return withSlotMutex(slotKey, async () => {
+  const result: ReservaResult = await withSlotMutex(slotKey, async (): Promise<ReservaResult> => {
     const lockKey = `lock:cita:${slotKey}`;
     const baseLog = {
       agenteOrigen: input.agenteOrigen,
@@ -206,6 +206,36 @@ export async function reservarSlot(input: ReservaInput): Promise<ReservaResult> 
       await kvUnlock(lockKey);
     }
   });
+
+  // Unificación de canales: si la cita la hizo Pablo o Carmen y el tenant tiene un
+  // negocio de booking, la registramos TAMBIÉN como BookingRecord (con token, visible
+  // en el panel) apuntando al MISMO evento de Google — sin crear un segundo evento.
+  // Best-effort: nunca rompe la reserva. Eva/Lucía se comportan como hoy (sin record).
+  if (result.ok && (input.agenteOrigen === "pablo" || input.agenteOrigen === "carmen")) {
+    try {
+      const { getBusinessByTenant, registrarRecordDeCita } = await import("./booking");
+      const business = await getBusinessByTenant(tenantId);
+      if (business) {
+        await registrarRecordDeCita({
+          slug: business.slug,
+          startIso: input.startIso,
+          durationMin,
+          motivo: input.motivo,
+          cliente: {
+            nombre: input.nombre,
+            telefono: input.customerPhone || "",
+            email: input.attendees?.[0],
+          },
+          eventId: result.eventId,
+          htmlLink: result.htmlLink,
+        });
+      }
+    } catch (e) {
+      console.error("[orchestrator] no se pudo crear BookingRecord (no crítico):", e);
+    }
+  }
+
+  return result;
 }
 
 // -----------------------------------------------------------------------------
