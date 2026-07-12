@@ -631,6 +631,7 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
     creadaEn: new Date().toISOString(),
   };
   await saveRecord(record);
+  await notificarDueno(record, "nueva");
   return { ok: true, record };
 }
 
@@ -690,7 +691,25 @@ export async function registrarRecordDeCita(input: RegistrarRecordInput): Promis
     creadaEn: new Date().toISOString(),
   };
   await saveRecord(record);
+  await notificarDueno(record, "nueva");
   return record;
+}
+
+/**
+ * Avisa al dueño del negocio (email de marca AI-Team) de una cita nueva/cancelada.
+ * Gateado por OWNER_NOTIFY_ENABLED y sin duplicados (lo gestiona booking-email).
+ * Dynamic import para evitar ciclo estático con booking-email. Best-effort.
+ */
+async function notificarDueno(record: BookingRecord, tipo: "nueva" | "cancelada"): Promise<void> {
+  try {
+    const { ownerNotifyEnabled, enviarAvisoDueno } = await import("./booking-email");
+    if (!ownerNotifyEnabled()) return;
+    const business = await getBusinessBySlug(record.slug);
+    if (!business) return;
+    await enviarAvisoDueno(record, business, tipo);
+  } catch (e) {
+    console.error("[booking] aviso al dueño falló (no crítico):", e);
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -734,6 +753,7 @@ export async function cancelarReservaPorToken(token: string, redirectUri: string
   if (!del.ok) return { ok: false, reason: "error", detail: del.detail };
   const updated: BookingRecord = { ...record, estado: "cancelada", canceladaEn: new Date().toISOString() };
   await saveRecord(updated);
+  await notificarDueno(updated, "cancelada");
   return { ok: true, record: updated };
 }
 
@@ -773,6 +793,7 @@ export async function cambiarEstadoRecord(id: string, nuevoEstado: EstadoCita, r
     ...(nuevoEstado === "cancelada" ? { canceladaEn: new Date().toISOString() } : {}),
   };
   await saveRecord(updated);
+  if (nuevoEstado === "cancelada") await notificarDueno(updated, "cancelada");
   return { ok: true, record: updated };
 }
 
@@ -889,6 +910,7 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
     creadaEn: new Date().toISOString(),
   };
   await saveRecord(record);
+  await notificarDueno(record, "nueva");
   return { ok: true, record };
 }
 

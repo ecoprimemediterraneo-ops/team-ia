@@ -14,8 +14,12 @@
 // proactivos hará falta una plantilla. Ver resumen final.
 // =============================================================================
 
+import fs from "node:fs/promises";
+import path from "node:path";
 import { getResend, RESEND_FROM } from "./resend";
 import { sendWhatsAppText } from "./whatsapp-sender";
+import { kvGet, kvSet, supabaseEnabled } from "./supabase";
+import { resolveCalendarEmail } from "./booking";
 import type { BookingRecord, BusinessBooking, EsperaEntry } from "./booking";
 
 const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
@@ -164,5 +168,107 @@ export async function enviarAvisoEspera(entry: EsperaEntry, business: BusinessBo
   const cuerpo = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#333;margin:0 0 16px">¡Buenas noticias, ${esc(entry.cliente.nombre)}! Se ha liberado disponibilidad para <b>${esc([entry.servicioNombre, entry.varianteNombre].filter(Boolean).join(" · "))}</b>${entry.empleadoNombre ? ` con ${esc(entry.empleadoNombre)}` : ""} el <b>${esc(fecha)}</b>. Los huecos vuelan — reserva ya:</div>
     <div style="text-align:center;margin:22px 0"><a href="${url}" style="display:inline-block;background:#F5C518;color:#000;text-decoration:none;padding:14px 28px;font-weight:bold;border:2px solid #000">Reservar ahora →</a></div>`;
   return enviarEmail(entry.cliente.email, subject, emailBase(business, "Se ha liberado un hueco", cuerpo));
+}
+
+// -----------------------------------------------------------------------------
+// Aviso al DUEÑO del negocio (marca AI-Team, por email) — cita nueva / cancelada.
+// Flag OWNER_NOTIFY_ENABLED (off por defecto). Dedup por record.id + tipo.
+// -----------------------------------------------------------------------------
+
+/** Interruptor de los avisos al dueño. Off por defecto. */
+export function ownerNotifyEnabled(): boolean {
+  return (process.env.OWNER_NOTIFY_ENABLED || "").toLowerCase() === "true";
+}
+
+// Ledger anti-duplicado: no mandar dos avisos del mismo (cita, tipo).
+const OWNER_NOTICE_FILE = path.join(process.cwd(), "data", "booking-owner-notices.json");
+const KV_OWNER_NOTICE = "booking:ownernotice:";
+async function yaAvisado(key: string): Promise<boolean> {
+  if (supabaseEnabled()) return !!(await kvGet(KV_OWNER_NOTICE + key));
+  try {
+    const m = JSON.parse(await fs.readFile(OWNER_NOTICE_FILE, "utf8")) as Record<string, unknown>;
+    return !!m[key];
+  } catch {
+    return false;
+  }
+}
+async function marcarAvisado(key: string): Promise<void> {
+  if (supabaseEnabled()) {
+    await kvSet(KV_OWNER_NOTICE + key, { at: new Date().toISOString() });
+    return;
+  }
+  let m: Record<string, unknown> = {};
+  try {
+    m = JSON.parse(await fs.readFile(OWNER_NOTICE_FILE, "utf8")) as Record<string, unknown>;
+  } catch {
+    /* fichero nuevo */
+  }
+  m[key] = { at: new Date().toISOString() };
+  await fs.mkdir(path.dirname(OWNER_NOTICE_FILE), { recursive: true });
+  await fs.writeFile(OWNER_NOTICE_FILE, JSON.stringify(m, null, 2), "utf8");
+}
+
+/** Email de aviso al dueño (marca AI-Team, sin enlace de cancelación de cliente). */
+export function construirAvisoDueno(
+  record: BookingRecord,
+  business: BusinessBooking,
+  tipo: "nueva" | "cancelada",
+): { subject: string; html: string } {
+  const servicio = [record.servicioNombre, record.varianteNombre].filter(Boolean).join(" · ") || "Cita";
+  const cuando = fechaHumana(record.startIso);
+  const cliente = record.cliente?.nombre || "Cliente";
+  const nueva = tipo === "nueva";
+  const subject = `AI-Team · ${nueva ? "Nueva cita" : "Cita cancelada"}: ${cliente}, ${servicio}, ${cuando}`.slice(0, 140);
+  const titulo = nueva ? "📅 Nueva cita" : "❌ Cita cancelada";
+  const intro = nueva
+    ? `Ha entrado una <b>cita nueva</b> en ${esc(business.nombre)}:`
+    : `Se ha <b>cancelado</b> una cita en ${esc(business.nombre)}:`;
+  const tel = record.cliente?.telefono ? `<div><b>Teléfono:</b> ${esc(record.cliente.telefono)}</div>` : "";
+  const cuerpo = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#333;margin:0 0 14px">${intro}</div>
+    <div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#333">
+      <div><b>Cliente:</b> ${esc(cliente)}</div>
+      ${tel}
+      <div><b>Servicio:</b> ${esc(servicio)} (${record.durationMin} min)</div>
+      <div><b>Cuándo:</b> ${esc(cuando)}</div>
+      <div><b>Negocio:</b> ${esc(business.nombre)}</div>
+    </div>`;
+  return { subject, html: emailBase(business, titulo, cuerpo) };
+}
+
+/**
+ * Avisa al DUEÑO (email de la config del negocio, vía resolveCalendarEmail) de una
+ * cita nueva o cancelada. Respeta OWNER_NOTIFY_ENABLED y no duplica (record.id+tipo).
+ * Best-effort: devuelve estado, nunca lanza.
+ */
+export async function enviarAvisoDueno(
+  record: BookingRecord,
+  business: BusinessBooking,
+  tipo: "nueva" | "cancelada",
+): Promise<{ enviado: boolean; modo: string }> {
+  if (!ownerNotifyEnabled()) return { enviado: false, modo: "flag_off" };
+  const key = `${record.id}:${tipo}`;
+  if (await yaAvisado(key)) return { enviado: false, modo: "duplicado" };
+  let to: string | undefined;
+  try {
+    to = await resolveCalendarEmail(business);
+  } catch {
+    to = undefined;
+  }
+  if (!to) return { enviado: false, modo: "sin_email_dueno" };
+  const { subject, html } = construirAvisoDueno(record, business, tipo);
+  const r = await enviarEmail(to, subject, html);
+  if (r.intentado) await marcarAvisado(key);
+  return { enviado: r.enviado, modo: r.modo };
+}
+
+/** Envío directo a un email explícito, sin flag ni dedup (solo para la ruta de prueba). */
+export async function enviarAvisoDuenoA(
+  to: string,
+  record: BookingRecord,
+  business: BusinessBooking,
+  tipo: "nueva" | "cancelada",
+): Promise<NotifResult["email"]> {
+  const { subject, html } = construirAvisoDueno(record, business, tipo);
+  return enviarEmail(to, subject, html);
 }
 
