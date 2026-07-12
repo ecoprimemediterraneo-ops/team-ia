@@ -8,7 +8,7 @@ const PYMES = [
   { href: "/estetica", label: "Clínicas", emoji: "🩺" },
   { href: "/beta", label: "Abogados", emoji: "⚖️" },
   { href: "/dentistas", label: "Dentistas", emoji: "🦷" },
-  { href: "/beta", label: "Estudios", emoji: "📐" },
+  { href: "/salones", label: "Salones de belleza", emoji: "💇" },
 ];
 
 export default function Navbar() {
