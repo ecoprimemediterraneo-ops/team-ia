@@ -10,11 +10,21 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { getBusinessBySlug, listBusinesses, resolveCalendarEmail, type BookingRecord } from "@/lib/booking";
 import { construirAvisoDueno, enviarAvisoDuenoA, ownerNotifyEnabled } from "@/lib/booking-email";
+import { getSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-function authorized(req: Request, h: Headers): boolean {
+// Autoriza si: (1) hay sesión de FUNDADOR (logueado en aiteam.marketing → URL simple
+// sin secreto), o (2) llega el secreto correcto por ?secret= o header x-cron-secret.
+async function authorized(req: Request, h: Headers): Promise<boolean> {
+  try {
+    const s = await getSession();
+    const founder = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
+    if (s && (s.email === founder || s.email === "crisasky@gmail.com")) return true;
+  } catch {
+    /* sin sesión válida → probamos secreto */
+  }
   const expected = process.env.OWNER_NOTIFY_TEST_SECRET || process.env.CRON_SECRET || "";
   if (!expected) return process.env.NODE_ENV !== "production"; // dev/local sin secreto: permitido
   const url = new URL(req.url);
@@ -25,7 +35,20 @@ function authorized(req: Request, h: Headers): boolean {
 
 async function run(req: Request) {
   const h = await headers();
-  if (!authorized(req, h)) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  if (!(await authorized(req, h))) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "unauthorized",
+        pista: {
+          cronSecretPresente: !!process.env.CRON_SECRET,
+          ownerTestSecretPresente: !!process.env.OWNER_NOTIFY_TEST_SECRET,
+          nota: "Más fácil: entra en aiteam.marketing (login cris) y abre esta URL sin secreto.",
+        },
+      },
+      { status: 401 },
+    );
+  }
 
   const url = new URL(req.url);
   const to = (url.searchParams.get("to") || "").trim();
