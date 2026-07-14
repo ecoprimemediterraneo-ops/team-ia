@@ -40,7 +40,8 @@ export type Tenant = {
   id: string;                              // "tenant_aiteam", "tenant_clinicasonrisa", ...
   name: string;                            // "AI-Team (cuenta fundadora)"
   email: string;                           // contacto del propietario
-  whatsappPhoneNumberId?: string;          // mapea Meta → tenant
+  whatsappPhoneNumberId?: string;          // mapea Meta → tenant (número EMISOR)
+  ownerWhatsapp?: string;                  // WhatsApp del DUEÑO para recibir avisos (E.164, p.ej. 34656989373)
   instagramUserId?: string;                // mapea Meta → tenant
   plan: TenantPlan;
   pricing: { monthlyEUR: number };

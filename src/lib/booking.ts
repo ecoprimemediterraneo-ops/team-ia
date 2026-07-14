@@ -708,19 +708,29 @@ export async function registrarRecordDeCita(input: RegistrarRecordInput): Promis
 }
 
 /**
- * Avisa al dueño del negocio (email de marca AI-Team) de una cita nueva/cancelada.
- * Gateado por OWNER_NOTIFY_ENABLED y sin duplicados (lo gestiona booking-email).
- * Dynamic import para evitar ciclo estático con booking-email. Best-effort.
+ * Avisa al dueño del negocio de una cita nueva/cancelada por DOS canales
+ * independientes, cada uno con su propio flag y a prueba de fallos (nunca rompe
+ * la reserva ni bloquea al otro canal):
+ *   - Email de marca AI-Team → flag OWNER_NOTIFY_ENABLED (dedup en booking-email).
+ *   - WhatsApp de plantilla   → flag OWNER_WHATSAPP_ENABLED (plantilla aviso_dueno_cita).
+ * Dynamic import para evitar ciclos estáticos con booking-email/booking-owner-whatsapp.
  */
 async function notificarDueno(record: BookingRecord, tipo: "nueva" | "cancelada"): Promise<void> {
+  const business = await getBusinessBySlug(record.slug).catch(() => null);
+  if (!business) return;
+  // Canal 1 — email (self-gated por OWNER_NOTIFY_ENABLED; dedup interno).
   try {
     const { ownerNotifyEnabled, enviarAvisoDueno } = await import("./booking-email");
-    if (!ownerNotifyEnabled()) return;
-    const business = await getBusinessBySlug(record.slug);
-    if (!business) return;
-    await enviarAvisoDueno(record, business, tipo);
+    if (ownerNotifyEnabled()) await enviarAvisoDueno(record, business, tipo);
   } catch (e) {
-    console.error("[booking] aviso al dueño falló (no crítico):", e);
+    console.error("[booking] aviso al dueño (email) falló (no crítico):", e);
+  }
+  // Canal 2 — WhatsApp de plantilla (self-gated por OWNER_WHATSAPP_ENABLED; fail-safe).
+  try {
+    const { enviarAvisoDuenoWhatsApp } = await import("./booking-owner-whatsapp");
+    await enviarAvisoDuenoWhatsApp(record, business, tipo);
+  } catch (e) {
+    console.error("[booking] aviso al dueño (whatsapp) falló (no crítico):", e);
   }
 }
 

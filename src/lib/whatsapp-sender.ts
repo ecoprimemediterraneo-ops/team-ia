@@ -116,3 +116,37 @@ export async function sendWhatsAppImage(
     },
   });
 }
+
+/**
+ * Envía un mensaje de PLANTILLA (template) ya aprobada en Meta. Es la única forma
+ * de escribir al usuario FUERA de la ventana de 24 h (avisos proactivos, p.ej. al
+ * dueño). `bodyParams` son las variables {{1}}, {{2}}… del cuerpo, EN ORDEN.
+ * Reutiliza el mismo cliente/credenciales (WHATSAPP_PHONE_NUMBER_ID/ACCESS_TOKEN).
+ */
+export async function sendWhatsAppTemplate(
+  to: string,
+  templateName: string,
+  languageCode: string,
+  bodyParams: string[] = [],
+): Promise<WhatsAppSendResult> {
+  return postGraph({
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to,
+    type: "template",
+    template: {
+      name: templateName,
+      language: { code: languageCode },
+      ...(bodyParams.length
+        ? {
+            components: [
+              {
+                type: "body",
+                parameters: bodyParams.map((text) => ({ type: "text", text: text || "—" })),
+              },
+            ],
+          }
+        : {}),
+    },
+  });
+}
