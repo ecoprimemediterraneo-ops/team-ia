@@ -39,6 +39,18 @@ import { kvTryLock, kvUnlock, supabaseEnabled } from "./supabase";
 const DEFAULT_DURATION_MIN = 30;
 const LOCK_TTL_MS = 30_000;
 
+// Agentes de AI-Team cuyas citas se registran además como BookingRecord (visibles y
+// cancelables en /dashboard/reservas, sujetas a anti-doble-reserva por records y con
+// aviso al dueño). TODOS pasan por reservarSlot(): el record apunta al MISMO evento de
+// Google que se acaba de crear, sin segundo evento ni segundo camino de reserva.
+// Añadir un canal aquí es lo único necesario para unificarlo al motor.
+const AGENTES_CON_RECORD: ReadonlySet<EventChannel> = new Set<EventChannel>([
+  "pablo",
+  "carmen",
+  "eva",
+  "lucia",
+]);
+
 // -----------------------------------------------------------------------------
 // Tipos
 // -----------------------------------------------------------------------------
@@ -207,11 +219,14 @@ export async function reservarSlot(input: ReservaInput): Promise<ReservaResult> 
     }
   });
 
-  // Unificación de canales: si la cita la hizo Pablo o Carmen y el tenant tiene un
-  // negocio de booking, la registramos TAMBIÉN como BookingRecord (con token, visible
-  // en el panel) apuntando al MISMO evento de Google — sin crear un segundo evento.
-  // Best-effort: nunca rompe la reserva. Eva/Lucía se comportan como hoy (sin record).
-  if (result.ok && (input.agenteOrigen === "pablo" || input.agenteOrigen === "carmen")) {
+  // Unificación de canales: si la cita la hizo un agente de AI-Team (Pablo, Carmen,
+  // Eva o Lucía) y el tenant tiene un negocio de booking, la registramos TAMBIÉN como
+  // BookingRecord (con token, visible y cancelable en el panel, contando para la
+  // anti-doble-reserva) apuntando al MISMO evento de Google — sin crear un segundo
+  // evento ni un segundo camino de reserva. registrarRecordDeCita es idempotente por
+  // eventId y dispara el aviso al dueño (OWNER_NOTIFY_ENABLED). Best-effort: nunca
+  // rompe la reserva.
+  if (result.ok && AGENTES_CON_RECORD.has(input.agenteOrigen)) {
     try {
       const { getBusinessByTenant, registrarRecordDeCita } = await import("./booking");
       const business = await getBusinessByTenant(tenantId);
