@@ -66,6 +66,9 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
   const [reprog, setReprog] = useState<BookingRecord | null>(null);
   const [detalle, setDetalle] = useState<BookingRecord | null>(null);
   const [aviso, setAviso] = useState<{ tipo: "ok" | "err"; msg: string } | null>(null);
+  // Google Calendar desconectado (invalid_grant / token caducado). Banner persistente
+  // con botón de reconexión, en vez de mostrar el código crudo de Google.
+  const [calDesconectado, setCalDesconectado] = useState(false);
 
   const lunes = useMemo(() => mondayOf(dia), [dia]);
   const semanal = vista === "semana" || vista === "rejilla";
@@ -108,9 +111,10 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
       if (r.ok && j.ok) {
         setRecords((prev) => prev.map((x) => (x.id === recordId ? (j.record as BookingRecord) : x)));
         setAviso({ tipo: "ok", msg: "Cita actualizada." });
+        setCalDesconectado(false);
       } else {
         if (j.reason === "slot_taken") setAviso({ tipo: "err", msg: "Ese hueco choca con otra cita/bloqueo." });
-        else if (j.reason === "no_calendar") setAviso({ tipo: "err", msg: "No hay calendario de Google conectado." });
+        else if (j.reason === "no_calendar") setCalDesconectado(true);
         else setAviso({ tipo: "err", msg: j.detail || "No se pudo mover la cita." });
         cargar(); // revertir al estado real
       }
@@ -138,6 +142,9 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
     if (r.ok && j.ok) {
       setRecords((prev) => prev.map((x) => (x.id === recordId ? (j.record as BookingRecord) : x)));
       setAviso({ tipo: "ok", msg: `Marcada como ${ESTADO[estado].label.toLowerCase()}.` });
+      setCalDesconectado(false);
+    } else if (j.reason === "no_calendar") {
+      setCalDesconectado(true);
     } else {
       setAviso({ tipo: "err", msg: j.detail || "No se pudo actualizar el estado." });
     }
@@ -171,6 +178,21 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
           <button onClick={() => setModal("bloqueo")} className="border-[3px] border-black bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--cream)]">＋ Bloqueo</button>
         </div>
       </div>
+
+      {calDesconectado && (
+        <div className="mb-4 card-hard bg-[color:var(--red)] text-white p-4">
+          <div className="font-bold text-sm mb-1">⚠ Tu Google Calendar se ha desconectado</div>
+          <p className="text-sm text-white/90 mb-3">
+            Vuelve a conectarlo para poder crear y mover citas. Tus reservas ya guardadas no se pierden.
+          </p>
+          <a
+            href="/api/lucia/auth"
+            className="inline-block bg-white text-black font-bold uppercase tracking-widest text-xs px-4 py-2 border-[3px] border-black hover:bg-[color:var(--cream)]"
+          >
+            Reconectar Google Calendar
+          </a>
+        </div>
+      )}
 
       <EsperaBanner slug={slug} />
 
@@ -224,13 +246,13 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
       )}
 
       {modal === "cita" && (
-        <CitaModal slug={slug} servicios={servicios} empleados={empleados} dia={dia} onClose={() => setModal(null)} onDone={(msg) => { setModal(null); setAviso({ tipo: "ok", msg }); cargar(); }} onError={(msg) => setAviso({ tipo: "err", msg })} />
+        <CitaModal slug={slug} servicios={servicios} empleados={empleados} dia={dia} onClose={() => setModal(null)} onDone={(msg) => { setModal(null); setCalDesconectado(false); setAviso({ tipo: "ok", msg }); cargar(); }} onError={(msg) => setAviso({ tipo: "err", msg })} onNoCal={() => { setModal(null); setCalDesconectado(true); }} />
       )}
       {modal === "bloqueo" && (
-        <BloqueoModal slug={slug} dia={dia} onClose={() => setModal(null)} onDone={(msg) => { setModal(null); setAviso({ tipo: "ok", msg }); cargar(); }} onError={(msg) => setAviso({ tipo: "err", msg })} />
+        <BloqueoModal slug={slug} dia={dia} onClose={() => setModal(null)} onDone={(msg) => { setModal(null); setCalDesconectado(false); setAviso({ tipo: "ok", msg }); cargar(); }} onError={(msg) => setAviso({ tipo: "err", msg })} onNoCal={() => { setModal(null); setCalDesconectado(true); }} />
       )}
       {reprog && (
-        <ReprogramarModal slug={slug} record={reprog} onClose={() => setReprog(null)} onDone={(msg) => { setReprog(null); setAviso({ tipo: "ok", msg }); cargar(); }} onError={(msg) => setAviso({ tipo: "err", msg })} />
+        <ReprogramarModal slug={slug} record={reprog} onClose={() => setReprog(null)} onDone={(msg) => { setReprog(null); setCalDesconectado(false); setAviso({ tipo: "ok", msg }); cargar(); }} onError={(msg) => setAviso({ tipo: "err", msg })} onNoCal={() => { setReprog(null); setCalDesconectado(true); }} />
       )}
       {detalle && (
         <DetalleCita r={detalle} empMap={empMap} onClose={() => setDetalle(null)} onEstado={(id, e) => { setDetalle(null); cambiarEstado(id, e); }} onMover={(r) => { setDetalle(null); setReprog(r); }} />
@@ -472,8 +494,8 @@ function BtnAccion({ onClick, children }: { onClick: () => void; children: React
 // -----------------------------------------------------------------------------
 // Modal: reprogramar / mover (cita o bloqueo)
 // -----------------------------------------------------------------------------
-function ReprogramarModal({ slug, record, onClose, onDone, onError }: {
-  slug: string; record: BookingRecord; onClose: () => void; onDone: (msg: string) => void; onError: (msg: string) => void;
+function ReprogramarModal({ slug, record, onClose, onDone, onError, onNoCal }: {
+  slug: string; record: BookingRecord; onClose: () => void; onDone: (msg: string) => void; onError: (msg: string) => void; onNoCal: () => void;
 }) {
   const [fecha, setFecha] = useState(record.startIso.slice(0, 10));
   const [hh, setHh] = useState(record.startIso.slice(11, 16));
@@ -492,7 +514,7 @@ function ReprogramarModal({ slug, record, onClose, onDone, onError }: {
       if (r.ok && j.ok) onDone(esBloqueo ? "Bloqueo movido." : "Cita reprogramada.");
       else if (j.reason === "slot_taken") onError("Ese hueco choca con otra cita/bloqueo. Elige otra hora.");
       else if (j.reason === "no_movible") onError("Esta cita ya está cerrada y no se puede mover.");
-      else if (j.reason === "no_calendar") onError("No hay calendario de Google conectado.");
+      else if (j.reason === "no_calendar") onNoCal();
       else onError(j.detail || "No se pudo reprogramar.");
     } catch {
       onError("Fallo de red.");
@@ -533,9 +555,9 @@ function ReprogramarModal({ slug, record, onClose, onDone, onError }: {
 // -----------------------------------------------------------------------------
 // Modal: cita manual
 // -----------------------------------------------------------------------------
-function CitaModal({ slug, servicios, empleados, dia, onClose, onDone, onError }: {
+function CitaModal({ slug, servicios, empleados, dia, onClose, onDone, onError, onNoCal }: {
   slug: string; servicios: BookingService[]; empleados: Empleado[]; dia: string;
-  onClose: () => void; onDone: (msg: string) => void; onError: (msg: string) => void;
+  onClose: () => void; onDone: (msg: string) => void; onError: (msg: string) => void; onNoCal: () => void;
 }) {
   const [serviceId, setServiceId] = useState<string>(servicios[0]?.id || "__custom");
   const [variantId, setVariantId] = useState<string>("");
@@ -578,7 +600,7 @@ function CitaModal({ slug, servicios, empleados, dia, onClose, onDone, onError }
       const j = await r.json();
       if (r.ok && j.ok) onDone("Cita creada.");
       else if (j.reason === "slot_taken") onError("Ese hueco choca con otra cita/bloqueo. Elige otra hora.");
-      else if (j.reason === "no_calendar") onError("No hay calendario de Google conectado para este negocio.");
+      else if (j.reason === "no_calendar") onNoCal();
       else onError(j.detail || "No se pudo crear la cita.");
     } catch {
       onError("Fallo de red.");
@@ -668,8 +690,8 @@ function CitaModal({ slug, servicios, empleados, dia, onClose, onDone, onError }
 // -----------------------------------------------------------------------------
 // Modal: bloqueo
 // -----------------------------------------------------------------------------
-function BloqueoModal({ slug, dia, onClose, onDone, onError }: {
-  slug: string; dia: string; onClose: () => void; onDone: (msg: string) => void; onError: (msg: string) => void;
+function BloqueoModal({ slug, dia, onClose, onDone, onError, onNoCal }: {
+  slug: string; dia: string; onClose: () => void; onDone: (msg: string) => void; onError: (msg: string) => void; onNoCal: () => void;
 }) {
   const [fecha, setFecha] = useState(dia);
   const [hora, setHora] = useState("14:00");
@@ -687,7 +709,7 @@ function BloqueoModal({ slug, dia, onClose, onDone, onError }: {
       const j = await r.json();
       if (r.ok && j.ok) onDone("Bloqueo creado.");
       else if (j.reason === "slot_taken") onError("Ese tramo choca con una cita existente.");
-      else if (j.reason === "no_calendar") onError("No hay calendario de Google conectado.");
+      else if (j.reason === "no_calendar") onNoCal();
       else onError(j.detail || "No se pudo crear el bloqueo.");
     } catch {
       onError("Fallo de red.");

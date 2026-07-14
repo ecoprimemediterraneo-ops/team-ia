@@ -350,6 +350,18 @@ export type DuracionFootprint = { durationMin: number; paddingBeforeMin?: number
 type Ocupado = { start: number; end: number };
 
 /**
+ * ¿El detalle de error de Google indica que el calendario está DESCONECTADO y hay
+ * que reconectar OAuth (no un fallo transitorio)? Cubre el caso típico `invalid_grant`
+ * (refresh token caducado o revocado), la ausencia de tokens, el cliente no autorizado
+ * y los tokens sin el scope `calendar.events`. Se usa para mapear a reason:"no_calendar"
+ * y que el panel muestre el aviso de reconexión en vez del código crudo de Google.
+ */
+export function pareceCalendarioDesconectado(detail?: string): boolean {
+  if (!detail) return false;
+  return /invalid_grant|invalid_client|unauthorized|no[_ ]?tokens?|refresh|revoked|expired|token|insufficient|scope/i.test(detail);
+}
+
+/**
  * Reúne TODO lo que ocupa la agenda en [fromEpoch, toEpoch]. Fuente ÚNICA de
  * "ocupado" para el grid (computeFreeSlots) y el check puntual (footprintLibre).
  *
@@ -379,7 +391,7 @@ async function reunirOcupado(
     const fb = await freeBusyQuery(calendarEmail, redirectUri, new Date(fromEpoch).toISOString(), new Date(toEpoch).toISOString());
     const SIM = process.env.BOOKING_SIMULATE === "1";
     if (fb.ok) for (const b of fb.busy) busy.push({ start: Date.parse(b.start), end: Date.parse(b.end) });
-    else if (!SIM) return { ok: false, reason: fb.reason === "no_tokens" ? "no_calendar" : "error", detail: fb.detail };
+    else if (!SIM) return { ok: false, reason: (fb.reason === "no_tokens" || pareceCalendarioDesconectado(fb.detail)) ? "no_calendar" : "error", detail: fb.detail };
   }
 
   try {
@@ -600,7 +612,7 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
   if (!res.ok) {
     if (res.reason === "slot_taken") return { ok: false, reason: "slot_taken", suggested: res.suggested };
     if (res.reason === "locked") return { ok: false, reason: "locked" };
-    const noCal = /token/i.test(res.detail || "");
+    const noCal = pareceCalendarioDesconectado(res.detail);
     return { ok: false, reason: noCal ? "no_calendar" : "error", detail: res.detail };
   }
 
@@ -879,7 +891,7 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
   if (!res.ok) {
     if (res.reason === "slot_taken") return { ok: false, reason: "slot_taken", suggested: res.suggested };
     if (res.reason === "locked") return { ok: false, reason: "locked" };
-    const noCal = /token/i.test(res.detail || "");
+    const noCal = pareceCalendarioDesconectado(res.detail);
     return { ok: false, reason: noCal ? "no_calendar" : "error", detail: res.detail };
   }
 
@@ -941,7 +953,7 @@ export async function crearBloqueo(input: CrearBloqueoInput): Promise<CrearReser
   if (!res.ok) {
     if (res.reason === "slot_taken") return { ok: false, reason: "slot_taken", suggested: res.suggested };
     if (res.reason === "locked") return { ok: false, reason: "locked" };
-    const noCal = /token/i.test(res.detail || "");
+    const noCal = pareceCalendarioDesconectado(res.detail);
     return { ok: false, reason: noCal ? "no_calendar" : "error", detail: res.detail };
   }
   const record: BookingRecord = {
@@ -1048,7 +1060,7 @@ export async function reprogramarRecord(
     }
     if (res.reason === "slot_taken") return { ok: false, reason: "slot_taken", suggested: res.suggested };
     if (res.reason === "locked") return { ok: false, reason: "locked" };
-    const noCal = /token/i.test(res.detail || "");
+    const noCal = pareceCalendarioDesconectado(res.detail);
     return { ok: false, reason: noCal ? "no_calendar" : "error", detail: res.detail };
   }
 
