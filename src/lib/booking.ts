@@ -668,6 +668,7 @@ export type RegistrarRecordInput = {
   cliente: { nombre: string; telefono: string; email?: string };
   eventId?: string; // evento YA creado en Google por el orquestador
   htmlLink?: string;
+  baseUrl?: string; // origen público (para el enlace de cancelar de la confirmación al cliente)
 };
 
 /**
@@ -704,6 +705,17 @@ export async function registrarRecordDeCita(input: RegistrarRecordInput): Promis
   };
   await saveRecord(record);
   await notificarDueno(record, "nueva");
+  // Confirmación al CLIENTE (email + WhatsApp con enlace de cancelar/reprogramar).
+  // Cuando la cita la agenda un agente (Pablo por WhatsApp, Carmen, Eva, Lucía), la
+  // clienta recibe la MISMA confirmación con enlace que en la reserva online. Reutiliza
+  // enviarConfirmacion (mismo texto y misma URL con token). Best-effort: nunca rompe la cita.
+  try {
+    const base = input.baseUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://aiteam.marketing";
+    const { enviarConfirmacion } = await import("./booking-email");
+    await enviarConfirmacion(record, business, base);
+  } catch (e) {
+    console.error("[booking] confirmación al cliente (whatsapp/email) falló (no crítico):", e);
+  }
   return record;
 }
 

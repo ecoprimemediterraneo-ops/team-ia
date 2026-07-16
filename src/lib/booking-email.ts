@@ -89,8 +89,14 @@ function bloqueCita(record: BookingRecord, business: BusinessBooking): string {
   </div>`;
 }
 
+/** URL pública de autocancelación/reprogramación de ESTA cita (usa el token del record).
+ *  Fuente ÚNICA del enlace: la comparten email de confirmación, recordatorio y WhatsApp. */
+export function urlCancelacion(record: BookingRecord, baseUrl: string): string {
+  return `${baseUrl.replace(/\/$/, "")}/reservas/cancelar/${record.token}`;
+}
+
 export function construirConfirmacion(record: BookingRecord, business: BusinessBooking, baseUrl: string): { subject: string; html: string } {
-  const cancelUrl = `${baseUrl.replace(/\/$/, "")}/reservas/cancelar/${record.token}`;
+  const cancelUrl = urlCancelacion(record, baseUrl);
   const subject = `Cita confirmada · ${business.nombre} · ${fechaHumana(record.startIso)}`.slice(0, 120);
   const cuerpo = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#333;margin:0 0 16px">¡Hecho, ${esc(record.cliente.nombre)}! Tu cita está confirmada. 🎉</div>
     ${bloqueCita(record, business)}`;
@@ -98,7 +104,7 @@ export function construirConfirmacion(record: BookingRecord, business: BusinessB
 }
 
 export function construirRecordatorio(record: BookingRecord, business: BusinessBooking, baseUrl: string): { subject: string; html: string } {
-  const cancelUrl = `${baseUrl.replace(/\/$/, "")}/reservas/cancelar/${record.token}`;
+  const cancelUrl = urlCancelacion(record, baseUrl);
   const subject = `Recordatorio · tu cita en ${business.nombre} es ${fechaHumana(record.startIso)}`.slice(0, 120);
   const cuerpo = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#333;margin:0 0 16px">Hola ${esc(record.cliente.nombre)}, te recordamos tu cita:</div>
     ${bloqueCita(record, business)}`;
@@ -137,16 +143,17 @@ async function enviarWhatsApp(telefono: string | undefined, texto: string): Prom
   }
 }
 
-function textoWhatsApp(record: BookingRecord, business: BusinessBooking, tipo: "confirmacion" | "recordatorio"): string {
+function textoWhatsApp(record: BookingRecord, business: BusinessBooking, tipo: "confirmacion" | "recordatorio", baseUrl: string): string {
   const cab = tipo === "confirmacion" ? "✅ Cita confirmada" : "⏰ Recordatorio de tu cita";
-  return `${cab} en *${business.nombre}*\n${record.servicioNombre} · ${fechaHumana(record.startIso)}\nA nombre de ${record.cliente.nombre}.`;
+  const gestionar = `\n\n¿No puedes venir? Cancela o cambia tu cita aquí: ${urlCancelacion(record, baseUrl)}`;
+  return `${cab} en *${business.nombre}*\n${record.servicioNombre} · ${fechaHumana(record.startIso)}\nA nombre de ${record.cliente.nombre}.${gestionar}`;
 }
 
 /** Confirmación inmediata tras reservar (email + WhatsApp best-effort). */
 export async function enviarConfirmacion(record: BookingRecord, business: BusinessBooking, baseUrl: string): Promise<NotifResult> {
   const { subject, html } = construirConfirmacion(record, business, baseUrl);
   const email = await enviarEmail(record.cliente.email, subject, html);
-  const whatsapp = await enviarWhatsApp(record.cliente.telefono, textoWhatsApp(record, business, "confirmacion"));
+  const whatsapp = await enviarWhatsApp(record.cliente.telefono, textoWhatsApp(record, business, "confirmacion", baseUrl));
   return { email, whatsapp };
 }
 
@@ -154,7 +161,7 @@ export async function enviarConfirmacion(record: BookingRecord, business: Busine
 export async function enviarRecordatorio(record: BookingRecord, business: BusinessBooking, baseUrl: string): Promise<NotifResult> {
   const { subject, html } = construirRecordatorio(record, business, baseUrl);
   const email = await enviarEmail(record.cliente.email, subject, html);
-  const whatsapp = await enviarWhatsApp(record.cliente.telefono, textoWhatsApp(record, business, "recordatorio"));
+  const whatsapp = await enviarWhatsApp(record.cliente.telefono, textoWhatsApp(record, business, "recordatorio", baseUrl));
   return { email, whatsapp };
 }
 

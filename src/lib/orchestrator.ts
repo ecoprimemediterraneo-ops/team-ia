@@ -231,6 +231,9 @@ export async function reservarSlot(input: ReservaInput): Promise<ReservaResult> 
       const { getBusinessByTenant, registrarRecordDeCita } = await import("./booking");
       const business = await getBusinessByTenant(tenantId);
       if (business) {
+        // Origen público para el enlace de cancelar de la confirmación al cliente.
+        let baseUrl: string | undefined;
+        try { baseUrl = new URL(input.redirectUri).origin; } catch { baseUrl = undefined; }
         await registrarRecordDeCita({
           slug: business.slug,
           startIso: input.startIso,
@@ -243,6 +246,7 @@ export async function reservarSlot(input: ReservaInput): Promise<ReservaResult> 
           },
           eventId: result.eventId,
           htmlLink: result.htmlLink,
+          baseUrl,
         });
       }
     } catch (e) {
