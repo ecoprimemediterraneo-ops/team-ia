@@ -49,6 +49,10 @@ const empleado = z.object({
 const schema = z.object({
   nombre: z.string().min(1).max(120).optional(),
   descripcion: z.string().max(600).optional(),
+  // "" = quitar la imagen; ausente = no tocar; URL = poner. (No usamos transform a
+  // undefined para poder distinguir "vaciar" de "no enviado".)
+  logoUrl: z.string().url().max(600).optional().or(z.literal("")),
+  heroImageUrl: z.string().url().max(600).optional().or(z.literal("")),
   galeria: z.array(z.string().url().max(500)).max(12).optional(),
   direccion: z.string().max(200).optional(),
   telefono: z.string().max(40).optional(),
@@ -88,6 +92,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     ...cur,
     nombre: parsed.data.nombre ?? cur.nombre,
     descripcion: parsed.data.descripcion ?? cur.descripcion,
+    // "" → quitar (undefined); URL → poner; ausente → conservar la actual.
+    logoUrl: parsed.data.logoUrl !== undefined ? (parsed.data.logoUrl || undefined) : cur.logoUrl,
+    heroImageUrl: parsed.data.heroImageUrl !== undefined ? (parsed.data.heroImageUrl || undefined) : cur.heroImageUrl,
     galeria: parsed.data.galeria ?? cur.galeria,
     direccion: parsed.data.direccion ?? cur.direccion,
     lat: parsed.data.lat ?? cur.lat,

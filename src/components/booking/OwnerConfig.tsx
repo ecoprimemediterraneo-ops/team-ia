@@ -3,7 +3,7 @@
 // Panel del dueño (estilo Booksy) — marca, galería, categorías, servicios (con
 // variantes, add-ons y padding), horario y ajustes. Guarda vía POST config.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type Variante = { id: string; nombre: string; durationMin: number; precioEUR: number };
 type AddOn = { id: string; nombre: string; durationMin: number; precioEUR: number; activo: boolean };
@@ -18,7 +18,7 @@ type DayHours = { abierto: boolean; franjas: Franja[] };
 type Horario = Record<number, DayHours>;
 type Empleado = { id: string; nombre: string; color?: string; activo: boolean; horario?: Horario; serviceIds?: string[] };
 type Negocio = {
-  slug: string; nombre: string; descripcion?: string; galeria?: string[]; direccion?: string; telefono?: string; timezone: string;
+  slug: string; nombre: string; descripcion?: string; logoUrl?: string; heroImageUrl?: string; galeria?: string[]; direccion?: string; telefono?: string; timezone: string;
   slotStepMin: number; leadTimeMin: number; cancelAntelacionMin: number;
   categorias: Categoria[]; servicios: Servicio[]; empleados?: Empleado[]; horario: Horario;
 };
@@ -37,6 +37,11 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
 
   const [nombre, setNombre] = useState(base.nombre);
   const [descripcion, setDescripcion] = useState(base.descripcion || "");
+  const [logoUrl, setLogoUrl] = useState(base.logoUrl || "");
+  const [heroUrl, setHeroUrl] = useState(base.heroImageUrl || "");
+  const [subiendoLogo, setSubiendoLogo] = useState(false);
+  const [subiendoHero, setSubiendoHero] = useState(false);
+  const [errImg, setErrImg] = useState("");
   const [galeria, setGaleria] = useState<string[]>(base.galeria || []);
   const [direccion, setDireccion] = useState(base.direccion || "");
   const [telefono, setTelefono] = useState(base.telefono || "");
@@ -57,7 +62,7 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
 
   function cambiarNegocio(s: string) {
     const n = negocios.find((x) => x.slug === s)!;
-    setSlug(s); setNombre(n.nombre); setDescripcion(n.descripcion || ""); setGaleria(n.galeria || []); setDireccion(n.direccion || ""); setTelefono(n.telefono || "");
+    setSlug(s); setNombre(n.nombre); setDescripcion(n.descripcion || ""); setLogoUrl(n.logoUrl || ""); setHeroUrl(n.heroImageUrl || ""); setErrImg(""); setGaleria(n.galeria || []); setDireccion(n.direccion || ""); setTelefono(n.telefono || "");
     setCategorias(n.categorias); setServicios(n.servicios); setEmpleados(n.empleados || []); setHorario(normHorario(n.horario));
     setSlotStepMin(n.slotStepMin); setLeadTimeMin(n.leadTimeMin); setCancelAntelacionMin(n.cancelAntelacionMin ?? 120); setMsg("");
   }
@@ -96,7 +101,9 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
       const r = await fetch(`/api/booking/${slug}/config`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nombre: nombre.trim(), descripcion: descripcion.trim(), galeria: galeria.filter((g) => g.trim()),
+          nombre: nombre.trim(), descripcion: descripcion.trim(),
+          logoUrl, heroImageUrl: heroUrl, // "" = quitar · URL = poner
+          galeria: galeria.filter((g) => g.trim()),
           direccion: direccion.trim(), telefono: telefono.trim(),
           slotStepMin, leadTimeMin, cancelAntelacionMin,
           categorias: categorias.filter((c) => c.nombre.trim()),
@@ -115,6 +122,30 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
       setMsg(r.ok && j.ok ? "✓ Guardado" : `⚠ ${j.error || "No se pudo guardar"}`);
     } catch { setMsg("⚠ Fallo de red"); }
     finally { setGuardando(false); }
+  }
+
+  // Sube una imagen (logo o portada): valida tipo/tamaño, la redimensiona en el navegador
+  // (logo→PNG 512px para mantener transparencia; portada→JPEG 1600px) y la manda a la ruta
+  // de subida del negocio, que la hostea y devuelve la URL. La URL se persiste al Guardar.
+  async function subirImagen(file: File, destino: "logo" | "hero") {
+    setErrImg("");
+    if (!TIPOS_IMG.includes(file.type)) { setErrImg("Formato no admitido. Sube JPG, PNG o WEBP."); return; }
+    if (file.size > MAX_IMG_BYTES) { setErrImg("La imagen supera 5 MB. Elige una más ligera."); return; }
+    const setBusy = destino === "logo" ? setSubiendoLogo : setSubiendoHero;
+    setBusy(true);
+    try {
+      const img = await cargarImagen(file);
+      const outMime = destino === "logo" ? "image/png" : "image/jpeg";
+      const blob = await redimensionar(img, destino === "logo" ? 512 : 1600, outMime);
+      const r = await fetch(`/api/booking/${slug}/upload`, { method: "POST", headers: { "Content-Type": outMime }, body: blob });
+      const j = await r.json();
+      if (r.ok && j.ok && j.url) {
+        if (destino === "logo") setLogoUrl(j.url); else setHeroUrl(j.url);
+        setMsg("✓ Imagen subida — pulsa Guardar para publicarla");
+      } else setErrImg(j.error || "No se pudo subir la imagen.");
+    } catch (e) {
+      setErrImg(e instanceof Error ? e.message : "No se pudo subir la imagen.");
+    } finally { setBusy(false); }
   }
 
   const inp = "border-2 border-black px-2 py-1.5 text-sm bg-white";
@@ -143,6 +174,14 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
           <input value={nombre} onChange={(e) => setNombre(e.target.value)} className={`w-full ${inp}`} /></label>
         <label className="block"><span className="block text-sm font-bold mb-1">Descripción (mini-web)</span>
           <textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows={2} className={`w-full ${inp}`} placeholder="Centro de estética y belleza…" /></label>
+
+        {/* Logo + foto de portada (hero) — subida de imagen */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <ImagenCampo titulo="Logo del negocio" ayuda="Se muestra sobre la portada. Un PNG con fondo transparente queda mejor." url={logoUrl} subiendo={subiendoLogo} onFile={(f) => subirImagen(f, "logo")} onQuitar={() => { setLogoUrl(""); setErrImg(""); }} forma="logo" />
+          <ImagenCampo titulo="Foto de portada (hero)" ayuda="Foto grande de cabecera. Si no pones ninguna, se usa una de stock." url={heroUrl} subiendo={subiendoHero} onFile={(f) => subirImagen(f, "hero")} onQuitar={() => { setHeroUrl(""); setErrImg(""); }} forma="hero" />
+        </div>
+        {errImg && <p className="text-xs font-bold text-[color:var(--red)]">⚠ {errImg}</p>}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="block"><span className="block text-sm font-bold mb-1">Dirección</span>
             <input value={direccion} onChange={(e) => setDireccion(e.target.value)} className={`w-full ${inp}`} placeholder="Calle, nº, ciudad" />
@@ -343,4 +382,68 @@ function normHorario(h: Horario): Horario {
   const out: Horario = {} as Horario;
   for (let n = 0; n < 7; n++) out[n] = h[n] ? { abierto: h[n].abierto, franjas: [...(h[n].franjas || [])] } : { abierto: false, franjas: [] };
   return out;
+}
+
+// ── Subida de imágenes (logo / portada) ──────────────────────────────────────
+const TIPOS_IMG = ["image/jpeg", "image/png", "image/webp"];
+const MAX_IMG_BYTES = 5 * 1024 * 1024; // 5 MB
+
+function cargarImagen(file: File): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onerror = () => rej(new Error("No se pudo leer el archivo."));
+    fr.onload = () => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = () => rej(new Error("Archivo de imagen no válido."));
+      img.src = String(fr.result);
+    };
+    fr.readAsDataURL(file);
+  });
+}
+
+/** Redimensiona con canvas a un ancho máximo y devuelve el Blob en el mime dado. */
+async function redimensionar(img: HTMLImageElement, maxW: number, mime: string): Promise<Blob> {
+  const escala = Math.min(1, maxW / (img.width || maxW));
+  const w = Math.max(1, Math.round(img.width * escala));
+  const h = Math.max(1, Math.round(img.height * escala));
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas no disponible en este navegador.");
+  ctx.drawImage(img, 0, 0, w, h);
+  return await new Promise<Blob>((res, rej) =>
+    canvas.toBlob((b) => (b ? res(b) : rej(new Error("No se pudo procesar la imagen."))), mime, 0.85),
+  );
+}
+
+function ImagenCampo({ titulo, ayuda, url, subiendo, onFile, onQuitar, forma }: {
+  titulo: string; ayuda: string; url: string; subiendo: boolean;
+  onFile: (f: File) => void; onQuitar: () => void; forma: "logo" | "hero";
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div>
+      <span className="block text-sm font-bold mb-1">{titulo}</span>
+      <div className="card-hard bg-white p-3 flex items-center gap-3">
+        <div className={`shrink-0 border-2 border-black bg-[color:var(--cream)] overflow-hidden flex items-center justify-center ${forma === "hero" ? "w-28 h-16" : "w-16 h-16"}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {url ? <img src={url} alt={titulo} className="w-full h-full object-contain" /> : <span className="text-[10px] font-mono text-black/40 text-center leading-tight px-1">sin imagen</span>}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] text-black/50 leading-snug mb-2">{ayuda}</p>
+          <div className="flex gap-2 flex-wrap">
+            <button type="button" onClick={() => ref.current?.click()} disabled={subiendo} className="text-xs font-bold border-2 border-black px-2 py-1 hover:bg-black hover:text-white disabled:opacity-50">
+              {subiendo ? "Subiendo…" : url ? "Reemplazar" : "Subir"}
+            </button>
+            {url && !subiendo && (
+              <button type="button" onClick={onQuitar} className="text-xs font-bold border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 hover:bg-[color:var(--red)] hover:text-white">Quitar</button>
+            )}
+          </div>
+          <input ref={ref} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
+        </div>
+      </div>
+      <span className="block text-[10px] text-black/40 mt-1">JPG, PNG o WEBP · máx 5 MB</span>
+    </div>
+  );
 }
