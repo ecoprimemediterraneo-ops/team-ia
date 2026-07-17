@@ -75,6 +75,8 @@ export type BusinessBooking = {
   tenantId: string;
   nombre: string;
   descripcion?: string;
+  logoUrl?: string; // logo del negocio (mini-web); si falta se muestra el nombre en Anton
+  heroImageUrl?: string; // foto de portada/hero a todo el ancho; si falta se usa una de stock
   galeria?: string[]; // URLs de fotos (mini-web)
   direccion?: string; // dirección física (ficha + mapa)
   lat?: number; // coordenadas (para el mapa OSM); se autocompletan al guardar la dirección

@@ -41,6 +41,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
       slug: b.slug,
       nombre: b.nombre,
       descripcion: b.descripcion,
+      logoUrl: b.logoUrl,
+      heroImageUrl: b.heroImageUrl,
       galeria: b.galeria || [],
       direccion: b.direccion,
       lat: b.lat,

@@ -7,7 +7,7 @@
 // "Reservar otra vez": pre-rellena datos del cliente guardados en el dispositivo.
 // =============================================================================
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ChatDudas from "./ChatDudas";
 
 type Variante = { id: string; nombre: string; durationMin: number; precioEUR: number };
@@ -19,7 +19,13 @@ type Servicio = {
 type Categoria = { id: string; nombre: string };
 type EmpleadoPub = { id: string; nombre: string; color?: string; serviceIds: string[] };
 type DiaHorario = { abierto: boolean; franjas: { desde: string; hasta: string }[] };
-type Negocio = { slug: string; nombre: string; descripcion?: string; galeria: string[]; direccion?: string; lat?: number; lng?: number; telefono?: string; instagram?: string; horario?: Record<string, DiaHorario>; timezone: string; categorias: Categoria[]; servicios: Servicio[]; empleados?: EmpleadoPub[] };
+type Negocio = { slug: string; nombre: string; descripcion?: string; logoUrl?: string; heroImageUrl?: string; galeria: string[]; direccion?: string; lat?: number; lng?: number; telefono?: string; instagram?: string; horario?: Record<string, DiaHorario>; timezone: string; categorias: Categoria[]; servicios: Servicio[]; empleados?: EmpleadoPub[] };
+
+// Foto de portada de stock (temporal, salón de belleza) cuando el negocio aún no ha
+// subido la suya en heroImageUrl. URL estable de Unsplash; si fallara, el onError cae
+// al placeholder de marca servido localmente (/booking-hero-default.svg).
+const HERO_STOCK = "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1200&q=70";
+const HERO_FALLBACK = "/booking-hero-default.svg";
 
 // Mapa OSM incrustable (sin API key). Bounding box pequeño alrededor del punto + marcador.
 function osmEmbedSrc(lat: number, lng: number): string {
@@ -64,7 +70,11 @@ export default function BookingFlow({ slug }: { slug: string }) {
   const [errNegocio, setErrNegocio] = useState("");
 
   const [paso, setPaso] = useState<1 | 2 | 3 | 4 | 5>(1);
-  const [catActiva, setCatActiva] = useState<string>("todos");
+  const [abiertas, setAbiertas] = useState<Set<string>>(new Set()); // categorías desplegadas (acordeón)
+  const acordeonRef = useRef<HTMLDivElement | null>(null);
+  function toggleCat(id: string) {
+    setAbiertas((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
   const [servicio, setServicio] = useState<Servicio | null>(null);
   const [variante, setVariante] = useState<Variante | null>(null);
   const [addonsSel, setAddonsSel] = useState<Record<string, boolean>>({});
@@ -101,6 +111,22 @@ export default function BookingFlow({ slug }: { slug: string }) {
     try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (s?.nombre) { setForm(s); setConocido(true); } } catch { /* */ }
     return () => { vivo = false; };
   }, [slug]);
+
+  // Acordeón: todas las categorías arrancan CERRADAS (todas pesan igual). Además, tocar
+  // FUERA del acordeón cierra lo que hubiera abierto (más cómodo en móvil que volver a
+  // tocar el encabezado). Solo escucha mientras haya algo abierto.
+  useEffect(() => {
+    if (abiertas.size === 0) return;
+    function fuera(e: Event) {
+      if (acordeonRef.current && !acordeonRef.current.contains(e.target as Node)) setAbiertas(new Set());
+    }
+    document.addEventListener("mousedown", fuera);
+    document.addEventListener("touchstart", fuera);
+    return () => {
+      document.removeEventListener("mousedown", fuera);
+      document.removeEventListener("touchstart", fuera);
+    };
+  }, [abiertas]);
 
   // Duración y precio total según variante + add-ons elegidos.
   const total = useMemo(() => {
@@ -182,91 +208,47 @@ export default function BookingFlow({ slug }: { slug: string }) {
   if (errNegocio || !negocio) return <Centro><div className="card-hard p-6 bg-white text-center max-w-sm"><div className="text-4xl mb-2">🔍</div><p className="font-bold">{errNegocio || "Negocio no disponible."}</p></div></Centro>;
 
   const cats = negocio.categorias;
-  // Servicios AGRUPADOS por categoría (en el orden de las categorías del tenant),
-  // con cabecera por sección. Funciona para cualquier salón. Si hay un filtro de
-  // categoría activo, solo se muestra ese grupo. Los servicios sin categoría (o con
-  // categoría desconocida) caen en un grupo "Otros" al final (solo en la vista "Todos").
-  const catsParaMostrar = catActiva === "todos" ? cats : cats.filter((c) => c.id === catActiva);
-  const grupos: { id: string; nombre: string; items: Servicio[] }[] = catsParaMostrar
+  // Servicios AGRUPADOS por categoría (en el orden de las categorías del tenant). Cada
+  // grupo es una sección de ACORDEÓN (se despliega al tocar). Funciona para cualquier
+  // salón. Los servicios sin categoría (o con categoría desconocida) caen en "Otros".
+  const grupos: { id: string; nombre: string; items: Servicio[] }[] = cats
     .map((c) => ({ id: c.id, nombre: c.nombre, items: negocio.servicios.filter((s) => s.categoriaId === c.id) }))
     .filter((g) => g.items.length > 0);
   const sinCat = negocio.servicios.filter((s) => !s.categoriaId || !cats.some((c) => c.id === s.categoriaId));
-  if (catActiva === "todos" && sinCat.length) grupos.push({ id: "__otros", nombre: "Otros", items: sinCat });
+  if (sinCat.length) grupos.push({ id: "__otros", nombre: "Otros", items: sinCat });
   const empleadosElegibles = servicio ? (negocio.empleados || []).filter((e) => !e.serviceIds?.length || e.serviceIds.includes(servicio.id)) : [];
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 sm:py-8">
-      {/* Cabecera del negocio (mini-web) */}
-      <header className="mb-5">
-        <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-black/40">Reserva tu cita</div>
-        <h1 className="font-stencil text-3xl sm:text-4xl leading-none mt-1">{negocio.nombre}</h1>
-        {negocio.descripcion && paso === 1 && <p className="text-sm text-black/60 mt-2">{negocio.descripcion}</p>}
-      </header>
-
-      {/* Galería (solo en la landing) */}
-      {paso === 1 && negocio.galeria.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-3 -mx-1 px-1 mb-4">
-          {negocio.galeria.map((src, i) => (
-            <img key={i} src={src} alt="" className="h-28 w-40 object-cover border-[3px] border-black shrink-0" onError={(e) => ((e.currentTarget.style.display = "none"))} />
-          ))}
+      {/* HERO (landing) — foto de portada a todo el ancho + logo (o nombre en Anton) */}
+      {paso === 1 && (
+        <div className="mb-5">
+          <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-black/40 mb-2">Reserva tu cita</div>
+          <div className="relative border-[3px] border-black bg-black overflow-hidden">
+            <img
+              src={negocio.heroImageUrl || HERO_STOCK}
+              alt=""
+              className="block w-full h-44 sm:h-60 object-cover"
+              onError={(e) => { if (e.currentTarget.src.indexOf(HERO_FALLBACK) === -1) e.currentTarget.src = HERO_FALLBACK; }}
+            />
+            <div className="absolute inset-x-0 bottom-0 px-4 pt-12 pb-3 bg-gradient-to-t from-black/80 via-black/35 to-transparent flex items-end">
+              {negocio.logoUrl ? (
+                <img src={negocio.logoUrl} alt={negocio.nombre} className="h-14 sm:h-16 w-auto max-w-[70%] object-contain bg-white border-[3px] border-black p-1" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+              ) : (
+                <h1 className="font-stencil text-3xl sm:text-5xl leading-none text-[color:var(--cream)] drop-shadow-[2px_2px_0_rgba(0,0,0,0.6)]">{negocio.nombre}</h1>
+              )}
+            </div>
+          </div>
+          {negocio.descripcion && <p className="text-sm text-black/60 mt-3">{negocio.descripcion}</p>}
         </div>
       )}
 
-      {/* Ficha del negocio: mapa + dirección + teléfono + horario (solo en la landing) */}
-      {paso === 1 && (negocio.direccion || negocio.telefono || negocio.horario) && (
-        <div className="border-[3px] border-black mb-5">
-          {negocio.lat != null && negocio.lng != null && (
-            <iframe
-              title="Mapa del salón"
-              src={osmEmbedSrc(negocio.lat, negocio.lng)}
-              className="block w-full h-40 border-b-[3px] border-black"
-              loading="lazy"
-            />
-          )}
-          <div className="p-3 space-y-2 text-sm">
-            {negocio.direccion && (
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(negocio.direccion)}`}
-                target="_blank" rel="noreferrer"
-                className="flex items-start gap-2"
-              >
-                <span aria-hidden>📍</span>
-                <span className="underline decoration-black/30 hover:decoration-black">{negocio.direccion}</span>
-              </a>
-            )}
-            {negocio.telefono && (
-              <a href={`tel:${negocio.telefono.replace(/\s+/g, "")}`} className="flex items-center gap-2">
-                <span aria-hidden>📞</span>
-                <span className="underline decoration-black/30 hover:decoration-black">{negocio.telefono}</span>
-              </a>
-            )}
-            {negocio.instagram && (
-              <a href={`https://instagram.com/${negocio.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2">
-                <span aria-hidden>📸</span>
-                <span className="underline decoration-black/30 hover:decoration-black">@{negocio.instagram.replace(/^@/, "")}</span>
-              </a>
-            )}
-            {negocio.horario && (
-              <div className="flex items-start gap-2">
-                <span aria-hidden>🕑</span>
-                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 flex-1">
-                  {ORDEN_DIAS.map(({ n, label }) => {
-                    const d = negocio.horario?.[String(n)];
-                    const abierto = !!(d?.abierto && d.franjas.length > 0);
-                    return (
-                      <div key={n} className="contents">
-                        <dt className="font-mono uppercase text-[11px] tracking-wider text-black/45 pt-px">{label}</dt>
-                        <dd className={abierto ? "text-black/80" : "text-black/35"}>
-                          {abierto ? d!.franjas.map((f) => `${f.desde}–${f.hasta}`).join(", ") : "Cerrado"}
-                        </dd>
-                      </div>
-                    );
-                  })}
-                </dl>
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Cabecera compacta durante el flujo de reserva (pasos 2–5) */}
+      {paso > 1 && (
+        <header className="mb-5">
+          <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-black/40">Reserva tu cita</div>
+          <h1 className="font-stencil text-2xl sm:text-3xl leading-none mt-1">{negocio.nombre}</h1>
+        </header>
       )}
 
       {paso > 1 && paso < 5 && <Pasos paso={paso} tieneOpciones={!!(servicio?.variantes.length || servicio?.addons.length)} />}
@@ -279,41 +261,46 @@ export default function BookingFlow({ slug }: { slug: string }) {
           {conocido && (
             <div className="card-hard bg-[color:var(--mustard)] p-3 mb-4 text-sm">👋 Hola de nuevo, <b>{form.nombre}</b>. Tus datos ya están guardados: reserva otra vez en 2 toques.</div>
           )}
-          {cats.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 mb-3">
-              {[{ id: "todos", nombre: "Todos" }, ...cats].map((c) => (
-                <button key={c.id} onClick={() => setCatActiva(c.id)} className={`shrink-0 px-3 py-1.5 text-xs font-bold border-2 border-black ${catActiva === c.id ? "bg-black text-[color:var(--mustard)]" : "bg-white"}`}>{c.nombre}</button>
-              ))}
-            </div>
-          )}
-          <div className="space-y-6">
-            {grupos.map((g) => (
-              <div key={g.id}>
-                {/* Cabecera de categoría */}
-                <h3 className="font-stencil text-xl leading-none mb-3 pb-1.5 border-b-[3px] border-black flex items-center justify-between">
-                  <span>{g.nombre}</span>
-                  <span className="text-xs font-mono text-black/40 tracking-wider">{g.items.length}</span>
-                </h3>
-                <div className="space-y-3">
-                  {g.items.map((s) => (
-                    <button key={s.id} onClick={() => elegirServicio(s)} className="w-full text-left card-hard bg-white overflow-hidden hover:translate-x-[1px] hover:translate-y-[1px] transition-transform flex">
-                      {s.fotoUrl ? <img src={s.fotoUrl} alt="" className="w-24 h-auto object-cover border-r-[3px] border-black shrink-0" onError={(e) => (e.currentTarget.style.display = "none")} /> : null}
-                      <div className="p-4 flex items-center justify-between gap-3 flex-1 min-w-0">
-                        <div className="min-w-0">
-                          <div className="font-bold leading-snug">{s.nombre}</div>
-                          {s.descripcion && <div className="text-xs text-black/55 mt-0.5 line-clamp-2">{s.descripcion}</div>}
-                          <div className="text-xs text-black/50 mt-1">{s.variantes.length ? "varias opciones" : dur(s.durationMin)}{s.addons.length ? " · + extras" : ""}</div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {precioServicio(s) && <span className="font-stencil text-lg whitespace-nowrap">{precioServicio(s)}</span>}
-                          <span className="text-[color:var(--red)] font-bold text-xl">›</span>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+          {/* Servicios en ACORDEÓN por categoría — se despliega al tocar (menos scroll) */}
+          <div ref={acordeonRef} className="space-y-3">
+            {grupos.map((g) => {
+              const abierta = abiertas.has(g.id);
+              return (
+                <div key={g.id} className="border-[3px] border-black bg-white">
+                  <button
+                    onClick={() => toggleCat(g.id)}
+                    aria-expanded={abierta}
+                    className={`w-full flex items-center justify-between gap-3 px-4 py-3 text-left bg-[color:var(--cream)] hover:bg-[color:var(--mustard)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-black ${abierta ? "border-b-[3px] border-black" : ""}`}
+                  >
+                    <span className="font-stencil text-xl leading-none">{g.nombre}</span>
+                    <span className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs font-mono text-black/40 tracking-wider">{g.items.length}</span>
+                      <span className={`text-2xl font-bold text-[color:var(--red)] leading-none transition-transform ${abierta ? "rotate-90" : ""}`} aria-hidden>›</span>
+                    </span>
+                  </button>
+                  {abierta && (
+                    <div className="p-3 space-y-3">
+                      {g.items.map((s) => (
+                        <button key={s.id} onClick={() => elegirServicio(s)} className="w-full text-left card-hard bg-white overflow-hidden hover:translate-x-[1px] hover:translate-y-[1px] transition-transform flex">
+                          {s.fotoUrl ? <img src={s.fotoUrl} alt="" className="w-24 h-auto object-cover border-r-[3px] border-black shrink-0" onError={(e) => (e.currentTarget.style.display = "none")} /> : null}
+                          <div className="p-4 flex items-center justify-between gap-3 flex-1 min-w-0">
+                            <div className="min-w-0">
+                              <div className="font-bold leading-snug">{s.nombre}</div>
+                              {s.descripcion && <div className="text-xs text-black/55 mt-0.5 line-clamp-2">{s.descripcion}</div>}
+                              <div className="text-xs text-black/50 mt-1">{s.variantes.length ? "varias opciones" : dur(s.durationMin)}{s.addons.length ? " · + extras" : ""}</div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {precioServicio(s) && <span className="font-stencil text-lg whitespace-nowrap">{precioServicio(s)}</span>}
+                              <span className="text-[color:var(--red)] font-bold text-xl">›</span>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
@@ -466,6 +453,77 @@ export default function BookingFlow({ slug }: { slug: string }) {
             <button onClick={() => { setPaso(1); setServicio(null); setVariante(null); setAddonsSel({}); setEmpleadoSel(""); setSlot(""); setHecho(null); }} className="text-xs font-mono underline text-black/45">Reservar otro servicio</button>
           </div>
         </section>
+      )}
+
+      {/* SECUNDARIO (solo landing) — galería + dónde estamos, al final como apoyo */}
+      {paso === 1 && negocio.galeria.length > 0 && (
+        <div className="mt-8">
+          <h3 className="font-stencil text-lg leading-none mb-3">Nuestro trabajo</h3>
+          <div className="flex gap-2 overflow-x-auto pb-3 -mx-1 px-1">
+            {negocio.galeria.map((src, i) => (
+              <img key={i} src={src} alt="" className="h-28 w-40 object-cover border-[3px] border-black shrink-0" onError={(e) => (e.currentTarget.style.display = "none")} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {paso === 1 && (negocio.direccion || negocio.telefono || negocio.horario) && (
+        <div className="mt-8">
+          <h3 className="font-stencil text-lg leading-none mb-3">Dónde estamos</h3>
+          <div className="border-[3px] border-black">
+            {negocio.lat != null && negocio.lng != null && (
+              <iframe
+                title="Mapa del salón"
+                src={osmEmbedSrc(negocio.lat, negocio.lng)}
+                className="block w-full h-40 border-b-[3px] border-black"
+                loading="lazy"
+              />
+            )}
+            <div className="p-3 space-y-2 text-sm">
+              {negocio.direccion && (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(negocio.direccion)}`}
+                  target="_blank" rel="noreferrer"
+                  className="flex items-start gap-2"
+                >
+                  <span aria-hidden>📍</span>
+                  <span className="underline decoration-black/30 hover:decoration-black">{negocio.direccion}</span>
+                </a>
+              )}
+              {negocio.telefono && (
+                <a href={`tel:${negocio.telefono.replace(/\s+/g, "")}`} className="flex items-center gap-2">
+                  <span aria-hidden>📞</span>
+                  <span className="underline decoration-black/30 hover:decoration-black">{negocio.telefono}</span>
+                </a>
+              )}
+              {negocio.instagram && (
+                <a href={`https://instagram.com/${negocio.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" className="flex items-center gap-2">
+                  <span aria-hidden>📸</span>
+                  <span className="underline decoration-black/30 hover:decoration-black">@{negocio.instagram.replace(/^@/, "")}</span>
+                </a>
+              )}
+              {negocio.horario && (
+                <div className="flex items-start gap-2">
+                  <span aria-hidden>🕑</span>
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 flex-1">
+                    {ORDEN_DIAS.map(({ n, label }) => {
+                      const d = negocio.horario?.[String(n)];
+                      const abierto = !!(d?.abierto && d.franjas.length > 0);
+                      return (
+                        <div key={n} className="contents">
+                          <dt className="font-mono uppercase text-[11px] tracking-wider text-black/45 pt-px">{label}</dt>
+                          <dd className={abierto ? "text-black/80" : "text-black/35"}>
+                            {abierto ? d!.franjas.map((f) => `${f.desde}–${f.hasta}`).join(", ") : "Cerrado"}
+                          </dd>
+                        </div>
+                      );
+                    })}
+                  </dl>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       <footer className="mt-10 text-center text-[10px] font-mono uppercase tracking-widest text-black/30">Reservas con AI-Team · sin comisiones</footer>
