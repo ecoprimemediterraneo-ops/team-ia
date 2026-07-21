@@ -43,6 +43,8 @@ import {
   missingFieldsToQuestion,
   formatStartHumanES,
 } from "@/lib/appointment-intent";
+import { getBusinessByTenant } from "@/lib/booking";
+import { esIntencionCancelar, resolverCancelacion, textoCancelacionChat } from "@/lib/booking-cancel-intent";
 import {
   findEntryByProposalId,
   markCalendarEntryRejected,
@@ -402,6 +404,27 @@ export async function POST(req: Request) {
             const sk = await getTenantSector(tenantId);
             sectorAgenda = getSectorPrompt(sk).agendaCitas;
           } catch { /* por defecto intentamos agendar */ }
+
+          // === INTERCEPTOR: ¿la clienta quiere CANCELAR o MOVER su cita? ===
+          // Le pasamos su enlace de autocancelación web (por token) en vez de gestionarlo
+          // a mano. Va ANTES del interceptor de reserva (un "quiero cancelar" no es reservar).
+          if (sectorAgenda && esIntencionCancelar(text)) {
+            try {
+              const business = await getBusinessByTenant(tenantId);
+              if (business) {
+                const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://aiteam.marketing";
+                const caso = await resolverCancelacion(business.slug, from, SITE);
+                const resp = textoCancelacionChat(caso, `${SITE}/reservas/${business.slug}`, customerName);
+                await sendWhatsAppText(from, resp);
+                await appendTurn("pablo", from, "user", text, customerName);
+                await appendTurn("pablo", from, "assistant", resp, customerName);
+                await safeLogEvent(tenantId, { id: makeEventId("message_in", "pablo", msg.id), ts: rxTs, type: "message_in", channel: "pablo", senderId: from });
+                continue;
+              }
+            } catch (err) {
+              console.error("[pablo/webhook] interceptor cancelación falló:", err);
+            }
+          }
 
           if (sectorAgenda) try {
             // Los datos de la cita (nombre + servicio + día/hora) se reúnen a lo

@@ -52,6 +52,7 @@ export default function ClientesView({ slug }: { slug: string }) {
 
   return (
     <div>
+      <ReactivarDormidas slug={slug} />
       <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, teléfono o email…" className="card-hard w-full px-3 py-2.5 mb-4 bg-white" />
       {clientes === null || cargando ? (
         <div className="animate-pulse text-black/40 font-mono text-sm py-6 text-center">Cargando…</div>
@@ -160,6 +161,94 @@ function Stat({ n, l, alerta }: { n: number | string; l: string; alerta?: boolea
     <div className={`border-2 border-black p-2 text-center ${alerta ? "bg-[color:var(--red)]/10" : "bg-white"}`}>
       <div className={`font-stencil text-xl leading-none ${alerta ? "text-[color:var(--red)]" : ""}`}>{n}</div>
       <div className="text-[10px] uppercase tracking-wide text-black/50">{l}</div>
+    </div>
+  );
+}
+
+// ── Reactivar clientas dormidas ──────────────────────────────────────────────
+type Dormida = {
+  key: string; nombre: string; email: string; ultimaCitaIso: string; diasSinVenir: number;
+  reactivacionEnviadaIso?: string; diasDesdeAviso?: number; puedeEnviar: boolean;
+};
+
+function textoTiempo(dias: number): string {
+  if (dias >= 60) return `${Math.round(dias / 30)} meses`;
+  return `${dias} días`;
+}
+
+function ReactivarDormidas({ slug }: { slug: string }) {
+  const [dormidas, setDormidas] = useState<Dormida[] | null>(null);
+  const [abierto, setAbierto] = useState(false);
+  const [enviando, setEnviando] = useState<string | null>(null); // key concreta, "__todas" o null
+  const [msg, setMsg] = useState("");
+
+  const cargar = useCallback(async () => {
+    try {
+      const r = await fetch(`/api/booking/${slug}/reactivar`, { cache: "no-store" });
+      const j = await r.json();
+      if (j.ok) setDormidas(j.dormidas as Dormida[]);
+    } catch { /* */ }
+  }, [slug]);
+  useEffect(() => { cargar(); }, [cargar]);
+
+  async function enviar(keys: string[], etiqueta: string) {
+    if (!keys.length || enviando) return;
+    setEnviando(etiqueta); setMsg("");
+    try {
+      const r = await fetch(`/api/booking/${slug}/reactivar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ keys }) });
+      const j = await r.json();
+      if (r.ok && j.ok) setMsg(`✓ ${j.enviados} email${j.enviados === 1 ? "" : "s"} enviado${j.enviados === 1 ? "" : "s"}${j.saltados ? ` · ${j.saltados} saltado(s)` : ""}`);
+      else setMsg("⚠ No se pudo enviar.");
+      await cargar();
+    } catch { setMsg("⚠ Fallo de red."); }
+    finally { setEnviando(null); }
+  }
+
+  if (dormidas === null) return null; // silencioso hasta que cargue
+  const enviables = dormidas.filter((d) => d.puedeEnviar);
+
+  return (
+    <div className="card-hard bg-white mb-4">
+      <button onClick={() => setAbierto((v) => !v)} aria-expanded={abierto} className="w-full flex items-center justify-between gap-2 p-3 text-left hover:bg-[color:var(--cream)]">
+        <span className="font-bold flex items-center gap-2">💤 Reactivar dormidas
+          <span className="text-xs font-mono bg-[color:var(--mustard)] border border-black px-1.5 py-0.5">{dormidas.length}</span>
+        </span>
+        <span className={`text-2xl font-bold text-[color:var(--red)] leading-none transition-transform ${abierto ? "rotate-90" : ""}`} aria-hidden>›</span>
+      </button>
+      {abierto && (
+        <div className="border-t-[3px] border-black p-3">
+          {dormidas.length === 0 ? (
+            <p className="text-sm text-black/50">No hay clientas dormidas ahora mismo. 🎉<br /><span className="text-xs text-black/40">(sin venir hace más de 60 días, sin cita futura y con email)</span></p>
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <p className="text-xs text-black/50">Sin venir hace &gt; 2 meses y sin cita futura.</p>
+                <button onClick={() => enviar(enviables.map((d) => d.key), "__todas")} disabled={!enviables.length || enviando !== null} className="btn-mustard text-xs px-3 py-1.5 disabled:opacity-50">
+                  {enviando === "__todas" ? "Enviando…" : `Reactivar todas (${enviables.length})`}
+                </button>
+              </div>
+              <div className="space-y-2">
+                {dormidas.map((d) => (
+                  <div key={d.key} className="flex items-center justify-between gap-2 border-2 border-black/15 p-2">
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm truncate">{d.nombre}</div>
+                      <div className="text-xs text-black/50 truncate">{d.email} · {textoTiempo(d.diasSinVenir)} sin venir</div>
+                    </div>
+                    {d.puedeEnviar ? (
+                      <button onClick={() => enviar([d.key], d.key)} disabled={enviando !== null} className="shrink-0 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-black hover:text-white disabled:opacity-50">
+                        {enviando === d.key ? "…" : "Reactivar"}
+                      </button>
+                    ) : (
+                      <span className="shrink-0 text-[11px] text-black/40 text-right leading-tight" title={`Ya avisada hace ${d.diasDesdeAviso} días`}>✓ avisada<br />hace {d.diasDesdeAviso}d</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          {msg && <p className={`text-xs font-bold mt-3 ${msg.startsWith("✓") ? "text-[color:var(--olive,#5A6B3F)]" : "text-[color:var(--red)]"}`}>{msg}</p>}
+        </div>
+      )}
     </div>
   );
 }

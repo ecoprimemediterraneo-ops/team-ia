@@ -9,7 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BookingService, BookingRecord, EstadoCita, Empleado } from "@/lib/booking";
 import EsperaBanner from "./EsperaBanner";
 
-type Props = { slug: string; nombre: string; timezone: string; servicios: BookingService[]; empleados: Empleado[] };
+type Props = { slug: string; nombre: string; timezone: string; servicios: BookingService[]; empleados: Empleado[]; target?: { dia: string; n: number } | null };
 
 // --- helpers de fecha (día "plano", sin arrastrar TZ del navegador) ----------
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
@@ -55,10 +55,12 @@ const ACCIONES: Record<EstadoCita, [EstadoCita, string][]> = {
 /** Evento externo del Google Calendar del owner (solo lectura). */
 type EventoExterno = { id: string; titulo: string; start: string; end: string; allDay: boolean };
 
-export default function AgendaView({ slug, nombre, timezone, servicios, empleados }: Props) {
+export default function AgendaView({ slug, nombre, timezone, servicios, empleados, target }: Props) {
   const empMap = useMemo(() => Object.fromEntries(empleados.map((e) => [e.id, e])) as Record<string, Empleado>, [empleados]);
   const [vista, setVista] = useState<"dia" | "rejilla" | "columnas" | "semana">("dia");
   const [dia, setDia] = useState<string>(HOY());
+  // Ir al día de una cita al pulsar una notificación de la campana (nonce → re-navega).
+  useEffect(() => { if (target?.dia) { setDia(target.dia); setVista("dia"); } }, [target?.n, target?.dia]);
   const [records, setRecords] = useState<BookingRecord[]>([]);
   const [externos, setExternos] = useState<EventoExterno[]>([]);
   const [cargando, setCargando] = useState(true);

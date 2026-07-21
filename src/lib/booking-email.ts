@@ -20,7 +20,7 @@ import { getResend, RESEND_FROM } from "./resend";
 import { sendWhatsAppText } from "./whatsapp-sender";
 import { kvGet, kvSet, supabaseEnabled } from "./supabase";
 import { resolveCalendarEmail } from "./booking";
-import type { BookingRecord, BusinessBooking, EsperaEntry } from "./booking";
+import type { BookingRecord, BusinessBooking, EsperaEntry, Informe } from "./booking";
 
 const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
@@ -115,14 +115,17 @@ export function construirRecordatorio(record: BookingRecord, business: BusinessB
 // Envío
 // -----------------------------------------------------------------------------
 
-async function enviarEmail(to: string | undefined, subject: string, html: string): Promise<NotifResult["email"]> {
+async function enviarEmail(to: string | undefined, subject: string, html: string, fromName?: string): Promise<NotifResult["email"]> {
   if (!to) return { intentado: false, enviado: false, modo: "log_local" };
   if (!process.env.RESEND_API_KEY) {
-    console.log(`[booking-email] (LOCAL / sin RESEND) SE HABRÍA ENVIADO a ${maskEmail(to)} · "${subject}"`);
+    console.log(`[booking-email] (LOCAL / sin RESEND) SE HABRÍA ENVIADO a ${maskEmail(to)} · "${subject}"${fromName ? ` · de "${fromName}"` : ""}`);
     return { intentado: true, enviado: false, modo: "log_local" };
   }
   try {
-    const from = process.env.RESEND_FROM || RESEND_FROM;
+    const base = process.env.RESEND_FROM || RESEND_FROM;
+    // fromName → el correo sale firmado con el NOMBRE DEL NEGOCIO (no "AI-Team"),
+    // conservando la dirección verificada de RESEND_FROM.
+    const from = fromName ? base.replace(/^[^<]+/, `${fromName} `) : base;
     const { error } = await getResend().emails.send({ from, to, subject, html });
     if (error) return { intentado: true, enviado: false, modo: "error", error: String((error as { message?: string }).message || error) };
     return { intentado: true, enviado: true, modo: "resend" };
@@ -163,6 +166,36 @@ export async function enviarRecordatorio(record: BookingRecord, business: Busine
   const email = await enviarEmail(record.cliente.email, subject, html);
   const whatsapp = await enviarWhatsApp(record.cliente.telefono, textoWhatsApp(record, business, "recordatorio", baseUrl));
   return { email, whatsapp };
+}
+
+// -----------------------------------------------------------------------------
+// Reactivación de clientas dormidas — email cálido, breve, FIRMADO POR EL NEGOCIO
+// (no por "Eva" ni "IA"), con el enlace público de reservas bien visible.
+// -----------------------------------------------------------------------------
+
+export function construirReactivacion(nombre: string, business: BusinessBooking, baseUrl: string): { subject: string; html: string } {
+  const url = `${baseUrl.replace(/\/$/, "")}/reservas/${business.slug}`;
+  const primer = (nombre || "").trim().split(/\s+/)[0];
+  const subject = `Te echamos de menos en ${business.nombre} 💛`.slice(0, 120);
+  const cuerpo = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#333">
+      <p style="margin:0 0 14px">Hola${primer ? ` ${esc(primer)}` : ""} 👋</p>
+      <p style="margin:0 0 14px">Hace un tiempo que no te vemos por <b>${esc(business.nombre)}</b> y te echamos de menos. Nos encantaría volver a cuidarte.</p>
+      <p style="margin:0">¿Reservamos tu próxima cita? Se hace en un momento, cuando mejor te venga:</p>
+    </div>
+    <div style="text-align:center;margin:24px 0">
+      <a href="${url}" style="display:inline-block;background:#F5C518;color:#000;text-decoration:none;padding:14px 30px;font-weight:bold;border:2px solid #000">Reservar mi cita →</a>
+    </div>
+    <div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#555">
+      <p style="margin:0">Te esperamos con muchas ganas.</p>
+      <p style="margin:8px 0 0">Un abrazo,<br><b>${esc(business.nombre)}</b></p>
+    </div>`;
+  return { subject, html: emailBase(business, "¡Te echamos de menos!", cuerpo) };
+}
+
+/** Envía el email de reactivación a una clienta dormida. Firmado con el nombre del negocio. */
+export async function enviarReactivacion(nombre: string, to: string | undefined, business: BusinessBooking, baseUrl: string): Promise<NotifResult["email"]> {
+  const { subject, html } = construirReactivacion(nombre, business, baseUrl);
+  return enviarEmail(to, subject, html, business.nombre);
 }
 
 /** Aviso de "se ha liberado un hueco" a quien está en lista de espera (best-effort, email). */
@@ -277,5 +310,70 @@ export async function enviarAvisoDuenoA(
 ): Promise<NotifResult["email"]> {
   const { subject, html } = construirAvisoDueno(record, business, tipo);
   return enviarEmail(to, subject, html);
+}
+
+// -----------------------------------------------------------------------------
+// Informe mensual del negocio — resumen del mes enviado por email AL DUEÑO.
+// Anti-duplicado por (slug, mes) reutilizando el mismo ledger de avisos al dueño.
+// -----------------------------------------------------------------------------
+
+const euros = (n: number) => `${Math.round(n || 0)} €`;
+
+/** Email de informe mensual (marca del negocio en la cabecera; lo manda la plataforma al dueño). */
+export function construirInformeMensual(inf: Informe, business: BusinessBooking, mesLabel: string, baseUrl: string): { subject: string; html: string } {
+  const subject = `Tu informe de ${mesLabel} — ${business.nombre}`.slice(0, 140);
+  const dash = `${baseUrl.replace(/\/$/, "")}/dashboard/reservas`;
+  const kpi = (label: string, valor: string) =>
+    `<td style="padding:12px;border:2px solid #000;background:#fff;font-family:Arial,sans-serif;width:50%">
+      <div style="font-size:11px;color:#777;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+      <div style="font-size:22px;font-weight:bold;color:#0c0c0c;margin-top:2px">${valor}</div>
+    </td>`;
+  const topSvc = (inf.porServicio || []).slice(0, 5);
+  const topEmp = (inf.porEmpleado || []).slice(0, 5);
+  const lista = (items: { nombre: string; citas: number; ingresos: number }[]) =>
+    `<ul style="margin:6px 0 0;padding-left:18px;font-family:Arial,sans-serif;font-size:14px;line-height:1.7;color:#333">
+      ${items.map((s) => `<li>${esc(s.nombre)} — <b>${s.citas}</b> cita${s.citas === 1 ? "" : "s"}${s.ingresos ? ` · ${euros(s.ingresos)}` : ""}</li>`).join("")}
+    </ul>`;
+  const svcHtml = topSvc.length ? lista(topSvc) : `<p style="font-family:Arial,sans-serif;font-size:14px;color:#999;margin:6px 0 0">Sin servicios este mes.</p>`;
+  const empHtml = topEmp.length > 1
+    ? `<div style="font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#0c0c0c;margin:18px 0 0">Por profesional</div>${lista(topEmp)}`
+    : "";
+
+  const cuerpo = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#333;margin:0 0 16px">Aquí tienes el resumen de <b>${esc(mesLabel)}</b> en ${esc(business.nombre)}:</div>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:6px;width:100%;margin:0 -6px">
+      <tr>${kpi("Ingresos", euros(inf.ingresos))}${kpi("Citas completadas", String(inf.citas.completadas))}</tr>
+      <tr>${kpi("Clientas nuevas", String(inf.clientes.nuevos))}${kpi("Ocupación", `${inf.ocupacion.pct}%`)}</tr>
+    </table>
+    <div style="font-family:Arial,sans-serif;font-size:13px;color:#555;margin:12px 0 0;line-height:1.6">
+      ${inf.citas.total} citas en total · ${inf.citas.canceladas} cancelada${inf.citas.canceladas === 1 ? "" : "s"} · ${inf.citas.noShow} no-show (${inf.tasaNoShow}%) · ${inf.clientes.recurrentes} clienta${inf.clientes.recurrentes === 1 ? "" : "s"} recurrente${inf.clientes.recurrentes === 1 ? "" : "s"}.
+    </div>
+    <div style="font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#0c0c0c;margin:18px 0 0">Servicios más pedidos</div>
+    ${svcHtml}
+    ${empHtml}
+    <div style="text-align:center;margin:24px 0 0"><a href="${dash}" style="display:inline-block;background:#F5C518;color:#000;text-decoration:none;padding:12px 28px;font-weight:bold;border:2px solid #000">Ver el detalle en tu panel →</a></div>`;
+  return { subject, html: emailBase(business, `📊 Informe de ${mesLabel}`, cuerpo) };
+}
+
+/**
+ * Envía el informe mensual al dueño (resolveCalendarEmail). Anti-duplicado por
+ * (slug, periodoKey=YYYY-MM): no reenvía el mismo mes salvo opts.force. Best-effort.
+ */
+export async function enviarInformeMensual(
+  business: BusinessBooking,
+  inf: Informe,
+  periodoKey: string,
+  mesLabel: string,
+  baseUrl: string,
+  opts?: { force?: boolean },
+): Promise<{ enviado: boolean; modo: string; to?: string }> {
+  const key = `informe:${business.slug}:${periodoKey}`;
+  if (!opts?.force && (await yaAvisado(key))) return { enviado: false, modo: "duplicado" };
+  let to: string | undefined;
+  try { to = await resolveCalendarEmail(business); } catch { to = undefined; }
+  if (!to) return { enviado: false, modo: "sin_email_dueno" };
+  const { subject, html } = construirInformeMensual(inf, business, mesLabel, baseUrl);
+  const r = await enviarEmail(to, subject, html);
+  if (r.intentado) await marcarAvisado(key);
+  return { enviado: r.enviado, modo: r.modo, to };
 }
 

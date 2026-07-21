@@ -56,9 +56,6 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
 
   const [guardando, setGuardando] = useState(false);
   const [msg, setMsg] = useState("");
-  const [copiado, setCopiado] = useState(false);
-
-  const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/reservas/${slug}` : `/reservas/${slug}`;
 
   function cambiarNegocio(s: string) {
     const n = negocios.find((x) => x.slug === s)!;
@@ -158,15 +155,7 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
         </select>
       )}
 
-      {/* URL pública */}
-      <div className="card-hard bg-black text-[color:var(--cream)] p-4">
-        <div className="text-[11px] font-mono uppercase tracking-widest text-white/50 mb-1">Tu URL pública de reservas</div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <code className="text-[color:var(--mustard)] text-sm break-all">{publicUrl}</code>
-          <button onClick={() => { navigator.clipboard?.writeText(publicUrl); setCopiado(true); setTimeout(() => setCopiado(false), 1500); }} className="text-xs border-2 border-white/40 px-2 py-1 hover:bg-white/10">{copiado ? "¡copiado!" : "copiar"}</button>
-          <a href={publicUrl} target="_blank" rel="noreferrer" className="text-xs border-2 border-[color:var(--mustard)] text-[color:var(--mustard)] px-2 py-1 hover:bg-[color:var(--mustard)] hover:text-black">abrir</a>
-        </div>
-      </div>
+      {/* La URL pública, compartir y QR viven ahora en la pestaña "Compartir" (CompartirEnlace). */}
 
       {/* Marca */}
       <section className="space-y-3">

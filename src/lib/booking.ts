@@ -129,6 +129,7 @@ export type BookingRecord = {
   nota?: string; // nota interna del dueño / motivo del bloqueo
   creadaEn: string;
   canceladaEn?: string;
+  reprogramadaEn?: string; // última vez que se movió/reprogramó (para la campanita)
   recordatorioEnviado?: boolean;
 };
 
@@ -1088,7 +1089,7 @@ export async function reprogramarRecord(
     return { ok: false, reason: noCal ? "no_calendar" : "error", detail: res.detail };
   }
 
-  const updated: BookingRecord = { ...record, startIso: startNorm, durationMin: dur, eventId: res.eventId, htmlLink: res.htmlLink };
+  const updated: BookingRecord = { ...record, startIso: startNorm, durationMin: dur, eventId: res.eventId, htmlLink: res.htmlLink, reprogramadaEn: new Date().toISOString() };
   await saveRecord(updated);
   return { ok: true, record: updated };
 }
@@ -1098,7 +1099,7 @@ export async function reprogramarRecord(
 // No hay entidad Cliente separada: se agrega por teléfono (o email/nombre).
 // -----------------------------------------------------------------------------
 
-export type ClienteMeta = { notas?: string; etiquetas?: string[] };
+export type ClienteMeta = { notas?: string; etiquetas?: string[]; reactivacionEnviadaIso?: string };
 export type ClienteAgg = {
   key: string;
   nombre: string;
@@ -1201,6 +1202,154 @@ export async function saveClienteMeta(slug: string, key: string, patch: ClienteM
   const k = `${slug}|${key}`;
   m[k] = { ...(m[k] || {}), ...patch };
   await writeClientesMeta(m);
+}
+
+// -----------------------------------------------------------------------------
+// Reactivación de clientas dormidas — clientas que llevan tiempo sin volver.
+// -----------------------------------------------------------------------------
+
+export const DIAS_DORMIDA = 60;    // "dormida" si su última cita fue hace más de esto
+export const DIAS_ANTISPAM = 30;   // no reenviar el aviso si ya se mandó hace menos de esto
+
+export type ClienteDormida = {
+  key: string;
+  nombre: string;
+  email: string;
+  ultimaCitaIso: string;             // fecha de su última cita pasada
+  diasSinVenir: number;
+  reactivacionEnviadaIso?: string;   // último email de reactivación (anti-spam)
+  diasDesdeAviso?: number;           // días desde ese último aviso
+  puedeEnviar: boolean;              // false si ya se le avisó en los últimos DIAS_ANTISPAM
+};
+
+/** Días completos entre una fecha ISO (usamos su parte YYYY-MM-DD) y hoy. */
+function diasHastaHoy(desdeIso: string): number {
+  const a = Date.parse(`${desdeIso.slice(0, 10)}T00:00:00Z`);
+  const b = Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(a) || Number.isNaN(b)) return 0;
+  return Math.round((b - a) / 86_400_000);
+}
+
+/**
+ * Clientas DORMIDAS de un negocio: tienen ≥1 cita pasada (no cancelada), su cita más
+ * reciente fue hace más de DIAS_DORMIDA, NO tienen ninguna cita futura agendada y
+ * tienen email válido. Incluye el estado anti-spam (si ya se les avisó y cuándo).
+ */
+export async function listClientesDormidas(slug: string): Promise<ClienteDormida[]> {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const recs = (await listRecords()).filter((r) => r.slug === slug && r.tipo !== "bloqueo");
+  const meta = await readClientesMeta();
+
+  const g = new Map<string, { nombre: string; email?: string; ultimaPasada?: string; tieneFutura: boolean }>();
+  for (const r of recs) {
+    const key = clienteKey(r.cliente);
+    let x = g.get(key);
+    if (!x) { x = { nombre: r.cliente?.nombre || "Cliente", email: r.cliente?.email || undefined, tieneFutura: false }; g.set(key, x); }
+    if (!x.email && r.cliente?.email) x.email = r.cliente.email;
+    if ((x.nombre === "Cliente") && r.cliente?.nombre) x.nombre = r.cliente.nombre;
+    const dia = r.startIso.slice(0, 10);
+    if (dia >= hoy && (r.estado === "confirmada" || r.estado === "pendiente")) x.tieneFutura = true;
+    if (dia < hoy && r.estado !== "cancelada" && (!x.ultimaPasada || r.startIso > x.ultimaPasada)) x.ultimaPasada = r.startIso;
+  }
+
+  const out: ClienteDormida[] = [];
+  for (const [key, x] of g) {
+    if (!x.email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x.email)) continue; // email válido
+    if (x.tieneFutura) continue;                                            // sin cita futura
+    if (!x.ultimaPasada) continue;                                          // ≥1 cita pasada
+    const diasSinVenir = diasHastaHoy(x.ultimaPasada);
+    if (diasSinVenir <= DIAS_DORMIDA) continue;                             // más de 60 días
+    const enviadaIso = meta[`${slug}|${key}`]?.reactivacionEnviadaIso;
+    const diasDesdeAviso = enviadaIso ? diasHastaHoy(enviadaIso) : undefined;
+    const puedeEnviar = !enviadaIso || (diasDesdeAviso ?? 999) >= DIAS_ANTISPAM;
+    out.push({ key, nombre: x.nombre, email: x.email, ultimaCitaIso: x.ultimaPasada, diasSinVenir, reactivacionEnviadaIso: enviadaIso, diasDesdeAviso, puedeEnviar });
+  }
+  out.sort((a, b) => b.diasSinVenir - a.diasSinVenir);
+  return out;
+}
+
+/** Marca que se envió el email de reactivación a esta clienta (ahora). */
+export async function marcarReactivacionEnviada(slug: string, key: string): Promise<void> {
+  await saveClienteMeta(slug, key, { reactivacionEnviadaIso: new Date().toISOString() });
+}
+
+// -----------------------------------------------------------------------------
+// Campanita del dueño — notificaciones derivadas de los BookingRecord (mismos
+// eventos que disparan el aviso al dueño): cita nueva, cancelada y reprogramada.
+// -----------------------------------------------------------------------------
+
+const NOTIF_VENTANA_DIAS = 14; // eventos de las últimas 2 semanas
+export type NotifTipo = "nueva" | "cancelada" | "reprogramada";
+export type Notificacion = {
+  id: string;          // estable por evento (recordId+tipo[+ts])
+  tipo: NotifTipo;
+  recordId: string;
+  cliente: string;
+  servicio: string;
+  citaIso: string;     // inicio de la cita (para mostrar)
+  citaDia: string;     // YYYY-MM-DD de la cita (para navegar la agenda)
+  eventoIso: string;   // cuándo ocurrió el evento (orden + no leídas)
+};
+
+/** Notificaciones del negocio: nueva/cancelada/reprogramada en la ventana, recientes primero. */
+export async function listNotificaciones(slug: string): Promise<Notificacion[]> {
+  const desde = Date.now() - NOTIF_VENTANA_DIAS * 86_400_000;
+  const enVentana = (iso?: string) => !!iso && !Number.isNaN(Date.parse(iso)) && Date.parse(iso) >= desde;
+  const recs = (await listRecords()).filter((r) => r.slug === slug && r.tipo !== "bloqueo");
+  const out: Notificacion[] = [];
+  for (const r of recs) {
+    const base = {
+      recordId: r.id,
+      cliente: r.cliente?.nombre || "Cliente",
+      servicio: [r.servicioNombre, r.varianteNombre].filter(Boolean).join(" · ") || "Cita",
+      citaIso: r.startIso,
+      citaDia: r.startIso.slice(0, 10),
+    };
+    if (enVentana(r.creadaEn)) out.push({ ...base, id: `${r.id}:nueva`, tipo: "nueva", eventoIso: r.creadaEn });
+    if (r.estado === "cancelada" && enVentana(r.canceladaEn)) out.push({ ...base, id: `${r.id}:cancelada`, tipo: "cancelada", eventoIso: r.canceladaEn! });
+    if (enVentana(r.reprogramadaEn)) out.push({ ...base, id: `${r.id}:reprog:${r.reprogramadaEn}`, tipo: "reprogramada", eventoIso: r.reprogramadaEn! });
+  }
+  out.sort((a, b) => b.eventoIso.localeCompare(a.eventoIso));
+  return out;
+}
+
+// Estado "leídas" por DUEÑO+negocio: guardamos la marca de tiempo de la última vez
+// que abrió la campana; las notificaciones con eventoIso > esa marca son "no leídas".
+const NOTIF_SEEN_FILE = path.join(DATA_DIR, "booking-notif-seen.json");
+const KV_NOTIF_SEEN = "booking:notif-seen";
+type NotifSeenMap = Record<string, string>; // `${slug}|${ownerEmail}` -> lastSeenIso
+
+async function readNotifSeen(): Promise<NotifSeenMap> {
+  if (supabaseEnabled()) return (await kvGet<NotifSeenMap>(KV_NOTIF_SEEN)) || {};
+  return readLocal<NotifSeenMap>(NOTIF_SEEN_FILE);
+}
+export async function getNotifSeen(slug: string, ownerEmail: string): Promise<string> {
+  return (await readNotifSeen())[`${slug}|${ownerEmail.toLowerCase()}`] || "";
+}
+export async function setNotifSeen(slug: string, ownerEmail: string, iso: string): Promise<void> {
+  const m = await readNotifSeen();
+  m[`${slug}|${ownerEmail.toLowerCase()}`] = iso;
+  if (supabaseEnabled()) await kvSet(KV_NOTIF_SEEN, m);
+  else await writeLocal(NOTIF_SEEN_FILE, m);
+}
+
+/**
+ * Citas ACTIVAS (futuras y no canceladas) de una clienta en un negocio, identificada
+ * por su teléfono (misma normalización que el CRM: últimos 9 dígitos). Recientes primero.
+ * La usa la autocancelación por agente (Pablo/Carmen) para pasarle su enlace de token.
+ */
+export async function citasActivasDeCliente(slug: string, telefono: string): Promise<BookingRecord[]> {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const key = clienteKey({ telefono });
+  return (await listRecords())
+    .filter((r) =>
+      r.slug === slug &&
+      r.tipo !== "bloqueo" &&
+      (r.estado === "confirmada" || r.estado === "pendiente") &&
+      r.startIso.slice(0, 10) >= hoy &&
+      clienteKey(r.cliente) === key,
+    )
+    .sort((a, b) => a.startIso.localeCompare(b.startIso));
 }
 
 // -----------------------------------------------------------------------------
