@@ -40,8 +40,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
           >
             <span className="text-2xl">📅</span>
             <span className="flex-1 min-w-0">
-              <span className="block font-stencil text-xl leading-none">AGENDA</span>
-              <span className="block text-[10px] uppercase tracking-widest text-black/70">Agenda · clientes · informes · servicios</span>
+              {/* Se llamaba "AGENDA": no se identificaba como el módulo de reservas online
+                  y no había forma de llegar a /dashboard/reservas salvo tecleando la URL. */}
+              <span className="block font-stencil text-xl leading-none">RESERVAS</span>
+              <span className="block text-[10px] uppercase tracking-widest text-black/70">Agenda · clientes · informes · compartir</span>
             </span>
           </a>
           <div className="text-xs font-mono uppercase tracking-widest text-black/50 px-1 mb-2">Tu equipo · {agents.length} agentes</div>
