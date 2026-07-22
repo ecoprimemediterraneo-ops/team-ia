@@ -16,6 +16,7 @@ export type Credential = {
   email: string;         // identidad de sesión (mapea al usuario/tenant)
   role?: "admin" | "user";
   createdAt: string;
+  pwdVersion?: number;   // versión de la contraseña sembrada desde el código (ver CRIS_PWD_VERSION)
 };
 
 const KV_KEY = "auth:credentials";
@@ -24,9 +25,17 @@ const FILE = path.join(DATA_DIR, "credentials.json");
 const USE_SUPABASE = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
 
-// Hash bcrypt PRECOMPUTADO de la contraseña inicial del admin "cris" (no guardamos la
-// contraseña en claro en el código). Contraseña: "AiTeam2026".
-const CRIS_HASH = "$2b$10$pciLQEuFJb5M1HY1bpiuC.Vw8C3juLcq4pXEfPKJeo2u2mRosXZP2";
+// Hash bcrypt PRECOMPUTADO de la contraseña del admin "cris". La contraseña en claro
+// NO se escribe aquí a propósito (este fichero va a git). Para cambiarla: genera el
+// hash con `bcrypt.hashSync("<nueva>", 10)`, pégalo aquí y sube CRIS_PWD_VERSION.
+const CRIS_HASH = "$2b$10$9shkbmuVLWCh0IgFL06RquLaS9S9s2SIKbw3Q4F5ezUAu4bGPOm76";
+
+// Versión de la contraseña del admin sembrada desde el código. Al SUBIR este número,
+// el siguiente arranque reescribe el hash almacenado aunque "cris" ya exista.
+// Hace falta porque el seed solo crea la credencial si FALTA: sin esto, cambiar
+// CRIS_HASH no tendría ningún efecto donde "cris" ya está guardado (p. ej. el
+// kv_store de producción). Es el mecanismo de recuperación de acceso del admin.
+const CRIS_PWD_VERSION = 2;
 
 type CredMap = Record<string, Credential>;
 
@@ -39,6 +48,7 @@ function seed(): CredMap {
       email: FOUNDER_EMAIL,
       role: "admin",
       createdAt: new Date().toISOString(),
+      pwdVersion: CRIS_PWD_VERSION,
     },
   };
 }
@@ -59,6 +69,11 @@ async function readAll(): Promise<CredMap> {
   // Seed idempotente: si no existe el admin "cris", lo creamos.
   if (!data || !data["cris"]) {
     data = { ...seed(), ...(data ?? {}) };
+    await writeAll(data);
+  } else if ((data["cris"].pwdVersion ?? 1) < CRIS_PWD_VERSION) {
+    // Reset de contraseña del admin pedido desde el código: "cris" ya existía con un
+    // hash antiguo, lo reescribimos una sola vez (idempotente por versión).
+    data["cris"] = { ...data["cris"], passwordHash: CRIS_HASH, pwdVersion: CRIS_PWD_VERSION, role: "admin" };
     await writeAll(data);
   }
   return data;
