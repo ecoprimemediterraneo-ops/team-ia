@@ -10,7 +10,7 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { authorizeOwner } from "@/lib/booking-owner";
-import { storeImage, imageUrlFor } from "@/lib/marta-image-store";
+import { storeImage, imageUrlFor, putPublicBlob } from "@/lib/marta-image-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +37,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   }
 
   // 1) Blob store real (@vercel/blob) si está preparado; si no, host propio de imágenes.
-  const blobUrl = await tryVercelBlob(buf, tipo).catch(() => null);
+  // El mecanismo vive ahora en marta-image-store (putPublicBlob) para no tenerlo
+  // duplicado: lo comparten esta subida y las imágenes del calendario de Marta.
+  const blobUrl = await putPublicBlob(buf, tipo, "booking").catch(() => null);
   if (blobUrl) return NextResponse.json({ ok: true, url: blobUrl, host: "vercel-blob", bytes: buf.length });
 
   const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
@@ -45,17 +47,4 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const id = await storeImage(buf, tipo);
   const url = imageUrlFor(id, `${proto}://${host}`);
   return NextResponse.json({ ok: true, url, host: "marta-image-store", bytes: buf.length });
-}
-
-/** Sube a @vercel/blob si el paquete está instalado y hay token. Devuelve URL pública o null. */
-async function tryVercelBlob(buf: Buffer, mime: string): Promise<string | null> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) return null;
-  const mod = (await import(/* webpackIgnore: true */ "@vercel/blob" as string).catch(() => null)) as
-    | { put?: (name: string, body: Buffer, opts: Record<string, unknown>) => Promise<{ url?: string }> }
-    | null;
-  if (!mod?.put) return null;
-  const ext = mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "jpg";
-  const rand = Math.floor(performance.now()).toString(36) + Math.round(performance.now() * 1000).toString(36);
-  const res = await mod.put(`booking/${rand}.${ext}`, buf, { access: "public", contentType: mime });
-  return res?.url ?? null;
 }

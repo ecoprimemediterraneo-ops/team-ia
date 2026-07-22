@@ -149,6 +149,39 @@ export async function scheduleBatch(
   return entries;
 }
 
+/**
+ * Igual que scheduleBatch pero con la fecha/hora EXACTA de cada draft ya
+ * decidida por quien llama (el planificador mensual reparte por el mes con
+ * su propia lógica de Europe/Madrid). Mismo store, mismo tipo y mismo
+ * status "scheduled", así que dueNow() las recoge igual.
+ */
+export async function scheduleAtDates(
+  tenantId: string,
+  drafts: Array<{
+    caption: string;
+    imageUrl: string;
+    tema?: string;
+    mediaType?: ProposalMediaType;
+    scheduledAt: string; // ISO (UTC)
+  }>,
+): Promise<CalendarEntry[]> {
+  const now = Date.now();
+  const entries: CalendarEntry[] = drafts.map((d, i) => ({
+    id: `cal_${now}_${i}_${Math.random().toString(36).slice(2, 6)}`,
+    tenantId,
+    scheduledAt: d.scheduledAt,
+    mediaType: d.mediaType ?? "IMAGE",
+    imageUrl: d.imageUrl,
+    caption: d.caption,
+    tema: d.tema,
+    status: "scheduled",
+  }));
+  const current = await readAll(tenantId);
+  const merged = [...current, ...entries].sort((a, b) => (a.scheduledAt < b.scheduledAt ? -1 : 1));
+  await writeAll(tenantId, merged);
+  return entries;
+}
+
 export async function listCalendar(tenantId: string): Promise<CalendarEntry[]> {
   const arr = await readAll(tenantId);
   return [...arr].sort((a, b) => (a.scheduledAt < b.scheduledAt ? -1 : 1));

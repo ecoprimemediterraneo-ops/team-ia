@@ -14,6 +14,14 @@ export type GenerarCaptionInput = {
   tenantId: string;
   tema?: string;
   contexto?: string;
+  /**
+   * Cuenta PROPIA de AI-Team (@ai.team.marketing) en vez de la de un cliente.
+   * Por defecto false → comportamiento intacto para todos los llamadores
+   * actuales. En true se levanta la prohibición de nombrar a AI-Team y sus
+   * agentes: si no, escribiendo para la ficha de AI-Team (sector "agentes IA
+   * para PYMES") el modelo se inventa otro negocio.
+   */
+  cuentaPropia?: boolean;
 };
 
 export type GenerarCaptionResult =
@@ -24,6 +32,7 @@ function buildPrompt(opts: {
   fichaContext: string;
   tema?: string;
   contexto?: string;
+  cuentaPropia?: boolean;
 }): string {
   const { fichaContext, tema, contexto } = opts;
   const temaLine = tema
@@ -31,20 +40,36 @@ function buildPrompt(opts: {
     : `TEMA: elige tú un tema realista y atractivo para el sector y momento del año (promoción, consejo, recordatorio, novedad, testimonio, etc.). Devuélvelo en la primera línea como "TEMA: …" seguido de DOS saltos de línea y luego el caption.`;
   const ctxLine = contexto ? `CONTEXTO EXTRA APORTADO: ${contexto}\n` : "";
 
-  return `ROL: ERES el negocio descrito abajo escribiendo el caption de TU próximo post de Instagram para TUS clientes/pacientes finales. Escribes en primera persona del plural del negocio ("ofrecemos", "te esperamos", "en nuestra clínica"). No eres una agencia. No eres Marta. No eres una IA.
+  const rol = opts.cuentaPropia
+    ? `ROL: ERES AI-Team escribiendo el caption de TU próximo post de Instagram en TU propia cuenta (@ai.team.marketing). Escribes en primera persona del plural ("ayudamos", "montamos", "te lo dejamos funcionando"). Hablas a DUEÑOS de PYMES de servicios (clínicas, estética, peluquerías, restaurantes) que pierden clientes por no llegar a todo.`
+    : `ROL: ERES el negocio descrito abajo escribiendo el caption de TU próximo post de Instagram para TUS clientes/pacientes finales. Escribes en primera persona del plural del negocio ("ofrecemos", "te esperamos", "en nuestra clínica"). No eres una agencia. No eres Marta. No eres una IA.`;
+
+  const objetivo = opts.cuentaPropia
+    ? `OBJETIVO: que un dueño de PYME de servicios entienda en 3 segundos qué problema suyo resolvemos (citas perdidas, llamadas sin contestar, agenda vacía, reseñas sin responder). Habla de SU problema, no de tecnología.`
+    : `OBJETIVO: promocionar TUS servicios a TUS clientes/pacientes. El post lo verán seguidores que ya conocen tu sector — clientes finales, no empresarios buscando software.`;
+
+  const prohibido = opts.cuentaPropia
+    ? `PROHIBIDO:
+- Inventarte otro negocio: el post es de AI-Team, no de una clínica ni una peluquería.
+- Jerga técnica (LLM, API, modelos, prompts) ni palabros de consultoría.
+- Prometer resultados garantizados, cifras inventadas, precios o plazas que no estén en la ficha.
+- Sonar a anuncio genérico de IA. Habla de un problema concreto y cotidiano del negocio.`
+    : `PROHIBIDO ABSOLUTAMENTE (te despiden si los mencionas):
+- AI-Team, agentes IA, asistentes IA, automatización, beta, plazas, software, herramientas.
+- Hablar de marketing, redes sociales, community manager.
+- Mencionar a "Marta" o cualquier otro agente.
+- Vender nada que no sean los servicios concretos del negocio (blanqueamiento dental, corte de pelo, masaje, lo que toque según la ficha).`;
+
+  return `${rol}
 
 FICHA DEL NEGOCIO (eres TÚ):
 ${fichaContext}
 
 ${ctxLine}${temaLine}
 
-OBJETIVO: promocionar TUS servicios a TUS clientes/pacientes. El post lo verán seguidores que ya conocen tu sector — clientes finales, no empresarios buscando software.
+${objetivo}
 
-PROHIBIDO ABSOLUTAMENTE (te despiden si los mencionas):
-- AI-Team, agentes IA, asistentes IA, automatización, beta, plazas, software, herramientas.
-- Hablar de marketing, redes sociales, community manager.
-- Mencionar a "Marta" o cualquier otro agente.
-- Vender nada que no sean los servicios concretos del negocio (blanqueamiento dental, corte de pelo, masaje, lo que toque según la ficha).
+${prohibido}
 
 REGLAS DE FORMATO (críticas):
 - CORTO. Máximo 4-5 líneas de texto + 1 línea de hashtags. Nada de párrafos largos.
@@ -106,6 +131,7 @@ export async function generarCaption(
     fichaContext,
     tema: input.tema?.trim() || undefined,
     contexto: input.contexto?.trim() || undefined,
+    cuentaPropia: input.cuentaPropia,
   });
 
   try {
