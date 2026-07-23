@@ -256,6 +256,26 @@ export async function markCalendarEntryFailed(
 }
 
 /**
+ * Cambia la fecha/hora de una entrada y la deja (o la devuelve a) "scheduled"
+ * para que dueNow() la recoja a la nueva hora. NO toca una entrada ya publicada
+ * (idempotencia: lo publicado no se reprograma). Devuelve la entrada o null.
+ */
+export async function rescheduleEntry(
+  tenantId: string,
+  id: string,
+  scheduledAtIso: string,
+): Promise<CalendarEntry | null> {
+  const actual = await findEntryById(tenantId, id);
+  if (!actual) return null;
+  if (actual.status === "published") return actual; // no se reprograma lo publicado
+  return updateEntry(tenantId, id, {
+    scheduledAt: scheduledAtIso,
+    status: "scheduled",
+    errorDetail: undefined,
+  });
+}
+
+/**
  * Devuelve entradas cuyo scheduledAt ya pasó y siguen como `scheduled`.
  */
 export async function dueNow(tenantId: string, now: Date = new Date()): Promise<CalendarEntry[]> {

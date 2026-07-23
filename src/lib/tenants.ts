@@ -36,6 +36,28 @@ export type Ficha = {
   estilo?: StyleConfig;
 };
 
+// Pauta de publicación de Marta por negocio: qué días de la semana publica el
+// calendario automático y —CADA DÍA— a qué hora concreta (ej. Lunes 09:00,
+// Jueves 17:00). Vive DENTRO del tenant (donde ya vive la ficha), no es un store
+// nuevo. Si un tenant no la tiene, se usa PAUTA_DEFECTO (L-X-V a las 10:00).
+export type PautaDia = {
+  dow: number;     // 0=Domingo … 6=Sábado
+  hora: number;    // 0-23, hora local Europe/Madrid
+  minuto: number;  // 0-59
+};
+
+export type PautaPublicacion = {
+  dias: PautaDia[]; // solo los días activos, cada uno con su hora
+};
+
+export const PAUTA_DEFECTO: PautaPublicacion = {
+  dias: [
+    { dow: 1, hora: 10, minuto: 0 },
+    { dow: 3, hora: 10, minuto: 0 },
+    { dow: 5, hora: 10, minuto: 0 },
+  ],
+};
+
 export type Tenant = {
   id: string;                              // "tenant_aiteam", "tenant_clinicasonrisa", ...
   name: string;                            // "AI-Team (cuenta fundadora)"
@@ -54,6 +76,9 @@ export type Tenant = {
   sectorPrompt?: SectorKey;
   // Ficha de marca / cliente (alimenta a todos los agentes):
   ficha?: Ficha;
+  // Pauta de publicación del calendario de Marta (días + horas). Opcional:
+  // si falta, se usa PAUTA_DEFECTO.
+  pautaPublicacion?: PautaPublicacion;
 };
 
 const KV_KEY = "tenants";
@@ -157,6 +182,70 @@ export async function upsertTenant(t: Tenant): Promise<Tenant> {
   all[t.id] = t;
   await writeAll(all);
   return t;
+}
+
+// -----------------------------------------------------------------------------
+// Pauta de publicación de Marta (vive dentro del tenant)
+// -----------------------------------------------------------------------------
+
+// Orden de la semana empezando en Lunes (para mostrar y ordenar).
+const ORDEN_SEMANA = [1, 2, 3, 4, 5, 6, 0];
+
+/**
+ * Normaliza una pauta y MIGRA el formato viejo sin romperlo:
+ *   - Nuevo:  { dias: [{dow,hora,minuto}, …] }
+ *   - Viejo:  { diasSemana: number[], horas: number[] } → cada día pasa a tener
+ *             la PRIMERA hora de la lista (una hora por día).
+ * Devuelve días únicos por dow, válidos (dow 0-6, hora 0-23, min 0-59), en
+ * orden de semana (Lunes primero).
+ */
+export function normalizarPauta(p: unknown): PautaPublicacion {
+  const raw = (p ?? {}) as { dias?: unknown; diasSemana?: unknown; horas?: unknown };
+  const porDow = new Map<number, PautaDia>();
+
+  const add = (dow: unknown, hora: unknown, minuto: unknown) => {
+    const d = Number(dow), h = Number(hora), m = Number(minuto);
+    if (!Number.isInteger(d) || d < 0 || d > 6) return;
+    if (porDow.has(d)) return; // un día, una hora
+    porDow.set(d, {
+      dow: d,
+      hora: Number.isInteger(h) && h >= 0 && h <= 23 ? h : 10,
+      minuto: Number.isInteger(m) && m >= 0 && m <= 59 ? m : 0,
+    });
+  };
+
+  if (Array.isArray(raw.dias)) {
+    // Formato nuevo.
+    for (const d of raw.dias as Array<{ dow?: unknown; hora?: unknown; minuto?: unknown }>) {
+      add(d?.dow, d?.hora, d?.minuto);
+    }
+  } else if (Array.isArray(raw.diasSemana)) {
+    // Formato viejo → migración: una hora por día (la primera de la lista).
+    const horas = (raw.horas as unknown[] | undefined)?.map(Number).filter((h) => Number.isInteger(h) && h >= 0 && h <= 23) ?? [];
+    const hora = horas.length ? horas[0] : 10;
+    for (const dow of raw.diasSemana as unknown[]) add(dow, hora, 0);
+  }
+
+  const dias = ORDEN_SEMANA.filter((d) => porDow.has(d)).map((d) => porDow.get(d)!);
+  return { dias: dias.length ? dias : PAUTA_DEFECTO.dias.map((d) => ({ ...d })) };
+}
+
+/** Pauta guardada del tenant, o PAUTA_DEFECTO si no tiene ninguna. */
+export async function getPautaPublicacion(tenantId: string): Promise<PautaPublicacion> {
+  const t = await getTenant(tenantId);
+  return t?.pautaPublicacion ? normalizarPauta(t.pautaPublicacion) : { ...PAUTA_DEFECTO };
+}
+
+/** Guarda la pauta en el tenant. Devuelve la pauta normalizada, o null si el tenant no existe. */
+export async function savePautaPublicacion(
+  tenantId: string,
+  pauta: unknown,
+): Promise<PautaPublicacion | null> {
+  const t = await getTenant(tenantId);
+  if (!t) return null;
+  const limpia = normalizarPauta(pauta);
+  await upsertTenant({ ...t, pautaPublicacion: limpia });
+  return limpia;
 }
 
 /** Devuelve el sector del agente conversacional del tenant (default vendedor). */

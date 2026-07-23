@@ -2,13 +2,14 @@
 // Muestra el mes ya programado (miniatura + caption + hashtags + fecha/hora)
 // y permite disparar la generación a mano para revisarla antes de nada.
 
-import { DEFAULT_TENANT_ID, getTenant } from "@/lib/tenants";
+import { DEFAULT_TENANT_ID, getTenant, getPautaPublicacion } from "@/lib/tenants";
 import { listCalendar } from "@/lib/marta-calendar";
-import { separarHashtags, martaAutoEnabled } from "@/lib/marta-mes";
+import { separarHashtags, martaAutoEnabled, utcToMadridFields } from "@/lib/marta-mes";
 import { martaAutoPublishEnabled } from "@/lib/marta-auto-publish";
 import { isPublishEnabled } from "@/lib/marta-publish";
-import MesForm from "./MesForm";
 import PostCard from "./PostCard";
+import AutomaticoForm from "./AutomaticoForm";
+import SubirPost from "./SubirPost";
 
 export const dynamic = "force-dynamic";
 
@@ -18,12 +19,18 @@ export default async function MartaCalendarioMesPage() {
   const autoEnabled = martaAutoEnabled();
   const autoPublish = martaAutoPublishEnabled();
   const publishOn = isPublishEnabled();
+  const pauta = await getPautaPublicacion(tenantId);
 
   // Solo el mes en curso (es lo que genera el orquestador).
   const ahora = new Date();
   const mesActual = `${ahora.getUTCFullYear()}-${String(ahora.getUTCMonth() + 1).padStart(2, "0")}`;
   const todas = await listCalendar(tenantId);
   const delMes = todas.filter((e) => e.scheduledAt.slice(0, 7) === mesActual);
+
+  // Valor por defecto del formulario manual: mañana a la primera hora de la pauta.
+  const manana = new Date(ahora.getTime() + 24 * 60 * 60 * 1000);
+  const defaultFecha = utcToMadridFields(manana).fecha;
+  const defaultHora = `${String(pauta.dias[0]?.hora ?? 10).padStart(2, "0")}:00`;
 
   return (
     <div className="space-y-6">
@@ -65,7 +72,9 @@ export default async function MartaCalendarioMesPage() {
         </p>
       </header>
 
-      <MesForm tenantId={tenantId} autoEnabled={autoEnabled} />
+      <AutomaticoForm tenantId={tenantId} dias={pauta.dias} autoEnabled={autoEnabled} />
+
+      <SubirPost tenantId={tenantId} defaultFecha={defaultFecha} defaultHora={defaultHora} />
 
       <section className="space-y-3">
         <div className="flex items-baseline gap-2 flex-wrap">
@@ -84,6 +93,7 @@ export default async function MartaCalendarioMesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {delMes.map((e) => {
               const { texto, hashtags } = separarHashtags(e.caption);
+              const { fecha, hora } = utcToMadridFields(new Date(e.scheduledAt));
               return (
                 <PostCard
                   key={e.id}
@@ -97,6 +107,8 @@ export default async function MartaCalendarioMesPage() {
                   tenantId={tenantId}
                   igMediaId={e.igMediaId}
                   errorDetail={e.errorDetail}
+                  defaultFecha={fecha}
+                  defaultHora={hora}
                 />
               );
             })}

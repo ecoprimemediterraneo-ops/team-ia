@@ -4,7 +4,7 @@
 // La usan tanto la previsualización (cliente) como el listado ya programado
 // (servidor), por eso no lleva hooks ni "use client".
 
-import PublicarAhora from "./PublicarAhora";
+import AccionesPost from "./AccionesPost";
 
 const FMT = new Intl.DateTimeFormat("es-ES", {
   timeZone: "Europe/Madrid",
@@ -36,6 +36,8 @@ export default function PostCard({
   tenantId,
   igMediaId,
   errorDetail,
+  defaultFecha,
+  defaultHora,
 }: {
   scheduledAt: string;
   imageUrl: string;
@@ -43,11 +45,14 @@ export default function PostCard({
   hashtags: string[];
   temaLabel?: string;
   estado: string;
-  /** Solo para entradas ya guardadas: habilita "Publicar ahora". */
+  /** Solo para entradas ya guardadas: habilita acciones (reprogramar/publicar). */
   entryId?: string;
   tenantId?: string;
   igMediaId?: string;
   errorDetail?: string;
+  /** Fecha/hora local Madrid ya calculadas en el servidor (para no importar server-only aquí). */
+  defaultFecha?: string;
+  defaultHora?: string;
 }) {
   const chip = CHIP[estado] ?? CHIP.scheduled;
   const cuando = FMT.format(new Date(scheduledAt));
@@ -97,8 +102,14 @@ export default function PostCard({
           <p className="text-[10px] text-[color:var(--red)] leading-tight">Error: {errorDetail}</p>
         )}
 
-        {entryId && tenantId && (
-          <PublicarAhora entryId={entryId} tenantId={tenantId} disabled={estado !== "scheduled"} />
+        {entryId && tenantId && defaultFecha && defaultHora && (
+          <AccionesPost
+            entryId={entryId}
+            tenantId={tenantId}
+            defaultFecha={defaultFecha}
+            defaultHora={defaultHora}
+            estado={estado}
+          />
         )}
       </div>
     </article>

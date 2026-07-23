@@ -24,8 +24,10 @@ import { generarCaption } from "./marta-caption";
 import { MARTA_TOPICS, type MartaTopic } from "./marta-topics";
 import { storeImageDurable } from "./marta-image-store";
 import { scheduleAtDates } from "./marta-calendar";
-import { getSchedule } from "./marta-schedule";
-import { DEFAULT_TENANT_ID } from "./tenants";
+import { DEFAULT_TENANT_ID, getPautaPublicacion, PAUTA_DEFECTO, type PautaDia } from "./tenants";
+import type { PostMes } from "./marta-mes-types";
+
+export type { PostMes } from "./marta-mes-types";
 
 /** Interruptor general de la automatización mensual. Default: APAGADO. */
 export function martaAutoEnabled(): boolean {
@@ -50,43 +52,66 @@ function madridOffsetMinutes(at: Date): number {
   return (asUtc - at.getTime()) / 60000;
 }
 
-/** Construye el instante UTC que corresponde a una hora LOCAL de Madrid. */
-export function madridToUtc(y: number, month1: number, day: number, hour: number): Date {
-  const guess = Date.UTC(y, month1 - 1, day, hour, 0, 0);
+/** Construye el instante UTC que corresponde a una hora:minuto LOCAL de Madrid. */
+export function madridToUtc(y: number, month1: number, day: number, hour: number, minute = 0): Date {
+  const guess = Date.UTC(y, month1 - 1, day, hour, minute, 0);
   // Dos pasadas: la segunda corrige los días de cambio de hora.
   const off1 = madridOffsetMinutes(new Date(guess));
   const off2 = madridOffsetMinutes(new Date(guess - off1 * 60000));
   return new Date(guess - off2 * 60000);
 }
 
+/**
+ * Inverso de madridToUtc: dado un instante UTC, devuelve la fecha y hora LOCAL de
+ * Madrid como cadenas listas para <input type="date"> y <input type="time">.
+ */
+export function utcToMadridFields(d: Date): { fecha: string; hora: string } {
+  const p = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(d);
+  const get = (t: string) => p.find((x) => x.type === t)?.value ?? "";
+  let hh = get("hour");
+  if (hh === "24") hh = "00";
+  return { fecha: `${get("year")}-${get("month")}-${get("day")}`, hora: `${hh}:${get("minute")}` };
+}
+
+/** Convierte "YYYY-MM-DD" + "HH:MM" (hora local Madrid) al instante UTC. */
+export function madridInputsToUtc(fecha: string, hora: string): Date | null {
+  const md = fecha.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const mh = hora.match(/^(\d{1,2}):(\d{2})$/);
+  if (!md || !mh) return null;
+  const [, y, mo, d] = md.map(Number);
+  const [, h, mi] = mh.map(Number);
+  if (h > 23 || mi > 59) return null;
+  return madridToUtc(y, mo, d, h, mi);
+}
+
 // -----------------------------------------------------------------------------
 // Planificación de huecos del mes
 // -----------------------------------------------------------------------------
 
-/**
- * Cadencia por defecto: lunes, miércoles y viernes → 3 posts/semana (~13/mes).
- * Extiende la regla que ya existe en marta-schedule (defaultSchedule usa
- * lunes+viernes) hasta la cadencia de 3-4/semana que pide el calendario mensual.
- */
-export const DIAS_DEFECTO = [1, 3, 5]; // 0=Domingo … 6=Sábado
 const MAX_POSTS_MES = 20; // tope de seguridad (coste de generación)
 
 export type HuecoMes = { fecha: Date; dia: number; hora: number };
 
 /**
- * Devuelve los huecos del mes indicado (solo fechas FUTURAS respecto a `desde`,
- * para no programar en el pasado si se lanza a mitad de mes).
+ * Devuelve los huecos del mes según la pauta (una hora concreta por día de la
+ * semana). Solo fechas FUTURAS respecto a `desde` y como máximo `max` (el total
+ * del mes se reparte entre las fechas que toquen, en orden cronológico).
  */
 export function planificarMes(opts: {
   year: number;
   month1: number;          // 1-12
-  diasSemana?: number[];
-  hora?: number;           // hora local Madrid
+  dias: PautaDia[];        // días activos, cada uno con su hora
   desde?: Date;
   max?: number;
 }): HuecoMes[] {
-  const dias = opts.diasSemana?.length ? opts.diasSemana : DIAS_DEFECTO;
-  const hora = opts.hora ?? 10;
+  const porDow = new Map<number, PautaDia>();
+  for (const d of opts.dias) porDow.set(d.dow, d);
+  if (porDow.size === 0) for (const d of PAUTA_DEFECTO.dias) porDow.set(d.dow, d);
+
   const desde = opts.desde ?? new Date();
   const max = Math.min(opts.max ?? MAX_POSTS_MES, MAX_POSTS_MES);
 
@@ -94,10 +119,11 @@ export function planificarMes(opts: {
   const diasDelMes = new Date(Date.UTC(opts.year, opts.month1, 0)).getUTCDate();
   for (let d = 1; d <= diasDelMes && out.length < max; d++) {
     const dow = new Date(Date.UTC(opts.year, opts.month1 - 1, d)).getUTCDay();
-    if (!dias.includes(dow)) continue;
-    const fecha = madridToUtc(opts.year, opts.month1, d, hora);
+    const pd = porDow.get(dow);
+    if (!pd) continue;
+    const fecha = madridToUtc(opts.year, opts.month1, d, pd.hora, pd.minuto);
     if (fecha.getTime() <= desde.getTime()) continue; // no programamos en el pasado
-    out.push({ fecha, dia: d, hora });
+    out.push({ fecha, dia: d, hora: pd.hora });
   }
   return out;
 }
@@ -176,16 +202,6 @@ export async function renderImagenMes(opts: {
 // Orquestador
 // -----------------------------------------------------------------------------
 
-export type PostMes = {
-  scheduledAt: string;   // ISO UTC
-  tema: string;
-  temaLabel: string;
-  caption: string;       // completo (texto + hashtags) — es lo que se publica
-  texto: string;         // solo el cuerpo, para revisar
-  hashtags: string[];    // separados, para revisar
-  imageUrl: string;
-};
-
 export type GenerarMesResult =
   | { ok: true; persistido: boolean; mes: string; posts: PostMes[]; errores: string[]; skipped?: never }
   | { ok: true; persistido: false; mes: string; posts: []; errores: []; skipped: "auto_disabled" }
@@ -235,6 +251,9 @@ export async function generarMes(opts: {
   preview?: boolean;
   year?: number;
   month1?: number;
+  /** Override de la pauta (si no, se usa la del tenant). */
+  dias?: PautaDia[];
+  /** Atajos de compat con el cron: días uniformes a una hora. */
   diasSemana?: number[];
   hora?: number;
   max?: number;
@@ -258,13 +277,21 @@ export async function generarMes(opts: {
     return { ok: true, persistido: false, mes, posts: [], errores: [], skipped: "auto_disabled" };
   }
 
-  // La hora local sale de la regla que ya tiene el tenant (marta-schedule).
-  const regla = await getSchedule(opts.tenantId);
-  const hora = opts.hora ?? regla.hour ?? 10;
+  // Los días (cada uno con su hora) salen de la PAUTA por negocio (guardada en
+  // el tenant). Si el tenant no tiene pauta, getPautaPublicacion devuelve la de
+  // por defecto (L-X-V 10:00). El cron puede sobreescribir con ?dias/?hora
+  // (días uniformes a una hora); el override explícito `dias` manda sobre todo.
+  let dias: PautaDia[];
+  if (opts.dias?.length) {
+    dias = opts.dias;
+  } else if (opts.diasSemana?.length) {
+    const hora = opts.hora ?? 10;
+    dias = opts.diasSemana.map((dow) => ({ dow, hora, minuto: 0 }));
+  } else {
+    dias = (await getPautaPublicacion(opts.tenantId)).dias;
+  }
 
-  const huecos = planificarMes({
-    year, month1, diasSemana: opts.diasSemana, hora, desde: now, max: opts.max,
-  });
+  const huecos = planificarMes({ year, month1, dias, desde: now, max: opts.max });
   if (huecos.length === 0) {
     return { ok: false, reason: "sin_huecos", detail: `No quedan fechas futuras en ${mes} con esa cadencia.` };
   }
