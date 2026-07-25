@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+// getSessionLocal (no getSession) para ir en línea con el layout del dashboard, que
+// ya autoriza con el bypass de desarrollo local. En producción es idéntico a
+// getSession (el ramo dev nunca corre en Vercel), así que no cambia la seguridad.
+import { getSessionLocal } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import { agentBySlug } from "@/lib/agents";
 import { DEFAULT_TENANT_ID } from "@/lib/tenants";
@@ -8,15 +11,25 @@ import { isPublishEnabled } from "@/lib/marta-publish";
 import { getSchedule, DIRECT_PUBLISH_ENABLED, CRON_GRANULARITY } from "@/lib/marta-schedule";
 import { getCommentRules, isCommentDmEnabled } from "@/lib/marta-comment-rules";
 import MartaLivePanel from "./MartaLivePanel";
+import CalendarioMes from "./calendario/CalendarioMes";
 
 export const dynamic = "force-dynamic";
 
-export default async function MartaPage() {
-  const s = await getSession();
+export default async function MartaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const s = await getSessionLocal();
   if (!s) redirect("/login");
   const user = await getUser(s.email);
   if (!user.business) redirect("/onboarding");
   const a = agentBySlug.marta;
+
+  // Pestaña inicial (p. ej. la ruta suelta /dashboard/marta/calendario redirige
+  // aquí con ?tab=calendario para abrir el calendario directamente).
+  const sp = await searchParams;
+  const initialTab = sp?.tab === "calendario" ? "calendario" : undefined;
 
   // Tenant del cliente — single-tenant durante la beta.
   const tenantId = DEFAULT_TENANT_ID;
@@ -57,6 +70,8 @@ export default async function MartaPage() {
         cronDaily={CRON_GRANULARITY === "daily"}
         initialCommentRules={commentRules}
         commentDmEnabled={commentDmEnabled}
+        initialTab={initialTab}
+        calendario={<CalendarioMes tenantId={tenantId} heading={false} />}
       />
     </section>
   );

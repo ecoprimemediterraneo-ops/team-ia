@@ -35,12 +35,26 @@ export type CalendarEntry = {
   imageUrl: string;
   caption: string;
   tema?: string;
+  /**
+   * Etiqueta CORTA del tema (p. ej. "Llamadas perdidas"), la que va en la barra
+   * superior de la imagen. `tema` puede ser una frase larga elegida por el
+   * modelo; sin esta etiqueta, al regenerar la imagen se recortaba a media
+   * palabra ("CUÁNTOS CLIENTES SE PIER").
+   */
+  temaLabel?: string;
   status: CalendarStatus;
   proposedAt?: string;
   publishedAt?: string;
   igMediaId?: string;
   proposalId?: string;            // link a marta-proposals
   errorDetail?: string;
+  /**
+   * Oculto del calendario sin borrar el registro. Se usa para posts ya
+   * PUBLICADOS que el usuario quiere quitar de la vista sin perder el historial
+   * (igMediaId/publishedAt siguen guardados). Los no-publicados se borran de
+   * verdad (removeCalendarEntry), así que este flag es solo para publicados.
+   */
+  hidden?: boolean;
 };
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -161,6 +175,7 @@ export async function scheduleAtDates(
     caption: string;
     imageUrl: string;
     tema?: string;
+    temaLabel?: string;
     mediaType?: ProposalMediaType;
     scheduledAt: string; // ISO (UTC)
   }>,
@@ -174,6 +189,7 @@ export async function scheduleAtDates(
     imageUrl: d.imageUrl,
     caption: d.caption,
     tema: d.tema,
+    temaLabel: d.temaLabel,
     status: "scheduled",
   }));
   const current = await readAll(tenantId);
@@ -240,11 +256,60 @@ export async function markCalendarEntryPublished(
   });
 }
 
+/**
+ * Cambia el CONTENIDO (caption y/o imageUrl) de una entrada manteniendo su fecha
+ * y su estado "scheduled". Para regenerar texto/imagen de un post del calendario.
+ * NO toca una entrada ya publicada (idempotencia: lo publicado no se regenera).
+ */
+export async function actualizarContenidoEntry(
+  tenantId: string,
+  id: string,
+  patch: { caption?: string; imageUrl?: string },
+): Promise<CalendarEntry | null> {
+  const actual = await findEntryById(tenantId, id);
+  if (!actual) return null;
+  if (actual.status === "published") return actual; // no se regenera lo publicado
+  const limpio: Partial<CalendarEntry> = {};
+  if (typeof patch.caption === "string") limpio.caption = patch.caption;
+  if (typeof patch.imageUrl === "string") limpio.imageUrl = patch.imageUrl;
+  return updateEntry(tenantId, id, limpio); // conserva status y scheduledAt
+}
+
 export async function markCalendarEntryRejected(
   tenantId: string,
   id: string,
 ): Promise<CalendarEntry | null> {
   return updateEntry(tenantId, id, { status: "rejected" });
+}
+
+/**
+ * Borra DE VERDAD una entrada del store (la quita del array). Devuelve true si
+ * existía y se eliminó. Pensado para posts NO publicados (scheduled, proposed,
+ * failed, skipped, rejected): al no estar publicados no hay registro que perder.
+ * Para los publicados usa `setCalendarEntryHidden` (conserva el historial).
+ */
+export async function removeCalendarEntry(
+  tenantId: string,
+  id: string,
+): Promise<boolean> {
+  const all = await readAll(tenantId);
+  const quedan = all.filter((e) => e.id !== id);
+  if (quedan.length === all.length) return false; // no existía
+  await writeAll(tenantId, quedan);
+  return true;
+}
+
+/**
+ * Oculta (o vuelve a mostrar) una entrada SIN borrarla. Para posts publicados
+ * que se quieren quitar del calendario conservando el registro. Devuelve la
+ * entrada actualizada o null si no existe.
+ */
+export async function setCalendarEntryHidden(
+  tenantId: string,
+  id: string,
+  hidden: boolean,
+): Promise<CalendarEntry | null> {
+  return updateEntry(tenantId, id, { hidden });
 }
 
 export async function markCalendarEntryFailed(

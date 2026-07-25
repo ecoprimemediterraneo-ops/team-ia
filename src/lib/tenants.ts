@@ -58,6 +58,42 @@ export const PAUTA_DEFECTO: PautaPublicacion = {
   ],
 };
 
+// Identidad visual del negocio para las imágenes que pinta Marta (/api/og/post).
+// Vive DENTRO del tenant (donde ya vive la ficha), no es un store nuevo. Si un
+// tenant no tiene nada guardado, se usa MARCA_DEFECTO, que reproduce EXACTAMENTE
+// los tokens de AI-Team que hay hoy a fuego en /api/og/post → sus posts no cambian.
+// Plantilla de composición de la imagen:
+//   "marcada" = estilo AI-Team (barras negras, caja con borde grueso, esquinas rectas).
+//   "suave"   = neutro tipo Instagram (redondeado, sin borde grueso ni barras negras).
+export type PlantillaMarca = "marcada" | "suave";
+
+export type MarcaVisual = {
+  fondo: string;             // color de fondo (hex)
+  acento: string;            // color de acento (hex)
+  texto: string;             // color de texto (hex)
+  plantilla: PlantillaMarca; // composición
+  cta: string;               // texto de la cinta inferior ("" = sin CTA)
+  logoUrl?: string;          // logo del negocio (URL pública durable)
+};
+
+// OJO: estos valores son los que /api/og/post tiene hoy hardcodeados. No cambiar
+// sin cambiar también el renderizador, o AI-Team dejaría de verse idéntico.
+export const MARCA_DEFECTO: MarcaVisual = {
+  fondo: "#FAF7F0",
+  acento: "#F5C518",
+  texto: "#0A0A0A",
+  plantilla: "marcada",
+  cta: "DIAGNÓSTICO GRATIS · 2 MIN",
+};
+
+// Default para un tenant CLIENTE que aún no ha configurado nada: estilo neutro.
+const MARCA_DEFECTO_CLIENTE: MarcaVisual = { ...MARCA_DEFECTO, plantilla: "suave", cta: "RESERVA TU CITA" };
+
+/** Marca por defecto según el tenant: AI-Team → marcada; cualquier cliente → suave. */
+export function marcaPorDefecto(tenantId: string): MarcaVisual {
+  return tenantId === DEFAULT_TENANT_ID ? { ...MARCA_DEFECTO } : { ...MARCA_DEFECTO_CLIENTE };
+}
+
 export type Tenant = {
   id: string;                              // "tenant_aiteam", "tenant_clinicasonrisa", ...
   name: string;                            // "AI-Team (cuenta fundadora)"
@@ -79,6 +115,9 @@ export type Tenant = {
   // Pauta de publicación del calendario de Marta (días + horas). Opcional:
   // si falta, se usa PAUTA_DEFECTO.
   pautaPublicacion?: PautaPublicacion;
+  // Identidad visual (colores + logo) para las imágenes de Marta. Opcional:
+  // si falta, se usa MARCA_DEFECTO (los tokens de AI-Team).
+  marcaVisual?: MarcaVisual;
 };
 
 const KV_KEY = "tenants";
@@ -246,6 +285,54 @@ export async function savePautaPublicacion(
   const limpia = normalizarPauta(pauta);
   await upsertTenant({ ...t, pautaPublicacion: limpia });
   return limpia;
+}
+
+// -----------------------------------------------------------------------------
+// Identidad visual de Marta (vive dentro del tenant)
+// -----------------------------------------------------------------------------
+
+function esHex(v: unknown): v is string {
+  return typeof v === "string" && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v.trim());
+}
+
+/**
+ * Normaliza una marca. `base` son los valores por defecto a usar cuando falte un
+ * campo (por tenant: AI-Team=marcada, cliente=suave). El `cta` admite cadena
+ * vacía ("" = sin llamada a la acción).
+ */
+export function normalizarMarca(raw: unknown, base: MarcaVisual = MARCA_DEFECTO): MarcaVisual {
+  const m = (raw ?? {}) as Partial<MarcaVisual>;
+  const logo = typeof m.logoUrl === "string" && m.logoUrl.trim() ? m.logoUrl.trim() : undefined;
+  return {
+    fondo: esHex(m.fondo) ? m.fondo!.trim() : base.fondo,
+    acento: esHex(m.acento) ? m.acento!.trim() : base.acento,
+    texto: esHex(m.texto) ? m.texto!.trim() : base.texto,
+    plantilla: m.plantilla === "suave" || m.plantilla === "marcada" ? m.plantilla : base.plantilla,
+    cta: typeof m.cta === "string" ? m.cta.trim().slice(0, 60) : base.cta,
+    ...(logo ? { logoUrl: logo } : {}),
+  };
+}
+
+/** Marca guardada del tenant, o la de por defecto según el tenant (AI-Team marcada, cliente suave). */
+export async function getMarcaVisual(tenantId: string): Promise<MarcaVisual> {
+  const base = marcaPorDefecto(tenantId);
+  const t = await getTenant(tenantId);
+  return t?.marcaVisual ? normalizarMarca(t.marcaVisual, base) : base;
+}
+
+/**
+ * Guarda (fusiona) la marca del tenant. `patch` puede traer solo algunos campos
+ * (p.ej. solo el logo). Lo que falte cae al default del tenant. Devuelve la marca
+ * normalizada o null.
+ */
+export async function saveMarcaVisual(tenantId: string, patch: Partial<MarcaVisual>): Promise<MarcaVisual | null> {
+  const t = await getTenant(tenantId);
+  if (!t) return null;
+  const base = marcaPorDefecto(tenantId);
+  const actual = t.marcaVisual ? normalizarMarca(t.marcaVisual, base) : base;
+  const fusion = normalizarMarca({ ...actual, ...patch }, base);
+  await upsertTenant({ ...t, marcaVisual: fusion });
+  return fusion;
 }
 
 /** Devuelve el sector del agente conversacional del tenant (default vendedor). */

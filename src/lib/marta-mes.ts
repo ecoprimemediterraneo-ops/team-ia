@@ -24,7 +24,7 @@ import { generarCaption } from "./marta-caption";
 import { MARTA_TOPICS, type MartaTopic } from "./marta-topics";
 import { storeImageDurable } from "./marta-image-store";
 import { scheduleAtDates } from "./marta-calendar";
-import { DEFAULT_TENANT_ID, getPautaPublicacion, PAUTA_DEFECTO, type PautaDia } from "./tenants";
+import { DEFAULT_TENANT_ID, getPautaPublicacion, PAUTA_DEFECTO, getMarcaVisual, MARCA_DEFECTO, getTenant, type PautaDia, type MarcaVisual } from "./tenants";
 import type { PostMes } from "./marta-mes-types";
 
 export type { PostMes } from "./marta-mes-types";
@@ -162,28 +162,50 @@ function ganchoDe(caption: string, max = 58): string {
   return (sp > 20 ? corte.slice(0, sp) : corte).replace(/[,;:.\-–]$/, "");
 }
 
+/** Recorta a `max` sin partir palabras (para la barra superior de la imagen). */
+function recortePorPalabras(s: string, max: number): string {
+  const limpio = s.replace(/\s+/g, " ").trim();
+  if (limpio.length <= max) return limpio;
+  const corte = limpio.slice(0, max);
+  const sp = corte.lastIndexOf(" ");
+  return (sp > 8 ? corte.slice(0, sp) : corte).replace(/[,;:.\-–]$/, "");
+}
+
 // -----------------------------------------------------------------------------
 // Imagen con los tokens de marca (reutiliza /api/og/post)
 // -----------------------------------------------------------------------------
 
 /**
- * Renderiza la imagen del post con la plantilla de marca que YA existe
- * (/api/og/post: crema, mostaza #F5C518, barras negras, borde grueso) y la
- * guarda en el image-store de Marta para obtener la URL durable que usa el
- * flujo de publicación.
+ * Renderiza la imagen del post con la plantilla /api/og/post usando los tokens
+ * de marca del NEGOCIO (colores + logo + nombre) y la guarda en el image-store
+ * para obtener la URL durable que usa el flujo de publicación.
+ *
+ * Sin `marca` usa MARCA_DEFECTO (los tokens de AI-Team); sin `nombre`/`handle`
+ * el renderizador usa sus valores por defecto → AI-Team se ve idéntico.
  */
 export async function renderImagenMes(opts: {
   frase: string;
   rol: string;
   baseUrl: string;
-  color?: string;
+  marca?: MarcaVisual;   // colores + logo del tenant
+  nombre?: string;       // nombre de marca (arriba a la derecha)
+  handle?: string;       // texto de la caja central
 }): Promise<{ ok: true; url: string; host: string } | { ok: false; detail: string }> {
+  const marca = opts.marca ?? MARCA_DEFECTO;
   const qs = new URLSearchParams({
     frase: opts.frase,
-    color: opts.color ?? "#F5C518", // mostaza de marca
-    codename: "AI-TEAM",
+    bg: marca.fondo,
+    acento: marca.acento,
+    texto: marca.texto,
+    // Nombre del negocio arriba a la izquierda; "AI-TEAM" solo para la cuenta propia.
+    codename: opts.nombre ? opts.nombre.toUpperCase().slice(0, 22) : "AI-TEAM",
     rol: opts.rol.toUpperCase().slice(0, 24),
   });
+  if (opts.nombre) qs.set("marca", opts.nombre.toUpperCase().slice(0, 22));
+  if (opts.handle) qs.set("handle", opts.handle.toUpperCase().slice(0, 26));
+  if (marca.logoUrl) qs.set("logo", marca.logoUrl);
+  qs.set("plantilla", marca.plantilla);
+  qs.set("cta", marca.cta); // presente aunque sea "" → og respeta el vacío (sin CTA)
   try {
     const r = await fetch(`${opts.baseUrl.replace(/\/$/, "")}/api/og/post?${qs}`, { cache: "no-store" });
     if (!r.ok) return { ok: false, detail: `og/post -> ${r.status}` };
@@ -196,6 +218,41 @@ export async function renderImagenMes(opts: {
   } catch (err) {
     return { ok: false, detail: err instanceof Error ? err.message : String(err) };
   }
+}
+
+/**
+ * Regenera SOLO la imagen de un post ya existente (mismo caption/tema), con la
+ * marca visual + plantilla del tenant, y devuelve la URL DURABLE. Es el MISMO
+ * camino que usa generarMes (marca + gancho + renderImagenMes → storeImageDurable),
+ * así que la nueva imagen sigue viva semanas después igual que las originales.
+ */
+export async function regenerarImagenPost(opts: {
+  tenantId: string;
+  caption: string;
+  tema?: string;
+  /** Etiqueta corta de la barra superior. Si falta (entradas antiguas), se
+   *  recorta `tema` por palabras enteras en vez de partirlo a mitad. */
+  temaLabel?: string;
+  baseUrl: string;
+}): Promise<{ ok: true; url: string } | { ok: false; detail: string }> {
+  const cuentaPropia = opts.tenantId === DEFAULT_TENANT_ID;
+  const marca = await getMarcaVisual(opts.tenantId);
+  let nombre: string | undefined;
+  let handle: string | undefined;
+  if (!cuentaPropia) {
+    const t = await getTenant(opts.tenantId);
+    const nom = (t?.ficha?.nombreNegocio || t?.name || "").trim();
+    if (nom) { nombre = nom; handle = nom; }
+  }
+  const img = await renderImagenMes({
+    frase: ganchoDe(opts.caption),
+    rol: opts.temaLabel?.trim() || recortePorPalabras(opts.tema || "post", 24),
+    baseUrl: opts.baseUrl,
+    marca,
+    nombre,
+    handle,
+  });
+  return img.ok ? { ok: true, url: img.url } : { ok: false, detail: img.detail };
 }
 
 // -----------------------------------------------------------------------------
@@ -298,6 +355,19 @@ export async function generarMes(opts: {
 
   const cuentaPropia = opts.cuentaPropia ?? opts.tenantId === DEFAULT_TENANT_ID;
   const temas = temasDelMes(huecos.length, cuentaPropia);
+
+  // Identidad visual del negocio para las imágenes. Para la cuenta propia de
+  // AI-Team NO pasamos nombre/handle → el renderizador usa sus valores por
+  // defecto ("AI-TEAM" / "AITEAM.MARKETING") y todo se ve idéntico a hoy.
+  const marca = await getMarcaVisual(opts.tenantId);
+  let nombre: string | undefined;
+  let handle: string | undefined;
+  if (!cuentaPropia) {
+    const t = await getTenant(opts.tenantId);
+    const nom = (t?.ficha?.nombreNegocio || t?.name || "").trim();
+    if (nom) { nombre = nom; handle = nom; }
+  }
+
   const posts: PostMes[] = [];
   const errores: string[] = [];
 
@@ -320,6 +390,9 @@ export async function generarMes(opts: {
         frase: ganchoDe(cap.caption),
         rol: topic.label,
         baseUrl: opts.baseUrl,
+        marca,
+        nombre,
+        handle,
       });
       if (!img.ok) {
         errores.push(`Día ${hueco.dia} (${topic.label}): imagen ${img.detail}`);
@@ -354,6 +427,7 @@ export async function generarMes(opts: {
       caption: p.caption,
       imageUrl: p.imageUrl,
       tema: p.tema,
+      temaLabel: p.temaLabel, // etiqueta corta de la barra de la imagen (para regenerarla igual)
       mediaType: "IMAGE" as const,
       scheduledAt: p.scheduledAt,
     })),

@@ -27,28 +27,33 @@ import type { MartaSchedule } from "@/lib/marta-schedule";
 import type { CommentRule, MatchMode } from "@/lib/marta-comment-rules";
 import { MARTA_TOPICS } from "@/lib/marta-topics";
 
-type Tab = "nuevo" | "arranque" | "historial" | "programacion" | "comentarios";
+type Tab = "nuevo" | "arranque" | "historial" | "calendario" | "comentarios";
 
 export default function MartaLivePanel({
   initialProposals,
   enabled,
   defaultRecipient,
-  initialSchedule,
-  directPublishEnabled,
-  cronDaily,
   initialCommentRules,
   commentDmEnabled,
+  calendario,
+  initialTab,
 }: {
   initialProposals: MartaProposal[];
   enabled: boolean;
   defaultRecipient?: string;
-  initialSchedule: MartaSchedule;
-  directPublishEnabled: boolean;
-  cronDaily: boolean;
+  // Del sistema antiguo (ProgramacionBlock, hoy comentado). Se siguen recibiendo del
+  // servidor pero ya no se usan en la interfaz; se dejan por compatibilidad.
+  initialSchedule?: MartaSchedule;
+  directPublishEnabled?: boolean;
+  cronDaily?: boolean;
   initialCommentRules: CommentRule[];
   commentDmEnabled: boolean;
+  /** Calendario del mes (server component) montado como slot en la pestaña "Calendario". */
+  calendario: React.ReactNode;
+  /** Pestaña abierta al entrar (p. ej. "calendario" desde la ruta redirigida). */
+  initialTab?: Tab;
 }) {
-  const [tab, setTab] = useState<Tab>("nuevo");
+  const [tab, setTab] = useState<Tab>(initialTab ?? "nuevo");
 
   return (
     <div className="space-y-5">
@@ -63,12 +68,24 @@ export default function MartaLivePanel({
         </div>
       )}
 
-      <div className="card-hard bg-white p-1 flex gap-1 text-xs font-mono uppercase tracking-widest flex-wrap">
-        <TabBtn id="nuevo" active={tab} setTab={setTab}>Nuevo post</TabBtn>
-        <TabBtn id="programacion" active={tab} setTab={setTab}>Programación</TabBtn>
-        <TabBtn id="comentarios" active={tab} setTab={setTab}>Comentarios → DM</TabBtn>
-        <TabBtn id="arranque" active={tab} setTab={setTab}>Arranque</TabBtn>
-        <TabBtn id="historial" active={tab} setTab={setTab}>Historial</TabBtn>
+      {/* Dos grupos separados: Publicación (posts) vs Interacción (Comentario→DM),
+          que es una capacidad independiente de publicar. */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-black/40 w-24 shrink-0">Publicación</span>
+          <div className="card-hard bg-white p-1 flex gap-1 text-xs font-mono uppercase tracking-widest flex-wrap flex-1">
+            <TabBtn id="nuevo" active={tab} setTab={setTab}>Nuevo post</TabBtn>
+            <TabBtn id="calendario" active={tab} setTab={setTab}>Calendario</TabBtn>
+            <TabBtn id="arranque" active={tab} setTab={setTab}>Arranque</TabBtn>
+            <TabBtn id="historial" active={tab} setTab={setTab}>Historial</TabBtn>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-black/40 w-24 shrink-0">Interacción</span>
+          <div className="card-hard bg-white p-1 flex gap-1 text-xs font-mono uppercase tracking-widest flex-wrap flex-1">
+            <TabBtn id="comentarios" active={tab} setTab={setTab}>Comentarios → DM</TabBtn>
+          </div>
+        </div>
       </div>
 
       {tab === "nuevo" && (
@@ -77,14 +94,9 @@ export default function MartaLivePanel({
           onReviewInApp={() => setTab("historial")}
         />
       )}
-      {tab === "programacion" && (
-        <ProgramacionBlock
-          initialSchedule={initialSchedule}
-          directPublishEnabled={directPublishEnabled}
-          cronDaily={cronDaily}
-          onGenerated={() => setTab("historial")}
-        />
-      )}
+      {/* Pestaña "Calendario": el calendario del mes nuevo, montado como slot
+          (server component) desde la página. Sustituye al ProgramacionBlock viejo. */}
+      {tab === "calendario" && calendario}
       {tab === "comentarios" && (
         <ComentariosBlock
           initialRules={initialCommentRules}
@@ -558,7 +570,10 @@ function ProposalActions({ proposalId }: { proposalId: string }) {
 }
 
 // ============================================================================
-// Programación automática (días fijos → propuesta pendiente para aprobar)
+// [LEGACY] Programación automática (sistema ANTIGUO) — YA NO SE RENDERIZA.
+// Sustituido por la pestaña "Calendario" (calendario del mes nuevo). Se conserva
+// exportado, sin montarse en ninguna pestaña, por si hubiera que consultarlo o
+// reactivarlo; sus server actions siguen en ./actions. No aparece en la interfaz.
 // ============================================================================
 
 const DOW_OPTIONS: { value: number; label: string }[] = [
@@ -571,7 +586,7 @@ const DOW_OPTIONS: { value: number; label: string }[] = [
   { value: 0, label: "Dom" },
 ];
 
-function ProgramacionBlock({
+export function ProgramacionBlock({
   initialSchedule,
   directPublishEnabled,
   cronDaily,
@@ -594,6 +609,12 @@ function ProgramacionBlock({
   const [tema, setTema] = useState<string>(initialSchedule.tema ?? "auto");
   // El modo "directo" está desactivado; solo "avisar" operativo.
   const mode = initialSchedule.mode === "directo" && directPublishEnabled ? "directo" : "avisar";
+
+  // ── CONGELADO (Paso 1 de la unificación) ──────────────────────────────────
+  // Esta Programación es el SISTEMA ANTIGUO. Se sustituye por el calendario nuevo
+  // (/dashboard/marta/calendario). Se deja el código intacto pero SIN poder
+  // guardar ni ejecutar, para que no se pueda reactivar. Reversible: CONGELADO = false.
+  const CONGELADO = true;
 
   function toggleDay(d: number) {
     setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
@@ -633,7 +654,24 @@ function ProgramacionBlock({
       : DOW_OPTIONS.filter((o) => days.includes(o.value)).map((o) => o.label).join(", ");
 
   return (
-    <div className="card-hard bg-white p-5 space-y-5">
+    <div className={`card-hard bg-white p-5 space-y-5 ${CONGELADO ? "opacity-95" : ""}`}>
+      {CONGELADO && (
+        <div className="border-[3px] border-black bg-[color:var(--mustard)] p-4">
+          <div className="font-stencil text-xl leading-none uppercase">⚠ Sistema antiguo — congelado</div>
+          <p className="text-sm text-black/80 mt-2 leading-snug">
+            Esta programación se ha <strong>sustituido por el calendario nuevo</strong>, que además elige la hora por
+            día, sube posts propios y da identidad visual a cada negocio. Aquí ya <strong>no se puede guardar ni
+            ejecutar</strong> (queda solo como referencia).
+          </p>
+          <a
+            href="/dashboard/marta/calendario"
+            className="inline-block mt-3 text-sm font-bold uppercase tracking-widest border-2 border-black bg-black text-[color:var(--mustard)] px-4 py-2 hover:bg-black/80"
+          >
+            Ir al calendario nuevo →
+          </a>
+        </div>
+      )}
+
       <div>
         <div className="font-stencil text-2xl leading-none">Publicación automática</div>
         <p className="text-sm text-black/60 mt-1 leading-snug">
@@ -765,23 +803,27 @@ function ProgramacionBlock({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            disabled={pending}
+            disabled={pending || CONGELADO}
             onClick={guardar}
-            className="btn-mustard text-sm px-6 py-3 disabled:opacity-50"
+            title={CONGELADO ? "Sistema antiguo congelado — usa el calendario nuevo" : undefined}
+            className="btn-mustard text-sm px-6 py-3 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {pending ? "Guardando…" : "Guardar programación"}
           </button>
           <button
             type="button"
-            disabled={running}
+            disabled={running || CONGELADO}
             onClick={ejecutarAhora}
-            className="text-sm font-bold border-2 border-black px-5 py-3 bg-white hover:bg-black/5 disabled:opacity-50"
+            title={CONGELADO ? "Sistema antiguo congelado — usa el calendario nuevo" : undefined}
+            className="text-sm font-bold border-2 border-black px-5 py-3 bg-white hover:bg-black/5 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {running ? "Generando…" : "▶ Ejecutar ahora (probar)"}
           </button>
         </div>
         <p className="text-[11px] text-black/45">
-          «Ejecutar ahora» genera ya mismo el/los post(s) sin esperar al día programado, para que veas el resultado en Historial.
+          {CONGELADO
+            ? "Estos botones están desactivados: la programación automática vive ahora en el calendario nuevo."
+            : "«Ejecutar ahora» genera ya mismo el/los post(s) sin esperar al día programado, para que veas el resultado en Historial."}
         </p>
 
         {msg && (
@@ -824,6 +866,9 @@ function ComentariosBlock({
       )}
 
       <div className="card-hard bg-white p-5 space-y-2">
+        <div className="text-[10px] font-mono uppercase tracking-widest text-black/45">
+          Interacción · independiente de la publicación de posts
+        </div>
         <div className="font-stencil text-2xl leading-none">Comentario → DM automático</div>
         <p className="text-sm text-black/60 leading-snug">
           Cuando alguien comenta una <strong>palabra clave</strong> en uno de tus posts,

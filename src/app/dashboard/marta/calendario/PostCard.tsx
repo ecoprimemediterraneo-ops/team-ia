@@ -5,6 +5,8 @@
 // (servidor), por eso no lleva hooks ni "use client".
 
 import AccionesPost from "./AccionesPost";
+import BorrarPost from "./BorrarPost";
+import { TEMA_MANUAL } from "./types";
 
 const FMT = new Intl.DateTimeFormat("es-ES", {
   timeZone: "Europe/Madrid",
@@ -58,7 +60,12 @@ export default function PostCard({
   const cuando = FMT.format(new Date(scheduledAt));
 
   return (
-    <article className="card-hard bg-white p-3 flex gap-3 items-start">
+    <article className="card-hard bg-white p-3 flex gap-3 items-start relative">
+      {/* Borrar (X) arriba a la derecha — solo para entradas ya guardadas */}
+      {entryId && tenantId && (
+        <BorrarPost entryId={entryId} tenantId={tenantId} estado={estado} />
+      )}
+
       {/* Miniatura */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -70,7 +77,7 @@ export default function PostCard({
       />
 
       <div className="flex-1 min-w-0 space-y-1.5">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap pr-7">
           <span className={`text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 font-bold border-2 ${chip.clase}`}>
             {chip.label}
           </span>
@@ -109,6 +116,7 @@ export default function PostCard({
             defaultFecha={defaultFecha}
             defaultHora={defaultHora}
             estado={estado}
+            esManual={temaLabel === TEMA_MANUAL}
           />
         )}
       </div>

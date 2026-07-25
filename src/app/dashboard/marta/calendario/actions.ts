@@ -7,14 +7,18 @@
 // La generación AUTOMÁTICA (n8n) va por /api/cron/marta-mes y sí exige MARTA_AUTO_ENABLED.
 
 import { headers } from "next/headers";
-import { getSession } from "@/lib/auth";
+// getSessionLocal (no getSession): en prod idéntico (el ramo dev no corre en Vercel),
+// en local admite el bypass del dashboard para poder usar y revisar el calendario.
+import { getSessionLocal } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { DEFAULT_TENANT_ID, savePautaPublicacion, type PautaDia } from "@/lib/tenants";
-import { generarMes, madridInputsToUtc } from "@/lib/marta-mes";
+import { DEFAULT_TENANT_ID, savePautaPublicacion, saveMarcaVisual, type PautaDia, type MarcaVisual } from "@/lib/tenants";
+import { generarMes, madridInputsToUtc, regenerarImagenPost } from "@/lib/marta-mes";
 import { publicarVencidos } from "@/lib/marta-auto-publish";
-import { rescheduleEntry, scheduleAtDates } from "@/lib/marta-calendar";
+import { rescheduleEntry, scheduleAtDates, findEntryById, actualizarContenidoEntry, removeCalendarEntry, setCalendarEntryHidden } from "@/lib/marta-calendar";
 import { generarCaption } from "@/lib/marta-caption";
-import type { PublicarState, AutoState, MejorarResult, CrearManualResult } from "./types";
+import { anthropic, MODELS } from "@/lib/claude";
+import { storeImageDurable } from "@/lib/marta-image-store";
+import { TEMA_MANUAL, type PublicarState, type AutoState, type MejorarResult, type CrearManualResult, type MarcaState, type ColoresResult, type LogoResult } from "./types";
 
 async function baseUrlFromHeaders(): Promise<string> {
   const h = await headers();
@@ -43,7 +47,7 @@ export async function publicarAhoraAction(
   _prev: PublicarState,
   formData: FormData,
 ): Promise<PublicarState> {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) return { ts: Date.now(), variant: "error", mensaje: "No autorizado" };
 
   const entryId = String(formData.get("entryId") || "").trim();
@@ -74,7 +78,7 @@ export async function publicarAhoraAction(
 
 /** Guarda la pauta por negocio (cada día con su hora). Se llama directamente. */
 export async function guardarPautaAction(tenantId: string, dias: PautaDia[]): Promise<AutoState> {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) return { ts: Date.now(), variant: "error", mensaje: "No autorizado" };
   if (!dias.length) return { ts: Date.now(), variant: "error", mensaje: "Marca al menos un día." };
 
@@ -95,7 +99,7 @@ export async function generarMesAction(
   dias: PautaDia[],
   total: number,
 ): Promise<AutoState> {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) return { ts: Date.now(), variant: "error", mensaje: "No autorizado" };
   if (!dias.length) return { ts: Date.now(), variant: "error", mensaje: "Marca al menos un día en la pauta." };
 
@@ -133,7 +137,7 @@ export async function generarMesAction(
 // -----------------------------------------------------------------------------
 
 export async function reprogramarAction(_prev: PublicarState, formData: FormData): Promise<PublicarState> {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) return { ts: Date.now(), variant: "error", mensaje: "No autorizado" };
 
   const entryId = String(formData.get("entryId") || "").trim();
@@ -159,11 +163,112 @@ export async function reprogramarAction(_prev: PublicarState, formData: FormData
 }
 
 // -----------------------------------------------------------------------------
+// REGENERAR CONTENIDO de una entrada (texto o imagen, por separado). Mantiene
+// fecha y estado "scheduled". No toca lo ya publicado (idempotencia).
+// -----------------------------------------------------------------------------
+
+// TEMA_MANUAL marca los posts subidos a mano (crearEntradaManualAction): su
+// imagen es del usuario → no se regenera; su texto sí (se pule).
+
+/** Regenera SOLO el texto (caption) de una entrada. Auto = caption nuevo del mismo
+ *  tema; manual = pule el texto del usuario. Mantiene imagen y fecha. */
+export async function regenerarTextoAction(tenantId: string, entryId: string): Promise<PublicarState> {
+  // getSessionLocal: en prod idéntico a getSession (el ramo dev no corre en Vercel);
+  // en local admite el bypass para poder revisar el regenerado sin magic link.
+  const s = await getSessionLocal();
+  if (!s) return { ts: Date.now(), variant: "error", mensaje: "No autorizado" };
+
+  const tid = tenantId || DEFAULT_TENANT_ID;
+  const entry = await findEntryById(tid, entryId);
+  if (!entry) return { ts: Date.now(), variant: "error", mensaje: "Entrada no encontrada" };
+  if (entry.status === "published") return { ts: Date.now(), variant: "error", mensaje: "Ya publicada: no se regenera." };
+
+  const cuentaPropia = tid === DEFAULT_TENANT_ID;
+  const esManual = (entry.tema || "") === TEMA_MANUAL;
+
+  const cap = esManual
+    ? await generarCaption({
+        tenantId: tid,
+        tema: "Pulir y mejorar el texto del usuario manteniendo su mensaje e intención",
+        contexto: `TEXTO ACTUAL DEL USUARIO (mejóralo sin cambiar su idea):\n${entry.caption}`,
+        cuentaPropia,
+      })
+    : await generarCaption({ tenantId: tid, tema: entry.tema || undefined, cuentaPropia });
+
+  if (!cap.ok) return { ts: Date.now(), variant: "error", mensaje: `No se pudo regenerar el texto (${cap.reason}).` };
+
+  const upd = await actualizarContenidoEntry(tid, entryId, { caption: cap.caption });
+  if (!upd) return { ts: Date.now(), variant: "error", mensaje: "No se pudo guardar." };
+
+  revalidatePath("/dashboard/marta/calendario");
+  return { ts: Date.now(), variant: "ok", mensaje: esManual ? "Texto mejorado." : "Texto regenerado." };
+}
+
+/** Regenera SOLO la imagen (marca + plantilla del tenant, durable). Mantiene texto
+ *  y fecha. NO aplica a posts subidos a mano (su imagen es del usuario). */
+export async function regenerarImagenAction(tenantId: string, entryId: string): Promise<PublicarState> {
+  // getSessionLocal: en prod idéntico a getSession; en local admite el bypass (ver arriba).
+  const s = await getSessionLocal();
+  if (!s) return { ts: Date.now(), variant: "error", mensaje: "No autorizado" };
+
+  const tid = tenantId || DEFAULT_TENANT_ID;
+  const entry = await findEntryById(tid, entryId);
+  if (!entry) return { ts: Date.now(), variant: "error", mensaje: "Entrada no encontrada" };
+  if (entry.status === "published") return { ts: Date.now(), variant: "error", mensaje: "Ya publicada: no se regenera." };
+  if ((entry.tema || "") === TEMA_MANUAL) {
+    return { ts: Date.now(), variant: "error", mensaje: "La imagen de un post subido a mano es tuya; no se regenera." };
+  }
+
+  const res = await regenerarImagenPost({
+    tenantId: tid,
+    caption: entry.caption,
+    tema: entry.tema,
+    temaLabel: entry.temaLabel,
+    baseUrl: await baseUrlFromHeaders(),
+  });
+  if (!res.ok) return { ts: Date.now(), variant: "error", mensaje: `No se pudo regenerar la imagen: ${res.detail}` };
+
+  const upd = await actualizarContenidoEntry(tid, entryId, { imageUrl: res.url });
+  if (!upd) return { ts: Date.now(), variant: "error", mensaje: "No se pudo guardar." };
+
+  revalidatePath("/dashboard/marta/calendario");
+  return { ts: Date.now(), variant: "ok", mensaje: "Imagen regenerada." };
+}
+
+/**
+ * Borra un post del calendario. Los NO publicados (scheduled, proposed, failed,
+ * skipped, rejected) se borran DE VERDAD del store. Los PUBLICADOS no se borran
+ * —se perdería el registro (igMediaId/publishedAt)—: se OCULTAN del calendario
+ * conservando el historial. No afecta a la publicación (dueNow solo mira
+ * "scheduled" y el calendario filtra los ocultos solo en la vista).
+ */
+export async function eliminarPostAction(tenantId: string, entryId: string): Promise<PublicarState> {
+  const s = await getSessionLocal();
+  if (!s) return { ts: Date.now(), variant: "error", mensaje: "No autorizado" };
+
+  const tid = tenantId || DEFAULT_TENANT_ID;
+  const entry = await findEntryById(tid, entryId);
+  if (!entry) return { ts: Date.now(), variant: "error", mensaje: "Entrada no encontrada" };
+
+  if (entry.status === "published") {
+    const upd = await setCalendarEntryHidden(tid, entryId, true);
+    if (!upd) return { ts: Date.now(), variant: "error", mensaje: "No se pudo ocultar." };
+    revalidatePath("/dashboard/marta");
+    return { ts: Date.now(), variant: "ok", mensaje: "Post ocultado del calendario (sigue en el registro como publicado)." };
+  }
+
+  const ok = await removeCalendarEntry(tid, entryId);
+  if (!ok) return { ts: Date.now(), variant: "error", mensaje: "No se encontró el post (¿ya borrado?)." };
+  revalidatePath("/dashboard/marta");
+  return { ts: Date.now(), variant: "ok", mensaje: "Post borrado." };
+}
+
+// -----------------------------------------------------------------------------
 // MEJORAR TEXTO CON IA (opcional, solo al pulsar). Reutiliza generarCaption.
 // -----------------------------------------------------------------------------
 
 export async function mejorarCaptionAction(texto: string, tenantId: string): Promise<MejorarResult> {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) return { ok: false, error: "No autorizado" };
   const limpio = (texto || "").trim();
   if (!limpio) return { ok: false, error: "Escribe primero un texto para mejorar." };
@@ -183,7 +288,7 @@ export async function mejorarCaptionAction(texto: string, tenantId: string): Pro
 // -----------------------------------------------------------------------------
 
 export async function crearEntradaManualAction(formData: FormData): Promise<CrearManualResult> {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) return { ok: false, error: "No autorizado" };
 
   const tenantId = String(formData.get("tenantId") || DEFAULT_TENANT_ID).trim();
@@ -200,9 +305,97 @@ export async function crearEntradaManualAction(formData: FormData): Promise<Crea
   // Mismo store, misma forma y mismo status "scheduled" que las de Marta → el
   // MISMO bucle de publicación (dueNow) la recoge. No hay publicador nuevo.
   await scheduleAtDates(tenantId, [
-    { caption, imageUrl, tema: "Subido a mano", mediaType: "IMAGE", scheduledAt: utc.toISOString() },
+    { caption, imageUrl, tema: TEMA_MANUAL, mediaType: "IMAGE", scheduledAt: utc.toISOString() },
   ]);
 
   revalidatePath("/dashboard/marta/calendario");
   return { ok: true, scheduledAt: utc.toISOString() };
+}
+
+// -----------------------------------------------------------------------------
+// IDENTIDAD VISUAL: guardar la marca del negocio (colores + logo).
+// -----------------------------------------------------------------------------
+
+export async function guardarMarcaAction(tenantId: string, marca: Partial<MarcaVisual>): Promise<MarcaState> {
+  const s = await getSessionLocal();
+  if (!s) return { ts: Date.now(), variant: "error", mensaje: "No autorizado" };
+
+  const guardada = await saveMarcaVisual(tenantId || DEFAULT_TENANT_ID, marca);
+  if (!guardada) return { ts: Date.now(), variant: "error", mensaje: "No se encontró el negocio." };
+
+  revalidatePath("/dashboard/marta/calendario");
+  return { ts: Date.now(), variant: "ok", mensaje: "Identidad visual guardada. Los próximos posts usarán estos colores y logo." };
+}
+
+/**
+ * Sube el logo (ya redimensionado en el cliente) a una URL pública DURABLE que
+ * /api/og/post pueda descargar semanas después. Reutiliza storeImageDurable
+ * (Vercel Blob → si no, store con TTL de 45 días). Conserva el mime (PNG con
+ * transparencia). El logo es pequeño, así que va bien por server action.
+ */
+export async function subirLogoAction(dataUrl: string): Promise<LogoResult> {
+  const s = await getSessionLocal();
+  if (!s) return { ok: false, error: "No autorizado" };
+  const m = dataUrl.match(/^data:(image\/(png|jpeg|webp));base64,(.+)$/);
+  if (!m) return { ok: false, error: "Formato de imagen no válido." };
+  const mime = m[1];
+  const buf = Buffer.from(m[3], "base64");
+  if (!buf.length) return { ok: false, error: "Imagen vacía." };
+  try {
+    const img = await storeImageDurable(buf, mime, await baseUrlFromHeaders());
+    return { ok: true, url: img.url };
+  } catch (err) {
+    return { ok: false, error: `No se pudo subir el logo (${err instanceof Error ? err.message : "error"}).` };
+  }
+}
+
+// -----------------------------------------------------------------------------
+// SACAR COLORES DE UNA CAPTURA (visión de Anthropic). Solo PROPONE: el usuario
+// ajusta a mano. Si falla, no rompe nada; se ponen los colores manualmente.
+// -----------------------------------------------------------------------------
+
+function hexValido(v: unknown): v is string {
+  return typeof v === "string" && /^#([0-9a-fA-F]{6})$/.test(v.trim());
+}
+
+export async function extraerColoresAction(imagenBase64Jpeg: string): Promise<ColoresResult> {
+  const s = await getSessionLocal();
+  if (!s) return { ok: false, error: "No autorizado" };
+  if (!process.env.ANTHROPIC_API_KEY) return { ok: false, error: "Falta ANTHROPIC_API_KEY; pon los colores a mano." };
+
+  // Aceptamos tanto data URL como base64 pelado.
+  const data = imagenBase64Jpeg.replace(/^data:image\/[a-zA-Z]+;base64,/, "").trim();
+  if (!data) return { ok: false, error: "No llegó la imagen." };
+
+  try {
+    const r = await anthropic.messages.create({
+      model: MODELS.strong, // sonnet: con visión
+      max_tokens: 200,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: "image/jpeg", data } },
+            {
+              type: "text",
+              text:
+                "Esta es una captura del Instagram de un negocio. Deduce sus TRES colores de marca dominantes: " +
+                "fondo (el claro de sus publicaciones), acento (su color vivo/principal) y texto (oscuro, para leer). " +
+                'Responde SOLO con un JSON, sin explicaciones: {"fondo":"#RRGGBB","acento":"#RRGGBB","texto":"#RRGGBB"}.',
+            },
+          ],
+        },
+      ],
+    });
+    const raw = r.content.filter((b) => b.type === "text").map((b) => (b as { type: "text"; text: string }).text).join("").trim();
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (!m) return { ok: false, error: "La IA no devolvió colores; ponlos a mano." };
+    const parsed = JSON.parse(m[0]) as { fondo?: string; acento?: string; texto?: string };
+    if (!hexValido(parsed.fondo) || !hexValido(parsed.acento) || !hexValido(parsed.texto)) {
+      return { ok: false, error: "Colores no válidos; ponlos a mano." };
+    }
+    return { ok: true, fondo: parsed.fondo!, acento: parsed.acento!, texto: parsed.texto! };
+  } catch (err) {
+    return { ok: false, error: `No se pudo analizar la imagen (${err instanceof Error ? err.message : "error"}).` };
+  }
 }
