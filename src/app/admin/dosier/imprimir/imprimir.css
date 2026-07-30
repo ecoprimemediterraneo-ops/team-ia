@@ -1,0 +1,139 @@
+/* Estilos de la versión imprimible del dosier.
+   En pantalla se ve como un documento largo; al imprimir, cada documento
+   empieza en página nueva y desaparecen los controles. */
+
+.dosier-print {
+  --texto: #111;
+  --suave: #555;
+  --linea: #ddd9d0;
+  background: #fff;
+  color: var(--texto);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+
+/* ---------- Controles (solo pantalla) ---------- */
+.dosier-print-barra {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  background: #fff;
+  border-bottom: 1px solid var(--linea);
+}
+.dosier-print-volver { font-size: 14px; color: var(--suave); text-decoration: underline; }
+.dosier-print-estado { font-size: 13px; color: var(--suave); }
+.dosier-print-que { font-size: 13px; font-weight: 700; }
+.dosier-print-btn {
+  margin-left: auto;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 10px 18px;
+  border-radius: 6px;
+  background: #f5c518;
+  color: #000;
+  border: 1px solid #d9ac0d;
+  cursor: pointer;
+}
+.dosier-print-btn:disabled { opacity: .5; cursor: default; }
+.dosier-print-aviso {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--suave);
+  background: #faf8f2;
+  border: 1px solid var(--linea);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 16px 0 30px;
+}
+
+/* ---------- Portada ---------- */
+.dosier-print-portada { padding: 40px 0 30px; border-bottom: 2px solid var(--texto); }
+.dosier-print-portada h1 { font-size: 40px; font-weight: 800; margin: 0 0 6px; }
+.dosier-print-portada .sub { font-size: 16px; color: var(--suave); margin: 0 0 24px; }
+.dosier-print-indice { font-size: 16px; line-height: 1.9; padding-left: 22px; margin: 0; }
+
+/* ---------- Documentos ---------- */
+.dosier-print-doc { padding-top: 26px; }
+
+.dosier-print .dosier-prosa { font-size: 15.5px; line-height: 1.7; }
+.dosier-print .dosier-prosa p { margin: 0 0 14px; }
+.dosier-print .dosier-h1 { font-size: 30px; font-weight: 800; margin: 0 0 16px; }
+.dosier-print .dosier-h2 {
+  font-size: 21px; font-weight: 700; margin: 30px 0 12px;
+  padding-top: 10px; border-top: 1px solid var(--linea);
+}
+.dosier-print .dosier-h3 { font-size: 17.5px; font-weight: 700; margin: 22px 0 8px; }
+.dosier-print .dosier-prosa ul,
+.dosier-print .dosier-prosa ol { margin: 0 0 14px; padding-left: 22px; }
+.dosier-print .dosier-prosa li { margin-bottom: 6px; }
+.dosier-print .dosier-prosa a { color: #b31d26; }
+.dosier-print .dosier-prosa blockquote {
+  margin: 16px 0; padding: 10px 14px;
+  border-left: 3px solid #f5c518; background: #faf8f2;
+}
+.dosier-print .dosier-code-inline {
+  background: #f0ede6; padding: 1px 4px; border-radius: 3px;
+  font-size: .88em; font-family: ui-monospace, Menlo, monospace;
+}
+.dosier-print .dosier-prosa pre {
+  background: #f5f3ee; border: 1px solid var(--linea); border-radius: 4px;
+  padding: 10px; font-size: 12px; line-height: 1.5; overflow-x: auto; margin: 0 0 16px;
+}
+.dosier-print .dosier-tabla-wrap {
+  overflow-x: auto; margin: 0 0 18px;
+  border: 1px solid var(--linea); border-radius: 4px;
+}
+.dosier-print .dosier-tabla-wrap table {
+  border-collapse: collapse; width: 100%; font-size: 13px; line-height: 1.45;
+}
+.dosier-print .dosier-tabla-wrap th,
+.dosier-print .dosier-tabla-wrap td {
+  border-bottom: 1px solid var(--linea); padding: 7px 10px;
+  text-align: left; vertical-align: top;
+}
+.dosier-print .dosier-tabla-wrap th { background: #f5f3ee; font-weight: 700; }
+.dosier-print .dosier-diagrama {
+  margin: 20px 0; padding: 12px;
+  border: 1px solid var(--linea); border-radius: 6px; background: #fff;
+}
+.dosier-print .dosier-diagrama svg { width: 100%; height: auto; display: block; }
+
+/* ---------- Impresión ---------- */
+@media print {
+  @page { margin: 16mm 14mm; }
+
+  .dosier-print-barra,
+  .dosier-print-aviso { display: none !important; }
+
+  .dosier-print { max-width: none; padding: 0; }
+
+  /* Cada documento arranca en página nueva. */
+  .dosier-print-doc { break-before: page; page-break-before: always; padding-top: 0; }
+  .dosier-print-portada { break-after: page; page-break-after: always; border-bottom: none; }
+
+  /* Nada que se parta por la mitad si se puede evitar. */
+  .dosier-print .dosier-diagrama,
+  .dosier-print .dosier-tabla-wrap,
+  .dosier-print blockquote,
+  .dosier-print pre { break-inside: avoid; page-break-inside: avoid; }
+
+  .dosier-print .dosier-h1,
+  .dosier-print .dosier-h2,
+  .dosier-print .dosier-h3 { break-after: avoid; page-break-after: avoid; }
+
+  /* Las tablas anchas no pueden hacer scroll en papel: se encogen. */
+  .dosier-print .dosier-tabla-wrap { overflow: visible; }
+  .dosier-print .dosier-tabla-wrap table { font-size: 10.5px; }
+  .dosier-print .dosier-tabla-wrap th,
+  .dosier-print .dosier-tabla-wrap td { padding: 5px 7px; }
+
+  .dosier-print .dosier-prosa { font-size: 11.5pt; line-height: 1.5; }
+  .dosier-print .dosier-prosa a { text-decoration: none; color: #000; }
+}

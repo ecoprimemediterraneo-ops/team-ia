@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import SergioPanel from "@/components/admin/SergioPanel";
-import { MOCK_COMPETITORS } from "@/lib/sergio";
+import { leerCompetidoresVigilados } from "@/lib/sergio-vigilancia";
+
+export const dynamic = "force-dynamic";
 
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
 
@@ -12,8 +14,9 @@ export default async function SergioPage() {
     return <div className="p-8 text-center">🔒 Solo founder</div>;
   }
 
-  const sectors = [...new Set(MOCK_COMPETITORS.map((c) => c.sector))].sort();
-  const cities = [...new Set(MOCK_COMPETITORS.map((c) => c.city))].sort();
+  // Las webs vigiladas se leen aquí, en el servidor, y bajan ya cargadas al
+  // panel. Si no hay ninguna, el panel enseña el estado vacío honesto.
+  const vig = await leerCompetidoresVigilados();
 
   return (
     <div className="min-h-screen bg-[color:var(--cream)] p-6">
@@ -35,7 +38,11 @@ export default async function SergioPage() {
           <div className="text-white/40 text-xs mt-2">Sprint 1 activo: scraping web con Firecrawl · Sprint 2: análisis Claude + alertas</div>
         </div>
 
-        <SergioPanel sectors={sectors} cities={cities} />
+        <SergioPanel
+          inicial={vig.competidores}
+          hayFuentesInicial={vig.hayFuentes}
+          motivoInicial={vig.motivo}
+        />
       </div>
     </div>
   );

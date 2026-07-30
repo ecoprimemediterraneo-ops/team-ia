@@ -14,6 +14,7 @@ import { publishToInstagram } from "./marta-publish";
 import { markProposalPublished, type MartaProposal } from "./marta-proposals";
 import { findEntryByProposalId, markCalendarEntryPublished } from "./marta-calendar";
 import { closeRoute } from "./wa-route";
+import { logEvent, makeEventId } from "./event-log";
 
 export type PublishFlowResult =
   | { ok: true; igMediaId: string; permalink?: string }
@@ -45,10 +46,43 @@ export async function publishProposal(proposal: MartaProposal): Promise<PublishF
 
     await markProposalPublished(proposal, pub.igMediaId, permalink);
     // Si la propuesta venía de una entrada del calendario, márcala publicada.
+    let calEntryId: string | undefined;
     try {
       const calEntry = await findEntryByProposalId(proposal.tenantId, proposal.id);
-      if (calEntry) await markCalendarEntryPublished(proposal.tenantId, calEntry.id, pub.igMediaId);
+      if (calEntry) {
+        calEntryId = calEntry.id;
+        await markCalendarEntryPublished(proposal.tenantId, calEntry.id, pub.igMediaId);
+      }
     } catch { /* noop */ }
+
+    // Registro para el informe mensual (sección "contenido publicado"). Este es
+    // el TERCER camino que publica de verdad, además del cron del calendario y
+    // del botón "Publicar ahora" (los dos pasan por marta-auto-publish): aquí
+    // llega lo que el cliente aprueba por WhatsApp o desde el panel. Sin esto,
+    // el informe contaría de menos.
+    //
+    // El id usa la entrada del calendario cuando existe — el MISMO id que
+    // escribiría marta-auto-publish — así que si alguna vez los dos caminos
+    // tocaran el mismo post, el log lo deduplica en vez de contarlo dos veces.
+    try {
+      await logEvent(proposal.tenantId, {
+        id: makeEventId("post_published", proposal.tenantId, calEntryId || proposal.id),
+        type: "post_published",
+        channel: "marta",
+        meta: {
+          entryId: calEntryId,
+          proposalId: proposal.id,
+          igMediaId: pub.igMediaId,
+          permalink,
+          tema: proposal.tema,
+          mediaType: proposal.mediaType,
+          imageUrl: proposal.imageUrl,
+          caption: proposal.caption.slice(0, 300),
+        },
+      });
+    } catch (err) {
+      console.error("[marta-publish-flow] no se pudo registrar post_published:", err);
+    }
     // Cierra la sesión de ruteo (si la había). Inocuo si el número está vacío.
     if (proposal.recipientWhatsapp) await closeRoute(proposal.recipientWhatsapp);
 

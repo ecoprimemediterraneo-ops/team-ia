@@ -23,7 +23,13 @@ export type EventType =
   | "handoff_human"
   | "review_in"
   | "review_replied"
-  | "orchestrator_decision";
+  | "orchestrator_decision"
+  // Marta publicó un post en Instagram (post/reel/story). Lo escribe el ÚNICO
+  // punto donde se publica de verdad: `publicarEntrada` en marta-auto-publish,
+  // que sirve tanto al cron (/api/cron/marta-calendar-publicar) como al botón
+  // "Publicar ahora" del panel. Queda en el bucket del mes de publicación, con
+  // el permalink en meta → lo consume la sección "contenido" del informe.
+  | "post_published";
 
 export type EventChannel =
   | "pablo"
@@ -175,6 +181,7 @@ export async function getMonthCounts(
     review_in: 0,
     review_replied: 0,
     orchestrator_decision: 0,
+    post_published: 0,
   };
   for (const e of events) {
     out[e.type] = (out[e.type] ?? 0) + 1;

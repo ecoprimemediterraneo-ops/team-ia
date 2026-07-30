@@ -303,6 +303,28 @@ export async function saveBusiness(b: BusinessBooking): Promise<BusinessBooking>
   await writeConfigs(all);
   return all[b.slug];
 }
+/**
+ * Negocios de un TENANT. Es la forma correcta de resolver qué ve un panel.
+ *
+ * `getBusinessesForOwner` (abajo) resuelve por email de calendario, y eso tiene
+ * un agujero: `resolveCalendarEmail` cae al email del fundador cuando el negocio
+ * no declara calendario propio, así que el panel de un cliente podía acabar
+ * enseñando los negocios del fundador. Pasó de verdad: el panel del despacho de
+ * abogados mostraba los servicios de un centro de belleza.
+ *
+ * Filtrando por `tenantId` eso es imposible: un negocio pertenece a un tenant y
+ * a uno solo.
+ */
+export async function getBusinessesForTenant(tenantId: string): Promise<BusinessBooking[]> {
+  const all = Object.values(await readConfigs());
+  return all.filter((b) => b.tenantId === tenantId);
+}
+
+/**
+ * ⚠️ Resuelve por email del calendario. NO usar para decidir qué ve un panel:
+ * usa `getBusinessesForTenant`. Se mantiene porque el email de calendario sigue
+ * siendo la forma de saber a quién avisar de una cita.
+ */
 export async function getBusinessesForOwner(email: string): Promise<BusinessBooking[]> {
   const all = Object.values(await readConfigs());
   const out: BusinessBooking[] = [];

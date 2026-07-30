@@ -26,6 +26,7 @@ import { logEvent, makeEventId, getMonthEvents, monthKey } from "@/lib/event-log
 import { resolveTenantFromMeta, getTenantSector } from "@/lib/tenants";
 import { getFicha, fichaToPromptContext } from "@/lib/ficha";
 import { buildSectorSystem, getSectorPrompt } from "@/lib/sector-prompts";
+import { resolverPersona } from "@/lib/persona";
 import {
   findPendingProposalByWhatsapp,
   markProposalRejected,
@@ -65,6 +66,63 @@ async function safeLogEvent(...args: Parameters<typeof logEvent>): Promise<void>
   } catch (err) {
     console.error("[pablo/webhook] event log error:", err);
   }
+}
+
+/**
+ * REGISTRA UN INTERCAMBIO COMPLETO: lo que entró y lo que se contestó.
+ *
+ * ⚠️ ESTA ES LA ÚNICA FORMA CORRECTA DE REGISTRAR UNA CONVERSACIÓN DE PABLO.
+ * Cualquier camino que responda al cliente TIENE que llamar aquí antes de su
+ * `continue`. Si no, el mensaje se ve en WhatsApp pero NO en el panel.
+ *
+ * Ese fue exactamente el fallo que hubo: el registro vivía solo al final del
+ * flujo normal, y los cinco interceptores (Rocío, Marta, cancelación, hueco
+ * ocupado, datos incompletos) contestaban y saltaban con `continue`, así que su
+ * conversación nunca llegaba al event-log. En el panel parecía que Pablo no
+ * había hablado con nadie.
+ *
+ * Guarda también el TEXTO (recortado). Sin el texto, el event-log sabe que hubo
+ * un mensaje pero no cuál, y la bandeja de conversaciones del panel no se puede
+ * construir.
+ */
+async function registrarIntercambio(opts: {
+  tenantId: string;
+  msgId: string;
+  from: string;
+  nombre?: string;
+  entrante: string;
+  respuesta?: string;
+  rxTs: string;
+  /** De dónde salió la respuesta. Va al log para poder diagnosticar sin adivinar. */
+  via: string;
+}): Promise<void> {
+  const { tenantId, msgId, from, nombre, entrante, respuesta, rxTs, via } = opts;
+  const recorta = (t: string) => t.replace(/\s+/g, " ").trim().slice(0, 600);
+
+  await safeLogEvent(tenantId, {
+    id: makeEventId("message_in", "pablo", msgId),   // dedup por message_id de Meta
+    ts: rxTs,
+    type: "message_in",
+    channel: "pablo",
+    senderId: from,
+    meta: { texto: recorta(entrante), ...(nombre ? { nombre } : {}), via },
+  });
+
+  if (respuesta) {
+    await safeLogEvent(tenantId, {
+      id: makeEventId("message_out", "pablo", msgId),
+      type: "message_out",
+      channel: "pablo",
+      senderId: from,
+      // latencyMs alimenta el KPI de tiempo de respuesta del panel.
+      meta: { texto: recorta(respuesta), latencyMs: Date.now() - Date.parse(rxTs), via },
+    });
+  }
+
+  console.log(
+    `[pablo/webhook] LOG tenant=${tenantId} from=${from} via=${via} ` +
+      `in=${entrante.length}ch out=${respuesta ? `${respuesta.length}ch` : "(sin respuesta)"}`,
+  );
 }
 
 // Idempotencia por id de mensaje de Meta. WhatsApp Cloud API REINTENTA la
@@ -202,6 +260,13 @@ export async function POST(req: Request) {
         // Resolver tenant a partir del phone_number_id del receptor (nuestro número).
         const phoneNumberId = value.metadata?.phone_number_id;
         const tenantId = await resolveTenantFromMeta({ whatsappPhoneNumberId: phoneNumberId });
+        // Diagnóstico: si el panel no ve la conversación, lo primero es saber en
+        // QUÉ tenant se está escribiendo. `resolveTenantFromMeta` cae al tenant
+        // por defecto cuando el phone_number_id no coincide con ninguno, y eso
+        // es indistinguible de un acierto si no se registra aquí.
+        console.log(
+          `[pablo/webhook] tenant resuelto=${tenantId} desde phone_number_id=${phoneNumberId ?? "(ausente)"}`,
+        );
 
         const messages = value.messages ?? [];
         const contacts = value.contacts ?? [];
@@ -230,6 +295,17 @@ export async function POST(req: Request) {
           console.log(
             `[pablo/webhook] RX from=${from} name=${customerName ?? "?"} text="${text}"`,
           );
+
+          // Recuerda lo ÚLTIMO que se le ha dicho al cliente en este mensaje.
+          // Los interceptores de Rocío y Marta responden desde muchas ramas
+          // distintas; en vez de registrar en cada una (y olvidarse en la
+          // siguiente que se añada), se envía por aquí y al salir se registra lo
+          // que quedó apuntado.
+          let ultimaRespuesta: string | undefined;
+          const responder = async (texto: string) => {
+            ultimaRespuesta = texto;
+            return sendWhatsAppText(from, texto);
+          };
 
           // === SESIÓN DE RUTEO ===
           // Si este número está en mitad de un flujo con un agente, sus
@@ -262,17 +338,22 @@ export async function POST(req: Request) {
                     channel: "rocio",
                     meta: { rating: rocioP.rating },
                   });
-                  await sendWhatsAppText(from, "¡Publicado en Google! ⭐ La respuesta ya está visible.");
+                  await responder("¡Publicado en Google! ⭐ La respuesta ya está visible.");
                 } else {
                   console.error(`[pablo/webhook] Rocio reply falló: ${r.reason} ${r.detail}`);
-                  await sendWhatsAppText(from, "Recibí tu OK, pero Google me ha rechazado la respuesta. Lo revisamos y volvemos a intentarlo.");
+                  await responder("Recibí tu OK, pero Google me ha rechazado la respuesta. Lo revisamos y volvemos a intentarlo.");
                 }
               } else if (cls.intent === "rechazar") {
                 await markRocioRejected(rocioP);
-                await sendWhatsAppText(from, "Sin problema, descartado 👌");
+                await responder("Sin problema, descartado 👌");
               } else {
-                await sendWhatsAppText(from, "Vale, ¿cómo quieres que reformule la respuesta a la reseña?");
+                await responder("Vale, ¿cómo quieres que reformule la respuesta a la reseña?");
               }
+              // También se registra: es una conversación real por WhatsApp.
+              await registrarIntercambio({
+                tenantId, msgId: msg.id, from, nombre: customerName,
+                entrante: text, respuesta: ultimaRespuesta, rxTs, via: "aprobacion_rocio",
+              });
               continue;
             }
           } catch (err) {
@@ -308,17 +389,15 @@ export async function POST(req: Request) {
                   const ack = pub.permalink
                     ? `¡Publicado! 🎉\n\nVer post: ${pub.permalink}`
                     : `¡Publicado! 🎉`;
-                  await sendWhatsAppText(from, ack);
+                  await responder(ack);
                   // publishProposal ya cerró la sesión de ruteo.
                 } else if (pub.kind === "disabled") {
-                  await sendWhatsAppText(
-                    from,
+                  await responder(
                     "Recibí tu OK, pero la publicación está desactivada ahora mismo. Te aviso en cuanto se reactive.",
                   );
                 } else {
                   console.error(`[pablo/webhook] publish falló: ${pub.detail}`);
-                  await sendWhatsAppText(
-                    from,
+                  await responder(
                     "Recibí tu OK, pero Instagram me ha rechazado la publicación. Lo revisamos y volvemos a intentarlo.",
                   );
                 }
@@ -330,15 +409,13 @@ export async function POST(req: Request) {
                   if (calEntry) await markCalendarEntryRejected(proposal.tenantId, calEntry.id);
                 } catch { /* noop */ }
                 await closeRoute(from); // flujo terminado
-                await sendWhatsAppText(
-                  from,
+                await responder(
                   "Sin problema, descartado 👌 Cuando quieras otra propuesta me dices.",
                 );
               } else if (!(cls.changeFoto ?? false) && !(cls.changeCaption ?? false)) {
                 // feedback_general SIN cambio concreto → pedir aclaración (no
                 // regenerar a ciegas). La sesión sigue activa con Marta.
-                await sendWhatsAppText(
-                  from,
+                await responder(
                   "Vale 👍 Dime exactamente qué cambio: la foto, el texto, o ambos — y qué quieres distinto.",
                 );
                 await openRoute(from, "marta", proposal.id);
@@ -346,7 +423,7 @@ export async function POST(req: Request) {
                 // === CAMBIOS: regenerar DE VERDAD (foto y/o texto) ===
                 const changeFoto = cls.changeFoto ?? (cls.intent === "cambiar_foto");
                 const changeCaption = cls.changeCaption ?? (cls.intent === "cambiar_caption");
-                await sendWhatsAppText(from, "Vale, lo rehago con esos cambios… dame un momento 🎨");
+                await responder("Vale, lo rehago con esos cambios… dame un momento 🎨");
                 const regen = await regenerateProposal({
                   proposal,
                   changeFoto,
@@ -361,33 +438,34 @@ export async function POST(req: Request) {
                   const partes = [regen.changedFoto ? "imagen" : null, regen.changedCaption ? "texto" : null]
                     .filter(Boolean)
                     .join(" y ");
-                  await sendWhatsAppText(
-                    from,
+                  await responder(
                     `Aquí tienes la nueva versión${partes ? ` (${partes})` : ""}. ¿La publico? Responde OK o dime qué más cambio.`,
                   );
                   await openRoute(from, "marta", regen.proposal.id); // sigue el flujo
                 } else if (regen.kind === "limit") {
-                  await sendWhatsAppText(
-                    from,
+                  await responder(
                     `Llevamos ${MAX_REGEN} versiones 😅 Para no marear, dime "ok" para publicar la última o te llamo y lo cerramos juntos.`,
                   );
                   await openRoute(from, "marta", proposal.id);
                 } else if (regen.kind === "needs_video") {
-                  await sendWhatsAppText(
-                    from,
+                  await responder(
                     "Para cambiar el vídeo, pásame el MP4 nuevo (vertical 9:16) y lo preparo. El texto sí puedo reescribirlo si me dices cómo.",
                   );
                   await openRoute(from, "marta", proposal.id);
                 } else {
                   console.error(`[pablo/webhook] regen falló: ${regen.detail}`);
-                  await sendWhatsAppText(
-                    from,
+                  await responder(
                     "Uy, se me atascó al rehacerlo. Dime otra vez qué cambias y lo intento de nuevo.",
                   );
                   await openRoute(from, "marta", proposal.id);
                 }
               }
-              // Saltamos el flujo normal de Pablo para este mensaje.
+              // Saltamos el flujo normal de Pablo para este mensaje, pero SIN
+              // saltarnos el registro: esta también es una conversación real.
+              await registrarIntercambio({
+                tenantId, msgId: msg.id, from, nombre: customerName,
+                entrante: text, respuesta: ultimaRespuesta, rxTs, via: "aprobacion_marta",
+              });
               continue;
             }
           } catch (err) {
@@ -418,7 +496,12 @@ export async function POST(req: Request) {
                 await sendWhatsAppText(from, resp);
                 await appendTurn("pablo", from, "user", text, customerName);
                 await appendTurn("pablo", from, "assistant", resp, customerName);
-                await safeLogEvent(tenantId, { id: makeEventId("message_in", "pablo", msg.id), ts: rxTs, type: "message_in", channel: "pablo", senderId: from });
+                // Antes aquí solo se registraba la ENTRADA: la respuesta de Pablo
+                // se perdía y el panel mostraba media conversación.
+                await registrarIntercambio({
+                  tenantId, msgId: msg.id, from, nombre: customerName,
+                  entrante: text, respuesta: resp, rxTs, via: "cancelacion",
+                });
                 continue;
               }
             } catch (err) {
@@ -469,35 +552,37 @@ export async function POST(req: Request) {
               await sendWhatsAppText(from, ack);
               await appendTurn("pablo", from, "user", text, customerName);
               await appendTurn("pablo", from, "assistant", ack, customerName);
-              await safeLogEvent(tenantId, {
-                id: makeEventId("message_in", "pablo", msg.id),
-                ts: rxTs,
-                type: "message_in",
-                channel: "pablo",
-                senderId: from,
-              });
-              await safeLogEvent(tenantId, {
-                id: makeEventId("message_out", "pablo", msg.id),
-                type: "message_out",
-                channel: "pablo",
-                senderId: from,
-                meta: { latencyMs: Date.now() - Date.parse(rxTs) },
+              // Aquí sí se registraba, pero sin el texto: en el panel salía que
+              // hubo mensajes y no cuáles. Ahora va por el mismo sitio que el resto.
+              await registrarIntercambio({
+                tenantId, msgId: msg.id, from, nombre: customerName,
+                entrante: text, respuesta: ack, rxTs, via: "agenda_cita_creada",
               });
               continue;
             }
             if (agRes.kind === "slot_taken") {
               const suggested = agRes.suggested ? `\n\nEse hueco está ocupado. ¿Te encajaría el ${formatStartHumanES(agRes.suggested)}?` : `\n\nEse hueco está ocupado. ¿Te encajaría otra hora ese día?`;
-              await sendWhatsAppText(from, `Vale, lo intento agendar.${suggested}`);
+              const respSlot = `Vale, lo intento agendar.${suggested}`;
+              await sendWhatsAppText(from, respSlot);
               await appendTurn("pablo", from, "user", text, customerName);
               await appendTurn("pablo", from, "assistant", `Slot ocupado, propuesta: ${agRes.suggested ?? "—"}`, customerName);
+              await registrarIntercambio({
+                tenantId, msgId: msg.id, from, nombre: customerName,
+                entrante: text, respuesta: respSlot, rxTs, via: "agenda_hueco_ocupado",
+              });
               continue;
             }
             if (agRes.kind === "incomplete") {
               const q = missingFieldsToQuestion(agRes.missing);
               if (q) {
-                await sendWhatsAppText(from, `Perfecto, te agendo cita. ${q}`);
+                const respInc = `Perfecto, te agendo cita. ${q}`;
+                await sendWhatsAppText(from, respInc);
                 await appendTurn("pablo", from, "user", text, customerName);
                 await appendTurn("pablo", from, "assistant", q, customerName);
+                await registrarIntercambio({
+                  tenantId, msgId: msg.id, from, nombre: customerName,
+                  entrante: text, respuesta: respInc, rxTs, via: "agenda_faltan_datos",
+                });
                 continue;
               }
             }
@@ -514,15 +599,24 @@ export async function POST(req: Request) {
           const conv = await getConversation("pablo", from);
           const isNew = !conv || conv.turns.length === 0;
 
-          // Generar respuesta con Claude usando el prompt del SECTOR del tenant
-          // (dental / estetica / vendedor) + el contexto de su ficha.
+          // Prompt de Pablo, compuesto EN ESTE MOMENTO con el perfil de sector del
+          // tenant + la identidad de su negocio. Es lo que hace que el mismo mensaje
+          // suene distinto en un salón y en un despacho de abogados.
+          //
+          // Excepción: la cuenta comercial de AI-Team (sector null) sigue con el
+          // prompt de venta de siempre — no es un negocio de cliente.
           let sectorSystem = PABLO_SYSTEM;
           try {
-            const sector = await getTenantSector(tenantId);
-            const ficha = await getFicha(tenantId);
-            sectorSystem = buildSectorSystem(sector, ficha ? fichaToPromptContext(ficha) : undefined);
+            const persona = await resolverPersona({ tenantId, agente: "pablo", canal: "whatsapp" });
+            if (persona.sector) {
+              sectorSystem = persona.system;
+            } else {
+              const sector = await getTenantSector(tenantId);
+              const ficha = await getFicha(tenantId);
+              sectorSystem = buildSectorSystem(sector, ficha ? fichaToPromptContext(ficha) : undefined);
+            }
           } catch (err) {
-            console.error("[pablo/webhook] no se pudo resolver prompt de sector, uso default:", err);
+            console.error("[pablo/webhook] no se pudo componer la persona, uso default:", err);
           }
           const reply = await generateReply(text, customerName, isNew, conv, sectorSystem);
           console.log(`[pablo/webhook] AI reply: "${reply}"`);
@@ -535,20 +629,10 @@ export async function POST(req: Request) {
           await appendTurn("pablo", from, "user", text, customerName);
           await appendTurn("pablo", from, "assistant", reply, customerName);
 
-          // Eventos del informe mensual (silenciosos ante fallos).
-          await safeLogEvent(tenantId, {
-            id: makeEventId("message_in", "pablo", msg.id), // dedup por message_id de Meta
-            ts: rxTs,
-            type: "message_in",
-            channel: "pablo",
-            senderId: from,
-          });
-          await safeLogEvent(tenantId, {
-            id: makeEventId("message_out", "pablo", msg.id),
-            type: "message_out",
-            channel: "pablo",
-            senderId: from,
-            meta: { latencyMs: Date.now() - Date.parse(rxTs) },
+          // Eventos del informe mensual y de la bandeja (silenciosos ante fallos).
+          await registrarIntercambio({
+            tenantId, msgId: msg.id, from, nombre: customerName,
+            entrante: text, respuesta: reply, rxTs, via: "ia",
           });
           console.log(
             `[pablo/webhook] TX result:`,

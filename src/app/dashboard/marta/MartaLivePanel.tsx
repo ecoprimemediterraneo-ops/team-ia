@@ -32,7 +32,6 @@ type Tab = "nuevo" | "arranque" | "historial" | "calendario" | "comentarios";
 export default function MartaLivePanel({
   initialProposals,
   enabled,
-  defaultRecipient,
   initialCommentRules,
   commentDmEnabled,
   calendario,
@@ -40,6 +39,8 @@ export default function MartaLivePanel({
 }: {
   initialProposals: MartaProposal[];
   enabled: boolean;
+  // defaultRecipient: lo usaba el NuevoPostBlock (hoy legacy, no montado). Se sigue
+  // aceptando por compatibilidad pero ya no se destructura aquí.
   defaultRecipient?: string;
   // Del sistema antiguo (ProgramacionBlock, hoy comentado). Se siguen recibiendo del
   // servidor pero ya no se usan en la interfaz; se dejan por compatibilidad.
@@ -53,7 +54,7 @@ export default function MartaLivePanel({
   /** Pestaña abierta al entrar (p. ej. "calendario" desde la ruta redirigida). */
   initialTab?: Tab;
 }) {
-  const [tab, setTab] = useState<Tab>(initialTab ?? "nuevo");
+  const [tab, setTab] = useState<Tab>(initialTab ?? "calendario");
 
   return (
     <div className="space-y-5">
@@ -68,34 +69,20 @@ export default function MartaLivePanel({
         </div>
       )}
 
-      {/* Dos grupos separados: Publicación (posts) vs Interacción (Comentario→DM),
-          que es una capacidad independiente de publicar. */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-black/40 w-24 shrink-0">Publicación</span>
-          <div className="card-hard bg-white p-1 flex gap-1 text-xs font-mono uppercase tracking-widest flex-wrap flex-1">
-            <TabBtn id="nuevo" active={tab} setTab={setTab}>Nuevo post</TabBtn>
-            <TabBtn id="calendario" active={tab} setTab={setTab}>Calendario</TabBtn>
-            <TabBtn id="arranque" active={tab} setTab={setTab}>Arranque</TabBtn>
-            <TabBtn id="historial" active={tab} setTab={setTab}>Historial</TabBtn>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-black/40 w-24 shrink-0">Interacción</span>
-          <div className="card-hard bg-white p-1 flex gap-1 text-xs font-mono uppercase tracking-widest flex-wrap flex-1">
-            <TabBtn id="comentarios" active={tab} setTab={setTab}>Comentarios → DM</TabBtn>
-          </div>
-        </div>
+      {/* Una sola fila de pestañas, todas del mismo tamaño y estilo. Comentarios → DM
+          (interacción) es un botón más de la fila, no un bloque aparte. */}
+      {/* "Nuevo post" se fusionó en "Subir un post propio" (dentro de Calendario de
+          posts) → ya no aparece en la barra. NuevoPostBlock queda como legacy abajo. */}
+      <div className="card-hard bg-white p-1 flex gap-1 text-xs font-mono uppercase tracking-widest flex-wrap">
+        <TabBtn id="calendario" active={tab} setTab={setTab}>Calendario de posts</TabBtn>
+        <TabBtn id="arranque" active={tab} setTab={setTab}>Empezar cuenta</TabBtn>
+        <TabBtn id="historial" active={tab} setTab={setTab}>Historial</TabBtn>
+        <TabBtn id="comentarios" active={tab} setTab={setTab}>Comentarios → DM</TabBtn>
       </div>
 
-      {tab === "nuevo" && (
-        <NuevoPostBlock
-          defaultRecipient={defaultRecipient}
-          onReviewInApp={() => setTab("historial")}
-        />
-      )}
       {/* Pestaña "Calendario": el calendario del mes nuevo, montado como slot
-          (server component) desde la página. Sustituye al ProgramacionBlock viejo. */}
+          (server component) desde la página. La creación de posts (antes "Nuevo
+          post") vive ahora dentro, en "Subir un post propio". */}
       {tab === "calendario" && calendario}
       {tab === "comentarios" && (
         <ComentariosBlock
@@ -135,10 +122,13 @@ function TabBtn({
 }
 
 // ============================================================================
-// Nuevo post / reel / story
+// [LEGACY] Nuevo post / reel / story — YA NO SE RENDERIZA.
+// Su función se fusionó en "Subir un post propio" (SubirPost.tsx), dentro de
+// Calendario de posts, con las mismas opciones (tipo, URL externa, tema, detalles,
+// describe la foto). Se conserva exportado, sin montarse en ninguna pestaña.
 // ============================================================================
 
-function NuevoPostBlock({
+export function NuevoPostBlock({
   defaultRecipient,
   onReviewInApp,
 }: {

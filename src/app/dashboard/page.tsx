@@ -3,7 +3,11 @@ import { getSession } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import { agents, agentBySlug, type AgentSlug } from "@/lib/agents";
 import { getFeed } from "@/lib/feed";
-import { DEFAULT_TENANT_ID } from "@/lib/tenants";
+import { contextoPanelODefecto } from "@/lib/panel-contexto";
+import { calcularKpis } from "@/lib/kpis-sector";
+import PorQueEstePanel from "@/components/PorQueEstePanel";
+
+const cap = (t: string) => (t ? t[0].toUpperCase() + t.slice(1) : t);
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -43,8 +47,13 @@ export default async function DashboardHome() {
     return sum + (match ? parseInt(match[1]) : 1);
   }, 0);
 
+  // Perfil de sector: decide con qué KPIs abre el panel y con qué palabras habla.
+  const ctx = await contextoPanelODefecto();
+  const v = ctx.vocabulario;
+  const kpis = await calcularKpis(ctx.tenantId, ctx.perfil);
+
   // Feed real del event-log (este mes + anterior) — agenda + Pablo + Marta + Eva + Rocío
-  const feed = await getFeed(DEFAULT_TENANT_ID, 12);
+  const feed = await getFeed(ctx.tenantId, 12);
   const recentActivity = feed.entries;
 
   // Contadores: combinamos legacy (contacts/activity/stats) con event-log.
@@ -68,7 +77,7 @@ export default async function DashboardHome() {
         <div className="brick absolute inset-0 opacity-30" />
         <div className="relative p-5 flex items-center gap-5 flex-wrap">
           <div className="flex -space-x-3">
-            {agents.map((a) => (
+            {(ctx.sector ? ctx.perfil.agentes.map((sl) => agents.find((x) => x.slug === sl)!).filter(Boolean) : agents).map((a) => (
               <div
                 key={a.slug}
                 className="relative w-14 h-14 border-[3px] border-black overflow-hidden shrink-0"
@@ -84,24 +93,66 @@ export default async function DashboardHome() {
             <div className="flex items-center gap-2 mb-1 text-xs font-mono">
               <span className="bg-black text-[color:var(--mustard)] px-2 py-0.5 font-bold tracking-widest">PANEL</span>
               <span className="border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-0.5 font-bold tracking-widest hidden sm:inline">TU CUENTA</span>
+              {/* El texto sale del perfil de sector, no de aquí. */}
+              {ctx.sector && <PorQueEstePanel perfil={ctx.perfil} />}
             </div>
             <h1 className="font-stencil text-3xl md:text-5xl leading-[1]">
               Hola{session.email ? `, ${session.email.split("@")[0]}` : ""}.
             </h1>
-            <p className="text-black/70 mt-1 text-sm">{user.business.nombre} · {user.business.sector}</p>
+            <p className="text-black/70 mt-1 text-sm">
+              {ctx.tenant?.ficha?.nombreNegocio || user.business.nombre} ·{" "}
+              {/* Sin sector de negocio (cuenta comercial de AI-Team) no se enseña la
+                  etiqueta del perfil por defecto: diría "Salón de belleza" y sería falso. */}
+              {ctx.sector ? ctx.perfil.label : ctx.tenant?.ficha?.sector || user.business.sector}
+            </p>
+            {ctx.mirandoOtro && (
+              <p className="mt-2 text-[11px] font-mono bg-[color:var(--mustard)] border-2 border-black inline-block px-2 py-1">
+                VISTA DE PRUEBA · estás mirando el panel de {ctx.tenantId} ·{" "}
+                {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- ver-panel es un
+                    route handler que pone una cookie y redirige: necesita navegación completa,
+                    no la del router del cliente. */}
+                <a href="/admin/ver-panel/propio" className="underline">volver al tuyo</a>
+              </p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* STATS — mezcla legacy + event-log */}
+      {/* KPIs DEL SECTOR — con lo que abre el panel de este tipo de negocio */}
+      <div>
+        <div className="text-xs font-mono uppercase tracking-widest text-black/50 mb-2">
+          Lo que importa en {v.negocio}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {kpis.map((k) => (
+            <div key={k.id} className="card-hard p-4">
+              <div className="text-xs font-mono uppercase tracking-widest text-black/60">{k.etiqueta}</div>
+              {k.valor === null ? (
+                <>
+                  <div className="font-stencil text-4xl mt-1 text-black/25">—</div>
+                  {/* Sin dato de verdad: se dice, no se rellena con un número parecido. */}
+                  <div className="text-[11px] text-black/50 mt-1 leading-snug">{k.motivo}</div>
+                </>
+              ) : (
+                <>
+                  <div className="font-stencil text-4xl mt-1">{k.valor}</div>
+                  <div className="text-xs text-black/50 mt-1">{k.ayuda}</div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* STATS generales */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card-hard p-4">
-          <div className="text-xs font-mono uppercase tracking-widest text-black/60">Citas este mes</div>
+          <div className="text-xs font-mono uppercase tracking-widest text-black/60">{cap(v.citaPlural)} este mes</div>
           <div className="font-stencil text-4xl mt-1">{citasMes}</div>
           <div className="text-xs text-black/50 mt-1">Agenda central</div>
         </div>
         <div className="card-hard p-4">
-          <div className="text-xs font-mono uppercase tracking-widest text-black/60">Mensajes de clientes</div>
+          <div className="text-xs font-mono uppercase tracking-widest text-black/60">Mensajes de {v.clientePlural}</div>
           <div className="font-stencil text-4xl mt-1">{mensajesIn}</div>
           <div className="text-xs text-black/50 mt-1">Pablo + Marta · mes</div>
         </div>

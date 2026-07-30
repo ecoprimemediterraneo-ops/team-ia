@@ -1,6 +1,14 @@
+// GET  /api/sergio — competidores VIGILADOS DE VERDAD (las fuentes dadas de alta).
+// POST /api/sergio — análisis libre de un competidor, o pitch a partir de una fuente real.
+//
+// Antes el GET devolvía `MOCK_COMPETITORS`: siete competidores inventados en el
+// código, con valoraciones y debilidades ficticias. Se han eliminado. Si no hay
+// ninguna fuente dada de alta, este endpoint devuelve una lista VACÍA y el panel
+// enseña un estado vacío honesto. Nunca se rellena con datos de ejemplo.
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
-import { MOCK_COMPETITORS, filterCompetitors } from "@/lib/sergio";
+import { leerCompetidoresVigilados } from "@/lib/sergio-vigilancia";
+import { filtrarCompetidores } from "@/lib/sergio";
 import { anthropic } from "@/lib/claude";
 
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
@@ -12,14 +20,17 @@ export async function GET(req: Request) {
     if (!isFounder(email)) return NextResponse.json({ error: "Solo founder" }, { status: 403 });
 
     const { searchParams } = new URL(req.url);
-    const sector = searchParams.get("sector") || undefined;
-    const city = searchParams.get("city") || undefined;
+    const categoria = searchParams.get("categoria") || undefined;
+    const soloActivos = searchParams.get("activos") === "1";
 
-    const competitors = filterCompetitors(MOCK_COMPETITORS, { sector, city });
-    const sectors = [...new Set(MOCK_COMPETITORS.map((c) => c.sector))].sort();
-    const cities = [...new Set(MOCK_COMPETITORS.map((c) => c.city))].sort();
-
-    return NextResponse.json({ competitors, sectors, cities, total: MOCK_COMPETITORS.length });
+    const r = await leerCompetidoresVigilados();
+    const competidores = filtrarCompetidores(r.competidores, { categoria, soloActivos });
+    return NextResponse.json({
+      competidores,
+      total: r.competidores.length,
+      hayFuentes: r.hayFuentes,
+      ...(r.motivo ? { motivo: r.motivo, detalle: r.detalle } : {}),
+    });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
   }
@@ -60,7 +71,7 @@ El informe debe:
 
 Tono: directo, analítico, en español de España. Máximo 400 palabras.
 
-Nota: Si no tienes datos en tiempo real sobre este competidor específico, genera un análisis basado en patrones típicos del sector y deja claro que es una estimación.`,
+IMPORTANTE: no tienes acceso en tiempo real a la web de este competidor. Escribe el análisis como una ESTIMACIÓN basada en patrones típicos del sector y DILO EXPLÍCITAMENTE en la primera línea. No inventes cifras concretas (precios, número de reseñas, valoraciones) como si fueran datos verificados.`,
         }],
       });
 
@@ -68,40 +79,41 @@ Nota: Si no tienes datos en tiempo real sobre este competidor específico, gener
       return NextResponse.json({ report });
     }
 
-    // Pitch para founder (flujo original)
+    // Pitch a partir de una fuente REAL dada de alta (antes salía de un competidor
+    // inventado con valoraciones y debilidades ficticias).
     const { email } = await requireSession();
     if (!isFounder(email)) return NextResponse.json({ error: "Solo founder" }, { status: 403 });
 
     const { competitorId } = body;
-    const competitor = MOCK_COMPETITORS.find((c) => c.id === competitorId);
-    if (!competitor) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+    const { competidores: todos } = await leerCompetidoresVigilados();
+    const c = todos.find((x) => x.id === competitorId);
+    if (!c) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
     const msg = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 600,
       messages: [{
         role: "user",
-        content: `Analiza este competidor y dame un pitch de ventas de 3 párrafos para convencer a un negocio similar de contratar AI-Team:
+        content: `Genera un pitch de ventas de 3 párrafos para convencer a un negocio del sector de contratar AI-Team.
 
-Competidor: ${competitor.name}
-Sector: ${competitor.sector}
-Ciudad: ${competitor.city}
-Rating Google: ${competitor.googleRating}★ (${competitor.reviewCount} reseñas)
-Velocidad WhatsApp: ${competitor.whatsappSpeed}
-Reservas online: ${competitor.hasBookingOnline ? "Sí" : "No"}
-Debilidades detectadas: ${competitor.weaknesses.join(", ")}
+Lo único que sabemos de este competidor vigilado:
+Nombre: ${c.nombre}
+Web: ${c.url}
+Categoría: ${c.categoria}
+Cambios detectados hasta hoy: ${c.cambiosDetectados}
+${c.ultimaRevision ? `Última revisión: ${c.ultimaRevision}` : "Todavía no se ha revisado su web ni una vez."}
 
 El pitch debe:
-1. Mencionar una debilidad específica del competidor sin nombrarlo
-2. Explicar cómo AI-Team lo resuelve con ejemplos concretos
-3. Terminar con una llamada a la acción urgente (20 plazas fundadoras · 6 meses gratis)
+1. Apoyarse SOLO en los datos de arriba. No inventes valoraciones de Google, número de reseñas, tiempos de respuesta ni debilidades que no aparezcan aquí.
+2. Explicar cómo AI-Team ayuda, con ejemplos concretos.
+3. Terminar con una llamada a la acción (20 plazas fundadoras · 6 meses gratis).
 
 Tono: directo, sin rodeos, en español de España.`,
       }],
     });
 
     const pitch = msg.content[0].type === "text" ? msg.content[0].text : "";
-    return NextResponse.json({ pitch, competitor });
+    return NextResponse.json({ pitch, competidor: c });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
   }

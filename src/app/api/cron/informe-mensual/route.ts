@@ -1,21 +1,30 @@
-// GET/POST /api/cron/informe-mensual — envía a cada negocio el informe del MES ANTERIOR
-// por email al dueño. Pensado para dispararse desde n8n (NO cron de Vercel).
+// GET/POST /api/cron/informe-mensual — envía a cada negocio el informe UNIFICADO
+// del MES ANTERIOR por email al dueño (Resend). Pensado para dispararse desde
+// n8n (NO cron de Vercel).
+//
+// El informe es uno solo y trae las tres secciones: reservas + valor generado
+// por los agentes + contenido publicado por Marta. Se renderiza en
+// `informe-unificado.ts`, el MISMO módulo que usa la vista previa de
+// /admin/informe → no pueden divergir.
+//
 // Auth: ?secret=<CRON_SECRET> o header x-cron-secret (o Authorization: Bearer) —
 // MISMO patrón que /api/cron/booking-recordatorios (fail-closed en producción).
 //
 // Params de prueba:
 //   ?mes=YYYY-MM        → fuerza ese mes (por defecto, el mes anterior a hoy).
-//   ?force=1           → reenvía aunque ya se hubiera enviado ese mes (salta anti-duplicado).
-//   ?preview=<slug>    → devuelve el HTML del informe de ese negocio (no envía, no marca).
+//   ?force=1            → reenvía aunque ya se hubiera enviado ese mes (salta anti-duplicado).
+//   ?preview=<slug>     → devuelve el HTML del informe de ese negocio (no envía, no marca).
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { listBusinesses, getBusinessBySlug, informe } from "@/lib/booking";
-import { enviarInformeMensual, construirInformeMensual } from "@/lib/booking-email";
+import { listBusinesses, getBusinessBySlug } from "@/lib/booking";
+import {
+  periodoMes,
+  construirInformeUnificado,
+  enviarInformeUnificado,
+} from "@/lib/informe-unificado";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
 function authorized(req: Request, h: Headers): boolean {
   const expected = process.env.CRON_SECRET || "";
@@ -29,24 +38,6 @@ function authorized(req: Request, h: Headers): boolean {
   return qp === expected || hdr === expected || bearer === expected;
 }
 
-/** Periodo del mes anterior a `hoy` (o de un `YYYY-MM` explícito). */
-function periodoMes(mesParam: string | null): { from: string; to: string; periodoKey: string; label: string } | null {
-  let y: number, m0: number; // m0 = mes 0-11
-  if (mesParam) {
-    const mm = /^(\d{4})-(\d{2})$/.exec(mesParam);
-    if (!mm) return null;
-    y = Number(mm[1]); m0 = Number(mm[2]) - 1;
-    if (m0 < 0 || m0 > 11) return null;
-  } else {
-    const now = new Date();
-    const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
-    y = prev.getUTCFullYear(); m0 = prev.getUTCMonth();
-  }
-  const ultimoDia = new Date(Date.UTC(y, m0 + 1, 0)).getUTCDate();
-  const mm2 = String(m0 + 1).padStart(2, "0");
-  return { from: `${y}-${mm2}-01`, to: `${y}-${mm2}-${String(ultimoDia).padStart(2, "0")}`, periodoKey: `${y}-${mm2}`, label: `${MESES[m0]} ${y}` };
-}
-
 async function run(req: Request) {
   const h = await headers();
   if (!authorized(req, h)) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
@@ -55,29 +46,23 @@ async function run(req: Request) {
   const per = periodoMes(url.searchParams.get("mes"));
   if (!per) return NextResponse.json({ ok: false, error: "mes inválido (usa YYYY-MM)" }, { status: 400 });
 
-  const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
-  const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
-  const baseUrl = `${proto}://${host}`;
-
   // Vista previa del HTML de un negocio (no envía, no marca) — para verificar el diseño.
   const previewSlug = url.searchParams.get("preview");
   if (previewSlug) {
     const b = await getBusinessBySlug(previewSlug);
     if (!b) return NextResponse.json({ ok: false, error: "negocio no encontrado" }, { status: 404 });
-    const inf = await informe(previewSlug, per.from, per.to);
-    const { html } = construirInformeMensual(inf, b, per.label, baseUrl);
+    const { html } = await construirInformeUnificado({ business: b, periodo: per });
     return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
   }
 
   const force = url.searchParams.get("force") === "1";
   const negocios = await listBusinesses();
-  const resultados: { slug: string; enviado: boolean; modo: string; to?: string }[] = [];
+  const resultados: { slug: string; enviado: boolean; modo: string; to?: string; posts?: number }[] = [];
   let enviados = 0, saltados = 0;
 
   for (const b of negocios) {
     try {
-      const inf = await informe(b.slug, per.from, per.to);
-      const r = await enviarInformeMensual(b, inf, per.periodoKey, per.label, baseUrl, { force });
+      const r = await enviarInformeUnificado(b, per, { force });
       if (r.enviado || r.modo === "log_local") enviados++; else saltados++;
       resultados.push({ slug: b.slug, ...r });
     } catch (e) {

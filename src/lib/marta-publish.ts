@@ -362,6 +362,35 @@ export async function publishToInstagram(input: PublishInput): Promise<PublishRe
   }
 }
 
+/**
+ * Permalink público de un media ya publicado (https://www.instagram.com/p/XXXX/).
+ *
+ * No se puede derivar del igMediaId: el shortcode de la URL lo asigna Instagram,
+ * así que hay que preguntárselo a Graph. Best-effort puro — si no hay token, la
+ * llamada falla o Meta no lo devuelve, retorna null y el informe enseña el post
+ * sin enlace. NUNCA lanza: un fallo aquí no puede tumbar una publicación que ya
+ * ha salido bien.
+ */
+export async function fetchPermalink(igMediaId: string): Promise<string | null> {
+  const token = getToken();
+  if (!token || !igMediaId) return null;
+  try {
+    const res = await fetch(`${GRAPH}/${igMediaId}?fields=permalink`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await readGraphError(res);
+      console.warn("[marta/publish] permalink no disponible", { igMediaId, code: err.code });
+      return null;
+    }
+    const j = (await res.json()) as { permalink?: string };
+    return j.permalink || null;
+  } catch (err) {
+    console.warn("[marta/publish] permalink falló:", err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
 function errorToResult(err: unknown, context: string): PublishResult {
   const e = err as Error & { reason?: PublishErrorReason; metaCode?: number };
   const reason: PublishErrorReason = e.reason || "unknown";

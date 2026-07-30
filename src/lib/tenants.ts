@@ -15,10 +15,12 @@ import path from "node:path";
 import { kvGet, kvSet } from "./supabase";
 import type { StyleConfig } from "./image-style-presets";
 import type { SectorKey } from "./sector-prompts";
+import type { SectorNegocio } from "./sectores";
 
 export type TenantPlan = "esencial" | "completo" | "pro";
 export type { StyleConfig } from "./image-style-presets";
 export type { SectorKey } from "./sector-prompts";
+export type { SectorNegocio } from "./sectores";
 
 // Ficha de marca / cliente. Una sola por tenant que alimenta a todos los
 // agentes (Marta para captions de Instagram, Pablo para WhatsApp, etc).
@@ -107,8 +109,23 @@ export type Tenant = {
   // Asunciones de cálculo (configurable por tenant):
   minutesPerInteraction: number;           // default 4
   conversionValueEUR: number;              // valor medio de un cliente cerrado (default 200)
-  // Sector del agente conversacional → qué prompt carga Pablo/Carmen/Eva.
-  // "dental" | "estetica" | "vendedor". Default: "vendedor" (capta clínicas).
+  // ---------------------------------------------------------------------------
+  // SECTOR DEL NEGOCIO — manda sobre todo lo demás.
+  // ---------------------------------------------------------------------------
+  // "salon" | "estetica" | "dental" | "legal". Decide qué agentes ve el cliente
+  // en su panel, con qué KPIs abre, qué palabras usa y —lo más importante— cómo
+  // habla cada IA. El perfil completo vive en `sectores.ts`.
+  //
+  // Si falta, `resolverSector()` lo deduce del campo antiguo `sectorPrompt` para
+  // no romper a los tenants ya creados.
+  sector?: SectorNegocio;
+
+  // ANTIGUO. Sector del prompt monolítico de `sector-prompts.ts`
+  // ("dental" | "estetica" | "vendedor"). Se conserva por dos razones:
+  //   1. Los tenants creados antes del perfil de sector siguen funcionando.
+  //   2. "vendedor" es la cuenta comercial de AI-Team, que NO es un negocio de
+  //      cliente y necesita su propio prompt de venta.
+  // Para un cliente nuevo, usa `sector`.
   sectorPrompt?: SectorKey;
   // Ficha de marca / cliente (alimenta a todos los agentes):
   ficha?: Ficha;
@@ -335,6 +352,28 @@ export async function saveMarcaVisual(tenantId: string, patch: Partial<MarcaVisu
   return fusion;
 }
 
+// -----------------------------------------------------------------------------
+// Sector del negocio (el nuevo)
+// -----------------------------------------------------------------------------
+
+/**
+ * Sector de negocio del tenant. Devuelve null SOLO para la cuenta comercial de
+ * AI-Team (sectorPrompt "vendedor"), que no es un negocio de cliente.
+ */
+export async function getSectorNegocio(tenantId: string): Promise<SectorNegocio | null> {
+  const t = await getTenant(tenantId);
+  if (!t) return null;
+  const { resolverSector } = await import("./sectores");
+  return resolverSector(t);
+}
+
+/** Cambia el sector de negocio del tenant. Devuelve el tenant actualizado o null. */
+export async function setSectorNegocio(tenantId: string, sector: SectorNegocio): Promise<Tenant | null> {
+  const t = await getTenant(tenantId);
+  if (!t) return null;
+  return upsertTenant({ ...t, sector });
+}
+
 /** Devuelve el sector del agente conversacional del tenant (default vendedor). */
 export async function getTenantSector(tenantId: string): Promise<SectorKey> {
   const t = await getTenant(tenantId);
@@ -346,6 +385,23 @@ export async function setTenantSector(tenantId: string, sector: SectorKey): Prom
   const t = await getTenant(tenantId);
   if (!t) return null;
   return upsertTenant({ ...t, sectorPrompt: sector });
+}
+
+/**
+ * Tenant de un usuario del panel, por su email.
+ *
+ * Hoy el panel entra con email (sesión) y los datos de negocio viven en tenants.
+ * Si ningún tenant declara ese email, cae al tenant por defecto — que es lo que
+ * hacía el panel antes de existir esta función (lo usaba a fuego).
+ */
+export async function resolverTenantDeUsuario(email: string): Promise<string> {
+  if (!email) return DEFAULT_TENANT_ID;
+  const all = await readAll();
+  const objetivo = email.trim().toLowerCase();
+  for (const t of Object.values(all)) {
+    if ((t.email || "").trim().toLowerCase() === objetivo) return t.id;
+  }
+  return DEFAULT_TENANT_ID;
 }
 
 /**

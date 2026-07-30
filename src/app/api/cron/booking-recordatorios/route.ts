@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { listRecords, getBusinessBySlug, saveRecord, localToEpoch } from "@/lib/booking";
 import { enviarRecordatorio } from "@/lib/booking-email";
+import { barrerOfertasCaducadas } from "@/lib/booking-waitlist";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -63,7 +64,15 @@ async function run(req: Request) {
       console.error("[booking-recordatorios] fallo:", err);
     }
   }
-  return NextResponse.json({ ok: true, enviados, fallidos, revisados: all.length, detalle });
+  // Lista de espera inteligente: caduca ofertas sin respuesta y reoferta a la siguiente.
+  let espera = { caducadas: 0, reofertadas: 0 };
+  try {
+    espera = await barrerOfertasCaducadas(baseUrl);
+  } catch (e) {
+    console.error("[booking-recordatorios] barrido lista de espera falló (no crítico):", e);
+  }
+
+  return NextResponse.json({ ok: true, enviados, fallidos, revisados: all.length, detalle, espera });
 }
 
 export async function GET(req: Request) {

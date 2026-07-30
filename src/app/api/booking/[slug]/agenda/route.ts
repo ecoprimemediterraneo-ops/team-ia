@@ -8,6 +8,7 @@ import { z } from "zod";
 import { authorizeOwner, ownerRedirectUri } from "@/lib/booking-owner";
 import { listRecordsForRange, cambiarEstadoRecord, crearReservaManual, crearBloqueo, reprogramarRecord, notificarEsperaSiLibre } from "@/lib/booking";
 import { enviarAvisoEspera } from "@/lib/booking-email";
+import { procesarHuecoLiberado } from "@/lib/booking-waitlist";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -102,6 +103,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         await notificarEsperaSiLibre(slug, res.record.startIso.slice(0, 10), redirectUri, (entry, biz) => enviarAvisoEspera(entry, biz, `${proto}://${host}`));
       } catch (e) {
         console.error("[agenda] aviso lista de espera falló (no crítico):", e);
+      }
+      // Lista de espera INTELIGENTE (WhatsApp): ofrecer el hueco liberado a UNA clienta.
+      // Gateado por WAITLIST_SEND_ENABLED (off por defecto → solo registra, no envía).
+      try {
+        await procesarHuecoLiberado(slug, {
+          startIso: res.record.startIso,
+          serviceId: res.record.serviceId,
+          servicioNombre: res.record.servicioNombre,
+          empleadoId: res.record.empleadoId,
+        }, redirectUri);
+      } catch (e) {
+        console.error("[agenda] oferta lista de espera WhatsApp falló (no crítico):", e);
       }
     }
     return NextResponse.json({ ok: true, record: res.record });

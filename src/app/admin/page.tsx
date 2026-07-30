@@ -54,6 +54,8 @@ export default async function AdminPage() {
           <a href="/admin/pipeline/import" className="text-xs font-mono border-2 border-black px-3 py-2 hover:bg-black hover:text-white">📤 IMPORTAR LEADS</a>
           <a href="/admin/sergio" className="text-xs font-mono border-2 border-black px-3 py-2 hover:bg-black hover:text-white">🕵️ SERGIO · INTELIGENCIA</a>
           <a href="/admin/metricas" className="text-xs font-mono border-2 border-[color:var(--mustard)] px-3 py-2 hover:bg-[color:var(--mustard)]">📊 MÉTRICAS AGENTES</a>
+          <a href="/admin/dosier" className="text-xs font-mono border-2 border-black px-3 py-2 hover:bg-black hover:text-white">📖 DOSIER DEL SISTEMA</a>
+          <a href="/admin/sectores" className="text-xs font-mono border-2 border-black px-3 py-2 hover:bg-black hover:text-white">🏷 PERFIL DE SECTOR</a>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

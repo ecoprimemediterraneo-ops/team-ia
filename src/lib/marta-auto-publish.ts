@@ -27,8 +27,9 @@ import {
   markCalendarEntryFailed,
   type CalendarEntry,
 } from "./marta-calendar";
-import { publishToInstagram, isPublishEnabled } from "./marta-publish";
+import { publishToInstagram, isPublishEnabled, fetchPermalink } from "./marta-publish";
 import { kvTryLock, kvUnlock, supabaseEnabled } from "./supabase";
+import { logEvent, makeEventId } from "./event-log";
 
 /** Interruptor propio de la publicación automática. Default: APAGADO. */
 export function martaAutoPublishEnabled(): boolean {
@@ -44,6 +45,51 @@ export function publicacionRealActiva(): boolean {
 }
 
 const LOCK_TTL_MS = 5 * 60 * 1000; // una publicación no debería tardar más
+
+/**
+ * Deja constancia en el event-log de que Marta ha publicado, para que el informe
+ * mensual pueda contar los posts del mes y enlazarlos.
+ *
+ * Este es el ÚNICO sitio donde se escribe `post_published`, y está a propósito
+ * dentro de `publicarEntrada`: por aquí pasan LOS DOS caminos que publican de
+ * verdad — el cron /api/cron/marta-calendar-publicar y el botón "Publicar ahora"
+ * del panel (ambos llaman a `publicarVencidos`). Un único punto = imposible que
+ * un camino cuente y el otro no.
+ *
+ * · Bucket: `logEvent` archiva por tenant + mes a partir de `ts`, y usamos la
+ *   fecha REAL de publicación (no la programada), que es la que debe contar.
+ * · Idempotencia: id determinista por entrada, así que un reintento no duplica.
+ * · Best-effort: cualquier fallo se traga. El post ya está en Instagram; que el
+ *   log falle no puede convertir un éxito en error.
+ */
+async function registrarPostPublicado(
+  tenantId: string,
+  entry: CalendarEntry,
+  igMediaId: string,
+): Promise<void> {
+  try {
+    const permalink = await fetchPermalink(igMediaId);
+    await logEvent(tenantId, {
+      id: makeEventId("post_published", tenantId, entry.id),
+      ts: new Date().toISOString(),
+      type: "post_published",
+      channel: "marta",
+      meta: {
+        entryId: entry.id,
+        igMediaId,
+        permalink: permalink ?? undefined,
+        tema: entry.tema,
+        temaLabel: entry.temaLabel,
+        mediaType: entry.mediaType,
+        imageUrl: entry.imageUrl,
+        scheduledAt: entry.scheduledAt,
+        caption: entry.caption.slice(0, 300),
+      },
+    });
+  } catch (err) {
+    console.error("[marta-auto-publish] no se pudo registrar post_published:", err);
+  }
+}
 
 export type AccionEntrada =
   | "publicaria"   // dry-run: esto es lo que se publicaría
@@ -135,6 +181,7 @@ async function publicarEntrada(
 
     if ("ok" in pub && pub.ok) {
       await markCalendarEntryPublished(tenantId, fresca.id, pub.igMediaId);
+      await registrarPostPublicado(tenantId, fresca, pub.igMediaId);
       return resumen(fresca.id, fresca, "publicada", { igMediaId: pub.igMediaId });
     }
 

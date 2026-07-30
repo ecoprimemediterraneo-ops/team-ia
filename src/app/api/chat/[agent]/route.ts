@@ -3,6 +3,8 @@ import { requireSession } from "@/lib/auth";
 import { getUser, appendMessage, logActivity, bumpStats } from "@/lib/store";
 import { anthropic, SYSTEM_BUILDERS, MODEL_BY_AGENT } from "@/lib/claude";
 import type { AgentSlug } from "@/lib/agents";
+import { resolverTenantDeUsuario } from "@/lib/tenants";
+import { resolverPersona, capaDeSector, type Canal } from "@/lib/persona";
 
 const VALID = new Set<AgentSlug>(["lucia", "marta", "carmen", "pablo", "rocio", "eva", "sergio"]);
 
@@ -26,7 +28,28 @@ export async function POST(
       return NextResponse.json({ error: "Mensaje vacío" }, { status: 400 });
     }
 
-    let system = SYSTEM_BUILDERS[key](user.business);
+    // ── Personalidad por sector ──────────────────────────────────────────────
+    // Pablo y Carmen son simulaciones de cara al cliente final: el dueño usa este
+    // chat para probar cómo suena su recepcionista. Se les monta la persona
+    // ENTERA del sector, en su canal real.
+    //
+    // El resto (Marta, Eva, Lucía, Rocío, Sergio) hablan CON EL DUEÑO y ya tienen
+    // su prompt de oficio; a esos se les añade solo la capa de sector, para que
+    // sepan dónde trabajan y qué no pueden decir.
+    const tenantId = await resolverTenantDeUsuario(email);
+    const CANAL_SIMULADO: Partial<Record<AgentSlug, Canal>> = { pablo: "whatsapp", carmen: "voz" };
+
+    let system: string;
+    const canalSimulado = CANAL_SIMULADO[key];
+    if (canalSimulado) {
+      const persona = await resolverPersona({ tenantId, agente: key, canal: canalSimulado });
+      // Sector null = cuenta comercial de AI-Team → se queda con el prompt de siempre.
+      system = persona.sector ? persona.system : SYSTEM_BUILDERS[key](user.business);
+    } else {
+      system = SYSTEM_BUILDERS[key](user.business);
+      const { bloque } = await capaDeSector(tenantId);
+      if (bloque) system += `\n\n${bloque}`;
+    }
 
     // Skills dentales: si el negocio es clínica dental, enriquecer el prompt según contexto del mensaje.
     const sectorLower = (user.business?.sector || "").toLowerCase();

@@ -48,6 +48,12 @@ function channelDisplay(channel: EventChannel) {
 // Formateadores de texto
 // -----------------------------------------------------------------------------
 
+/** Recorta un mensaje para que quepa en una línea del feed. */
+function recorte(t: string, max = 90): string {
+  const limpio = t.replace(/\s+/g, " ").trim();
+  return limpio.length > max ? `${limpio.slice(0, max - 1)}…` : limpio;
+}
+
 function monthKey(d: Date): string {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
@@ -143,19 +149,24 @@ function formatEvent(ev: AnalyticsEvent): { label: string; detail?: string; html
       };
     }
 
+    // El texto del mensaje se guarda desde el 30 de julio de 2026. Los eventos
+    // anteriores no lo llevan, así que se sigue admitiendo que falte.
     case "message_in": {
       const sender = maskSender(ev.senderId);
+      const texto = typeof meta.texto === "string" ? meta.texto : "";
+      const quien = typeof meta.nombre === "string" && meta.nombre ? meta.nombre : sender;
       return {
-        label: `Mensaje entrante de cliente`,
-        detail: `vía ${agente}${sender ? ` · ${sender}` : ""}`,
+        label: texto ? `«${recorte(texto)}»` : "Mensaje entrante de cliente",
+        detail: `de ${quien || "cliente"} · vía ${agente}`,
       };
     }
 
     case "message_out": {
       const latency = typeof meta.latencyMs === "number" ? Math.round(meta.latencyMs / 100) / 10 : undefined;
+      const texto = typeof meta.texto === "string" ? meta.texto : "";
       return {
-        label: `${agente} respondió`,
-        detail: latency ? `${latency}s` : undefined,
+        label: texto ? `${agente}: «${recorte(texto)}»` : `${agente} respondió`,
+        detail: latency ? `respondió en ${latency}s` : undefined,
       };
     }
 

@@ -60,9 +60,17 @@ export default function SergioTools() {
 
       <div className="card-hard p-4">
         <div className="mb-4">
-          <h3 className="font-stencil text-xl">Analiza a tu competencia en 10 segundos</h3>
+          <h3 className="font-stencil text-xl">Analiza a tu competencia</h3>
           <p className="text-sm text-black/60 mt-1">
-            Dile a Sergio qué competidor analizar y qué tipo de informe quieres. Él escanea su web y te devuelve inteligencia accionable.
+            Dile a Sergio qué competidor analizar y qué tipo de informe quieres.
+          </p>
+          {/* Honestidad: este botón NO lee la web del competidor. Genera una
+              estimación con IA a partir de patrones del sector. Quien lo use
+              tiene que saberlo. */}
+          <p className="text-xs text-black/50 mt-2 border-l-4 border-black/20 pl-2">
+            Este informe es una <b>estimación</b> a partir de patrones del sector: no se lee la web
+            del competidor en el momento. Para vigilar webs de verdad hay que dar de alta las
+            fuentes en el panel de administración.
           </p>
         </div>
 
@@ -120,8 +128,10 @@ export default function SergioTools() {
                 🔄 REGENERAR
               </button>
             </div>
+            {/* Antes aquí ponía "Monitorización automática 24/7 con alertas por
+                email activada". Era falso: la vigilancia no está encendida. */}
             <p className="text-xs text-black/50 mt-3 font-mono">
-              ★ Monitorización automática 24/7 con alertas por email activada.
+              La vigilancia automática de webs todavía no está activada.
             </p>
           </div>
         </div>

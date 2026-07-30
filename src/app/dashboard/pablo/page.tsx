@@ -5,6 +5,12 @@ import AgentChat from "@/components/AgentChat";
 import PabloTools from "@/components/PabloTools";
 import PabloWaitlist from "@/components/PabloWaitlist";
 import { agentBySlug } from "@/lib/agents";
+import { contextoPanelODefecto } from "@/lib/panel-contexto";
+import { leerConversaciones } from "@/lib/conversaciones";
+import BandejaPablo from "@/components/pablo/BandejaPablo";
+
+// Sin caché: la bandeja tiene que enseñar el último mensaje, no uno de hace un rato.
+export const dynamic = "force-dynamic";
 
 export default async function PabloPage() {
   const s = await getSession();
@@ -12,6 +18,12 @@ export default async function PabloPage() {
   const user = await getUser(s.email);
   if (!user.business) redirect("/onboarding");
   const a = agentBySlug.pablo;
+
+  // Las conversaciones salen del TENANT del panel, nunca del email de login ni
+  // del tenant por defecto: un negocio no puede leer los mensajes de otro.
+  const ctx = await contextoPanelODefecto();
+  const conversaciones = await leerConversaciones(ctx.tenantId, { canal: "pablo" });
+  const v = ctx.vocabulario;
 
   return (
     <section className="space-y-4">
@@ -41,6 +53,21 @@ export default async function PabloPage() {
           </p>
         </div>
       </header>
+
+      {/* BANDEJA — lo primero, porque es lo que el dueño viene a mirar:
+          qué le está diciendo su IA a sus clientes. */}
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between gap-2 flex-wrap">
+          <h2 className="font-stencil text-2xl leading-none">Conversaciones</h2>
+          <span className="text-[11px] font-mono text-black/50">
+            Lo que hablan tus {v.clientePlural} con Pablo
+          </span>
+        </div>
+        <BandejaPablo
+          conversaciones={conversaciones}
+          vocab={{ cliente: v.cliente, clientePlural: v.clientePlural }}
+        />
+      </section>
 
       {/* Generador a ancho completo — usa su grid interno a partir de lg */}
       <PabloTools />

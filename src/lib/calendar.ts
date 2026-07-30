@@ -365,6 +365,12 @@ export async function agendarCita(input: AgendarCitaInput): Promise<AgendarCitaR
       ts,
       type: "appointment_set",
       channel: input.agenteOrigen,
+      // El teléfono del cliente es el MISMO identificador que `senderId` en los
+      // message_in de Pablo. Guardándolo aquí se puede cruzar "quién escribió"
+      // con "quién acabó reservando", que es lo que piden los KPIs de
+      // conversión (consultas → primera cita, leads → valoración).
+      // Solo cuenta de aquí en adelante: las citas ya registradas no lo tienen.
+      ...(input.customerPhone ? { senderId: input.customerPhone } : {}),
       meta: {
         tipo: "cita_agendada",
         nombre: input.nombre,

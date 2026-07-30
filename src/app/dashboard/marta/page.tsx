@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { getSessionLocal } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import { agentBySlug } from "@/lib/agents";
-import { DEFAULT_TENANT_ID } from "@/lib/tenants";
+import { contextoPanelODefecto } from "@/lib/panel-contexto";
 import { listProposalsByTenant } from "@/lib/marta-proposals";
 import { isPublishEnabled } from "@/lib/marta-publish";
 import { getSchedule, DIRECT_PUBLISH_ENABLED, CRON_GRANULARITY } from "@/lib/marta-schedule";
@@ -32,7 +32,11 @@ export default async function MartaPage({
   const initialTab = sp?.tab === "calendario" ? "calendario" : undefined;
 
   // Tenant del cliente — single-tenant durante la beta.
-  const tenantId = DEFAULT_TENANT_ID;
+  // El tenant sale del contexto del panel, NO de una constante. Con
+  // DEFAULT_TENANT_ID a fuego, el panel de cualquier cliente enseñaba el
+  // calendario y la marca de AI-Team.
+  const ctxPanel = await contextoPanelODefecto();
+  const tenantId = ctxPanel.tenantId;
   const proposals = await listProposalsByTenant(tenantId);
   const enabled = isPublishEnabled();
   const schedule = await getSchedule(tenantId);

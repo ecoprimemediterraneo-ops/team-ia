@@ -1,17 +1,19 @@
 "use client";
 
-// Subir un post PROPIO a mano: imagen del usuario + texto + fecha/hora.
-// - La imagen se redimensiona en el cliente (canvas, mismo patrón que
-//   OwnerConfig) y se sube al endpoint DURABLE existente /api/admin/marta-upload,
-//   que devuelve una URL pública que sigue viva semanas.
-// - "Mejorar con IA" es OPCIONAL: solo al pulsarlo se reescribe el texto
-//   (reutiliza generarCaption); si no, se guarda el texto tal cual.
-// - Al guardar crea una CalendarEntry idéntica en forma a las de Marta
-//   (status "scheduled") → el mismo bucle de publicación la recoge.
+// Crear un post para el calendario. Fusiona la antigua pestaña "Nuevo post" con
+// "Subir un post propio":
+//   · SIMPLE (visible): subir imagen + texto + "Mejorar con IA" + fecha/hora.
+//   · OPCIONES AVANZADAS (plegado): tipo de publicación (post/reel/story),
+//     URL de imagen o vídeo externa, tema, detalles del texto y describe la foto
+//     a generar. Con esto NO se pierde nada de lo que hacía "Nuevo post".
+// Todo acaba como una CalendarEntry "scheduled" (mismo store, mismo flujo de
+// publicación) vía crearEntradaManualAction. La imagen subida se sube antes al
+// endpoint durable /api/admin/marta-upload. "Mejorar con IA" es opcional.
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { crearEntradaManualAction, mejorarCaptionAction } from "./actions";
+import { MARTA_TOPICS } from "@/lib/marta-topics";
 
 async function redimensionarAJpeg(file: File, maxW = 1080, quality = 0.82): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
@@ -50,6 +52,15 @@ export default function SubirPost({
   const [drag, setDrag] = useState(false);
   const [msg, setMsg] = useState<{ t: "ok" | "err"; s: string } | null>(null);
   const [guardando, startGuardar] = useTransition();
+
+  // --- Opciones avanzadas (fusión de "Nuevo post") ---
+  const [avanzado, setAvanzado] = useState(false);
+  const [mediaType, setMediaType] = useState<string>("IMAGE");
+  const [urlExterna, setUrlExterna] = useState<string>("");
+  const [tema, setTema] = useState<string>("auto");
+  const [contextoTexto, setContextoTexto] = useState<string>("");
+  const [fotoBrief, setFotoBrief] = useState<string>("");
+  const esVideo = mediaType === "REELS" || mediaType === "STORIES_VIDEO";
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -97,18 +108,21 @@ export default function SubirPost({
     }
   }
 
-
   function onGuardar() {
     setMsg(null);
-    if (!imageUrl) return setMsg({ t: "err", s: "Sube una imagen primero." });
-    if (!caption.trim()) return setMsg({ t: "err", s: "Escribe el texto del post." });
     startGuardar(async () => {
       const fd = new FormData();
       fd.set("tenantId", tenantId);
-      fd.set("imageUrl", imageUrl);
+      fd.set("imageUrl", imageUrl);          // imagen subida (durable) — o vacío
       fd.set("caption", caption);
       fd.set("fecha", fecha);
       fd.set("hora", hora);
+      // avanzado
+      fd.set("mediaType", mediaType);
+      fd.set("imageUrlExterna", urlExterna);
+      fd.set("tema", tema);
+      fd.set("contextoTexto", contextoTexto);
+      fd.set("fotoBrief", fotoBrief);
       const res = await crearEntradaManualAction(fd);
       if (!res.ok) {
         setMsg({ t: "err", s: res.error });
@@ -118,6 +132,9 @@ export default function SubirPost({
       setPreview("");
       setImageUrl("");
       setCaption("");
+      setUrlExterna("");
+      setContextoTexto("");
+      setFotoBrief("");
       if (fileRef.current) fileRef.current.value = "";
       setMsg({ t: "ok", s: "Post añadido al calendario (programado)." });
       router.refresh();
@@ -125,6 +142,7 @@ export default function SubirPost({
   }
 
   const inp = "border-2 border-black px-2 py-1.5 text-sm bg-white";
+  const lbl = "block text-[10px] font-mono uppercase tracking-widest text-black/50 mb-1";
 
   return (
     <section className="card-hard bg-white p-5 space-y-4">
@@ -135,6 +153,7 @@ export default function SubirPost({
         </h2>
         <p className="text-[11px] text-black/55 mt-1">
           Tu imagen + tu texto + fecha. Queda programado igual que los de Marta y sale por el mismo canal.
+          Para reels, stories, URL externa o generar con IA, abre <strong>Opciones avanzadas</strong>.
         </p>
       </div>
 
@@ -170,7 +189,7 @@ export default function SubirPost({
               <span className="px-4">
                 <span className="block text-3xl leading-none mb-2">⬆️</span>
                 <span className="block text-sm font-bold leading-tight">Arrastra tu imagen<br />o haz clic para subirla</span>
-                <span className="block text-[10px] text-black/45 mt-2">JPG, PNG o WEBP</span>
+                <span className="block text-[10px] text-black/45 mt-2">JPG, PNG o WEBP · o genérala en Opciones avanzadas</span>
               </span>
             )}
           </button>
@@ -197,7 +216,7 @@ export default function SubirPost({
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
               rows={5}
-              placeholder="Escribe tu caption. Los hashtags en la última línea."
+              placeholder="Escribe tu caption. Los hashtags en la última línea. (Vacío + Opciones avanzadas = lo genera Marta)"
               className={`w-full ${inp} resize-y`}
             />
             <p className="text-[10px] text-black/40 mt-1">
@@ -217,13 +236,91 @@ export default function SubirPost({
             <button
               type="button"
               onClick={onGuardar}
-              disabled={guardando || subiendo || !imageUrl}
+              disabled={guardando || subiendo || (!imageUrl && !avanzado)}
               className="border-[3px] border-black bg-black text-white px-4 py-2 text-sm font-bold uppercase tracking-widest hover:bg-black/80 disabled:opacity-40"
             >
               {guardando ? "Guardando…" : "Añadir al calendario"}
             </button>
           </div>
         </div>
+      </div>
+
+      {/* --- Opciones avanzadas (plegado) --- */}
+      <div className="border-t-2 border-black/10 pt-3">
+        <button
+          type="button"
+          onClick={() => setAvanzado((a) => !a)}
+          aria-expanded={avanzado}
+          className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-widest font-bold hover:text-[color:var(--red)]"
+        >
+          <span className="grid place-items-center w-5 h-5 border-2 border-black bg-[color:var(--mustard)] text-xs leading-none">{avanzado ? "–" : "+"}</span>
+          Opciones avanzadas
+          <span className="text-black/40 normal-case font-normal tracking-normal">(reel/story · URL externa · tema · generar con IA)</span>
+        </button>
+
+        {avanzado && (
+          <div className="mt-3 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <span className={lbl}>Tipo de publicación</span>
+                <select value={mediaType} onChange={(e) => setMediaType(e.target.value)} className={`w-full ${inp} font-mono`}>
+                  <option value="IMAGE">📷 Post estático (imagen al feed)</option>
+                  <option value="REELS">🎬 Reel (vídeo vertical 9:16, ≤ 90 s)</option>
+                  <option value="STORIES_IMAGE">📸 Story · imagen (24 h)</option>
+                  <option value="STORIES_VIDEO">🎞 Story · vídeo (24 h)</option>
+                </select>
+              </div>
+              <div>
+                <span className={lbl}>Tema del post</span>
+                <select value={tema} onChange={(e) => setTema(e.target.value)} className={`w-full ${inp}`}>
+                  {MARTA_TOPICS.map((t) => (
+                    <option key={t.key} value={t.key}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <span className={lbl}>URL de imagen o vídeo externa</span>
+              <input
+                type="url"
+                value={urlExterna}
+                onChange={(e) => setUrlExterna(e.target.value)}
+                placeholder="https://… .jpg/.png/.mp4 — o déjalo vacío y Marta genera la imagen"
+                className={`w-full ${inp} font-mono`}
+              />
+              <p className="text-[10px] text-black/45 mt-1">
+                {esVideo
+                  ? "Reels / stories de vídeo: la URL del MP4 (9:16) es OBLIGATORIA — el vídeo no se genera."
+                  : "Foto: pega una URL pública (se le aplica tu estilo) o déjalo vacío y Marta la genera con IA."}
+                {" "}Si subes una imagen arriba, esa tiene prioridad.
+              </p>
+            </div>
+
+            <div>
+              <span className={lbl}>Detalles del texto (opcional)</span>
+              <textarea
+                value={contextoTexto}
+                onChange={(e) => setContextoTexto(e.target.value)}
+                rows={2}
+                placeholder="Para el CAPTION si lo genera Marta: oferta, fechas, precio, tono…"
+                className={`w-full ${inp} font-mono resize-y`}
+              />
+            </div>
+
+            <div>
+              <span className={lbl}>Describe la foto a generar (opcional)</span>
+              <textarea
+                value={fotoBrief}
+                onChange={(e) => setFotoBrief(e.target.value)}
+                rows={2}
+                placeholder="Para la IMAGEN si la genera Marta: «una pareja joven, ambiente navideño, luces cálidas»."
+                className={`w-full ${inp} font-mono resize-y`}
+              />
+              <p className="text-[10px] text-black/45 mt-1">Solo aplica si no subes imagen ni pegas URL (campo de arriba vacío).</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {msg && (

@@ -16,6 +16,9 @@ import { generarMes, madridInputsToUtc, regenerarImagenPost } from "@/lib/marta-
 import { publicarVencidos } from "@/lib/marta-auto-publish";
 import { rescheduleEntry, scheduleAtDates, findEntryById, actualizarContenidoEntry, removeCalendarEntry, setCalendarEntryHidden } from "@/lib/marta-calendar";
 import { generarCaption } from "@/lib/marta-caption";
+import { resolveTopic } from "@/lib/marta-topics";
+import { generatePostImage, styleExistingPhoto } from "@/lib/marta-image-gen";
+import type { ProposalMediaType } from "@/lib/marta-proposals";
 import { anthropic, MODELS } from "@/lib/claude";
 import { storeImageDurable } from "@/lib/marta-image-store";
 import { TEMA_MANUAL, type PublicarState, type AutoState, type MejorarResult, type CrearManualResult, type MarcaState, type ColoresResult, type LogoResult } from "./types";
@@ -292,23 +295,86 @@ export async function crearEntradaManualAction(formData: FormData): Promise<Crea
   if (!s) return { ok: false, error: "No autorizado" };
 
   const tenantId = String(formData.get("tenantId") || DEFAULT_TENANT_ID).trim();
-  const imageUrl = String(formData.get("imageUrl") || "").trim();
-  const caption = String(formData.get("caption") || "").trim();
+  const captionUser = String(formData.get("caption") || "").trim();
   const fecha = String(formData.get("fecha") || "").trim();
   const hora = String(formData.get("hora") || "").trim();
+  // Imagen que el usuario SUBIÓ (URL durable ya generada): se usa TAL CUAL (es suya).
+  const imagenSubida = String(formData.get("imageUrl") || "").trim();
 
-  if (!imageUrl) return { ok: false, error: "Falta la imagen (súbela antes de guardar)." };
-  if (!caption) return { ok: false, error: "Falta el texto del post." };
+  // --- Opciones avanzadas (fusión de la antigua pestaña "Nuevo post") -------
+  const imagenExterna = String(formData.get("imageUrlExterna") || "").trim();
+  const mediaTypeRaw = String(formData.get("mediaType") || "IMAGE").trim().toUpperCase();
+  const mediaType: ProposalMediaType =
+    mediaTypeRaw === "REELS" ? "REELS"
+    : mediaTypeRaw === "STORIES_IMAGE" ? "STORIES_IMAGE"
+    : mediaTypeRaw === "STORIES_VIDEO" ? "STORIES_VIDEO"
+    : "IMAGE";
+  const topic = resolveTopic(String(formData.get("tema") || "auto").trim());
+  const contextoTexto = String(formData.get("contextoTexto") || "").trim();
+  const fotoBriefUser = String(formData.get("fotoBrief") || "").trim();
+  const fotoBrief = [topic.imageBrief, fotoBriefUser].filter(Boolean).join(" ");
+  const captionTema = topic.captionTema;
+
   const utc = madridInputsToUtc(fecha, hora);
   if (!utc) return { ok: false, error: "Fecha u hora no válidas." };
+
+  const isVideo = mediaType === "REELS" || mediaType === "STORIES_VIDEO";
+  const hasExterna = /^https?:\/\//.test(imagenExterna);
+  const baseUrl = await baseUrlFromHeaders();
+
+  // --- Resolver imagen final + tema a guardar -------------------------------
+  //   vídeo (reel/story vídeo) → URL del MP4 obligatoria (no se genera)
+  //   imagen subida por el usuario → tal cual (tema "Subido a mano", su imagen no se regenera)
+  //   URL externa de foto → estilizar con la ficha (como hacía "Nuevo post")
+  //   sin imagen → generar con IA (tema + describe la foto + ficha); esa SÍ se puede regenerar
+  let finalUrl = "";
+  let temaEntry: string = TEMA_MANUAL;
+
+  if (isVideo) {
+    if (!hasExterna) return { ok: false, error: "Para reels y stories de vídeo pega la URL pública del MP4 (no se genera con IA)." };
+    finalUrl = imagenExterna;
+    temaEntry = TEMA_MANUAL;
+  } else if (imagenSubida) {
+    finalUrl = imagenSubida;
+    temaEntry = TEMA_MANUAL;
+  } else if (hasExterna) {
+    const styled = await styleExistingPhoto({ tenantId, url: imagenExterna, baseUrl });
+    finalUrl = styled.ok ? styled.url : imagenExterna;
+    temaEntry = TEMA_MANUAL;
+  } else {
+    const gen = await generatePostImage({
+      tenantId,
+      tema: captionTema || undefined,
+      contexto: fotoBrief || undefined,
+      mediaType: mediaType === "STORIES_IMAGE" ? "STORIES_IMAGE" : "IMAGE",
+      baseUrl,
+    });
+    if (!gen.ok) return { ok: false, error: `No se pudo generar la imagen [${gen.reason}]: ${gen.detail}` };
+    finalUrl = gen.url;
+    temaEntry = captionTema || "Post generado por Marta"; // imagen IA → NO es "Subido a mano"
+  }
+
+  // --- Resolver caption final -----------------------------------------------
+  //   texto escrito → tal cual; vacío → generar con IA desde tema + detalles + ficha
+  let caption = captionUser;
+  if (!caption) {
+    const cap = await generarCaption({
+      tenantId,
+      tema: captionTema || undefined,
+      contexto: contextoTexto || undefined,
+      cuentaPropia: tenantId === DEFAULT_TENANT_ID,
+    });
+    if (!cap.ok) return { ok: false, error: `Escribe un texto o rellena tema/detalles: no se pudo generar [${cap.reason}] ${cap.detail}` };
+    caption = cap.caption;
+  }
 
   // Mismo store, misma forma y mismo status "scheduled" que las de Marta → el
   // MISMO bucle de publicación (dueNow) la recoge. No hay publicador nuevo.
   await scheduleAtDates(tenantId, [
-    { caption, imageUrl, tema: TEMA_MANUAL, mediaType: "IMAGE", scheduledAt: utc.toISOString() },
+    { caption, imageUrl: finalUrl, tema: temaEntry, mediaType, scheduledAt: utc.toISOString() },
   ]);
 
-  revalidatePath("/dashboard/marta/calendario");
+  revalidatePath("/dashboard/marta");
   return { ok: true, scheduledAt: utc.toISOString() };
 }
 

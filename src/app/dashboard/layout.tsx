@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { getSessionLocal } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import Logo from "@/components/Logo";
-import { agents, type AgentSlug } from "@/lib/agents";
+import { agents, agentBySlug, type AgentSlug } from "@/lib/agents";
+import { contextoPanelODefecto } from "@/lib/panel-contexto";
 
 // Agentes con integración externa REAL conectada hoy.
 // El resto se marca como "Próximamente" hasta que llegue verificación de Meta / Vapi / GMB.
@@ -13,6 +14,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const session = await getSessionLocal();
   if (!session) redirect("/login");
   const user = await getUser(session.email);
+
+  // Perfil de sector del cliente: decide QUÉ agentes ve y EN QUÉ ORDEN.
+  // Un salón no necesita a Sergio; un despacho de abogados abre por Lucía.
+  // Si el tenant es la cuenta comercial de AI-Team (sector null), se enseñan
+  // todos, como hasta ahora.
+  const ctx = await contextoPanelODefecto();
+  const visibles: typeof agents = ctx.sector
+    ? ctx.perfil.agentes.map((slug) => agentBySlug[slug]).filter(Boolean)
+    : agents;
+  const v = ctx.vocabulario;
 
   return (
     <div className="min-h-screen bg-[color:var(--cream)]">
@@ -42,12 +53,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <span className="flex-1 min-w-0">
               {/* Se llamaba "AGENDA": no se identificaba como el módulo de reservas online
                   y no había forma de llegar a /dashboard/reservas salvo tecleando la URL. */}
-              <span className="block font-stencil text-xl leading-none">RESERVAS</span>
-              <span className="block text-[10px] uppercase tracking-widest text-black/70">Agenda · clientes · informes · compartir</span>
+              <span className="block font-stencil text-xl leading-none">{ctx.perfil.id === "legal" ? "CONSULTAS" : "RESERVAS"}</span>
+              <span className="block text-[10px] uppercase tracking-widest text-black/70">Agenda · {v.clientePlural} · informes · compartir</span>
             </span>
           </a>
-          <div className="text-xs font-mono uppercase tracking-widest text-black/50 px-1 mb-2">Tu equipo · {agents.length} agentes</div>
-          {agents.map((a) => (
+          <div className="text-xs font-mono uppercase tracking-widest text-black/50 px-1 mb-2">
+            Tu equipo · {visibles.length} {visibles.length === 1 ? "agente" : "agentes"}
+          </div>
+          {visibles.map((a) => (
             <a
               key={a.slug}
               href={`/dashboard/${a.slug}`}

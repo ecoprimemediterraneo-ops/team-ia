@@ -28,10 +28,28 @@ const fechaCorta = (iso: string) => { const [y, m, d] = iso.split("-"); return `
 
 const PRESETS = [["semana", "Esta semana"], ["mes", "Este mes"], ["30", "Últimos 30 días"]] as const;
 
-export default function InformesView({ slug }: { slug: string }) {
-  const [preset, setPreset] = useState<"semana" | "mes" | "30" | "custom">("30");
-  const [from, setFrom] = useState(rango("30")[0]);
-  const [to, setTo] = useState(rango("30")[1]);
+/** Rango completo de un mes "YYYY-MM" (día 1 → último día). null si no es válido. */
+function rangoDeMes(mes: string): [string, string] | null {
+  const m = /^(\d{4})-(\d{2})$/.exec(mes);
+  if (!m) return null;
+  const y = Number(m[1]), mo = Number(m[2]);
+  if (mo < 1 || mo > 12) return null;
+  const ultimo = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+  return [`${m[1]}-${m[2]}-01`, `${m[1]}-${m[2]}-${String(ultimo).padStart(2, "0")}`];
+}
+
+/**
+ * `mesInicial` ("YYYY-MM") abre la vista directamente en ese mes completo en vez
+ * del preset por defecto de 30 días. Lo usa el enlace del informe mensual por
+ * email, para que el dueño aterrice viendo exactamente el mes del que le
+ * hablaba el correo. Solo es el valor de arranque: los presets y los selectores
+ * de fecha siguen mandando en cuanto los toca.
+ */
+export default function InformesView({ slug, mesInicial }: { slug: string; mesInicial?: string }) {
+  const rangoInicial = mesInicial ? rangoDeMes(mesInicial) : null;
+  const [preset, setPreset] = useState<"semana" | "mes" | "30" | "custom">(rangoInicial ? "custom" : "30");
+  const [from, setFrom] = useState(rangoInicial ? rangoInicial[0] : rango("30")[0]);
+  const [to, setTo] = useState(rangoInicial ? rangoInicial[1] : rango("30")[1]);
   const [data, setData] = useState<Informe | null>(null);
   const [cargando, setCargando] = useState(true);
 

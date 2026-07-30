@@ -20,7 +20,7 @@ import { getResend, RESEND_FROM } from "./resend";
 import { sendWhatsAppText } from "./whatsapp-sender";
 import { kvGet, kvSet, supabaseEnabled } from "./supabase";
 import { resolveCalendarEmail } from "./booking";
-import type { BookingRecord, BusinessBooking, EsperaEntry, Informe } from "./booking";
+import type { BookingRecord, BusinessBooking, EsperaEntry } from "./booking";
 
 const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
@@ -33,7 +33,7 @@ export function fechaHumana(iso: string): string {
   return `${DIAS[wd]} ${parseInt(d, 10)} de ${MESES[parseInt(mo, 10) - 1]} a las ${hh}:${mm}`;
 }
 
-function esc(s: string): string {
+export function esc(s: string): string {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
@@ -53,13 +53,32 @@ export type NotifResult = {
 // Plantillas de email (limpias, consumidor final, legibles en móvil)
 // -----------------------------------------------------------------------------
 
-function emailBase(business: BusinessBooking, titulo: string, cuerpo: string, cancelUrl?: string): string {
+/**
+ * Maqueta base de TODOS los emails (cabecera negra con el nombre del negocio,
+ * caja blanca con borde, pie de AI-Team). Recibe el nombre suelto —no el
+ * BusinessBooking— para que la pueda reutilizar el informe mensual unificado,
+ * que también se puede previsualizar de un tenant sin negocio de reservas.
+ *
+ * `ancho` sube de los 480px de las notificaciones a los 600 del informe, donde
+ * hay tablas de KPIs y listas que a 480 se estrangulan. Es un MÁXIMO, no un
+ * ancho fijo: el contenedor va a `width:100%` + `max-width:<ancho>px`, así que
+ * en una pantalla estrecha (Gmail móvil) el correo se encoge en vez de forzar
+ * scroll horizontal. Antes era `width="600" style="width:600px"`, y a 375px de
+ * viewport el email se salía ~290px por la derecha.
+ */
+export function emailShell(
+  nombreCabecera: string,
+  titulo: string,
+  cuerpo: string,
+  cancelUrl?: string,
+  ancho = 480,
+): string {
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#FAF8F3">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FAF8F3"><tr><td align="center" style="padding:24px 12px">
-    <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="width:480px;max-width:100%">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;background:#FAF8F3"><tr><td align="center" style="padding:24px 12px">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:${ancho}px;margin:0 auto">
       <tr><td style="background:#000;padding:16px 20px">
-        <div style="font-family:Arial,sans-serif;color:#F5C518;font-weight:bold;font-size:13px;letter-spacing:.12em;text-transform:uppercase">${esc(business.nombre)}</div>
+        <div style="font-family:Arial,sans-serif;color:#F5C518;font-weight:bold;font-size:13px;letter-spacing:.12em;text-transform:uppercase">${esc(nombreCabecera)}</div>
       </td></tr>
       <tr><td style="background:#fff;border:2px solid #000;border-top:none;padding:24px 20px">
         <div style="font-family:Georgia,serif;font-size:22px;font-weight:bold;color:#0c0c0c;margin:0 0 12px">${titulo}</div>
@@ -74,6 +93,11 @@ function emailBase(business: BusinessBooking, titulo: string, cuerpo: string, ca
     </table>
   </td></tr></table>
 </body></html>`;
+}
+
+/** Atajo con el nombre del negocio ya resuelto (lo usan las notificaciones). */
+function emailBase(business: BusinessBooking, titulo: string, cuerpo: string, cancelUrl?: string): string {
+  return emailShell(business.nombre, titulo, cuerpo, cancelUrl);
 }
 
 function bloqueCita(record: BookingRecord, business: BusinessBooking): string {
@@ -115,7 +139,7 @@ export function construirRecordatorio(record: BookingRecord, business: BusinessB
 // Envío
 // -----------------------------------------------------------------------------
 
-async function enviarEmail(to: string | undefined, subject: string, html: string, fromName?: string): Promise<NotifResult["email"]> {
+export async function enviarEmail(to: string | undefined, subject: string, html: string, fromName?: string): Promise<NotifResult["email"]> {
   if (!to) return { intentado: false, enviado: false, modo: "log_local" };
   if (!process.env.RESEND_API_KEY) {
     console.log(`[booking-email] (LOCAL / sin RESEND) SE HABRÍA ENVIADO a ${maskEmail(to)} · "${subject}"${fromName ? ` · de "${fromName}"` : ""}`);
@@ -223,7 +247,7 @@ export function ownerNotifyEnabled(): boolean {
 // Ledger anti-duplicado: no mandar dos avisos del mismo (cita, tipo).
 const OWNER_NOTICE_FILE = path.join(process.cwd(), "data", "booking-owner-notices.json");
 const KV_OWNER_NOTICE = "booking:ownernotice:";
-async function yaAvisado(key: string): Promise<boolean> {
+export async function yaAvisado(key: string): Promise<boolean> {
   if (supabaseEnabled()) return !!(await kvGet(KV_OWNER_NOTICE + key));
   try {
     const m = JSON.parse(await fs.readFile(OWNER_NOTICE_FILE, "utf8")) as Record<string, unknown>;
@@ -232,7 +256,7 @@ async function yaAvisado(key: string): Promise<boolean> {
     return false;
   }
 }
-async function marcarAvisado(key: string): Promise<void> {
+export async function marcarAvisado(key: string): Promise<void> {
   if (supabaseEnabled()) {
     await kvSet(KV_OWNER_NOTICE + key, { at: new Date().toISOString() });
     return;
@@ -313,67 +337,15 @@ export async function enviarAvisoDuenoA(
 }
 
 // -----------------------------------------------------------------------------
-// Informe mensual del negocio — resumen del mes enviado por email AL DUEÑO.
-// Anti-duplicado por (slug, mes) reutilizando el mismo ledger de avisos al dueño.
+// Informe mensual — MOVIDO.
+//
+// El renderer y el envío del informe viven ahora en `informe-unificado.ts`, que
+// fusiona en UN solo email las tres secciones (reservas + valor generado +
+// contenido publicado). Aquí quedaban `construirInformeMensual` /
+// `enviarInformeMensual`, que solo pintaban la parte de reservas: se han
+// ELIMINADO a propósito para que no exista un segundo renderer que pueda volver
+// a divergir del bueno.
+//
+// Lo que este módulo aporta al informe son las piezas compartidas, ya exportadas
+// arriba: emailShell(), esc(), enviarEmail(), yaAvisado()/marcarAvisado().
 // -----------------------------------------------------------------------------
-
-const euros = (n: number) => `${Math.round(n || 0)} €`;
-
-/** Email de informe mensual (marca del negocio en la cabecera; lo manda la plataforma al dueño). */
-export function construirInformeMensual(inf: Informe, business: BusinessBooking, mesLabel: string, baseUrl: string): { subject: string; html: string } {
-  const subject = `Tu informe de ${mesLabel} — ${business.nombre}`.slice(0, 140);
-  const dash = `${baseUrl.replace(/\/$/, "")}/dashboard/reservas`;
-  const kpi = (label: string, valor: string) =>
-    `<td style="padding:12px;border:2px solid #000;background:#fff;font-family:Arial,sans-serif;width:50%">
-      <div style="font-size:11px;color:#777;text-transform:uppercase;letter-spacing:.05em">${label}</div>
-      <div style="font-size:22px;font-weight:bold;color:#0c0c0c;margin-top:2px">${valor}</div>
-    </td>`;
-  const topSvc = (inf.porServicio || []).slice(0, 5);
-  const topEmp = (inf.porEmpleado || []).slice(0, 5);
-  const lista = (items: { nombre: string; citas: number; ingresos: number }[]) =>
-    `<ul style="margin:6px 0 0;padding-left:18px;font-family:Arial,sans-serif;font-size:14px;line-height:1.7;color:#333">
-      ${items.map((s) => `<li>${esc(s.nombre)} — <b>${s.citas}</b> cita${s.citas === 1 ? "" : "s"}${s.ingresos ? ` · ${euros(s.ingresos)}` : ""}</li>`).join("")}
-    </ul>`;
-  const svcHtml = topSvc.length ? lista(topSvc) : `<p style="font-family:Arial,sans-serif;font-size:14px;color:#999;margin:6px 0 0">Sin servicios este mes.</p>`;
-  const empHtml = topEmp.length > 1
-    ? `<div style="font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#0c0c0c;margin:18px 0 0">Por profesional</div>${lista(topEmp)}`
-    : "";
-
-  const cuerpo = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#333;margin:0 0 16px">Aquí tienes el resumen de <b>${esc(mesLabel)}</b> en ${esc(business.nombre)}:</div>
-    <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:6px;width:100%;margin:0 -6px">
-      <tr>${kpi("Ingresos", euros(inf.ingresos))}${kpi("Citas completadas", String(inf.citas.completadas))}</tr>
-      <tr>${kpi("Clientas nuevas", String(inf.clientes.nuevos))}${kpi("Ocupación", `${inf.ocupacion.pct}%`)}</tr>
-    </table>
-    <div style="font-family:Arial,sans-serif;font-size:13px;color:#555;margin:12px 0 0;line-height:1.6">
-      ${inf.citas.total} citas en total · ${inf.citas.canceladas} cancelada${inf.citas.canceladas === 1 ? "" : "s"} · ${inf.citas.noShow} no-show (${inf.tasaNoShow}%) · ${inf.clientes.recurrentes} clienta${inf.clientes.recurrentes === 1 ? "" : "s"} recurrente${inf.clientes.recurrentes === 1 ? "" : "s"}.
-    </div>
-    <div style="font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:#0c0c0c;margin:18px 0 0">Servicios más pedidos</div>
-    ${svcHtml}
-    ${empHtml}
-    <div style="text-align:center;margin:24px 0 0"><a href="${dash}" style="display:inline-block;background:#F5C518;color:#000;text-decoration:none;padding:12px 28px;font-weight:bold;border:2px solid #000">Ver el detalle en tu panel →</a></div>`;
-  return { subject, html: emailBase(business, `📊 Informe de ${mesLabel}`, cuerpo) };
-}
-
-/**
- * Envía el informe mensual al dueño (resolveCalendarEmail). Anti-duplicado por
- * (slug, periodoKey=YYYY-MM): no reenvía el mismo mes salvo opts.force. Best-effort.
- */
-export async function enviarInformeMensual(
-  business: BusinessBooking,
-  inf: Informe,
-  periodoKey: string,
-  mesLabel: string,
-  baseUrl: string,
-  opts?: { force?: boolean },
-): Promise<{ enviado: boolean; modo: string; to?: string }> {
-  const key = `informe:${business.slug}:${periodoKey}`;
-  if (!opts?.force && (await yaAvisado(key))) return { enviado: false, modo: "duplicado" };
-  let to: string | undefined;
-  try { to = await resolveCalendarEmail(business); } catch { to = undefined; }
-  if (!to) return { enviado: false, modo: "sin_email_dueno" };
-  const { subject, html } = construirInformeMensual(inf, business, mesLabel, baseUrl);
-  const r = await enviarEmail(to, subject, html);
-  if (r.intentado) await marcarAvisado(key);
-  return { enviado: r.enviado, modo: r.modo, to };
-}
-

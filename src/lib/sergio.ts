@@ -1,107 +1,69 @@
-export type Competitor = {
+// Sergio — vista de competidores vigilados.
+//
+// AQUÍ NO HAY DATOS DE EJEMPLO. Antes este fichero exportaba `MOCK_COMPETITORS`:
+// siete competidores escritos a mano (nombres, valoraciones de Google, número de
+// reseñas, debilidades y oportunidades) que se pintaban en el panel como si
+// fueran los competidores reales del negocio. Se han ELIMINADO: un cliente podía
+// creerse que eran los suyos.
+//
+// Lo que se muestra ahora sale ÚNICAMENTE de las fuentes que alguien ha dado de
+// alta de verdad (`sergio-db`). Si no hay ninguna, el panel enseña un estado
+// vacío que lo dice claramente. Nunca se rellena el hueco con datos inventados.
+//
+// Nota sobre los campos: las fuentes reales NO guardan valoración de Google,
+// número de reseñas, velocidad de respuesta ni "debilidades". Aquellos campos
+// solo existían en los datos falsos. Por eso este tipo se limita a lo que el
+// sistema sabe de verdad.
+
+import type { Source, SourceCategory, SourceType, Frequency } from "./sergio-db";
+
+export type CompetidorVigilado = {
   id: string;
-  name: string;
-  sector: string;
-  city: string;
-  googleRating: number;
-  reviewCount: number;
-  website?: string;
-  instagram?: string;
-  lastPost?: string; // fecha ISO último post IG
-  whatsappSpeed?: string; // "< 1h" | "1-4h" | "> 4h" | "sin WA"
-  hasBookingOnline: boolean;
-  weaknesses: string[];
-  opportunities: string[];
-  scrapedAt: string;
+  nombre: string;
+  url: string;
+  tipo: SourceType;
+  categoria: SourceCategory;
+  frecuencia: Frequency;
+  activo: boolean;
+  ultimaRevision: string | null;   // null = todavía no se ha revisado nunca
+  cambiosDetectados: number;
 };
 
-// Mock data — en producción se reemplaza con Firecrawl/SerpAPI scraping
-export const MOCK_COMPETITORS: Competitor[] = [
-  {
-    id: "c1",
-    name: "Clínica Dental Sonrisa Marbella",
-    sector: "Clínica dental",
-    city: "Marbella",
-    googleRating: 4.2,
-    reviewCount: 87,
-    website: "https://example.com",
-    lastPost: "2025-04-01",
-    whatsappSpeed: "> 4h",
-    hasBookingOnline: false,
-    weaknesses: ["Sin reservas online", "WhatsApp lento", "Pocas reseñas vs competencia"],
-    opportunities: ["Ofrecer cita online 24/7", "Respuesta WhatsApp en <12s", "Campaña de reseñas"],
-    scrapedAt: new Date().toISOString(),
-  },
-  {
-    id: "c2",
-    name: "Dental Málaga Centro",
-    sector: "Clínica dental",
-    city: "Málaga",
-    googleRating: 4.6,
-    reviewCount: 312,
-    website: "https://example2.com",
-    instagram: "@dentalmalagacentro",
-    lastPost: "2025-05-08",
-    whatsappSpeed: "1-4h",
-    hasBookingOnline: true,
-    weaknesses: ["Instagram poco activo", "Sin seguimiento de presupuestos", "No responden reseñas negativas"],
-    opportunities: ["Automatizar respuestas a reseñas", "Reactivar pacientes inactivos", "Contenido dental educativo"],
-    scrapedAt: new Date().toISOString(),
-  },
-  {
-    id: "c3",
-    name: "Salón Glamour Fuengirola",
-    sector: "Peluquería",
-    city: "Fuengirola",
-    googleRating: 3.9,
-    reviewCount: 45,
-    website: undefined,
-    lastPost: "2025-02-14",
-    whatsappSpeed: "sin WA",
-    hasBookingOnline: false,
-    weaknesses: ["Sin presencia en WhatsApp", "Instagram abandonado", "Rating bajo"],
-    opportunities: ["Captar clientes por WhatsApp", "Campaña de reseñas urgente", "Contenido Instagram semanal"],
-    scrapedAt: new Date().toISOString(),
-  },
-  {
-    id: "c4",
-    name: "Restaurante La Brasa Nerja",
-    sector: "Restaurante",
-    city: "Nerja",
-    googleRating: 4.4,
-    reviewCount: 523,
-    website: "https://example3.com",
-    instagram: "@labrasanerja",
-    lastPost: "2025-05-10",
-    whatsappSpeed: "< 1h",
-    hasBookingOnline: false,
-    weaknesses: ["Sin reservas online", "No responde TripAdvisor", "Solo en español"],
-    opportunities: ["Reservas WhatsApp en inglés para turistas", "Respuestas TripAdvisor automáticas", "Menú digital QR"],
-    scrapedAt: new Date().toISOString(),
-  },
-  {
-    id: "c5",
-    name: "Clínica Dental Estepona Salud",
-    sector: "Clínica dental",
-    city: "Estepona",
-    googleRating: 4.1,
-    reviewCount: 63,
-    lastPost: "2025-03-20",
-    whatsappSpeed: "1-4h",
-    hasBookingOnline: false,
-    weaknesses: ["Pocas reseñas", "Sin web actualizada", "WhatsApp tardío"],
-    opportunities: ["Subir a 100+ reseñas en 2 meses", "Cita online", "Seguimiento presupuestos"],
-    scrapedAt: new Date().toISOString(),
-  },
-];
+export const CATEGORIA_LABEL: Record<SourceCategory, string> = {
+  direct_competitor: "Competidor directo",
+  adjacent: "Sector adyacente",
+  inspiration: "Referencia",
+};
 
-export function filterCompetitors(
-  data: Competitor[],
-  { sector, city }: { sector?: string; city?: string }
-): Competitor[] {
-  return data.filter((c) => {
-    if (sector && !c.sector.toLowerCase().includes(sector.toLowerCase())) return false;
-    if (city && c.city.toLowerCase() !== city.toLowerCase()) return false;
+export const FRECUENCIA_LABEL: Record<Frequency, string> = {
+  daily: "Cada día",
+  weekly: "Cada semana",
+  biweekly: "Cada dos semanas",
+};
+
+/** Convierte una fuente dada de alta en la fila que ve el panel. */
+export function sourceToCompetidor(s: Source, cambiosDetectados = 0): CompetidorVigilado {
+  return {
+    id: s.id,
+    nombre: s.competitor_name,
+    url: s.url,
+    tipo: s.type,
+    categoria: s.category,
+    frecuencia: s.frequency,
+    activo: s.active,
+    ultimaRevision: s.last_scraped_at,
+    cambiosDetectados,
+  };
+}
+
+/** Filtro por los campos que EXISTEN de verdad: categoría y si está activa. */
+export function filtrarCompetidores(
+  lista: CompetidorVigilado[],
+  filtro: { categoria?: string; soloActivos?: boolean },
+): CompetidorVigilado[] {
+  return lista.filter((c) => {
+    if (filtro.categoria && c.categoria !== filtro.categoria) return false;
+    if (filtro.soloActivos && !c.activo) return false;
     return true;
   });
 }

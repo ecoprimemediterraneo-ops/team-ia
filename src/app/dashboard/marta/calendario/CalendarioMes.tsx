@@ -16,6 +16,7 @@ import PostCard from "./PostCard";
 import AutomaticoForm from "./AutomaticoForm";
 import SubirPost from "./SubirPost";
 import IdentidadVisual from "./IdentidadVisual";
+import Acordeon from "./Acordeon";
 
 export default async function CalendarioMes({
   tenantId = DEFAULT_TENANT_ID,
@@ -104,29 +105,30 @@ export default async function CalendarioMes({
         </div>
       )}
 
-      <AutomaticoForm tenantId={tenantId} dias={pauta.dias} autoEnabled={autoEnabled} />
+      {/* Secciones plegables (acordeón). La primera abierta; el resto plegadas.
+          El contenido interior es EXACTAMENTE el que ya existía. */}
+      <Acordeon titulo="Pauta y posts a generar" defaultOpen>
+        <AutomaticoForm tenantId={tenantId} dias={pauta.dias} autoEnabled={autoEnabled} />
+      </Acordeon>
 
-      <IdentidadVisual
-        tenantId={tenantId}
-        nombre={nombreNegocio}
-        fondo={marca.fondo}
-        acento={marca.acento}
-        texto={marca.texto}
-        logoUrl={marca.logoUrl}
-        plantilla={marca.plantilla}
-        cta={marca.cta}
-      />
+      <Acordeon titulo="Identidad visual">
+        <IdentidadVisual
+          tenantId={tenantId}
+          nombre={nombreNegocio}
+          fondo={marca.fondo}
+          acento={marca.acento}
+          texto={marca.texto}
+          logoUrl={marca.logoUrl}
+          plantilla={marca.plantilla}
+          cta={marca.cta}
+        />
+      </Acordeon>
 
-      <SubirPost tenantId={tenantId} defaultFecha={defaultFecha} defaultHora={defaultHora} />
+      <Acordeon titulo="Subir post propio">
+        <SubirPost tenantId={tenantId} defaultFecha={defaultFecha} defaultHora={defaultHora} />
+      </Acordeon>
 
-      <section className="space-y-3">
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <h2 className="font-stencil text-2xl uppercase">Programado este mes</h2>
-          <span className="text-[11px] font-mono uppercase tracking-widest text-black/45">
-            {delMes.length} posts
-          </span>
-        </div>
-
+      <Acordeon titulo="Programado este mes" badge={`${delMes.length} posts`}>
         {delMes.length === 0 ? (
           <div className="card-hard bg-white p-6 text-sm text-black/50">
             Todavía no hay nada programado en {mesActual}. Marca los días en la pauta de arriba y pulsa{" "}
@@ -157,7 +159,7 @@ export default async function CalendarioMes({
             })}
           </div>
         )}
-      </section>
+      </Acordeon>
     </div>
   );
 }
