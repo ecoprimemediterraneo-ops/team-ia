@@ -47,68 +47,20 @@ import {
   isCommentDmEnabled,
   commentDmTenantsPermitidos,
 } from "@/lib/marta-comment-rules";
+// Los helpers de Graph viven en un solo sitio, compartidos con la ruta que
+// SUSCRIBE (/api/admin/marta-suscribir): lo que aquí se diagnostica es
+// exactamente el mismo camino que allí se ejecuta.
+import {
+  resolverTokenSystemUser,
+  formaDelToken,
+  graphGet,
+  derivarPageToken,
+  leerCamposSuscritos,
+} from "@/lib/meta-webhook-subs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
-
-const GRAPH = "https://graph.facebook.com/v21.0";
-
-// -----------------------------------------------------------------------------
-// Token: de dónde sale y qué forma tiene
-// -----------------------------------------------------------------------------
-
-/** Misma resolución que usa el webhook de Marta, para diagnosticar lo mismo que corre. */
-function resolverToken(): { valor: string; variable: string } | null {
-  const ig = process.env.INSTAGRAM_ACCESS_TOKEN;
-  if (ig && ig.length > 0) return { valor: ig, variable: "INSTAGRAM_ACCESS_TOKEN" };
-  const wa = process.env.WHATSAPP_ACCESS_TOKEN;
-  if (wa && wa.length > 0) return { valor: wa, variable: "WHATSAPP_ACCESS_TOKEN (fallback)" };
-  return null;
-}
-
-/**
- * Radiografía del token SIN enseñarlo: longitud, prefijo y si trae basura
- * alrededor. Con esto se distingue "token mal pegado" de "token correcto pero
- * insuficiente" sin que el secreto salga por ninguna parte.
- */
-function formaDelToken(t: string) {
-  return {
-    longitud: t.length,
-    // Los tokens de Graph empiezan por "EAA". Si aquí sale otra cosa, el valor
-    // pegado no es un token de la Graph API de Facebook.
-    empiezaPor: t.slice(0, 3),
-    pareceGraph: t.startsWith("EAA"),
-    tieneEspaciosOSaltos: /\s/.test(t),
-    tieneComillas: /["']/.test(t),
-    // Un valor pegado desde un editor a veces se lleva un "\n" literal de dos
-    // caracteres, que no es un salto de línea real y no lo caza /\s/.
-    tieneBarraNLiteral: t.includes("\\n"),
-  };
-}
-
-type GraphRes = { ok: boolean; status: number; code?: number; message?: string; json: unknown };
-
-/** GET a Graph con el token en la CABECERA, nunca en la URL. */
-async function graphGet(path: string, token: string): Promise<GraphRes> {
-  try {
-    const res = await fetch(`${GRAPH}${path}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const json = (await res.json().catch(() => ({}))) as {
-      error?: { code?: number; message?: string };
-    };
-    return {
-      ok: res.ok && !json.error,
-      status: res.status,
-      code: json.error?.code,
-      message: json.error?.message,
-      json,
-    };
-  } catch (e) {
-    return { ok: false, status: 0, message: e instanceof Error ? e.message : "network_error", json: null };
-  }
-}
 
 // -----------------------------------------------------------------------------
 // El diagnóstico, paso a paso
@@ -120,7 +72,7 @@ async function diagnosticarWebhook(): Promise<{ pasos: Paso[]; suscritoAComentar
   const pasos: Paso[] = [];
   const pageId = process.env.FACEBOOK_PAGE_ID || "";
 
-  const tok = resolverToken();
+  const tok = resolverTokenSystemUser();
   if (!tok) {
     pasos.push({
       paso: "0· token",
@@ -177,19 +129,18 @@ async function diagnosticarWebhook(): Promise<{ pasos: Paso[]; suscritoAComentar
   // Paso 3 — derivar el PAGE access token. Es el mismo camino que ya usa el
   // webhook de Marta para poder mandar DMs, así que si esto falla, los DMs
   // tampoco saldrían.
-  const pageTokenRes = await graphGet(`/${pageId}?fields=access_token`, tok.valor);
-  const pageToken = (pageTokenRes.json as { access_token?: string })?.access_token;
+  const page = await derivarPageToken(pageId, tok.valor);
   pasos.push({
     paso: "3· derivar Page access token",
-    ok: !!pageToken,
-    detalle: pageToken
+    ok: page.ok,
+    detalle: page.ok
       ? "Derivado correctamente desde el token de System User."
-      : `NO se ha podido derivar (código ${pageTokenRes.code ?? pageTokenRes.status}): ${pageTokenRes.message}`,
+      : `NO se ha podido derivar (código ${page.code ?? "?"}): ${page.message}`,
   });
-  if (!pageToken) return { pasos, suscritoAComentarios: null, campos: [] };
+  if (!page.ok) return { pasos, suscritoAComentarios: null, campos: [] };
 
   // Paso 4 — AHORA sí: subscribed_apps con el Page token.
-  const subs = await graphGet(`/${pageId}/subscribed_apps?fields=subscribed_fields`, pageToken);
+  const subs = await leerCamposSuscritos(pageId, page.token);
   if (!subs.ok) {
     // Caso concreto y muy frecuente: el token de System User se generó sin el
     // permiso `pages_manage_metadata`. Es el permiso que gobierna las
@@ -207,13 +158,12 @@ async function diagnosticarWebhook(): Promise<{ pasos: Paso[]; suscritoAComentar
           "pages_manage_metadata, ademas de los de Instagram) y volver a pegarlo en " +
           "INSTAGRAM_ACCESS_TOKEN. Es el mismo permiso que hara falta despues para suscribir la " +
           "Pagina al campo `comments`."
-        : `No se han podido leer (código ${subs.code ?? subs.status}): ${subs.message}`,
+        : `No se han podido leer (código ${subs.code ?? "?"}): ${subs.message}`,
       datos: { graphCode: subs.code, graphMessage: subs.message },
     });
     return { pasos, suscritoAComentarios: null, campos: [] };
   }
-  const campos = (((subs.json as { data?: Array<{ subscribed_fields?: string[] }> })?.data) || [])
-    .flatMap((d) => d.subscribed_fields || []);
+  const campos = subs.campos;
   const suscritoAComentarios = campos.includes("comments");
   pasos.push({
     paso: "4· campos suscritos",
@@ -266,7 +216,8 @@ export async function GET() {
   if (suscritoAComentarios === false) {
     veredicto =
       "La Página NO está suscrita al campo `comments`: el comentario no llega al webhook. " +
-      "Es la causa de que el DM directo funcione y el comentario no.";
+      "Es la causa de que el DM directo funcione y el comentario no. Se arregla con " +
+      "POST /api/admin/marta-suscribir.";
   } else if (pasoRoto) {
     veredicto = `Falla el paso "${pasoRoto.paso}": ${pasoRoto.detalle}`;
   } else if (!activas.length) {
