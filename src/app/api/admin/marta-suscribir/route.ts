@@ -69,6 +69,7 @@ export async function POST(req: Request) {
     igUserId?: string;
     camposPagina?: string[];
     camposInstagram?: string[];
+    callbackUrl?: string;
   };
   const pageId = (body.pageId || process.env.FACEBOOK_PAGE_ID || "").trim();
   const igUserId = (body.igUserId || process.env.INSTAGRAM_USER_ID || "").trim();
@@ -105,10 +106,14 @@ export async function POST(req: Request) {
   //    objeto `instagram`. Es de donde ya llegan los DMs (la Página tiene la
   //    lista vacía y aun así entran), así que es de donde tienen que llegar
   //    también los comentarios.
+  const callback =
+    (body.callbackUrl || "").trim() ||
+    `${(process.env.PUBLIC_URL || "https://aiteam.marketing").replace(/\/$/, "")}/api/marta/webhook`;
   const app = await anadirCamposApp(
     "instagram",
     camposInstagram,
     process.env.INSTAGRAM_VERIFY_TOKEN || "",
+    callback,
   );
 
   // 2) Y de paso la Página, que es por donde Meta documenta los DMs. Va como
@@ -121,7 +126,9 @@ export async function POST(req: Request) {
 
   const comentariosOk = app.despues.includes("comments");
   const resumen = comentariosOk
-    ? app.sinCambios
+    ? app.creada
+      ? `Creada la suscripción de la app al objeto instagram con callback ${app.callbackUrl}, y ya incluye \`comments\`. Campos: ${app.despues.join(", ")}.`
+      : app.sinCambios
       ? "No hacía falta tocar nada: la app ya estaba suscrita a `comments` en el objeto instagram."
       : `Listo: la app ya está suscrita a \`comments\`, comprobado releyendo de Meta. Campos ahora: ${app.despues.join(", ")}.`
     : `NO se ha conseguido suscribir \`comments\`. ${app.error || "Revisa el detalle."}`;

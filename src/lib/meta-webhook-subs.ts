@@ -306,6 +306,8 @@ export type ResultadoObjetoApp = {
   verificado: boolean;
   sinCambios: boolean;
   callbackUrl?: string;
+  /** true si la suscripción al objeto no existía y se ha creado ahora. */
+  creada?: boolean;
   error?: string;
 };
 
@@ -320,6 +322,7 @@ export async function anadirCamposApp(
   objeto: string,
   campos: string[],
   verifyToken: string,
+  callbackFallback?: string,
 ): Promise<ResultadoObjetoApp> {
   const base: ResultadoObjetoApp = {
     ok: false, objeto, antes: [], pedidos: campos, enviados: [],
@@ -334,14 +337,28 @@ export async function anadirCamposApp(
 
   const suya = actual.suscripciones.find((s) => s.object === objeto);
   const antes = suya?.fields || [];
-  const callbackUrl = suya?.callback_url;
+
+  // Si la app todavía no tiene suscripción a este objeto, se CREA con la
+  // callback que nos pasen. Crear donde no había nada no puede pisar una
+  // configuración previa: el POST solo afecta a este objeto. Lo que sigue
+  // estando prohibido es escribir cuando ya hay una y no se ha podido leer,
+  // porque ahí sí se perderían campos (por eso el return de más arriba).
+  const callbackUrl = suya?.callback_url || callbackFallback;
   if (!callbackUrl) {
     return {
       ...base,
       antes,
-      error: `La app no tiene ninguna suscripción al objeto "${objeto}" con callback. Hay que crearla una vez desde el panel de Meta (Webhooks → ${objeto}); desde aquí solo se añaden campos a una que ya exista.`,
+      error: `La app no tiene suscripción al objeto "${objeto}" y no se ha indicado callback con la que crearla.`,
     };
   }
+  if (!verifyToken) {
+    return {
+      ...base,
+      antes,
+      error: "Falta el verify token (INSTAGRAM_VERIFY_TOKEN): Meta lo exige para validar la callback.",
+    };
+  }
+  const creando = !suya;
 
   if (campos.every((c) => antes.includes(c))) {
     return { ...base, ok: true, antes, despues: antes, verificado: true, sinCambios: true, callbackUrl };
@@ -366,5 +383,6 @@ export async function anadirCamposApp(
     verificado: campos.every((c) => despues.includes(c)),
     sinCambios: false,
     callbackUrl,
+    creada: creando,
   };
 }
