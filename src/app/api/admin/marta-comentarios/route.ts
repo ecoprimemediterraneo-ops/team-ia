@@ -56,6 +56,7 @@ import {
   graphGet,
   derivarPageToken,
   leerCamposSuscritos,
+  leerSuscripcionesApp,
 } from "@/lib/meta-webhook-subs";
 
 export const runtime = "nodejs";
@@ -209,6 +210,31 @@ async function diagnosticarWebhook(): Promise<{ pasos: Paso[]; suscritoAComentar
 }
 
 /**
+ * Suscripciones de webhook declaradas por la APP (`/{app-id}/subscriptions`).
+ *
+ * Es el sitio donde vive de verdad `comments` para Instagram, y el único que
+ * explica que los DMs lleguen con la Página suscrita a nada. Va aparte porque
+ * usa el token de aplicación, no el de System User.
+ */
+async function diagnosticarApp(): Promise<Paso> {
+  const r = await leerSuscripcionesApp();
+  if (!r.ok) {
+    return { paso: "6· suscripciones de la APP", ok: false, detalle: `No se han podido leer: ${r.message}` };
+  }
+  const ig = r.suscripciones.find((x) => x.object === "instagram");
+  return {
+    paso: "6· suscripciones de la APP",
+    ok: !!ig?.fields.includes("comments"),
+    detalle: !ig
+      ? `La app NO tiene suscripción al objeto "instagram". Objetos que sí tiene: ${r.suscripciones.map((x) => x.object).join(", ") || "ninguno"}.`
+      : ig.fields.includes("comments")
+        ? `La app SÍ está suscrita a \`comments\` en el objeto instagram. Campos: ${ig.fields.join(", ")}.`
+        : `La app está suscrita al objeto instagram pero SIN \`comments\`. Campos: ${ig.fields.join(", ") || "ninguno"}.`,
+    datos: { suscripciones: r.suscripciones },
+  };
+}
+
+/**
  * Segunda vía de entrada, SOLO para este diagnóstico de lectura: cabecera
  * `x-diag-secret` con el valor de `DIAG_SECRET`.
  *
@@ -240,6 +266,7 @@ export async function GET() {
   const envioEncendido = isCommentDmEnabled(ctx.tenantId);
 
   const { pasos, suscritoAComentarios, campos } = await diagnosticarWebhook();
+  pasos.push(await diagnosticarApp());
   const pasoRoto = pasos.find((p) => !p.ok);
 
   // Diagnóstico en una frase: el primer eslabón que falla, en orden de causa.
