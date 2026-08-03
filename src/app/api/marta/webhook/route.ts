@@ -5,7 +5,11 @@
 //   2. Meta llama POST /api/marta/webhook cuando llega un DM o comentario a la cuenta IG conectada.
 //   3. Para DMs: extraemos texto + sender.id, generamos respuesta con Claude Haiku
 //      y la enviamos vía Graph API /{ig-user-id}/messages.
-//   4. Comentarios: TODO (ver stub abajo).
+//   4. Para COMENTARIOS (entry[].changes con field "comments"): el camino entero
+//      —reglas, DM y respuesta pública en el hilo— vive en
+//      `lib/marta-comment-flow.ts`, y las llamadas a Graph en `lib/marta-graph.ts`.
+//      Están fuera de aquí para poder dispararlos sin ir a comentar a Instagram
+//      a mano (ver /api/admin/marta-probar-comentario).
 //
 // Vars de entorno (.env.local + Vercel):
 //   INSTAGRAM_VERIFY_TOKEN   — token compartido con Meta para validar el webhook
@@ -26,13 +30,8 @@ import {
 } from "@/lib/conversation-store";
 import { logEvent, makeEventId } from "@/lib/event-log";
 import { resolveTenantFromMeta } from "@/lib/tenants";
-import {
-  getCommentRules,
-  findMatchingRule,
-  renderDmTemplate,
-  markCommentProcessed,
-  isCommentDmEnabled,
-} from "@/lib/marta-comment-rules";
+import { procesarComentario } from "@/lib/marta-comment-flow";
+import { sendInstagramDM } from "@/lib/marta-graph";
 
 async function safeLogEvent(...args: Parameters<typeof logEvent>): Promise<void> {
   try {
@@ -44,8 +43,6 @@ async function safeLogEvent(...args: Parameters<typeof logEvent>): Promise<void>
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const GRAPH_VERSION = "v21.0";
 
 // -----------------------------------------------------------------------------
 // GET — handshake con Meta
@@ -186,7 +183,15 @@ export async function POST(req: Request) {
           continue;
         }
         console.log(`[marta/webhook] COMMENT RX tenant=${tenantId} entry=${entry.id}`);
-        await handleCommentChange(tenantId, entry.id, change);
+        const v = change.value ?? {};
+        const res = await procesarComentario(tenantId, entry.id, {
+          commentId: v.id ?? "",
+          text: v.text ?? "",
+          fromId: v.from?.id,
+          username: v.from?.username,
+          mediaId: v.media?.id,
+        });
+        console.log(`[marta/webhook] COMMENT resultado: ${res.detalle}`);
       }
     }
   } catch (err) {
@@ -197,128 +202,6 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true });
 }
 
-// -----------------------------------------------------------------------------
-// Comentario → DM (la función estrella de ManyChat)
-// -----------------------------------------------------------------------------
-//
-// Cuando alguien comenta una palabra clave en un post de Marta:
-//   1. Ignoramos comentarios propios de la cuenta y duplicados (dedup por id).
-//   2. Buscamos la primera regla habilitada que casa (keyword + scope).
-//   3. Respuesta PÚBLICA al comentario (si la regla la pide). Va PRIMERO porque
-//      es lo que se ve en el post: quien mira el hilo entiende que le han
-//      contestado, y es el orden que se graba para el App Review de Meta.
-//   4. PRIMER DM = plantilla fija de la regla, vía PRIVATE REPLY
-//      (recipient.comment_id → exento de la ventana de 24h, mecanismo ManyChat).
-//   5. Sembramos la conversación con ese DM como turno "assistant", para que si
-//      el usuario responde por privado, el motor de IA de DMs siga el hilo.
-//
-// Los pasos 3 y 4 son independientes: si uno falla, el otro se intenta igual y
-// el fallo queda en el log. Peor que no contestar es contestar a medias sin que
-// nadie se entere.
-//
-// El envío real está gated POR TENANT (ver `isCommentDmEnabled` en
-// marta-comment-rules): encendido para el tenant propio, apagado para el resto
-// mientras Meta no apruebe instagram_manage_comments +
-// instagram_business_manage_messages. Apagado, se detecta y se registra la
-// coincidencia pero NO se llama a Meta.
-async function handleCommentChange(
-  tenantId: string,
-  entryId: string | undefined,
-  change: IGCommentChange,
-): Promise<void> {
-  const v = change.value ?? {};
-  const commentId = v.id;
-  const text = v.text ?? "";
-  const fromId = v.from?.id;
-  const username = v.from?.username;
-  const mediaId = v.media?.id;
-
-  if (!commentId || !text.trim()) {
-    console.log("[marta/webhook] comentario sin id/texto ignorado");
-    return;
-  }
-
-  // 1a. Ignorar comentarios de la propia cuenta (no autorresponderse).
-  const ownId = entryId || process.env.INSTAGRAM_USER_ID;
-  if (fromId && ownId && fromId === ownId) {
-    console.log("[marta/webhook] comentario propio ignorado");
-    return;
-  }
-
-  // 1b. Dedup por comment.id (anti doble-DM si Meta reentrega el webhook).
-  const isNew = await markCommentProcessed(tenantId, commentId);
-  if (!isNew) {
-    console.log(`[marta/webhook] comentario duplicado ignorado id=${commentId}`);
-    return;
-  }
-
-  // 2. ¿Hay regla que case?
-  const rules = await getCommentRules(tenantId);
-  const rule = findMatchingRule(rules, text, mediaId);
-  if (!rule) {
-    console.log(
-      `[marta/webhook] comentario sin regla que case: "${text.slice(0, 80)}" (media=${mediaId ?? "?"})`,
-    );
-    return;
-  }
-
-  const dm = renderDmTemplate(rule.dmMessage, { usuario: username });
-  const rxTs = new Date().toISOString();
-  console.log(
-    `[marta/webhook] COMMENT match rule=${rule.id} from=${fromId ?? "?"} "${text.slice(0, 80)}"`,
-  );
-
-  // Registrar el comentario entrante (idempotente por commentId).
-  await safeLogEvent(tenantId, {
-    id: makeEventId("comment_in", "marta", commentId),
-    ts: rxTs,
-    type: "message_in",
-    channel: "marta",
-    senderId: fromId,
-    meta: { kind: "comment", commentId, mediaId, ruleId: rule.id },
-  });
-
-  // 3. ¿Este tenant tiene el envío encendido?
-  if (!isCommentDmEnabled(tenantId)) {
-    console.log(
-      `[marta/webhook] comment-to-DM GATED para tenant=${tenantId} ` +
-        `(no está en MARTA_COMMENT_DM_TENANTS ni hay MARTA_COMMENT_DM_ENABLED=true). ` +
-        `Habría enviado este DM a comment ${commentId}: "${dm.slice(0, 200)}"`,
-    );
-    return;
-  }
-
-  // 4. Respuesta PÚBLICA al comentario (primero: es lo que se ve en el post).
-  if (rule.replyPublic) {
-    const publicText =
-      (rule.publicReplyText || "").trim() || "¡Te acabo de escribir por privado! 📩";
-    const pubRes = await replyToComment(commentId, publicText);
-    console.log(`[marta/webhook] public reply TX:`, JSON.stringify(pubRes).slice(0, 300));
-  } else {
-    console.log(`[marta/webhook] regla ${rule.id} sin respuesta pública (replyPublic=false)`);
-  }
-
-  // 5. El primer DM, por private reply (exento de la ventana de 24 h).
-  const sendResult = await sendInstagramPrivateReply(commentId, dm);
-  console.log(`[marta/webhook] private reply TX:`, JSON.stringify(sendResult).slice(0, 300));
-
-  // 6. Sembrar la conversación para que la IA continúe el hilo por DM.
-  if (fromId) {
-    try {
-      await appendTurn("marta", fromId, "assistant", dm, username);
-    } catch (err) {
-      console.error("[marta/webhook] no se pudo sembrar la conversación:", err);
-    }
-  }
-
-  await safeLogEvent(tenantId, {
-    id: makeEventId("comment_dm_out", "marta", commentId),
-    type: "message_out",
-    channel: "marta",
-    senderId: fromId,
-    meta: { kind: "comment_dm", commentId, ruleId: rule.id },
-  });
-}
 
 // -----------------------------------------------------------------------------
 // Generar respuesta con Claude
@@ -360,176 +243,5 @@ async function generateReply(
   } catch (err) {
     console.error("[marta/webhook] error generando respuesta IA:", err);
     return "¡Hola! Hemos recibido tu mensaje, te respondemos en cuanto podamos.";
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Page Access Token cache (módulo)
-// -----------------------------------------------------------------------------
-// El System User EAA token NO sirve para POST /{page_id}/messages
-// (Graph responde "(#190) This method must be called with a Page Access Token").
-// Lo intercambiamos por el page access token vía GET /{page_id}?fields=access_token
-// y lo cacheamos 1h en memoria del módulo.
-let cachedPageToken: { token: string; expiresAt: number } | null = null;
-
-async function getPageAccessToken(userToken: string, pageId: string): Promise<string> {
-  const now = Date.now();
-  if (cachedPageToken && cachedPageToken.expiresAt > now) return cachedPageToken.token;
-  const url = `https://graph.facebook.com/${GRAPH_VERSION}/${pageId}?fields=access_token`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${userToken}` } });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`[marta/webhook] failed to fetch page token: status=${res.status} body=${body}`);
-  }
-  const data = (await res.json()) as { access_token?: string };
-  if (!data.access_token) {
-    throw new Error(`[marta/webhook] no access_token in page response`);
-  }
-  cachedPageToken = { token: data.access_token, expiresAt: now + 60 * 60 * 1000 }; // 1h
-  return data.access_token;
-}
-
-// -----------------------------------------------------------------------------
-// Enviar mensajes vía Instagram Graph API (DM normal o private reply a comentario)
-// -----------------------------------------------------------------------------
-
-// El destinatario puede ser un usuario por IGSID (DM normal) o un comentario
-// por comment_id (PRIVATE REPLY — exento de la ventana de 24h, mecanismo ManyChat).
-type IGRecipient = { id: string } | { comment_id: string };
-
-function getSystemUserToken(): string | undefined {
-  return process.env.INSTAGRAM_ACCESS_TOKEN && process.env.INSTAGRAM_ACCESS_TOKEN.length > 0
-    ? process.env.INSTAGRAM_ACCESS_TOKEN
-    : process.env.WHATSAPP_ACCESS_TOKEN;
-}
-
-/** Envía un mensaje (DM o private reply) vía POST /{PAGE_ID}/messages. */
-async function sendInstagramMessage(recipient: IGRecipient, text: string): Promise<unknown> {
-  const pageId = process.env.FACEBOOK_PAGE_ID;
-  const systemUserToken = getSystemUserToken();
-
-  if (!pageId) {
-    console.warn(
-      "[marta/webhook] FACEBOOK_PAGE_ID no configurado — no se envía respuesta. " +
-        "Los DMs de Instagram con System User EAA token requieren postear a /{PAGE_ID}/messages.",
-    );
-    return { skipped: "missing FACEBOOK_PAGE_ID" };
-  }
-  if (!systemUserToken) {
-    console.error("[marta/webhook] falta token (INSTAGRAM_ACCESS_TOKEN / WHATSAPP_ACCESS_TOKEN)");
-    return { error: "missing token" };
-  }
-
-  const endpoint = `https://graph.facebook.com/${GRAPH_VERSION}/${pageId}/messages`;
-  const payload = {
-    recipient,
-    message: { text },
-    messaging_product: "instagram",
-  };
-
-  const doPost = async (pageToken: string) =>
-    fetch(endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${pageToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-  let pageToken: string;
-  try {
-    pageToken = await getPageAccessToken(systemUserToken, pageId);
-  } catch (err) {
-    console.error(
-      "[marta/webhook] page token error:",
-      err instanceof Error ? err.message : err,
-    );
-    return { error: "page_token_error" };
-  }
-
-  try {
-    let res = await doPost(pageToken);
-    if (!res.ok && (res.status === 401 || res.status === 400)) {
-      const bodyText = await res.clone().text();
-      // Reintenta una vez si parece token inválido / expirado (error 190).
-      if (bodyText.includes('"code":190') || res.status === 401) {
-        console.warn(
-          "[marta/webhook] page token aparenta inválido, invalido caché y reintento UNA vez",
-        );
-        cachedPageToken = null;
-        try {
-          pageToken = await getPageAccessToken(systemUserToken, pageId);
-        } catch (err) {
-          console.error(
-            "[marta/webhook] page token error en reintento:",
-            err instanceof Error ? err.message : err,
-          );
-          return { error: "page_token_error_retry" };
-        }
-        res = await doPost(pageToken);
-      }
-    }
-    if (!res.ok) {
-      const bodyText = await res.text();
-      console.error(
-        `[marta/webhook] graph error status=${res.status} body=${bodyText}`,
-      );
-      return { error: "graph_error", status: res.status, body: bodyText };
-    }
-    const json = await res.json().catch(() => ({}));
-    return json;
-  } catch (err) {
-    console.error("[marta/webhook] fetch Graph API falló:", err);
-    return { error: err instanceof Error ? err.message : "fetch failed" };
-  }
-}
-
-/** DM normal a un usuario por IGSID. */
-async function sendInstagramDM(recipientId: string, text: string): Promise<unknown> {
-  return sendInstagramMessage({ id: recipientId }, text);
-}
-
-/**
- * PRIVATE REPLY a un comentario (DM disparado por un comentario). Exento de la
- * ventana de 24h de Meta — es el mecanismo que usa ManyChat para Comment-to-DM.
- */
-async function sendInstagramPrivateReply(commentId: string, text: string): Promise<unknown> {
-  return sendInstagramMessage({ comment_id: commentId }, text);
-}
-
-/** Respuesta PÚBLICA a un comentario (POST /{comment-id}/replies). */
-async function replyToComment(commentId: string, text: string): Promise<unknown> {
-  const pageId = process.env.FACEBOOK_PAGE_ID;
-  const systemUserToken = getSystemUserToken();
-  if (!pageId || !systemUserToken) {
-    return { skipped: "missing page id or token" };
-  }
-  let pageToken: string;
-  try {
-    pageToken = await getPageAccessToken(systemUserToken, pageId);
-  } catch (err) {
-    console.error("[marta/webhook] reply page token error:", err instanceof Error ? err.message : err);
-    return { error: "page_token_error" };
-  }
-  const endpoint = `https://graph.facebook.com/${GRAPH_VERSION}/${commentId}/replies`;
-  try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${pageToken}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({ message: text }).toString(),
-    });
-    if (!res.ok) {
-      const bodyText = await res.text();
-      console.error(`[marta/webhook] reply graph error status=${res.status} body=${bodyText}`);
-      return { error: "graph_error", status: res.status, body: bodyText };
-    }
-    return await res.json().catch(() => ({}));
-  } catch (err) {
-    console.error("[marta/webhook] reply fetch falló:", err);
-    return { error: err instanceof Error ? err.message : "fetch failed" };
   }
 }

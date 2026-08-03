@@ -70,7 +70,11 @@ export async function computeMetricasEsencial(
 
   for (const e of events) {
     if (e.type === "message_in" && e.senderId) sendersIn.add(e.senderId);
-    if (e.type === "message_out") mensajesAtendidos++;
+    // La respuesta pública en el hilo de un comentario se registra como
+    // message_out (para que su resultado quede grabado), pero NO cuenta como
+    // mensaje atendido: es la otra mitad de la MISMA interacción que ya cuenta
+    // el DM del comentario. Sumarla convertiría un comentario en dos mensajes.
+    if (e.type === "message_out" && e.meta?.kind !== "comment_reply") mensajesAtendidos++;
     if (e.type === "lead_captured") leads++;
     if (e.type === "appointment_set") citas++;
     if (e.type === "sale") {

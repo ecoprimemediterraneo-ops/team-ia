@@ -296,13 +296,28 @@ export function findMatchingRule(
   commentText: string,
   mediaId?: string,
 ): CommentRule | null {
+  return findMatchingRules(rules, commentText, mediaId)[0] ?? null;
+}
+
+/**
+ * TODAS las reglas que casan, en el mismo orden de prioridad que usa
+ * `findMatchingRule` (la primera es la que manda).
+ *
+ * Existe para diagnosticar: con dos reglas que casan con la misma palabra clave
+ * —por ejemplo una demo vieja y la buena— gana la primera, y si esa no pide
+ * respuesta pública el hilo se queda mudo aunque la otra la tenga activada. Sin
+ * ver la lista entera, el panel enseña una regla bien configurada y el
+ * comportamiento sale de otra.
+ */
+export function findMatchingRules(
+  rules: CommentRule[],
+  commentText: string,
+  mediaId?: string,
+): CommentRule[] {
   const enabled = (rules ?? []).filter((r) => r.enabled);
   const specific = enabled.filter((r) => r.scope !== "all");
   const general = enabled.filter((r) => r.scope === "all");
-  for (const r of [...specific, ...general]) {
-    if (commentMatchesRule(r, commentText, mediaId)) return r;
-  }
-  return null;
+  return [...specific, ...general].filter((r) => commentMatchesRule(r, commentText, mediaId));
 }
 
 /** Rellena la plantilla del DM. {usuario} / {user} → @nombre del que comenta. */
