@@ -191,10 +191,24 @@ async function diagnosticarWebhook(): Promise<{ pasos: Paso[]; suscritoAComentar
   // Paso 4 — AHORA sí: subscribed_apps con el Page token.
   const subs = await graphGet(`/${pageId}/subscribed_apps?fields=subscribed_fields`, pageToken);
   if (!subs.ok) {
+    // Caso concreto y muy frecuente: el token de System User se generó sin el
+    // permiso `pages_manage_metadata`. Es el permiso que gobierna las
+    // suscripciones del webhook de una Página: sin él no se pueden ni LEER ni
+    // cambiar. "Todos los permisos" en el generador de tokens de Meta no lo
+    // incluye salvo que se marque explícitamente.
+    const faltaPermiso = (subs.message || "").includes("pages_manage_metadata");
     pasos.push({
       paso: "4· campos suscritos",
       ok: false,
-      detalle: `No se han podido leer (código ${subs.code ?? subs.status}): ${subs.message}`,
+      detalle: faltaPermiso
+        ? "El token NO tiene el permiso `pages_manage_metadata`, que es el que deja leer y cambiar " +
+          "las suscripciones del webhook de la Página. Hay que regenerar el token del System User " +
+          "marcando ese permiso (Business Manager → Usuarios del sistema → Generar token → marcar " +
+          "pages_manage_metadata, ademas de los de Instagram) y volver a pegarlo en " +
+          "INSTAGRAM_ACCESS_TOKEN. Es el mismo permiso que hara falta despues para suscribir la " +
+          "Pagina al campo `comments`."
+        : `No se han podido leer (código ${subs.code ?? subs.status}): ${subs.message}`,
+      datos: { graphCode: subs.code, graphMessage: subs.message },
     });
     return { pasos, suscritoAComentarios: null, campos: [] };
   }
