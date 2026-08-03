@@ -185,6 +185,7 @@ export async function POST(req: Request) {
           console.log(`[marta/webhook] change field no soportado: ${change.field}`);
           continue;
         }
+        console.log(`[marta/webhook] COMMENT RX tenant=${tenantId} entry=${entry.id}`);
         await handleCommentChange(tenantId, entry.id, change);
       }
     }
@@ -203,15 +204,23 @@ export async function POST(req: Request) {
 // Cuando alguien comenta una palabra clave en un post de Marta:
 //   1. Ignoramos comentarios propios de la cuenta y duplicados (dedup por id).
 //   2. Buscamos la primera regla habilitada que casa (keyword + scope).
-//   3. Enviamos el PRIMER DM = plantilla fija de la regla, vía PRIVATE REPLY
+//   3. Respuesta PÚBLICA al comentario (si la regla la pide). Va PRIMERO porque
+//      es lo que se ve en el post: quien mira el hilo entiende que le han
+//      contestado, y es el orden que se graba para el App Review de Meta.
+//   4. PRIMER DM = plantilla fija de la regla, vía PRIVATE REPLY
 //      (recipient.comment_id → exento de la ventana de 24h, mecanismo ManyChat).
-//   4. Sembramos la conversación con ese DM como turno "assistant", para que si
+//   5. Sembramos la conversación con ese DM como turno "assistant", para que si
 //      el usuario responde por privado, el motor de IA de DMs siga el hilo.
-//   5. Opcional: respuesta PÚBLICA al comentario.
 //
-// El envío real está gated por MARTA_COMMENT_DM_ENABLED (App Review pendiente:
-// instagram_manage_comments + instagram_business_manage_messages). Mientras esté
-// apagado, detectamos y registramos la coincidencia pero NO llamamos a Meta.
+// Los pasos 3 y 4 son independientes: si uno falla, el otro se intenta igual y
+// el fallo queda en el log. Peor que no contestar es contestar a medias sin que
+// nadie se entere.
+//
+// El envío real está gated POR TENANT (ver `isCommentDmEnabled` en
+// marta-comment-rules): encendido para el tenant propio, apagado para el resto
+// mientras Meta no apruebe instagram_manage_comments +
+// instagram_business_manage_messages. Apagado, se detecta y se registra la
+// coincidencia pero NO se llama a Meta.
 async function handleCommentChange(
   tenantId: string,
   entryId: string | undefined,
@@ -269,19 +278,31 @@ async function handleCommentChange(
     meta: { kind: "comment", commentId, mediaId, ruleId: rule.id },
   });
 
-  // 3. Envío del DM (gated hasta App Review).
-  if (!isCommentDmEnabled()) {
+  // 3. ¿Este tenant tiene el envío encendido?
+  if (!isCommentDmEnabled(tenantId)) {
     console.log(
-      "[marta/webhook] comment-to-DM GATED (MARTA_COMMENT_DM_ENABLED != true). " +
+      `[marta/webhook] comment-to-DM GATED para tenant=${tenantId} ` +
+        `(no está en MARTA_COMMENT_DM_TENANTS ni hay MARTA_COMMENT_DM_ENABLED=true). ` +
         `Habría enviado este DM a comment ${commentId}: "${dm.slice(0, 200)}"`,
     );
     return;
   }
 
+  // 4. Respuesta PÚBLICA al comentario (primero: es lo que se ve en el post).
+  if (rule.replyPublic) {
+    const publicText =
+      (rule.publicReplyText || "").trim() || "¡Te acabo de escribir por privado! 📩";
+    const pubRes = await replyToComment(commentId, publicText);
+    console.log(`[marta/webhook] public reply TX:`, JSON.stringify(pubRes).slice(0, 300));
+  } else {
+    console.log(`[marta/webhook] regla ${rule.id} sin respuesta pública (replyPublic=false)`);
+  }
+
+  // 5. El primer DM, por private reply (exento de la ventana de 24 h).
   const sendResult = await sendInstagramPrivateReply(commentId, dm);
   console.log(`[marta/webhook] private reply TX:`, JSON.stringify(sendResult).slice(0, 300));
 
-  // 4. Sembrar la conversación para que la IA continúe el hilo por DM.
+  // 6. Sembrar la conversación para que la IA continúe el hilo por DM.
   if (fromId) {
     try {
       await appendTurn("marta", fromId, "assistant", dm, username);
@@ -297,14 +318,6 @@ async function handleCommentChange(
     senderId: fromId,
     meta: { kind: "comment_dm", commentId, ruleId: rule.id },
   });
-
-  // 5. Respuesta pública opcional al comentario.
-  if (rule.replyPublic) {
-    const publicText =
-      (rule.publicReplyText || "").trim() || "¡Te acabo de escribir por privado! 📩";
-    const pubRes = await replyToComment(commentId, publicText);
-    console.log(`[marta/webhook] public reply TX:`, JSON.stringify(pubRes).slice(0, 200));
-  }
 }
 
 // -----------------------------------------------------------------------------

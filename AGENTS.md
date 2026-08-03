@@ -59,12 +59,28 @@ Central booking logic. All agents (Pablo, Carmen, Eva, Lucía) go through `reser
 
 ### Cron jobs (`vercel.json`)
 
+Los 10 que declara `vercel.json` (hora UTC, plan Hobby → una pasada al día como
+mucho, con ±59 min de margen). Están repartidos por hora a propósito: dos crons
+a la misma hora se pisan y Vercel no garantiza el orden.
+
 | Schedule | Route | Purpose |
 |---|---|---|
-| `0 4 * * *` | `/api/cron/eval` | Nightly evaluation |
-| `0 7 * * *` | `/api/cron/lucia-daily-summary` | Morning inbox summary |
-| `0 8 * * *` | `/api/cron/marta-publicar` | Social media publishing |
-| `0 9 * * *` | `/api/cron/eva-dispatcher` | Email sequence dispatch |
+| `0 3 * * *` | `/api/cron/sergio-scraper` | Lectura de webs de la competencia |
+| `0 4 * * *` | `/api/cron/eval` | Evaluación nocturna |
+| `0 5 * * *` | `/api/cron/sergio-analyze` | Análisis de lo leído |
+| `0 7 * * *` | `/api/cron/lucia-daily-summary` | Resumen de bandeja de la mañana |
+| `0 8 * * *` | `/api/cron/marta-publicar` | Publicación en redes |
+| `0 9 * * *` | `/api/cron/booking-recordatorios` | Recordatorios de cita + lista de espera |
+| `0 10 * * *` | `/api/cron/recall-dental` | Recall de revisiones + presupuestos parados |
+| `0 9 * * 1` | `/api/cron/sergio-report` | Informe semanal de competencia (lunes) |
+| `0 6 1 * *` | `/api/cron/marta-mes` | Calendario del mes (día 1) |
+| `0 11 1 * *` | `/api/cron/informe-mensual` | Informe mensual al cliente (día 1) |
+
+**Fuera de `vercel.json` a propósito**: `/api/cron/eva-dispatcher`,
+`/api/cron/eva-sequences`, `/api/cron/marta-calendar-publicar` y
+`/api/cron/publicar` necesitan más de una pasada al día (horaria, en el caso de
+los dos de publicación), y el plan Hobby no lo permite. Se disparan desde n8n
+con `CRON_SECRET`. Meterlos aquí los degradaría a una vez cada 24 h.
 
 ### Auth (`src/lib/auth.ts`)
 
@@ -94,6 +110,26 @@ Required for full functionality (see `.env.local.example`):
 - `FACEBOOK_PAGE_ID` — required for Instagram DM sending
 - `AUTH_SECRET` — JWT signing key
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` — billing
+
+**Interruptores de envío automático.** Todos OFF cuando la variable no existe:
+el sistema calcula y lo enseña en el panel, pero no escribe a ningún cliente
+final. Se documentan aquí porque `.env.local.example` está en `.gitignore`.
+
+| Variable | Qué enciende | Por defecto |
+|---|---|---|
+| `MARTA_COMMENT_DM_ENABLED` | Comentario→DM para TODOS los tenants. El interruptor del día que Meta apruebe el App Review. | off |
+| `MARTA_COMMENT_DM_TENANTS` | Lista de tenants (comas) con comentario→DM encendido mientras tanto. **Si la variable no existe, por defecto es solo `tenant_aiteam`** (la cuenta propia, la que se graba para el App Review). Ponla vacía para apagarlo también ahí. | `tenant_aiteam` |
+| `RECALL_SEND_ENABLED` + `RECALL_TEMPLATE` | Avisos de revisión por WhatsApp (recall dental). | off |
+| `PRESUPUESTOS_SEND_ENABLED` + `PRESUPUESTOS_TEMPLATE` | Recordatorios de presupuesto parado. | off |
+
+Los avisos de recall y presupuestos llegan meses después de la última
+conversación, o sea SIEMPRE fuera de la ventana de 24 h de WhatsApp: sin
+plantilla aprobada por Meta (`*_TEMPLATE`) el mensaje no sale y el panel lo dice
+como `sin_plantilla` en vez de darlo por enviado.
+
+Comentario→DM además necesita que la Página esté suscrita al campo `comments`
+del webhook de Instagram, que es una suscripción distinta de `messages`. Se
+comprueba con `GET /api/admin/marta-comentarios` (founder-only, solo lee).
 
 ## Conventions
 

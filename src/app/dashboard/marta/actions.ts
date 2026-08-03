@@ -536,7 +536,7 @@ export async function probarComentarioAction(input: {
   }
 
   const dm = renderDmTemplate(rule.dmMessage, { usuario: "cliente_demo" });
-  const willSend = isCommentDmEnabled();
+  const willSend = isCommentDmEnabled(tenantId);
   return {
     ok: true,
     matched: true,

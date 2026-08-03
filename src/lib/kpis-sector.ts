@@ -5,14 +5,19 @@
 // dice "no ha pasado nada"; un guion dice "no lo sabemos", y son cosas
 // distintas.
 //
-// De los seis que no se medían, cuatro se calculan ya con datos que el sistema
-// YA guardaba (ver cada caso abajo). Dos siguen sin fuente porque harían falta
-// modelos de datos que no existen: recall de revisiones y presupuestos.
+// De los seis que no se medían, cuatro se calculaban ya con datos que el sistema
+// YA guardaba (ver cada caso abajo). Los otros dos, los de la clínica dental,
+// necesitaban un modelo detrás y ya lo tienen: `recall.ts` (avisos de revisión) y
+// `presupuestos.ts`. Siguen saliendo con guion mientras no haya nada que contar
+// —ninguna clínica ha apuntado un presupuesto, nadie ha recibido un aviso—,
+// porque un cero ahí diría "no funciona" y lo que pasa es que no ha empezado.
 
 import "server-only";
 import { getMonthEvents, monthKey, type AnalyticsEvent } from "./event-log";
 import { listLeads } from "./pipeline";
 import { informe, getBusinessByTenant, listRecords, type BookingRecord } from "./booking";
+import { revisionesRecuperadas } from "./recall";
+import { conversionPresupuestos } from "./presupuestos";
 import type { Kpi, KpiId, PerfilSector } from "./sectores";
 
 export type ValorKpi = {
@@ -129,6 +134,15 @@ export async function calcularKpis(tenantId: string, perfil: PerfilSector): Prom
     ? await listRecords().then((rs) => rs.filter((r) => r.slug === negocio.slug)).catch(() => [])
     : [];
 
+  // Solo se calculan si el sector los pide (hoy, dental): son dos lecturas más.
+  const pide = (id: KpiId) => perfil.kpis.some((k) => k.id === id);
+  const recall = pide("revisiones_recuperadas")
+    ? await revisionesRecuperadas(tenantId).catch(() => null)
+    : null;
+  const presu = pide("presupuestos_convertidos")
+    ? await conversionPresupuestos(tenantId).catch(() => null)
+    : null;
+
   const leads = await listLeads().catch(() => []);
   const leadsTenant = leads.filter((l) => (l.tenantId || "tenant_aiteam") === tenantId);
 
@@ -171,11 +185,19 @@ export async function calcularKpis(tenantId: string, perfil: PerfilSector): Prom
         return { ...base, ...c };
       }
 
-      // --- Los dos que siguen sin fuente de datos ---
+      // --- Los dos de la clínica dental ---
       case "revisiones_recuperadas":
-        return { ...base, valor: null, motivo: "No hay registro de avisos de revisión: haría falta el recall." };
+        // "3 de 12" = de los doce pacientes avisados, tres han pedido cita
+        // después del aviso. Se mira sobre los últimos meses, no sobre el mes
+        // natural: a un recall se responde tarde.
+        return recall
+          ? { ...base, valor: `${recall.recuperadas} de ${recall.avisados}` }
+          : { ...base, valor: null, motivo: "Todavía no se ha enviado ningún aviso de revisión." };
       case "presupuestos_convertidos":
-        return { ...base, valor: null, motivo: "No hay modelo de presupuestos en el sistema." };
+        // "5 de 14" = de catorce presupuestos vivos, cinco ya se han hecho.
+        return presu
+          ? { ...base, valor: `${presu.ejecutados} de ${presu.total}` }
+          : { ...base, valor: null, motivo: "Todavía no hay ningún presupuesto apuntado." };
       default:
         return { ...base, valor: null, motivo: "Todavía no se mide." };
     }

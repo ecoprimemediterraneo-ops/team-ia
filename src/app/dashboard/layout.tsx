@@ -4,6 +4,7 @@ import { getUser } from "@/lib/store";
 import Logo from "@/components/Logo";
 import { agents, agentBySlug, type AgentSlug } from "@/lib/agents";
 import { contextoPanelODefecto } from "@/lib/panel-contexto";
+import { tieneFuncion } from "@/lib/sectores";
 
 // Agentes con integración externa REAL conectada hoy.
 // El resto se marca como "Próximamente" hasta que llegue verificación de Meta / Vapi / GMB.
@@ -57,6 +58,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <span className="block text-[10px] uppercase tracking-widest text-black/70">Agenda · {v.clientePlural} · informes · compartir</span>
             </span>
           </a>
+          {/* Seguimiento (recall + presupuestos): solo donde el sector lo enciende.
+              En un salón no existe la revisión a seis meses y enseñarlo vacío
+              solo confunde. */}
+          {(tieneFuncion(ctx.sector, "recall") || tieneFuncion(ctx.sector, "seguimientoPresupuestos")) && (
+            <a
+              href="/dashboard/seguimiento"
+              className="card-hard flex items-center gap-3 p-3 mb-3 hover:-translate-y-0.5 transition bg-white"
+            >
+              <span className="text-2xl">🔁</span>
+              <span className="flex-1 min-w-0">
+                <span className="block font-stencil text-xl leading-none">SEGUIMIENTO</span>
+                <span className="block text-[10px] uppercase tracking-widest text-black/70">
+                  Revisiones · presupuestos
+                </span>
+              </span>
+            </a>
+          )}
           <div className="text-xs font-mono uppercase tracking-widest text-black/50 px-1 mb-2">
             Tu equipo · {visibles.length} {visibles.length === 1 ? "agente" : "agentes"}
           </div>

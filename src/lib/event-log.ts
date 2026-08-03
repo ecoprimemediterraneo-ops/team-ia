@@ -29,7 +29,16 @@ export type EventType =
   // que sirve tanto al cron (/api/cron/marta-calendar-publicar) como al botón
   // "Publicar ahora" del panel. Queda en el bucket del mes de publicación, con
   // el permalink en meta → lo consume la sección "contenido" del informe.
-  | "post_published";
+  | "post_published"
+  // Recall dental: se avisó a un paciente de que le toca revisión. Cruzado con
+  // `appointment_set` da la "revisión recuperada" (le avisamos y volvió).
+  | "recall_enviado"
+  // Presupuestos de tratamiento. `presupuesto_ejecutado` sobre
+  // `presupuesto_aceptado` es la conversión que mira una clínica dental.
+  | "presupuesto_creado"
+  | "presupuesto_aceptado"
+  | "presupuesto_ejecutado"
+  | "presupuesto_recordado";
 
 export type EventChannel =
   | "pablo"
@@ -182,6 +191,11 @@ export async function getMonthCounts(
     review_replied: 0,
     orchestrator_decision: 0,
     post_published: 0,
+    recall_enviado: 0,
+    presupuesto_creado: 0,
+    presupuesto_aceptado: 0,
+    presupuesto_ejecutado: 0,
+    presupuesto_recordado: 0,
   };
   for (const e of events) {
     out[e.type] = (out[e.type] ?? 0) + 1;

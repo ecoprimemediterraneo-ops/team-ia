@@ -41,7 +41,9 @@ export default async function MartaPage({
   const enabled = isPublishEnabled();
   const schedule = await getSchedule(tenantId);
   const commentRules = await getCommentRules(tenantId);
-  const commentDmEnabled = isCommentDmEnabled();
+  // Por TENANT: el envío está encendido en la cuenta propia (hace falta para
+  // grabar el vídeo del App Review) y apagado en la de cualquier cliente.
+  const commentDmEnabled = isCommentDmEnabled(tenantId);
 
   return (
     <section className="space-y-4">

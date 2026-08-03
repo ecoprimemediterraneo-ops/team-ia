@@ -842,7 +842,17 @@ function ComentariosBlock({
 
   return (
     <div className="space-y-5">
-      {!commentDmEnabled && (
+      {commentDmEnabled ? (
+        <div className="card-hard bg-white p-4 border-[3px] border-[#14B8A6] text-sm">
+          <div className="font-bold mb-1">Envío de DM ACTIVO en esta cuenta</div>
+          <p className="text-xs text-black/70 leading-snug">
+            Un comentario con la palabra clave dispara la respuesta pública y el DM de
+            verdad. Sigue haciendo falta que la Página esté suscrita al campo{" "}
+            <code className="text-[10px]">comments</code> del webhook: sin eso el comentario
+            no llega hasta aquí y no se dispara nada.
+          </p>
+        </div>
+      ) : (
         <div className="card-hard bg-white p-4 border-[3px] border-[color:var(--mustard)] text-sm">
           <div className="font-bold mb-1">Envío de DM en pausa (App Review pendiente)</div>
           <p className="text-xs text-black/70 leading-snug">

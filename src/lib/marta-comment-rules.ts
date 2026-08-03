@@ -21,6 +21,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { kvGet, kvSet } from "./supabase";
+import { DEFAULT_TENANT_ID } from "./tenants";
 
 export type MatchMode = "contiene" | "exacto";
 
@@ -63,18 +64,39 @@ const USE_SUPABASE = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE
 const SEEN_TTL_HRS = 72;
 
 // -----------------------------------------------------------------------------
-// Gating del ENVÍO real (igual filosofía que MARTA_PUBLISH_ENABLED).
+// Gating del ENVÍO real — POR TENANT
 // -----------------------------------------------------------------------------
 //
 // El envío del DM requiere DOS permisos de Meta aún pendientes de App Review:
 //   - instagram_manage_comments          → leer/recibir los comentarios.
 //   - instagram_business_manage_messages → mandar el DM (private reply).
 //
-// Mientras MARTA_COMMENT_DM_ENABLED != "true", el webhook DETECTA la
-// coincidencia y la registra (logs + eventos), pero NO llama a Meta. Así se
-// puede configurar y probar el matching sin riesgo de mandar nada por error.
-export function isCommentDmEnabled(): boolean {
-  return (process.env.MARTA_COMMENT_DM_ENABLED || "").toLowerCase() === "true";
+// El App Review de Meta exige un VÍDEO de la función funcionando. Eso obliga a
+// que esté encendida de verdad en la cuenta propia (@ai.team.marketing) antes de
+// tener el permiso aprobado — pero NO en la de ningún cliente, que no ha pedido
+// que le escriban a su gente. Por eso el interruptor dejó de ser global:
+//
+//   1. MARTA_COMMENT_DM_ENABLED=true  → encendido para TODOS los tenants.
+//      Es el interruptor del día en que Meta apruebe. Por defecto, apagado.
+//   2. Si no, solo se envía para los tenants de la lista MARTA_COMMENT_DM_TENANTS
+//      (ids separados por comas). Por defecto, SOLO el tenant propio.
+//   3. Para cualquier otro tenant: se detecta la coincidencia y se registra
+//      (logs + eventos), pero NO se llama a Meta.
+//
+// Sin tenantId no se enciende nada salvo que esté el interruptor global: quien
+// no sabe de quién habla no manda mensajes.
+
+/** Tenants con el envío real encendido cuando NO está el interruptor global. */
+export function commentDmTenantsPermitidos(): string[] {
+  const raw = process.env.MARTA_COMMENT_DM_TENANTS;
+  if (raw === undefined) return [DEFAULT_TENANT_ID];   // por defecto, solo el propio
+  return raw.split(",").map((t) => t.trim()).filter(Boolean);
+}
+
+export function isCommentDmEnabled(tenantId?: string): boolean {
+  if ((process.env.MARTA_COMMENT_DM_ENABLED || "").toLowerCase() === "true") return true;
+  if (!tenantId) return false;
+  return commentDmTenantsPermitidos().includes(tenantId);
 }
 
 function kvKey(tenantId: string): string {
