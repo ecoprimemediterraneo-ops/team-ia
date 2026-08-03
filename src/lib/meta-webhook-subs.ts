@@ -376,8 +376,16 @@ export async function anadirCamposApp(
     return { ...base, antes, enviados: union, callbackUrl, error: `POST rechazado (código ${post.code ?? "?"}): ${post.message}` };
   }
 
-  const tras = await leerSuscripcionesApp();
-  const despues = tras.ok ? (tras.suscripciones.find((s) => s.object === objeto)?.fields || []) : [];
+  // Meta tarda un instante en reflejar el POST: la primera vez que se creó la
+  // suscripción, releer de inmediato devolvía la lista vacía y parecía que no
+  // había funcionado. Un reintento corto basta.
+  let despues: string[] = [];
+  for (let intento = 0; intento < 3; intento++) {
+    const tras = await leerSuscripcionesApp();
+    despues = tras.ok ? (tras.suscripciones.find((s) => s.object === objeto)?.fields || []) : [];
+    if (campos.every((c) => despues.includes(c))) break;
+    await new Promise((r) => setTimeout(r, 1500));
+  }
   return {
     ok: true, objeto, antes, pedidos: campos, enviados: union, despues,
     verificado: campos.every((c) => despues.includes(c)),

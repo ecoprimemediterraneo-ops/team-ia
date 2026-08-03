@@ -69,7 +69,7 @@ export const maxDuration = 30;
 
 type Paso = { paso: string; ok: boolean; detalle: string; datos?: unknown };
 
-async function diagnosticarWebhook(): Promise<{ pasos: Paso[]; suscritoAComentarios: boolean | null; campos: string[] }> {
+async function diagnosticarWebhook(): Promise<{ pasos: Paso[]; campos: string[] }> {
   const pasos: Paso[] = [];
   const pageId = process.env.FACEBOOK_PAGE_ID || "";
 
@@ -80,7 +80,7 @@ async function diagnosticarWebhook(): Promise<{ pasos: Paso[]; suscritoAComentar
       ok: false,
       detalle: "No hay INSTAGRAM_ACCESS_TOKEN ni WHATSAPP_ACCESS_TOKEN en este entorno.",
     });
-    return { pasos, suscritoAComentarios: null, campos: [] };
+    return { pasos, campos: [] };
   }
   const forma = formaDelToken(tok.valor);
   pasos.push({
@@ -96,7 +96,7 @@ async function diagnosticarWebhook(): Promise<{ pasos: Paso[]; suscritoAComentar
 
   if (!pageId) {
     pasos.push({ paso: "1· FACEBOOK_PAGE_ID", ok: false, detalle: "No está definida en este entorno." });
-    return { pasos, suscritoAComentarios: null, campos: [] };
+    return { pasos, campos: [] };
   }
 
   // Paso 1 — ¿el token vale para algo? Si aquí sale 190, el token está mal
@@ -109,7 +109,7 @@ async function diagnosticarWebhook(): Promise<{ pasos: Paso[]; suscritoAComentar
       ? `Sí. Identidad del token: ${JSON.stringify(me.json)}`
       : `NO (código ${me.code ?? me.status}): ${me.message}`,
   });
-  if (!me.ok) return { pasos, suscritoAComentarios: null, campos: [] };
+  if (!me.ok) return { pasos, campos: [] };
 
   // Paso 2 — ¿el System User tiene ESA Página asignada? Sin esto no se puede
   // derivar el Page token, por muy válido que sea el token.
@@ -138,7 +138,7 @@ async function diagnosticarWebhook(): Promise<{ pasos: Paso[]; suscritoAComentar
       ? "Derivado correctamente desde el token de System User."
       : `NO se ha podido derivar (código ${page.code ?? "?"}): ${page.message}`,
   });
-  if (!page.ok) return { pasos, suscritoAComentarios: null, campos: [] };
+  if (!page.ok) return { pasos, campos: [] };
 
   // Paso 4 — campos suscritos de la PÁGINA (aquí viven los DMs: `messages`).
   const subsPagina = await leerCamposSuscritos(pageId, page.token);
@@ -158,7 +158,7 @@ async function diagnosticarWebhook(): Promise<{ pasos: Paso[]; suscritoAComentar
         : `No se han podido leer (código ${subsPagina.code ?? "?"}): ${subsPagina.message}`,
       datos: { graphCode: subsPagina.code, graphMessage: subsPagina.message },
     });
-    return { pasos, suscritoAComentarios: null, campos: [] };
+    return { pasos, campos: [] };
   }
   pasos.push({
     paso: "4· campos suscritos (Página)",
@@ -169,83 +169,34 @@ async function diagnosticarWebhook(): Promise<{ pasos: Paso[]; suscritoAComentar
     datos: { campos: subsPagina.campos },
   });
 
-  // Paso 5 — el que de verdad importa para comentario→DM.
+  // Paso 5 — el nodo de Instagram, solo a título informativo.
   //
-  // `comments` NO es un campo de Página: Meta lo rechaza con error 100. Los
-  // comentarios de Instagram se suscriben en el nodo del USUARIO DE INSTAGRAM,
-  // que tiene su propio `subscribed_apps`. Mirar solo la Página no iba a
-  // encontrar `comments` jamás, estuviera suscrito o no.
+  // Aquí NO se decide nada sobre `comments`. Se miró en su día y resultó ser el
+  // objeto equivocado: `/{ig-user-id}/subscribed_apps` ni siquiera existe en
+  // graph.facebook.com (error 100). `comments` vive en la suscripción de la APP
+  // al objeto `instagram`, que es lo que mira el paso 6.
   const igUserId = process.env.INSTAGRAM_USER_ID || "";
-  if (!igUserId) {
+  if (igUserId) {
+    const subsIg = await leerCamposSuscritos(igUserId, page.token);
     pasos.push({
-      paso: "5· campos suscritos (Instagram)",
-      ok: false,
-      detalle: "No hay INSTAGRAM_USER_ID en el entorno, y `comments` solo se puede mirar en ese nodo.",
+      paso: "5· nodo de Instagram (informativo)",
+      ok: true,
+      detalle: subsIg.ok
+        ? `Campos: ${subsIg.campos.join(", ") || "ninguno"}.`
+        : `No expone subscribed_apps (${subsIg.message}). Es lo esperado: no es aquí donde vive \`comments\`.`,
     });
-    return { pasos, suscritoAComentarios: null, campos: subsPagina.campos };
   }
 
-  const subsIg = await leerCamposSuscritos(igUserId, page.token);
-  if (!subsIg.ok) {
-    pasos.push({
-      paso: "5· campos suscritos (Instagram)",
-      ok: false,
-      detalle: `No se han podido leer (código ${subsIg.code ?? "?"}): ${subsIg.message}`,
-    });
-    return { pasos, suscritoAComentarios: null, campos: subsPagina.campos };
-  }
-
-  const campos = subsIg.campos;
-  const suscritoAComentarios = campos.includes("comments");
-  pasos.push({
-    paso: "5· campos suscritos (Instagram)",
-    ok: suscritoAComentarios,
-    detalle: suscritoAComentarios
-      ? `El nodo de Instagram SÍ está suscrito a \`comments\`. Campos: ${campos.join(", ")}.`
-      : `El nodo de Instagram NO está suscrito a \`comments\` (por eso el comentario no llega nunca al webhook). Campos: ${campos.join(", ") || "ninguno"}.`,
-    datos: { campos, suscritoAMensajes: campos.includes("messages") },
-  });
-
-  return { pasos, suscritoAComentarios, campos };
-}
-
-/**
- * Suscripciones de webhook declaradas por la APP (`/{app-id}/subscriptions`).
- *
- * Es el sitio donde vive de verdad `comments` para Instagram, y el único que
- * explica que los DMs lleguen con la Página suscrita a nada. Va aparte porque
- * usa el token de aplicación, no el de System User.
- */
-async function diagnosticarApp(): Promise<Paso> {
-  const r = await leerSuscripcionesApp();
-  if (!r.ok) {
-    return { paso: "6· suscripciones de la APP", ok: false, detalle: `No se han podido leer: ${r.message}` };
-  }
-  const ig = r.suscripciones.find((x) => x.object === "instagram");
-  return {
-    paso: "6· suscripciones de la APP",
-    ok: !!ig?.fields.includes("comments"),
-    detalle: !ig
-      ? `La app NO tiene suscripción al objeto "instagram". Objetos que sí tiene: ${r.suscripciones.map((x) => x.object).join(", ") || "ninguno"}.`
-      : ig.fields.includes("comments")
-        ? `La app SÍ está suscrita a \`comments\` en el objeto instagram. Campos: ${ig.fields.join(", ")}.`
-        : `La app está suscrita al objeto instagram pero SIN \`comments\`. Campos: ${ig.fields.join(", ") || "ninguno"}.`,
-    datos: { suscripciones: r.suscripciones },
-  };
+  return { pasos, campos: subsPagina.campos };
 }
 
 /**
  * Segunda vía de entrada, SOLO para este diagnóstico de lectura: cabecera
  * `x-diag-secret` con el valor de `DIAG_SECRET`.
  *
- * Existe porque este endpoint hay que poder consultarlo sin sesión de navegador
- * (desde un script, un monitor o durante un despliegue). Es el mismo patrón que
- * ya usan las rutas de cron con CRON_SECRET.
- *
  * Fail-CLOSED: si `DIAG_SECRET` no está definida, esta vía NO existe y la única
- * forma de entrar sigue siendo la sesión del fundador. Borrar la variable en
- * Vercel deja el código inerte, sin necesidad de tocar nada más. Y solo abre una
- * LECTURA: esta ruta no cambia ni un byte en ninguna parte.
+ * forma de entrar es la sesión del fundador. Borrar la variable en Vercel deja
+ * el código inerte. Y solo abre una LECTURA: esta ruta no escribe nada.
  */
 async function autorizadoPorSecreto(): Promise<boolean> {
   const esperado = process.env.DIAG_SECRET;
@@ -265,16 +216,34 @@ export async function GET() {
   const activas = reglas.filter((r) => r.enabled);
   const envioEncendido = isCommentDmEnabled(ctx.tenantId);
 
-  const { pasos, suscritoAComentarios, campos } = await diagnosticarWebhook();
-  pasos.push(await diagnosticarApp());
+  const { pasos, campos } = await diagnosticarWebhook();
+
+  // El veredicto sobre `comments` NO sale de la Página ni del nodo de Instagram:
+  // sale de la suscripción de la APP al objeto `instagram`. Es el único sitio
+  // donde ese campo existe de verdad (ver meta-webhook-subs.ts).
+  const app = await leerSuscripcionesApp();
+  const igApp = app.ok ? app.suscripciones.find((x) => x.object === "instagram") : undefined;
+  const suscritoAComentarios = app.ok ? !!igApp?.fields.includes("comments") : null;
+  pasos.push({
+    paso: "6· suscripción de la APP al objeto instagram",
+    ok: !!suscritoAComentarios,
+    detalle: !app.ok
+      ? `No se ha podido leer: ${app.message}`
+      : !igApp
+        ? `La app NO tiene suscripción al objeto instagram. Objetos que sí tiene: ${app.suscripciones.map((x) => x.object).join(", ") || "ninguno"}.`
+        : igApp.fields.includes("comments")
+          ? `SÍ está suscrita a \`comments\`. Campos: ${igApp.fields.join(", ")}. Callback: ${igApp.callback_url}`
+          : `Suscrita al objeto instagram pero SIN \`comments\`. Campos: ${igApp.fields.join(", ") || "ninguno"}.`,
+    datos: app.ok ? { suscripciones: app.suscripciones } : undefined,
+  });
   const pasoRoto = pasos.find((p) => !p.ok);
 
   // Diagnóstico en una frase: el primer eslabón que falla, en orden de causa.
   let veredicto: string;
   if (suscritoAComentarios === false) {
     veredicto =
-      "El nodo de Instagram NO está suscrito al campo `comments`: el comentario no llega al " +
-      "webhook. Es la causa de que el DM directo funcione y el comentario no. Se arregla con " +
+      "La app NO está suscrita al campo `comments` del objeto instagram: el comentario no llega " +
+      "al webhook. Es la causa de que el DM directo funcione y el comentario no. Se arregla con " +
       "POST /api/admin/marta-suscribir.";
   } else if (pasoRoto) {
     veredicto = `Falla el paso "${pasoRoto.paso}": ${pasoRoto.detalle}`;
@@ -283,7 +252,7 @@ export async function GET() {
   } else if (!envioEncendido) {
     veredicto = `El envío está apagado para ${ctx.tenantId}: se detecta la palabra clave y se registra, pero no se manda nada.`;
   } else {
-    veredicto = "Todo en verde: regla activa, envío encendido y Página suscrita a `comments`.";
+    veredicto = "Todo en verde: regla activa, envío encendido y la app suscrita a `comments`.";
   }
 
   return NextResponse.json({
