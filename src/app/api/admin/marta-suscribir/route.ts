@@ -1,20 +1,27 @@
 // POST /api/admin/marta-suscribir — founder-only. ESCRIBE en Meta.
 //
-// Suscribe una Página de Facebook a los campos del webhook que necesita Marta:
-// `messages` (los DMs de Instagram) y `comments` (los comentarios de los posts).
-// Sin la suscripción a `comments`, el comentario no llega nunca al webhook y la
-// función comentario→DM no se dispara aunque todo lo demás esté bien.
+// Suscribe a los campos del webhook que necesita Marta. Son DOS nodos
+// distintos, y esa es la parte que no se ve en la documentación:
 //
-// SIRVE PARA CUALQUIER CLIENTE, no solo para la cuenta propia. Se le pasa el
-// `pageId` del cliente y ya está:
+//   - La PÁGINA          → `messages` (los DMs).
+//   - El USUARIO DE INSTAGRAM → `comments` (los comentarios de los posts).
+//
+// `comments` NO existe como campo de Página: Meta lo rechaza con error 100. Por
+// eso hay que tocar los dos sitios. Sin la suscripción a `comments`, el
+// comentario no llega nunca al webhook y comentario→DM no se dispara aunque
+// todo lo demás esté bien.
+//
+// SIRVE PARA CUALQUIER CLIENTE, no solo para la cuenta propia:
 //
 //   curl -X POST https://aiteam.marketing/api/admin/marta-suscribir \
 //        -H "Content-Type: application/json" \
-//        -d '{"pageId":"<id de la Página del cliente>"}'
+//        -d '{"pageId":"<Página del cliente>","igUserId":"<IG user del cliente>"}'
 //
 // Parámetros (todos opcionales):
-//   pageId — Página a suscribir. Por defecto, FACEBOOK_PAGE_ID (la propia).
-//   campos — lista de campos. Por defecto, ["messages","comments"].
+//   pageId          — por defecto FACEBOOK_PAGE_ID.
+//   igUserId        — por defecto INSTAGRAM_USER_ID.
+//   camposPagina    — por defecto ["messages"].
+//   camposInstagram — por defecto ["comments","messages"].
 //
 // NO borra suscripciones: manda la UNIÓN de lo que ya había con lo que se pide,
 // porque el POST de Graph reemplaza la lista entera (ver meta-webhook-subs.ts).
@@ -28,9 +35,11 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { requireFounder } from "@/lib/admin-auth";
 import {
-  suscribirCampos,
+  suscribirNodo,
+  derivarPageToken,
   resolverTokenSystemUser,
-  CAMPOS_MARTA,
+  CAMPOS_PAGINA,
+  CAMPOS_INSTAGRAM,
 } from "@/lib/meta-webhook-subs";
 
 export const runtime = "nodejs";
@@ -55,8 +64,14 @@ export async function POST(req: Request) {
     if (!a.ok) return NextResponse.json({ ok: false, error: a.error }, { status: a.status });
   }
 
-  const body = (await req.json().catch(() => ({}))) as { pageId?: string; campos?: string[] };
+  const body = (await req.json().catch(() => ({}))) as {
+    pageId?: string;
+    igUserId?: string;
+    camposPagina?: string[];
+    camposInstagram?: string[];
+  };
   const pageId = (body.pageId || process.env.FACEBOOK_PAGE_ID || "").trim();
+  const igUserId = (body.igUserId || process.env.INSTAGRAM_USER_ID || "").trim();
   if (!pageId) {
     return NextResponse.json(
       { ok: false, error: "sin_page_id", detalle: "Pasa `pageId` o define FACEBOOK_PAGE_ID." },
@@ -64,9 +79,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const campos = Array.isArray(body.campos) && body.campos.length
-    ? body.campos.map((c) => String(c).trim()).filter(Boolean)
-    : [...CAMPOS_MARTA];
+  const lista = (v: string[] | undefined, def: readonly string[]) =>
+    Array.isArray(v) && v.length ? v.map((c) => String(c).trim()).filter(Boolean) : [...def];
+  const camposPagina = lista(body.camposPagina, CAMPOS_PAGINA);
+  const camposInstagram = lista(body.camposInstagram, CAMPOS_INSTAGRAM);
 
   const tok = resolverTokenSystemUser();
   if (!tok) {
@@ -76,21 +92,32 @@ export async function POST(req: Request) {
     );
   }
 
-  const r = await suscribirCampos(pageId, campos, tok.valor);
+  // Un solo Page token para los dos nodos.
+  const page = await derivarPageToken(pageId, tok.valor);
+  if (!page.ok) {
+    return NextResponse.json(
+      { ok: false, error: "sin_page_token", detalle: `código ${page.code ?? "?"}: ${page.message}` },
+      { status: 502 },
+    );
+  }
 
-  const resumen = !r.ok
-    ? `No se ha podido suscribir: ${r.error}`
-    : r.sinCambios
-      ? `No hacía falta tocar nada: la Página ya estaba suscrita a ${campos.join(", ")}.`
-      : r.verificado
-        ? `Suscrita y comprobado releyendo de Meta: ${r.despues.join(", ")}.`
-        : `El POST pasó, pero al releer NO aparecen todos los campos pedidos. Ahora hay: ${r.despues.join(", ") || "ninguno"}.`;
+  const resultados = [await suscribirNodo("pagina", pageId, camposPagina, page.token)];
+  if (igUserId) {
+    resultados.push(await suscribirNodo("instagram", igUserId, camposInstagram, page.token));
+  }
+
+  const ig = resultados.find((r) => r.nodo === "instagram");
+  const comentariosOk = !!ig && ig.despues.includes("comments");
+  const todoOk = resultados.every((r) => r.ok && r.verificado);
+
+  const resumen = !igUserId
+    ? "No hay INSTAGRAM_USER_ID: solo se ha tocado la Página. `comments` vive en el nodo de Instagram, así que sin ese id no se puede suscribir."
+    : comentariosOk
+      ? "Listo: el nodo de Instagram ya está suscrito a `comments`, comprobado releyendo de Meta."
+      : `NO se ha conseguido suscribir \`comments\`. ${ig?.error || "Revisa el detalle de cada nodo."}`;
 
   return NextResponse.json(
-    // `ok` va DESPUÉS del spread a propósito: el de la respuesta es más
-    // estricto que el de `suscribirCampos` — aquí solo es ok si además se ha
-    // podido comprobar releyendo de Meta.
-    { ...r, resumen, tokenLeidoDe: tok.variable, ok: r.ok && r.verificado },
-    { status: r.ok ? 200 : 502 },
+    { ok: todoOk && comentariosOk, resumen, comentariosOk, tokenLeidoDe: tok.variable, resultados },
+    { status: todoOk ? 200 : 502 },
   );
 }

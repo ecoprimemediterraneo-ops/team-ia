@@ -139,38 +139,69 @@ async function diagnosticarWebhook(): Promise<{ pasos: Paso[]; suscritoAComentar
   });
   if (!page.ok) return { pasos, suscritoAComentarios: null, campos: [] };
 
-  // Paso 4 — AHORA sí: subscribed_apps con el Page token.
-  const subs = await leerCamposSuscritos(pageId, page.token);
-  if (!subs.ok) {
+  // Paso 4 — campos suscritos de la PÁGINA (aquí viven los DMs: `messages`).
+  const subsPagina = await leerCamposSuscritos(pageId, page.token);
+  if (!subsPagina.ok) {
     // Caso concreto y muy frecuente: el token de System User se generó sin el
-    // permiso `pages_manage_metadata`. Es el permiso que gobierna las
-    // suscripciones del webhook de una Página: sin él no se pueden ni LEER ni
-    // cambiar. "Todos los permisos" en el generador de tokens de Meta no lo
-    // incluye salvo que se marque explícitamente.
-    const faltaPermiso = (subs.message || "").includes("pages_manage_metadata");
+    // permiso `pages_manage_metadata`, que es el que gobierna estas
+    // suscripciones. Sin él no se pueden ni LEER. "Todos los permisos" en el
+    // generador de tokens de Meta no lo incluye salvo que se marque a mano.
+    const faltaPermiso = (subsPagina.message || "").includes("pages_manage_metadata");
     pasos.push({
-      paso: "4· campos suscritos",
+      paso: "4· campos suscritos (Página)",
       ok: false,
       detalle: faltaPermiso
-        ? "El token NO tiene el permiso `pages_manage_metadata`, que es el que deja leer y cambiar " +
-          "las suscripciones del webhook de la Página. Hay que regenerar el token del System User " +
-          "marcando ese permiso (Business Manager → Usuarios del sistema → Generar token → marcar " +
-          "pages_manage_metadata, ademas de los de Instagram) y volver a pegarlo en " +
-          "INSTAGRAM_ACCESS_TOKEN. Es el mismo permiso que hara falta despues para suscribir la " +
-          "Pagina al campo `comments`."
-        : `No se han podido leer (código ${subs.code ?? "?"}): ${subs.message}`,
-      datos: { graphCode: subs.code, graphMessage: subs.message },
+        ? "El token NO tiene el permiso `pages_manage_metadata`. Hay que regenerar el token del " +
+          "System User marcándolo (Business Manager → Usuarios del sistema → Generar token) y " +
+          "volver a pegarlo en INSTAGRAM_ACCESS_TOKEN."
+        : `No se han podido leer (código ${subsPagina.code ?? "?"}): ${subsPagina.message}`,
+      datos: { graphCode: subsPagina.code, graphMessage: subsPagina.message },
     });
     return { pasos, suscritoAComentarios: null, campos: [] };
   }
-  const campos = subs.campos;
+  pasos.push({
+    paso: "4· campos suscritos (Página)",
+    ok: true,
+    detalle: subsPagina.campos.length
+      ? `La Página está suscrita a: ${subsPagina.campos.join(", ")}.`
+      : "La Página no está suscrita a ningún campo.",
+    datos: { campos: subsPagina.campos },
+  });
+
+  // Paso 5 — el que de verdad importa para comentario→DM.
+  //
+  // `comments` NO es un campo de Página: Meta lo rechaza con error 100. Los
+  // comentarios de Instagram se suscriben en el nodo del USUARIO DE INSTAGRAM,
+  // que tiene su propio `subscribed_apps`. Mirar solo la Página no iba a
+  // encontrar `comments` jamás, estuviera suscrito o no.
+  const igUserId = process.env.INSTAGRAM_USER_ID || "";
+  if (!igUserId) {
+    pasos.push({
+      paso: "5· campos suscritos (Instagram)",
+      ok: false,
+      detalle: "No hay INSTAGRAM_USER_ID en el entorno, y `comments` solo se puede mirar en ese nodo.",
+    });
+    return { pasos, suscritoAComentarios: null, campos: subsPagina.campos };
+  }
+
+  const subsIg = await leerCamposSuscritos(igUserId, page.token);
+  if (!subsIg.ok) {
+    pasos.push({
+      paso: "5· campos suscritos (Instagram)",
+      ok: false,
+      detalle: `No se han podido leer (código ${subsIg.code ?? "?"}): ${subsIg.message}`,
+    });
+    return { pasos, suscritoAComentarios: null, campos: subsPagina.campos };
+  }
+
+  const campos = subsIg.campos;
   const suscritoAComentarios = campos.includes("comments");
   pasos.push({
-    paso: "4· campos suscritos",
+    paso: "5· campos suscritos (Instagram)",
     ok: suscritoAComentarios,
     detalle: suscritoAComentarios
-      ? "La Página SÍ está suscrita a `comments`."
-      : "La Página NO está suscrita a `comments` (por eso el comentario no llega nunca al webhook).",
+      ? `El nodo de Instagram SÍ está suscrito a \`comments\`. Campos: ${campos.join(", ")}.`
+      : `El nodo de Instagram NO está suscrito a \`comments\` (por eso el comentario no llega nunca al webhook). Campos: ${campos.join(", ") || "ninguno"}.`,
     datos: { campos, suscritoAMensajes: campos.includes("messages") },
   });
 
@@ -215,8 +246,8 @@ export async function GET() {
   let veredicto: string;
   if (suscritoAComentarios === false) {
     veredicto =
-      "La Página NO está suscrita al campo `comments`: el comentario no llega al webhook. " +
-      "Es la causa de que el DM directo funcione y el comentario no. Se arregla con " +
+      "El nodo de Instagram NO está suscrito al campo `comments`: el comentario no llega al " +
+      "webhook. Es la causa de que el DM directo funcione y el comentario no. Se arregla con " +
       "POST /api/admin/marta-suscribir.";
   } else if (pasoRoto) {
     veredicto = `Falla el paso "${pasoRoto.paso}": ${pasoRoto.detalle}`;

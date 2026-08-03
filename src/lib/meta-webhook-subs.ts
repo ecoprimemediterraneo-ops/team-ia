@@ -1,16 +1,23 @@
-// Suscripciones del webhook de una Página de Meta.
+// Suscripciones del webhook de Meta para Marta.
 //
-// Una Página no recibe nada del webhook por el hecho de estar conectada: hay que
-// suscribirla a CADA campo que se quiera recibir, y cada campo es una cosa
-// distinta. Marta necesita dos:
+// Nada llega al webhook por el hecho de tener la cuenta conectada: hay que
+// suscribirse a CADA campo. Marta necesita dos, y —esto es lo que no es obvio—
+// NO viven en el mismo sitio:
 //
-//   - `messages` → los DMs de Instagram, que entran en `entry[].messaging`.
-//   - `comments` → los comentarios en los posts, que entran en `entry[].changes`
+//   - `messages` → los DMs, que entran en `entry[].messaging`.
+//   - `comments` → los comentarios de los posts, que entran en `entry[].changes`
 //                  con `field: "comments"`.
 //
-// Estar suscrito a uno no implica estar suscrito al otro. Ese fue exactamente el
-// síntoma que costó encontrar: Marta contestaba los DMs y no reaccionaba a los
-// comentarios, porque el comentario no llegaba nunca.
+// TRAMPA GORDA: `comments` NO es un campo de la PÁGINA. Meta lo rechaza con
+// error 100 ("must be one of {feed, mention, name, ... messages, ...}"): la
+// Página tiene `feed`, no `comments`. Los comentarios de Instagram se suscriben
+// en el nodo del USUARIO DE INSTAGRAM, que tiene su propio `subscribed_apps`:
+//
+//   POST /{page-id}/subscribed_apps        → campos de Página (messages, feed…)
+//   POST /{instagram-user-id}/subscribed_apps → campos de Instagram (comments…)
+//
+// Por eso el diagnóstico que solo miraba la Página nunca iba a ver `comments`,
+// estuviera suscrito o no: estaba preguntando al objeto equivocado.
 //
 // -----------------------------------------------------------------------------
 // DOS TRAMPAS DE LA GRAPH API, LAS DOS APRENDIDAS A GOLPES
@@ -34,8 +41,11 @@ import "server-only";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
-/** Los dos campos que necesita Marta. El orden no importa. */
-export const CAMPOS_MARTA = ["messages", "comments"] as const;
+/** Campos de PÁGINA que necesita Marta (los DMs entran por aquí). */
+export const CAMPOS_PAGINA = ["messages"] as const;
+
+/** Campos del nodo de INSTAGRAM. `comments` solo existe aquí. */
+export const CAMPOS_INSTAGRAM = ["comments", "messages"] as const;
 
 export type GraphRes = {
   ok: boolean;
@@ -120,12 +130,16 @@ export async function derivarPageToken(
   return { ok: true, token: t };
 }
 
-/** Campos a los que la Página está suscrita ahora mismo. */
+/**
+ * Campos a los que un NODO está suscrito ahora mismo.
+ * `nodeId` puede ser el id de la Página o el del usuario de Instagram: cada uno
+ * tiene su propia lista y no se solapan.
+ */
 export async function leerCamposSuscritos(
-  pageId: string,
+  nodeId: string,
   pageToken: string,
 ): Promise<{ ok: true; campos: string[] } | { ok: false; code?: number; message: string }> {
-  const r = await graphGet(`/${pageId}/subscribed_apps?fields=subscribed_fields`, pageToken);
+  const r = await graphGet(`/${nodeId}/subscribed_apps?fields=subscribed_fields`, pageToken);
   if (!r.ok) return { ok: false, code: r.code, message: r.message || `HTTP ${r.status}` };
   const campos = (((r.json as { data?: Array<{ subscribed_fields?: string[] }> })?.data) || [])
     .flatMap((d) => d.subscribed_fields || []);
@@ -134,7 +148,9 @@ export async function leerCamposSuscritos(
 
 export type ResultadoSuscripcion = {
   ok: boolean;
-  pageId: string;
+  /** Nodo tocado: la Página o el usuario de Instagram. */
+  nodo: string;
+  nodeId: string;
   /** Campos que había ANTES de tocar nada. */
   antes: string[];
   /** Campos pedidos por quien llama. */
@@ -151,30 +167,30 @@ export type ResultadoSuscripcion = {
 };
 
 /**
- * Suscribe una Página a los campos pedidos y RELEE para comprobarlo.
+ * Suscribe UN nodo a los campos pedidos y RELEE de Meta para comprobarlo.
+ *
+ * `nodeId` es la Página o el usuario de Instagram — cada uno tiene su propia
+ * lista de campos y no se solapan (ver la cabecera). El token es el PAGE access
+ * token ya derivado: sirve para los dos nodos.
  *
  * Sirve tal cual para la cuenta propia y para la de cualquier cliente que se
- * conecte después: lo único que cambia es el `pageId`.
+ * conecte después: lo único que cambia son los ids.
  *
  * No borra suscripciones existentes: manda la unión de lo que ya había con lo
- * que se pide (ver la trampa 2 de la cabecera).
+ * que se pide, porque el POST de Graph reemplaza la lista entera.
  */
-export async function suscribirCampos(
-  pageId: string,
+export async function suscribirNodo(
+  nodo: string,
+  nodeId: string,
   campos: string[],
-  systemToken: string,
+  pageToken: string,
 ): Promise<ResultadoSuscripcion> {
   const base: ResultadoSuscripcion = {
-    ok: false, pageId, antes: [], pedidos: campos, enviados: [], despues: [],
-    verificado: false, sinCambios: false,
+    ok: false, nodo, nodeId, antes: [], pedidos: campos, enviados: [],
+    despues: [], verificado: false, sinCambios: false,
   };
 
-  const page = await derivarPageToken(pageId, systemToken);
-  if (!page.ok) {
-    return { ...base, error: `No se ha podido derivar el Page token (código ${page.code ?? "?"}): ${page.message}` };
-  }
-
-  const actual = await leerCamposSuscritos(pageId, page.token);
+  const actual = await leerCamposSuscritos(nodeId, pageToken);
   if (!actual.ok) {
     const falta = (actual.message || "").includes("pages_manage_metadata");
     return {
@@ -186,16 +202,15 @@ export async function suscribirCampos(
   }
   const antes = actual.campos;
 
-  // Unión, y estable en el orden para que el resultado sea comparable.
-  const union = Array.from(new Set([...antes, ...campos])).sort();
-
-  // Si ya estaban todos, no se toca nada: una llamada de escritura que no hace
-  // falta es una oportunidad de romper algo a cambio de nada.
+  // Si ya estaban todos, no se toca nada: una escritura que no hace falta solo
+  // puede romper algo a cambio de nada.
   if (campos.every((c) => antes.includes(c))) {
-    return { ...base, ok: true, antes, enviados: [], despues: antes, verificado: true, sinCambios: true };
+    return { ...base, ok: true, antes, despues: antes, verificado: true, sinCambios: true };
   }
 
-  const post = await graphPost(`/${pageId}/subscribed_apps`, page.token, {
+  // Unión, ordenada para que el resultado sea comparable entre ejecuciones.
+  const union = Array.from(new Set([...antes, ...campos])).sort();
+  const post = await graphPost(`/${nodeId}/subscribed_apps`, pageToken, {
     subscribed_fields: union.join(","),
   });
   if (!post.ok) {
@@ -203,17 +218,13 @@ export async function suscribirCampos(
   }
 
   // Releer de Meta. Que el POST devuelva success no basta como prueba.
-  const tras = await leerCamposSuscritos(pageId, page.token);
+  const tras = await leerCamposSuscritos(nodeId, pageToken);
   if (!tras.ok) {
     return { ...base, antes, enviados: union, error: `Suscrito, pero no se ha podido releer para comprobarlo: ${tras.message}` };
   }
 
   return {
-    ok: true,
-    pageId,
-    antes,
-    pedidos: campos,
-    enviados: union,
+    ok: true, nodo, nodeId, antes, pedidos: campos, enviados: union,
     despues: tras.campos,
     verificado: campos.every((c) => tras.campos.includes(c)),
     sinCambios: false,
