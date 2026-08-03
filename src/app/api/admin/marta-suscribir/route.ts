@@ -1,15 +1,14 @@
 // POST /api/admin/marta-suscribir — founder-only. ESCRIBE en Meta.
 //
-// Suscribe a los campos del webhook que necesita Marta. Son DOS nodos
-// distintos, y esa es la parte que no se ve en la documentación:
+// Suscribe a los campos del webhook que necesita Marta.
 //
-//   - La PÁGINA          → `messages` (los DMs).
-//   - El USUARIO DE INSTAGRAM → `comments` (los comentarios de los posts).
+// El que enciende los comentarios es la suscripción de la APP al objeto
+// `instagram` (`/{app-id}/subscriptions`), NO la de la Página: `comments` ni
+// siquiera existe como campo de Página. Ver la cabecera de meta-webhook-subs.ts,
+// que lleva el rastro de los tres errores de Meta que llevaron hasta aquí.
 //
-// `comments` NO existe como campo de Página: Meta lo rechaza con error 100. Por
-// eso hay que tocar los dos sitios. Sin la suscripción a `comments`, el
-// comentario no llega nunca al webhook y comentario→DM no se dispara aunque
-// todo lo demás esté bien.
+// Sin `comments` en esa suscripción, el comentario no llega nunca al webhook y
+// comentario→DM no se dispara aunque todo lo demás esté bien.
 //
 // SIRVE PARA CUALQUIER CLIENTE, no solo para la cuenta propia:
 //
@@ -38,6 +37,7 @@ import {
   suscribirNodo,
   derivarPageToken,
   resolverTokenSystemUser,
+  anadirCamposApp,
   CAMPOS_PAGINA,
   CAMPOS_INSTAGRAM,
 } from "@/lib/meta-webhook-subs";
@@ -101,23 +101,42 @@ export async function POST(req: Request) {
     );
   }
 
-  const resultados = [await suscribirNodo("pagina", pageId, camposPagina, page.token)];
+  // 1) Lo que de verdad enciende los comentarios: la suscripción de la APP al
+  //    objeto `instagram`. Es de donde ya llegan los DMs (la Página tiene la
+  //    lista vacía y aun así entran), así que es de donde tienen que llegar
+  //    también los comentarios.
+  const app = await anadirCamposApp(
+    "instagram",
+    camposInstagram,
+    process.env.INSTAGRAM_VERIFY_TOKEN || "",
+  );
+
+  // 2) Y de paso la Página, que es por donde Meta documenta los DMs. Va como
+  //    "mejor si sale": hoy los DMs funcionan sin ella, así que si falta un
+  //    permiso se reporta pero no se da todo por roto.
+  const nodos = [await suscribirNodo("pagina", pageId, camposPagina, page.token)];
   if (igUserId) {
-    resultados.push(await suscribirNodo("instagram", igUserId, camposInstagram, page.token));
+    nodos.push(await suscribirNodo("instagram", igUserId, camposInstagram, page.token));
   }
 
-  const ig = resultados.find((r) => r.nodo === "instagram");
-  const comentariosOk = !!ig && ig.despues.includes("comments");
-  const todoOk = resultados.every((r) => r.ok && r.verificado);
-
-  const resumen = !igUserId
-    ? "No hay INSTAGRAM_USER_ID: solo se ha tocado la Página. `comments` vive en el nodo de Instagram, así que sin ese id no se puede suscribir."
-    : comentariosOk
-      ? "Listo: el nodo de Instagram ya está suscrito a `comments`, comprobado releyendo de Meta."
-      : `NO se ha conseguido suscribir \`comments\`. ${ig?.error || "Revisa el detalle de cada nodo."}`;
+  const comentariosOk = app.despues.includes("comments");
+  const resumen = comentariosOk
+    ? app.sinCambios
+      ? "No hacía falta tocar nada: la app ya estaba suscrita a `comments` en el objeto instagram."
+      : `Listo: la app ya está suscrita a \`comments\`, comprobado releyendo de Meta. Campos ahora: ${app.despues.join(", ")}.`
+    : `NO se ha conseguido suscribir \`comments\`. ${app.error || "Revisa el detalle."}`;
 
   return NextResponse.json(
-    { ok: todoOk && comentariosOk, resumen, comentariosOk, tokenLeidoDe: tok.variable, resultados },
-    { status: todoOk ? 200 : 502 },
+    {
+      ok: comentariosOk,
+      resumen,
+      comentariosOk,
+      tokenLeidoDe: tok.variable,
+      // Lo que importa: la suscripción de la app.
+      app,
+      // Complementario, informativo.
+      nodos,
+    },
+    { status: comentariosOk ? 200 : 502 },
   );
 }

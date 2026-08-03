@@ -230,3 +230,141 @@ export async function suscribirNodo(
     sinCambios: false,
   };
 }
+
+// =============================================================================
+// Suscripciones a nivel de APP — donde vive de verdad `comments`
+// =============================================================================
+//
+// Las dos vías anteriores fallaron, y los errores de Meta dicen dónde está la
+// buena:
+//
+//   POST /{page-id}/subscribed_apps  con "comments"
+//     → (#100) must be one of {feed, mention, … messages, …}
+//        La Página no tiene `comments`. Tiene `feed`.
+//
+//   GET  /{ig-user-id}/subscribed_apps
+//     → (#100) Tried accessing nonexisting field (subscribed_apps)
+//        Ese borde no existe en graph.facebook.com para un usuario de Instagram.
+//
+// Y un tercer dato que lo ata todo: `/{page-id}/subscribed_apps` devuelve una
+// lista VACÍA y aun así los DMs de Marta llegan. Si la entrega no viene de la
+// Página, viene del único sitio que queda: la suscripción de la APP al objeto
+// `instagram`, que se administra en `/{app-id}/subscriptions`. Los DMs entran
+// porque ese objeto tiene el campo `messages`; los comentarios no entran porque
+// NO tiene `comments`.
+//
+// CUIDADO AL ESCRIBIR AQUÍ: el POST reemplaza la lista de campos del objeto y
+// reconfigura la callback. Hacerlo a ciegas deja a Marta sin DMs. Por eso
+// siempre se LEE primero, se conserva la callback tal cual viene y se manda la
+// UNIÓN de los campos. Si no se puede leer, no se escribe.
+
+/** Token de aplicación: `{app-id}|{app-secret}`. */
+function appAccessToken(): string | null {
+  const id = process.env.META_APP_ID;
+  const secret = process.env.META_APP_SECRET;
+  if (!id || !secret) return null;
+  return `${id}|${secret}`;
+}
+
+export type SuscripcionApp = {
+  object: string;
+  callback_url?: string;
+  active?: boolean;
+  fields: string[];
+};
+
+/** Suscripciones de webhook declaradas por la APP, por objeto. */
+export async function leerSuscripcionesApp(): Promise<
+  { ok: true; suscripciones: SuscripcionApp[] } | { ok: false; message: string }
+> {
+  const appId = process.env.META_APP_ID;
+  const token = appAccessToken();
+  if (!appId || !token) return { ok: false, message: "Faltan META_APP_ID o META_APP_SECRET." };
+
+  const r = await graphGet(`/${appId}/subscriptions`, token);
+  if (!r.ok) return { ok: false, message: `código ${r.code ?? r.status}: ${r.message}` };
+
+  const data = ((r.json as { data?: Array<{ object?: string; callback_url?: string; active?: boolean; fields?: Array<{ name?: string } | string> }> })?.data) || [];
+  return {
+    ok: true,
+    suscripciones: data.map((d) => ({
+      object: d.object || "?",
+      callback_url: d.callback_url,
+      active: d.active,
+      fields: (d.fields || []).map((f) => (typeof f === "string" ? f : f.name || "")).filter(Boolean),
+    })),
+  };
+}
+
+export type ResultadoObjetoApp = {
+  ok: boolean;
+  objeto: string;
+  antes: string[];
+  pedidos: string[];
+  enviados: string[];
+  despues: string[];
+  verificado: boolean;
+  sinCambios: boolean;
+  callbackUrl?: string;
+  error?: string;
+};
+
+/**
+ * Añade campos a la suscripción de la APP a un objeto (`instagram`), sin
+ * quitar los que ya tenía y sin cambiarle la callback.
+ *
+ * Lee → une → escribe → RELEE. Si el primer paso falla, no escribe nada: es
+ * preferible no hacer nada a dejar la app suscrita a menos campos que antes.
+ */
+export async function anadirCamposApp(
+  objeto: string,
+  campos: string[],
+  verifyToken: string,
+): Promise<ResultadoObjetoApp> {
+  const base: ResultadoObjetoApp = {
+    ok: false, objeto, antes: [], pedidos: campos, enviados: [],
+    despues: [], verificado: false, sinCambios: false,
+  };
+  const appId = process.env.META_APP_ID;
+  const token = appAccessToken();
+  if (!appId || !token) return { ...base, error: "Faltan META_APP_ID o META_APP_SECRET." };
+
+  const actual = await leerSuscripcionesApp();
+  if (!actual.ok) return { ...base, error: `No se han podido leer las suscripciones de la app (${actual.message}). No se escribe nada.` };
+
+  const suya = actual.suscripciones.find((s) => s.object === objeto);
+  const antes = suya?.fields || [];
+  const callbackUrl = suya?.callback_url;
+  if (!callbackUrl) {
+    return {
+      ...base,
+      antes,
+      error: `La app no tiene ninguna suscripción al objeto "${objeto}" con callback. Hay que crearla una vez desde el panel de Meta (Webhooks → ${objeto}); desde aquí solo se añaden campos a una que ya exista.`,
+    };
+  }
+
+  if (campos.every((c) => antes.includes(c))) {
+    return { ...base, ok: true, antes, despues: antes, verificado: true, sinCambios: true, callbackUrl };
+  }
+
+  const union = Array.from(new Set([...antes, ...campos])).sort();
+  const post = await graphPost(`/${appId}/subscriptions`, token, {
+    object: objeto,
+    callback_url: callbackUrl,     // la misma que ya tenía: no se toca
+    fields: union.join(","),
+    verify_token: verifyToken,
+    include_values: "true",
+  });
+  if (!post.ok) {
+    return { ...base, antes, enviados: union, callbackUrl, error: `POST rechazado (código ${post.code ?? "?"}): ${post.message}` };
+  }
+
+  const tras = await leerSuscripcionesApp();
+  const despues = tras.ok ? (tras.suscripciones.find((s) => s.object === objeto)?.fields || []) : [];
+  return {
+    ok: true, objeto, antes, pedidos: campos, enviados: union, despues,
+    verificado: campos.every((c) => despues.includes(c)),
+    sinCambios: false,
+    callbackUrl,
+  };
+}
