@@ -3,7 +3,7 @@
  * Protegida por: el email del founder en la sesión.
  */
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -19,7 +19,11 @@ async function readJson<T>(file: string, fallback: T): Promise<T> {
 }
 
 export default async function AdminPage() {
-  const s = await getSession();
+  // getSessionLocal (no getSession): en producción es idéntico, y en local levanta
+  // el bypass de desarrollo para poder entrar al panel sin magic link. Mismo
+  // criterio que /admin/informe y el panel de Marta; el bypass tiene doble
+  // candado (NODE_ENV + VERCEL), así que no abre nada en producción.
+  const s = await getSessionLocal();
   if (!s) redirect("/login");
   if (s.email !== FOUNDER_EMAIL && s.email !== "crisasky@gmail.com") {
     return (
@@ -56,6 +60,7 @@ export default async function AdminPage() {
           <a href="/admin/metricas" className="text-xs font-mono border-2 border-[color:var(--mustard)] px-3 py-2 hover:bg-[color:var(--mustard)]">📊 MÉTRICAS AGENTES</a>
           <a href="/admin/dosier" className="text-xs font-mono border-2 border-black px-3 py-2 hover:bg-black hover:text-white">📖 DOSIER DEL SISTEMA</a>
           <a href="/admin/sectores" className="text-xs font-mono border-2 border-black px-3 py-2 hover:bg-black hover:text-white">🏷 PERFIL DE SECTOR</a>
+          <a href="/admin/informe" className="text-xs font-mono border-2 border-black px-3 py-2 hover:bg-black hover:text-white">📊 INFORME MENSUAL</a>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

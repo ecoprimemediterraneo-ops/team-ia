@@ -45,7 +45,7 @@ import {
 import { generarInformeEsencial, type MetricasEsencial } from "./informe-mensual";
 import { getMonthEvents } from "./event-log";
 import { listCalendar } from "./marta-calendar";
-import { getTenant, DEFAULT_TENANT_ID } from "./tenants";
+import { getTenant, listTenants, DEFAULT_TENANT_ID, type Tenant } from "./tenants";
 
 const MESES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -511,31 +511,194 @@ export async function construirInformeUnificado(opts: {
   return { subject, html, informe };
 }
 
+// -----------------------------------------------------------------------------
+// Frenos: interruptor de envío y fail-safe de "informe vacío"
+// -----------------------------------------------------------------------------
+
 /**
- * Envía el informe unificado al dueño del negocio (resolveCalendarEmail) por
- * Resend. Anti-duplicado por (slug, mes) con el mismo ledger de siempre: no
- * reenvía el mismo mes salvo `force`. Best-effort — nunca lanza.
+ * Interruptor del envío real, FAIL-CLOSED: si la variable no existe, NO se
+ * manda nada. Mismo criterio que WAITLIST_SEND_ENABLED / RECALL_SEND_ENABLED.
+ *
+ * Apagado, el cron hace el trabajo entero —recopila, renderiza, decide— y lo
+ * deja en el log, pero no escribe a ningún cliente. Es lo que permite mirar el
+ * resultado de una pasada real antes de que un correo salga de verdad.
  */
-export async function enviarInformeUnificado(
-  business: BusinessBooking,
+export function informeMensualSendEnabled(): boolean {
+  return (process.env.INFORME_MENSUAL_SEND_ENABLED || "").toLowerCase() === "true";
+}
+
+/**
+ * ¿Hay algo que contar?
+ *
+ * Un informe donde todo vale cero no es un informe: es un email que le dice al
+ * cliente que su mes ha estado muerto. Peor aún en un cliente recién dado de
+ * alta, que recibiría un "0 citas, 0 mensajes, 0 posts" antes de haber empezado.
+ * Se prefiere no mandar nada y dejarlo escrito en el log.
+ *
+ * Basta UNA señal de vida en cualquiera de las tres secciones.
+ */
+export function evaluarSustancia(inf: InformeUnificado): {
+  suficiente: boolean;
+  senales: string[];
+} {
+  const senales: string[] = [];
+  const r = inf.reservas;
+  if (r && (r.citas.total > 0 || r.ingresos > 0)) {
+    senales.push(`reservas: ${r.citas.total} citas, ${Math.round(r.ingresos)} €`);
+  }
+  const v = inf.valor;
+  if (v && (v.mensajesAtendidos > 0 || v.leads > 0 || v.ventas > 0 || v.citas > 0 || v.valorEconomicoEUR > 0)) {
+    senales.push(`agentes: ${v.mensajesAtendidos} mensajes, ${v.leads} leads, ${v.ventas} ventas`);
+  }
+  if (inf.contenido.length > 0) {
+    senales.push(`contenido: ${inf.contenido.length} posts`);
+  }
+  return { suficiente: senales.length > 0, senales };
+}
+
+// -----------------------------------------------------------------------------
+// Envío
+// -----------------------------------------------------------------------------
+
+/**
+ * A quién va el informe. Un negocio de reservas trae su propia sección 1 y su
+ * email de dueño; un tenant SIN negocio de reservas también merece informe (solo
+ * valor + contenido), y hasta ahora se quedaba fuera porque el cron solo
+ * recorría negocios.
+ */
+export type DestinoInforme =
+  | { tipo: "negocio"; business: BusinessBooking }
+  | { tipo: "tenant"; tenant: Tenant };
+
+export type MotivoInforme = "ok" | "duplicado" | "sin_email_dueno" | "sin_datos" | "flag_off";
+
+export type DecisionInforme = {
+  /** "negocio:<slug>" o "tenant:<id>" — para leer los resultados de un vistazo. */
+  ref: string;
+  clave: string;              // clave del ledger anti-duplicado
+  destinatario?: string;
+  motivo: MotivoInforme;
+  /** true solo si de verdad tocaría mandar el email ahora mismo. */
+  enviaria: boolean;
+  sustancia: { suficiente: boolean; senales: string[] };
+  subject?: string;
+  html?: string;
+  posts?: number;
+};
+
+function refDe(destino: DestinoInforme): string {
+  return destino.tipo === "negocio" ? `negocio:${destino.business.slug}` : `tenant:${destino.tenant.id}`;
+}
+
+/**
+ * Decide qué pasaría con este informe SIN enviar nada: destinatario, si hay
+ * datos, si ya se mandó y si el interruptor lo permite. Devuelve además el
+ * asunto y el HTML exactos.
+ *
+ * Es la misma función que usa el envío real, así que la vista previa no puede
+ * enseñar una cosa y el cron hacer otra.
+ */
+export async function prepararInforme(
+  destino: DestinoInforme,
   periodo: Periodo,
   opts?: { force?: boolean },
-): Promise<{ enviado: boolean; modo: string; to?: string; posts?: number }> {
-  const key = `informe:${business.slug}:${periodo.periodoKey}`;
-  if (!opts?.force && (await yaAvisado(key))) return { enviado: false, modo: "duplicado" };
+): Promise<DecisionInforme> {
+  const ref = refDe(destino);
+  const clave =
+    destino.tipo === "negocio"
+      ? `informe:${destino.business.slug}:${periodo.periodoKey}`
+      : `informe:tenant:${destino.tenant.id}:${periodo.periodoKey}`;
+
+  const base = { ref, clave, sustancia: { suficiente: false, senales: [] as string[] } };
+
+  if (!opts?.force && (await yaAvisado(clave))) {
+    return { ...base, motivo: "duplicado", enviaria: false };
+  }
 
   let to: string | undefined;
-  try {
-    to = await resolveCalendarEmail(business);
-  } catch {
-    to = undefined;
+  if (destino.tipo === "negocio") {
+    try {
+      to = await resolveCalendarEmail(destino.business);
+    } catch {
+      to = undefined;
+    }
+  } else {
+    to = destino.tenant.email || undefined;
   }
-  if (!to) return { enviado: false, modo: "sin_email_dueno" };
+  if (!to) return { ...base, motivo: "sin_email_dueno", enviaria: false };
 
-  const { subject, html, informe } = await construirInformeUnificado({ business, periodo });
-  const r = await enviarEmail(to, subject, html);
-  if (r.intentado) await marcarAvisado(key);
-  return { enviado: r.enviado, modo: r.modo, to, posts: informe.contenido.length };
+  const { subject, html, informe } =
+    destino.tipo === "negocio"
+      ? await construirInformeUnificado({ business: destino.business, periodo })
+      : await construirInformeUnificado({ tenantId: destino.tenant.id, periodo });
+
+  const sustancia = evaluarSustancia(informe);
+  const comun = {
+    ref,
+    clave,
+    destinatario: to,
+    sustancia,
+    subject,
+    html,
+    posts: informe.contenido.length,
+  };
+
+  if (!sustancia.suficiente) return { ...comun, motivo: "sin_datos", enviaria: false };
+  if (!informeMensualSendEnabled()) return { ...comun, motivo: "flag_off", enviaria: false };
+  return { ...comun, motivo: "ok", enviaria: true };
+}
+
+/**
+ * Envía el informe unificado al dueño (Resend). Anti-duplicado por (destino,
+ * mes) con el ledger de siempre: no reenvía el mismo mes salvo `force`.
+ * Best-effort — nunca lanza.
+ *
+ * El ledger SOLO se marca cuando se ha intentado un envío de verdad. Si no se
+ * mandó por el flag o por falta de datos, el mes se queda libre: encender el
+ * interruptor después tiene que poder mandar ese informe, no encontrárselo ya
+ * dado por enviado.
+ */
+export async function enviarInformeUnificado(
+  destino: DestinoInforme,
+  periodo: Periodo,
+  opts?: { force?: boolean },
+): Promise<{ enviado: boolean; modo: string; to?: string; posts?: number; ref: string }> {
+  const d = await prepararInforme(destino, periodo, opts);
+
+  if (!d.enviaria) {
+    // Cada salto queda escrito con su porqué: un informe que no sale sin dejar
+    // rastro es indistinguible de un cron que no se ejecutó.
+    console.log(
+      `[informe-mensual] ${d.ref} ${periodo.periodoKey}: NO se envía (${d.motivo})` +
+        (d.destinatario ? ` · destinatario habría sido ${d.destinatario}` : "") +
+        (d.sustancia.senales.length ? ` · datos: ${d.sustancia.senales.join(" · ")}` : "") +
+        (d.motivo === "flag_off" ? " · pon INFORME_MENSUAL_SEND_ENABLED=true para activarlo" : ""),
+    );
+    return { enviado: false, modo: d.motivo, to: d.destinatario, posts: d.posts, ref: d.ref };
+  }
+
+  const r = await enviarEmail(d.destinatario, d.subject!, d.html!);
+  if (r.intentado) await marcarAvisado(d.clave);
+  console.log(
+    `[informe-mensual] ${d.ref} ${periodo.periodoKey}: enviado=${r.enviado} modo=${r.modo} → ${d.destinatario}`,
+  );
+  return { enviado: r.enviado, modo: r.modo, to: d.destinatario, posts: d.posts, ref: d.ref };
+}
+
+/**
+ * Todos los destinos de una pasada mensual: cada negocio de reservas, MÁS los
+ * tenants que no tienen ninguno (a esos no les llegaba nada).
+ */
+export async function destinosDelMes(): Promise<DestinoInforme[]> {
+  const negocios = await listBusinesses();
+  const tenants = await listTenants();
+  const tenantsConNegocio = new Set(negocios.map((b) => b.tenantId));
+  return [
+    ...negocios.map((business) => ({ tipo: "negocio" as const, business })),
+    ...tenants
+      .filter((t) => !tenantsConNegocio.has(t.id))
+      .map((tenant) => ({ tipo: "tenant" as const, tenant })),
+  ];
 }
 
 /** Negocio de reservas de un tenant (el primero). null si el tenant no tiene ninguno. */

@@ -3,6 +3,12 @@
 // Query params:
 //   ?tenant=tenant_aiteam&mes=2026-07        → informe del tenant (coge su primer negocio)
 //   ?slug=bendito-arte&mes=2026-07           → informe de un negocio concreto
+//   &force=1                                 → veredicto ignorando el anti-duplicado
+//
+// Por defecto se previsualiza el MES ANTERIOR, que es el que manda el cron.
+// Además del email, la página enseña QUÉ HARÍA el cron con él (destinatario,
+// datos encontrados, interruptor) usando `prepararInforme`, la misma función que
+// decide el envío. Aquí NUNCA se envía nada.
 //
 // IMPORTANTE — una sola fuente: esta página NO maqueta nada. Pide el HTML a
 // `construirInformeUnificado()` (informe-unificado.ts), exactamente el mismo que
@@ -15,11 +21,13 @@
 
 import { redirect } from "next/navigation";
 import { getSessionLocal } from "@/lib/auth";
-import { DEFAULT_TENANT_ID } from "@/lib/tenants";
+import { DEFAULT_TENANT_ID, getTenant } from "@/lib/tenants";
 import {
   periodoMes,
   construirInformeUnificado,
   primerNegocioDelTenant,
+  prepararInforme,
+  type DestinoInforme,
 } from "@/lib/informe-unificado";
 import { getBusinessBySlug } from "@/lib/booking";
 
@@ -27,15 +35,19 @@ export const dynamic = "force-dynamic";
 
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
 
-function mesActual(): string {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+/**
+ * Mes que se previsualiza por defecto: el ANTERIOR, el mismo que manda el cron.
+ * Antes salía el mes en curso, que es un informe que nunca se enviará — se
+ * revisaba una cosa y se mandaba otra.
+ */
+function mesPorDefecto(): string {
+  return periodoMes(null)!.periodoKey;
 }
 
 export default async function InformePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tenant?: string; mes?: string; slug?: string }>;
+  searchParams: Promise<{ tenant?: string; mes?: string; slug?: string; force?: string }>;
 }) {
   // getSessionLocal (no getSession): en producción es idéntico, y en local levanta
   // el bypass de desarrollo para poder revisar el informe sin magic link. Mismo
@@ -46,7 +58,7 @@ export default async function InformePage({
 
   const sp = await searchParams;
   const tenantId = sp.tenant || DEFAULT_TENANT_ID;
-  const mes = sp.mes || mesActual();
+  const mes = sp.mes || mesPorDefecto();
   const periodo = periodoMes(mes);
 
   if (!periodo) {
@@ -71,6 +83,29 @@ export default async function InformePage({
     tenantId,
     periodo,
   });
+
+  // Veredicto de envío: lo calcula `prepararInforme`, la MISMA función que usa el
+  // cron para decidir. Así esta página no dice "se enviaría" por su cuenta: dice
+  // lo que el cron haría de verdad, sin enviar nada.
+  const tenant = await getTenant(tenantId);
+  const destino: DestinoInforme | null = business
+    ? { tipo: "negocio", business }
+    : tenant
+      ? { tipo: "tenant", tenant }
+      : null;
+  // ?force=1 salta el anti-duplicado SOLO para el veredicto: si este mes ya se
+  // envió, sin esto el motivo sería siempre "duplicado" y no se vería lo que de
+  // verdad decidiría el cron (flag, datos, destinatario). Sigue sin enviar nada.
+  const force = sp.force === "1";
+  const decision = destino ? await prepararInforme(destino, periodo, { force }) : null;
+
+  const MOTIVOS: Record<string, string> = {
+    ok: "Se enviaría ahora mismo.",
+    duplicado: "Ya se envió este mes (usa force para repetirlo).",
+    sin_email_dueno: "No hay email de dueño al que mandarlo.",
+    sin_datos: "Sin datos suficientes: no se manda para no enviar un informe vacío.",
+    flag_off: "INFORME_MENSUAL_SEND_ENABLED está apagado: se calcula y se registra, pero no sale.",
+  };
 
   return (
     <main className="min-h-screen px-4 md:px-6 py-8 bg-[color:var(--cream)]">
@@ -123,6 +158,30 @@ export default async function InformePage({
             Esto es EXACTAMENTE el email que se envía desde /api/cron/informe-mensual (mismo renderer).
           </div>
         </div>
+
+        {/* Veredicto: qué haría el cron con este informe. No envía nada. */}
+        {decision && (
+          <div
+            className={`card-hard p-4 text-xs font-mono space-y-1 ${
+              decision.enviaria ? "bg-[color:var(--mustard)]" : "bg-white"
+            }`}
+          >
+            <div>
+              <b>{decision.enviaria ? "SE ENVIARÍA" : "NO SE ENVIARÍA"}</b> — {MOTIVOS[decision.motivo] ?? decision.motivo}
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-black/60">
+              <span>destinatario: {decision.destinatario ?? "—"}</span>
+              <span>destino: {decision.ref}</span>
+            </div>
+            <div className="text-black/60">
+              datos encontrados: {decision.sustancia.senales.length ? decision.sustancia.senales.join(" · ") : "ninguno"}
+            </div>
+            <div className="text-black/50 pt-1">
+              Esta página NUNCA envía. Para mandarlo de verdad hace falta el cron con CRON_SECRET y
+              INFORME_MENSUAL_SEND_ENABLED=true.
+            </div>
+          </div>
+        )}
 
         {/* El email, tal cual */}
         <div className="card-hard bg-white overflow-hidden">

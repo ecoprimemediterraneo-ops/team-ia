@@ -121,6 +121,7 @@ final. Se documentan aquí porque `.env.local.example` está en `.gitignore`.
 | `MARTA_COMMENT_DM_TENANTS` | Lista de tenants (comas) con comentario→DM encendido mientras tanto. **Si la variable no existe, por defecto es solo `tenant_aiteam`** (la cuenta propia, la que se graba para el App Review). Ponla vacía para apagarlo también ahí. | `tenant_aiteam` |
 | `RECALL_SEND_ENABLED` + `RECALL_TEMPLATE` | Avisos de revisión por WhatsApp (recall dental). | off |
 | `PRESUPUESTOS_SEND_ENABLED` + `PRESUPUESTOS_TEMPLATE` | Recordatorios de presupuesto parado. | off |
+| `INFORME_MENSUAL_SEND_ENABLED` | Envío por email del informe mensual al cliente (cron del día 1). Apagado, el cron recopila, renderiza y registra la decisión de cada destino en el log, pero no sale ningún correo. | off |
 
 Los avisos de recall y presupuestos llegan meses después de la última
 conversación, o sea SIEMPRE fuera de la ventana de 24 h de WhatsApp: sin
