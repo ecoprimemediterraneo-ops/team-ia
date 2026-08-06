@@ -12,13 +12,11 @@
 import { NextResponse } from "next/server";
 import { getSessionLocal } from "@/lib/auth";
 import { getTenant } from "@/lib/tenants";
-import { COOKIE_VER_PANEL } from "@/lib/panel-contexto";
+// La lista de emails con permiso vive en panel-contexto y se importa: aquí había una
+// copia y en el selector de cuenta habría hecho falta una tercera.
+import { COOKIE_VER_PANEL, esFundadorEmail as esFundador, esLocal } from "@/lib/panel-contexto";
 
 export const dynamic = "force-dynamic";
-
-const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
-const esFundador = (e: string) => e === FOUNDER_EMAIL || e === "crisasky@gmail.com";
-const esLocal = () => process.env.NODE_ENV !== "production" && !process.env.VERCEL;
 
 export async function GET(req: Request, { params }: { params: Promise<{ tenant: string }> }) {
   const s = await getSessionLocal();

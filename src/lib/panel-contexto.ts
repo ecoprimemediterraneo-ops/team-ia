@@ -26,11 +26,24 @@ import {
 export const COOKIE_VER_PANEL = "aiteam_ver_panel";
 
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
-const esFundador = (email: string) => email === FOUNDER_EMAIL || email === "crisasky@gmail.com";
 
-function esLocal(): boolean {
+/**
+ * Quién puede mirar el panel de otra cuenta. Se EXPORTA porque la decide este
+ * módulo y la necesitan también el selector de cuenta de la cabecera y el route
+ * handler de /admin/ver-panel: tres copias de la misma lista de emails es una
+ * copia que algún día se queda atrás.
+ */
+export const esFundadorEmail = (email: string) =>
+  email === FOUNDER_EMAIL || email === "crisasky@gmail.com";
+
+export function esLocal(): boolean {
   return process.env.NODE_ENV !== "production" && !process.env.VERCEL;
 }
+
+/** Atajo: ¿este email puede cambiar de cuenta? */
+export const puedeCambiarDeCuenta = (email: string) => esFundadorEmail(email) || esLocal();
+
+const esFundador = esFundadorEmail;
 
 export type ContextoPanel = {
   email: string;

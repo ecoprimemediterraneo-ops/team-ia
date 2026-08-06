@@ -3,7 +3,8 @@ import { getSessionLocal } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import Logo from "@/components/Logo";
 import { agents, agentBySlug } from "@/lib/agents";
-import { contextoPanelODefecto } from "@/lib/panel-contexto";
+import { contextoPanelODefecto, puedeCambiarDeCuenta } from "@/lib/panel-contexto";
+import SelectorCuenta from "@/components/SelectorCuenta";
 import { tieneFuncion } from "@/lib/sectores";
 
 // Las tarjetas de agente NO llevan insignia de estado. Había un "LIVE" verde en los
@@ -35,6 +36,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <div className="flex items-center gap-4 text-sm">
             {session.dev && (
               <span className="text-[9px] uppercase tracking-widest font-bold bg-[color:var(--mustard)] border-2 border-black px-1.5 py-0.5" title="Sesión de desarrollo local (sin login). En producción exige magic link.">DEV</span>
+            )}
+            {/* Selector de cuenta: SOLO para el fundador. Un cliente no puede ni ver la
+                lista de los demás tenants, así que se decide en el servidor. */}
+            {puedeCambiarDeCuenta(session.email) && (
+              <SelectorCuenta tenantIdActual={ctx.tenantId} mirandoOtro={ctx.mirandoOtro} />
             )}
             <span className="hidden sm:inline font-mono text-black/60">{session.email}</span>
             <form action="/api/auth/logout" method="post">
