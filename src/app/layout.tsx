@@ -13,6 +13,8 @@ const anton = Anton({ weight: "400", subsets: ["latin"], variable: "--font-anton
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Barra del navegador en Android y barra de estado en la PWA instalada.
+  themeColor: "#C8202A",
 };
 
 export const metadata: Metadata = {
@@ -40,6 +42,19 @@ export const metadata: Metadata = {
   },
   alternates: { canonical: SITE_URL },
   robots: { index: true, follow: true },
+  // PWA. El manifest no existía: sin él, "Añadir a pantalla de inicio" cogía una
+  // captura de la página como icono en vez del logo.
+  manifest: "/manifest.json",
+  // `icon.png`, `apple-icon.png` y `favicon.ico` viven en src/app y Next les pone
+  // sus <link> solo. Aquí se declaran además los dos que consume el manifest, para
+  // que el navegador tenga el tamaño grande sin tener que leer el manifest primero.
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({

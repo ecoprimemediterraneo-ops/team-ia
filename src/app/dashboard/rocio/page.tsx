@@ -37,11 +37,6 @@ export default async function RocioPage({
           <span className="border-2 border-black px-2 py-0.5 font-bold tracking-widest" style={{ background: a.color }}>
             {a.role.toUpperCase()}
           </span>
-          {live ? (
-            <span className="bg-green-700 text-white px-2 py-0.5 font-bold tracking-widest">LIVE</span>
-          ) : (
-            <span className="bg-black/70 text-white px-2 py-0.5 font-bold tracking-widest">PRÓXIMAMENTE</span>
-          )}
           <span className="ml-auto text-[11px] font-mono text-black/55 hidden md:inline truncate max-w-[60%]">
             {live
               ? "✓ Conectada a Google Business · aprobación por WhatsApp"

@@ -29,7 +29,6 @@ export default async function EvaPage() {
           <span className="border-2 border-black px-2 py-0.5 font-bold tracking-widest" style={{ background: a.color }}>
             {a.role.toUpperCase()}
           </span>
-          <span className="bg-green-700 text-white px-2 py-0.5 font-bold tracking-widest">LIVE</span>
           <span className="ml-auto text-[11px] font-mono text-black/55 hidden md:inline">
             ✓ Conectada a Resend · Manda correos de verdad
           </span>

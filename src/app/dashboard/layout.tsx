@@ -2,13 +2,14 @@ import { redirect } from "next/navigation";
 import { getSessionLocal } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import Logo from "@/components/Logo";
-import { agents, agentBySlug, type AgentSlug } from "@/lib/agents";
+import { agents, agentBySlug } from "@/lib/agents";
 import { contextoPanelODefecto } from "@/lib/panel-contexto";
 import { tieneFuncion } from "@/lib/sectores";
 
-// Agentes con integración externa REAL conectada hoy.
-// El resto se marca como "Próximamente" hasta que llegue verificación de Meta / Vapi / GMB.
-const LIVE_AGENTS = new Set<AgentSlug>(["pablo", "eva", "lucia", "marta"]);
+// Las tarjetas de agente NO llevan insignia de estado. Había un "LIVE" verde en los
+// conectados y un "PRÓXIMAMENTE" en Carmen y Rocío: al cliente no le dice nada útil y
+// enseñar media plantilla marcada como pendiente resta más de lo que informa. Los
+// agentes siguen todos en la lista; lo que se ha quitado es el cartelito.
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   // En producción exige sesión real; en desarrollo local entra con dueño por defecto.
@@ -97,11 +98,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 <span className="block font-stencil text-lg leading-none truncate">{a.name}</span>
                 <span className="block text-[10px] uppercase tracking-widest text-black/70 truncate">{a.role}</span>
               </span>
-              {LIVE_AGENTS.has(a.slug) ? (
-                <span className="absolute top-1 right-1 text-[8px] bg-green-700 text-white px-1 py-0.5 font-bold tracking-widest">LIVE</span>
-              ) : (
-                <span className="absolute top-1 right-1 text-[8px] bg-black/70 text-white px-1 py-0.5 font-bold tracking-widest">PRÓXIMAMENTE</span>
-              )}
             </a>
           ))}
           <a

@@ -22,7 +22,6 @@ export default async function LuciaPage({ searchParams }: { searchParams: Promis
           <span className="border-2 border-black px-2 py-0.5 font-bold tracking-widest" style={{ background: a.color }}>
             {a.role.toUpperCase()}
           </span>
-          <span className="bg-green-700 text-white px-2 py-0.5 font-bold tracking-widest">LIVE</span>
           <span className="ml-auto text-[11px] font-mono hidden md:inline truncate max-w-[55%]">
             {user.gmailTokens
               ? <span className="text-green-700">✓ Gmail conectado · {s.email}</span>
