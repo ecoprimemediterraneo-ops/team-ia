@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 import { getUser, getFeedback } from "@/lib/store";
 import { agentBySlug } from "@/lib/agents";
 
 export default async function ValorPage() {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) redirect("/login");
   const user = await getUser(s.email);
   if (!user.business) redirect("/onboarding");

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 
 type Plan = {
   red: "Instagram" | "LinkedIn" | "TikTok";
@@ -50,7 +50,7 @@ const planes: Plan[] = [
 ];
 
 export default async function RedesDashboardPage() {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) redirect("/login");
 
   const totalPublicaciones = planes.reduce((acc, p) => acc + p.total, 0);

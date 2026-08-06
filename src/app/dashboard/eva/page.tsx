@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 import { getUser, getContacts, getOrCreateWidget } from "@/lib/store";
 import AgentChat from "@/components/AgentChat";
 import EvaTools from "@/components/EvaTools";
@@ -9,7 +9,7 @@ import EvaAutomation from "@/components/EvaAutomation";
 import { agentBySlug } from "@/lib/agents";
 
 export default async function EvaPage() {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) redirect("/login");
   const user = await getUser(s.email);
   if (!user.business) redirect("/onboarding");

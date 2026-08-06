@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 import { getFeedback, getLearnedPatterns, getUser } from "@/lib/store";
 import { agentBySlug } from "@/lib/agents";
 
 export default async function LeccionesPage() {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) redirect("/login");
   const user = await getUser(s.email);
   if (!user.business) redirect("/onboarding");

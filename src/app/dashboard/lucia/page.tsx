@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import AgentChat from "@/components/AgentChat";
 import LuciaTools from "@/components/LuciaTools";
@@ -8,7 +8,7 @@ import LuciaBooking from "@/components/LuciaBooking";
 import { agentBySlug } from "@/lib/agents";
 
 export default async function LuciaPage({ searchParams }: { searchParams: Promise<{ gmail?: string; gmail_error?: string }> }) {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) redirect("/login");
   const user = await getUser(s.email);
   if (!user.business) redirect("/onboarding");

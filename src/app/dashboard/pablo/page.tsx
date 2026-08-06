@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import AgentChat from "@/components/AgentChat";
 import PabloTools from "@/components/PabloTools";
@@ -13,7 +13,7 @@ import BandejaPablo from "@/components/pablo/BandejaPablo";
 export const dynamic = "force-dynamic";
 
 export default async function PabloPage() {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) redirect("/login");
   const user = await getUser(s.email);
   if (!user.business) redirect("/onboarding");

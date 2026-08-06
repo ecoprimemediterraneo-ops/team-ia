@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 
 type Post = {
   n: number;
@@ -64,7 +64,7 @@ const formatoIcon: Record<Post["formato"], string> = {
 };
 
 export default async function InstagramDashboardPage() {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) redirect("/login");
 
   const stats = {

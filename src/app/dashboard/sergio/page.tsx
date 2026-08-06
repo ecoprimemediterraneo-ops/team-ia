@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import AgentChat from "@/components/AgentChat";
 import SergioTools from "@/components/SergioTools";
 import { agentBySlug } from "@/lib/agents";
 
 export default async function SergioPage() {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) redirect("/login");
   const user = await getUser(s.email);
   if (!user.business) redirect("/onboarding");

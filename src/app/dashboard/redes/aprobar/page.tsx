@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 import { listar, type Publicacion } from "@/lib/redes";
 import AprobarClient from "./AprobarClient";
 
 export default async function AprobarPage() {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) redirect("/login");
 
   const borradores = await listar({ estado: "borrador" });

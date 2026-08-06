@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 
 export default async function ConectarRedesPage() {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) redirect("/login");
 
   const igConectado = !!(process.env.META_ACCESS_TOKEN && process.env.META_INSTAGRAM_USER_ID);

@@ -1,7 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 import { processNewReviews, resolveTenantForRocio } from "@/lib/rocio-flow";
 import { getRedirectUri } from "@/lib/google-business";
 import type { ProcessState } from "./types";
@@ -10,7 +10,7 @@ export async function scanReviewsAction(
   _prev: ProcessState,
   formData: FormData,
 ): Promise<ProcessState> {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) return { ts: Date.now(), variant: "error", title: "Inicia sesión" };
 
   const recipient = String(formData.get("recipient") || "").replace(/\D/g, "");

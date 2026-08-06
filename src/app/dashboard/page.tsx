@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import { agents, agentBySlug, type AgentSlug } from "@/lib/agents";
 import { getFeed } from "@/lib/feed";
@@ -30,7 +30,7 @@ function startOfWeek(): Date {
 }
 
 export default async function DashboardHome() {
-  const session = await getSession();
+  const session = await getSessionLocal();
   if (!session) redirect("/login");
   const user = await getUser(session.email);
 

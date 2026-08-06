@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import PerfilEditor from "@/components/PerfilEditor";
 import PerfilSectorFicha from "@/components/PerfilSectorFicha";
@@ -9,7 +9,7 @@ import { contextoPanelODefecto } from "@/lib/panel-contexto";
 export const dynamic = "force-dynamic";
 
 export default async function PerfilPage() {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) redirect("/login");
   const user = await getUser(s.email);
   if (!user.business) redirect("/onboarding");

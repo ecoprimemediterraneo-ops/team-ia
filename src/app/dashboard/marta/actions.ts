@@ -6,7 +6,7 @@
 // real en producción); cuando exista mapping email→tenantId se cambia aquí.
 
 import { headers } from "next/headers";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 import { DEFAULT_TENANT_ID } from "@/lib/tenants";
 import { generateArranque } from "@/lib/marta-arranque";
 import { generarCaption } from "@/lib/marta-caption";
@@ -39,7 +39,7 @@ import type { ProposalMediaType, MartaProposal } from "@/lib/marta-proposals";
 import type { ArranqueState, ProposalState } from "./types";
 
 async function gateTenantId(): Promise<string | null> {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) return null;
   // Single-tenant durante la beta. Mapping email→tenantId va aquí cuando exista.
   return DEFAULT_TENANT_ID;

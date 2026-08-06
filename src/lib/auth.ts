@@ -84,6 +84,12 @@ let avisadoDevBypass = false;
  * Como getSession(), pero en desarrollo local devuelve un dueño por defecto
  * cuando no hay sesión, para poder entrar al panel sin magic link.
  * En producción es idéntico a getSession() (el ramo dev nunca se ejecuta).
+ *
+ * TODO el panel (`/dashboard/**`) usa ESTA y no `getSession()`. Antes iba a medias
+ * —el layout con bypass y la mayoría de páginas sin él— y el resultado en local era
+ * que entrabas al panel pero cada página te echaba al login; peor aún, cambiar de
+ * cuenta parecía roto porque el redirigido aterriza en `/dashboard`, que era una de
+ * las que echaba. Fuera del panel (rutas de admin, API) cada sitio elige.
  */
 export async function getSessionLocal(): Promise<{ email: string; dev?: boolean } | null> {
   const s = await getSession();
