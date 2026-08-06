@@ -11,7 +11,14 @@ import OwnerConfig from "./OwnerConfig";
 import CompartirEnlace from "./CompartirEnlace";
 import NotificacionesBell from "./NotificacionesBell";
 
-const TABS = ["agenda", "clientes", "informes", "compartir", "config"] as const;
+// El ORDEN de esta lista es el orden de las pestañas en pantalla. "informes" va
+// la última a propósito: es la que se consulta una vez al mes, no a diario.
+//
+// OJO — la CLAVE `informes` no se toca aunque cambie la etiqueta: es la que
+// viaja en la query string (?tab=informes) y la que construye el botón del email
+// mensual (`urlPanelInformes` en informe-unificado.ts). Renombrar la clave
+// rompería el enlace de todos los correos ya enviados.
+const TABS = ["agenda", "clientes", "compartir", "config", "informes"] as const;
 type Tab = (typeof TABS)[number];
 
 function esTab(v: string | undefined): v is Tab {
@@ -49,9 +56,9 @@ export default function ReservasPanel({
   const ETIQUETAS: Record<Tab, string> = {
     agenda: "Agenda",
     clientes: vv ? cap(vv.clientePlural) : "Clientes",
-    informes: "Informes",
     compartir: "Compartir",
     config: vv ? `${cap(vv.servicioPlural)} y horario` : "Servicios y horario",
+    informes: "Informes mensuales",
   };
   const [tab, setTab] = useState<Tab>(esTab(tabInicial) ? tabInicial : "agenda");
   // Slug desconocido (o ausente) → primer negocio, como hasta ahora.

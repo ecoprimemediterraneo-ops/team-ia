@@ -55,7 +55,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
               {/* Se llamaba "AGENDA": no se identificaba como el módulo de reservas online
                   y no había forma de llegar a /dashboard/reservas salvo tecleando la URL. */}
               <span className="block font-stencil text-xl leading-none">{ctx.perfil.id === "legal" ? "CONSULTAS" : "RESERVAS"}</span>
-              <span className="block text-[10px] uppercase tracking-widest text-black/70">Agenda · {v.clientePlural} · informes · compartir</span>
+              {/* Mismo orden que las pestañas de ReservasPanel: informes al final. */}
+              <span className="block text-[10px] uppercase tracking-widest text-black/70">Agenda · {v.clientePlural} · compartir · informes mensuales</span>
             </span>
           </a>
           {/* Seguimiento (recall + presupuestos): solo donde el sector lo enciende.
