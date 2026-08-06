@@ -75,12 +75,21 @@ export default function ReservasPanel({
   return (
     <div>
       <div className="flex items-center gap-2 mb-5 flex-wrap">
-        <div className="inline-flex border-[3px] border-black">
+        {/* La tira medía 586 px de ancho fijo: en un móvil de 375 el `overflow-x:hidden`
+            del body se comía las últimas pestañas — no se recortaban a medias, es que no
+            se podían pulsar. Y al mandar "Informes mensuales" al final, la que quedaba
+            fuera era justo esa.
+            Solo se toca por DEBAJO de `md` (`max-md:`): dejándolo suelto, en escritorio la
+            tira también envolvía a dos filas, que antes no hacía. Ahí sigue en una sola. */}
+        <div className="inline-flex border-[3px] border-black max-md:flex-wrap max-md:max-w-full">
           {TABS.map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-2 text-sm font-bold uppercase tracking-widest ${tab === t ? "bg-black text-white" : "bg-white hover:bg-[color:var(--cream)]"}`}
+              // `max-md:grow`: al envolver en móvil, cada fila se reparte el ancho entero
+              // en vez de dejar el escalón irregular que queda si cada botón mide lo que
+              // ocupa su texto. En escritorio, sin efecto.
+              className={`max-md:grow px-4 py-2 text-sm font-bold uppercase tracking-widest ${tab === t ? "bg-black text-white" : "bg-white hover:bg-[color:var(--cream)]"}`}
             >
               {ETIQUETAS[t]}
             </button>
