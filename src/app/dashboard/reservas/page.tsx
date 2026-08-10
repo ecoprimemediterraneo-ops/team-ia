@@ -19,19 +19,19 @@ export default async function DashboardReservasPage({
   const sp = await searchParams;
   // Los negocios salen del TENANT del panel, no del email de la sesión. Antes se
   // resolvía por email de calendario y el panel de un cliente acababa enseñando
-  // los negocios del fundador (el despacho de abogados mostraba los servicios de
+  // los negocios del fundador (la gestoría mostraba los servicios de
   // un centro de belleza).
   const ctx = await contextoPanelODefecto();
   const negocios = await getBusinessesForTenant(ctx.tenantId);
   const v = ctx.vocabulario;
-  const esLegal = ctx.perfil.id === "legal";
+  const esGestoria = ctx.perfil.id === "gestoria";
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="mb-6">
         <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-black/40">AI-Team Booking</div>
         <h1 className="font-stencil text-3xl sm:text-4xl leading-none mt-1">
-          {esLegal ? "Consultas y agenda" : "Reservas online"}
+          {esGestoria ? "Consultas y agenda" : "Reservas online"}
         </h1>
         <p className="text-sm text-black/60 mt-2">
           Configura tus {v.servicioPlural} y tu horario. Las {v.citaPlural} entran solas en tu agenda de Google.
@@ -41,7 +41,7 @@ export default async function DashboardReservasPage({
       {negocios.length === 0 ? (
         <div className="card-hard bg-white p-6">
           <div className="font-bold mb-1">
-            {esLegal ? "Aún no tienes materias configuradas" : "Aún no tienes reservas configuradas"}
+            {esGestoria ? "Aún no tienes materias configuradas" : "Aún no tienes reservas configuradas"}
           </div>
           <p className="text-sm text-black/60">
             {ctx.tenant?.name || ctx.tenantId} todavía no tiene {v.negocio} de {v.citaPlural} asociado.

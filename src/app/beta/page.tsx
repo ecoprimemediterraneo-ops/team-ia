@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 const SECTORES = [
   "Clínica (estética, fisio, podología…)",
   "Clínica dental",
-  "Bufete de abogados",
+  "Gestoría",
   "Estudio de arquitectura / ingeniería",
   "Asesoría / gestoría",
   "Peluquería / salón",

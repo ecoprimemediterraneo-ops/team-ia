@@ -3,7 +3,7 @@
 // Bandeja de conversaciones de Pablo: lista a la izquierda, hilo a la derecha.
 //
 // Solo lectura en esta iteración. El vocabulario ("clientas", "pacientes",
-// "clientes del despacho") llega ya resuelto desde el servidor con el perfil de
+// "clientes de la gestoría") llega ya resuelto desde el servidor con el perfil de
 // sector, para no repetir la lógica aquí.
 //
 // Estilo: el del panel (card-hard, cream, mostaza). No se inventa nada nuevo.

@@ -49,18 +49,31 @@ function horarioPorSector(sector: SectorNegocio): Horario {
       return semana(dia([{ desde: "10:00", hasta: "14:00" }, { desde: "16:00", hasta: "20:00" }]));
     case "dental":
       return semana(dia([{ desde: "09:00", hasta: "14:00" }, { desde: "15:30", hasta: "20:00" }]));
-    case "legal":
+    case "gestoria":
+      // Horario de oficina, el mismo que tenía el perfil anterior: la gestoría
+      // abre de mañana y tarde y no trabaja el sábado.
       return semana(dia([{ desde: "09:00", hasta: "14:00" }, { desde: "16:00", hasta: "19:00" }]));
+    case "restaurante": {
+      // Comida y cena, con lunes cerrado (el día de descanso de casi todos) y
+      // fin de semana completo. Los TURNOS de reserva se configuran aparte, en
+      // `restaurante.ts`; esto es solo cuándo está abierta la casa.
+      const servicio = dia([{ desde: "13:00", hasta: "16:30" }, { desde: "20:00", hasta: "23:59" }]);
+      const soloComida = dia([{ desde: "13:00", hasta: "17:00" }]);
+      return { 0: soloComida, 1: CERRADO, 2: servicio, 3: servicio, 4: servicio, 5: servicio, 6: servicio };
+    }
   }
 }
 
-/** Reglas de reserva por sector: un despacho no admite cancelar con 2h. */
+/** Reglas de reserva por sector: una gestoría no admite cancelar con 2h. */
 function reglasPorSector(sector: SectorNegocio) {
   switch (sector) {
     case "salon":    return { slotStepMin: 15, leadTimeMin: 60,  cancelAntelacionMin: 120 };
     case "estetica": return { slotStepMin: 15, leadTimeMin: 120, cancelAntelacionMin: 240 };
     case "dental":   return { slotStepMin: 15, leadTimeMin: 60,  cancelAntelacionMin: 240 };
-    case "legal":    return { slotStepMin: 30, leadTimeMin: 240, cancelAntelacionMin: 1440 };
+    case "gestoria": return { slotStepMin: 30, leadTimeMin: 240, cancelAntelacionMin: 1440 };
+    // Se sienta a y cuarto, no a y siete. Y se acepta una mesa con media hora de
+    // antelación: en restauración la reserva de última hora es normal.
+    case "restaurante": return { slotStepMin: 15, leadTimeMin: 30, cancelAntelacionMin: 120 };
   }
 }
 

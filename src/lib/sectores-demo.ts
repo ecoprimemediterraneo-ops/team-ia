@@ -11,6 +11,7 @@ import "server-only";
 import { upsertTenant, getTenant, type Tenant } from "./tenants";
 import { saveBusiness, getBusinessBySlug, type BusinessBooking, type Horario, type DayHours } from "./booking";
 import type { SectorNegocio } from "./sectores";
+import { DURACION_MESA_MIN, CORTESIA_MIN, TURNOS_POR_DEFECTO } from "./restaurante";
 
 export type TenantDemo = { id: string; sector: SectorNegocio; nombre: string };
 
@@ -18,7 +19,8 @@ export const DEMOS: TenantDemo[] = [
   { id: "tenant_demo_salon", sector: "salon", nombre: "Salón Marina" },
   { id: "tenant_demo_estetica", sector: "estetica", nombre: "Clínica Bel Estética" },
   { id: "tenant_demo_dental", sector: "dental", nombre: "Clínica Dental Aurora" },
-  { id: "tenant_demo_legal", sector: "legal", nombre: "Serrano & Asociados" },
+  { id: "tenant_demo_gestoria", sector: "gestoria", nombre: "Gestoría Márquez" },
+  { id: "tenant_demo_restaurante", sector: "restaurante", nombre: "Casa Gutiérrez" },
 ];
 
 function base(d: TenantDemo): Tenant {
@@ -66,15 +68,25 @@ const FICHAS: Record<SectorNegocio, Tenant["ficha"]> = {
     publicoObjetivo: "Familias del barrio y pacientes que vienen por implantes u ortodoncia.",
     notasEstilo: "Si alguien escribe con dolor, eso va por delante de todo lo demás.",
   },
-  legal: {
-    nombreNegocio: "Serrano & Asociados",
-    sector: "Abogacía",
+  gestoria: {
+    nombreNegocio: "Gestoría Márquez",
+    sector: "Gestoría fiscal y laboral",
     ciudad: "Málaga",
-    tono: "Formal y sobrio. Trato de usted salvo que el cliente tutee.",
-    serviciosClave: ["Laboral", "Familia", "Penal", "Civil", "Mercantil"],
+    tono: "Claro y práctico, sin jerga fiscal. Se explica como en el mostrador.",
+    serviciosClave: ["Renta", "Nóminas y seguros sociales", "Autónomos", "Impuestos trimestrales", "Sociedades"],
     promosActuales: [],
-    publicoObjetivo: "Particulares y pequeñas empresas de la provincia.",
-    notasEstilo: "Cero asesoramiento por escrito. Todo se ve en la primera consulta.",
+    publicoObjetivo: "Autónomos y pequeñas empresas de la provincia, muchos de años.",
+    notasEstilo: "Las tarifas de los trámites SÍ se dicen. Lo que no se hace es asesorar sobre el fondo del asunto.",
+  },
+  restaurante: {
+    nombreNegocio: "Casa Gutiérrez",
+    sector: "Restaurante de cocina de mercado",
+    ciudad: "Málaga",
+    tono: "Cercano y rápido, como quien coge el teléfono en plena hora punta. Tuteo.",
+    serviciosClave: ["Cocina de mercado", "Arroces", "Pescado del día", "Terraza"],
+    promosActuales: [],
+    publicoObjetivo: "Parejas y familias del barrio entre semana; mesas grandes el fin de semana.",
+    notasEstilo: "Pide siempre nombre, personas, hora y si prefiere terraza o interior. La reserva queda pendiente de validar.",
   },
 };
 
@@ -83,7 +95,7 @@ const FICHAS: Record<SectorNegocio, Tenant["ficha"]> = {
 // Negocio de reservas por sector — servicios y horarios COHERENTES
 // =============================================================================
 // El fallo que hubo: los tenants de ejemplo no tenían negocio propio, así que el
-// panel caía a los del fundador y el despacho de abogados enseñaba depilación y
+// panel caía a los del fundador y la gestoría enseñaba depilación y
 // uñas. Cada demo tiene ahora SU negocio, con sus servicios y su horario.
 
 const L_V = (franjas: { desde: string; hasta: string }[]): DayHours => ({ abierto: true, franjas });
@@ -171,28 +183,61 @@ const NEGOCIOS: Record<SectorNegocio, PlantillaNegocio> = {
     cancelAntelacionMin: 240,
   },
 
-  // --- ABOGADOS: primeras consultas de 45-60 min, por materia ---
-  legal: {
-    slug: "demo-serrano-asociados",
-    categorias: [{ id: "cat_materias", nombre: "Materias" }],
+  // --- GESTORÍA: cinco trámites CON TARIFA ---
+  // Al revés que el perfil de abogados que sustituye: una gestoría tiene los
+  // precios cerrados y esconderlos solo genera una llamada más.
+  gestoria: {
+    slug: "demo-gestoria-marquez",
+    categorias: [{ id: "cat_tramites", nombre: "Trámites" }],
     servicios: [
-      // Sin precio: los honorarios se tratan en la primera consulta.
-      { id: "sv_laboral", nombre: "Laboral · primera consulta", categoriaId: "cat_materias", durationMin: 45,
-        descripcion: "Despidos, reclamaciones de cantidad, incapacidades." },
-      { id: "sv_familia", nombre: "Familia · primera consulta", categoriaId: "cat_materias", durationMin: 60,
-        descripcion: "Divorcios, custodia, pensiones." },
-      { id: "sv_penal", nombre: "Penal · primera consulta", categoriaId: "cat_materias", durationMin: 60,
-        descripcion: "Denuncias, citaciones, juicios rápidos." },
-      { id: "sv_civil", nombre: "Civil · primera consulta", categoriaId: "cat_materias", durationMin: 45,
-        descripcion: "Contratos, herencias, arrendamientos." },
-      { id: "sv_mercantil", nombre: "Mercantil · primera consulta", categoriaId: "cat_materias", durationMin: 60,
-        descripcion: "Sociedades, concursos, reclamaciones entre empresas." },
+      { id: "sv_renta", nombre: "Declaración de la renta", categoriaId: "cat_tramites", durationMin: 45, precioEUR: 60,
+        descripcion: "Preparación y presentación de la declaración anual." },
+      { id: "sv_nominas", nombre: "Nóminas y seguros sociales", categoriaId: "cat_tramites", durationMin: 30, precioEUR: 45,
+        descripcion: "Nóminas del mes y cotizaciones. Precio por trabajador." },
+      { id: "sv_autonomos", nombre: "Alta o baja de autónomo", categoriaId: "cat_tramites", durationMin: 30, precioEUR: 50,
+        descripcion: "Alta, baja o cambio de base en el RETA." },
+      { id: "sv_trimestrales", nombre: "Impuestos trimestrales", categoriaId: "cat_tramites", durationMin: 30, precioEUR: 75,
+        descripcion: "Modelos 303, 130 y 111 del trimestre." },
+      { id: "sv_sociedades", nombre: "Constitución de sociedad", categoriaId: "cat_tramites", durationMin: 60, precioEUR: 350,
+        descripcion: "Constitución completa: notaría, registro y alta censal." },
     ],
-    // Horario de despacho: sin partir la tarde y sin sábados.
+    // Horario de oficina: mañana y tarde, sin sábados.
     horario: horario(L_V([{ desde: "09:00", hasta: "14:00" }, { desde: "16:00", hasta: "19:00" }])),
     slotStepMin: 30,
     leadTimeMin: 240,
     cancelAntelacionMin: 1440,
+  },
+
+  // --- RESTAURANTE: lo que se reserva es una MESA dentro de un turno ---
+  // Los "servicios" son los turnos y todos duran lo que dura la mesa. La
+  // configuración de verdad (turnos por día, cortesía, zonas, modo de trabajo)
+  // vive en `business.restaurante` y la rellena `sembrarNegocio`.
+  restaurante: {
+    slug: "demo-casa-gutierrez",
+    categorias: [{ id: "cat_turnos", nombre: "Turnos" }],
+    servicios: [
+      { id: "sv_comida_1", nombre: "Comida · primer turno", categoriaId: "cat_turnos", durationMin: 120,
+        descripcion: "Se sienta a partir de las 13:00." },
+      { id: "sv_comida_2", nombre: "Comida · segundo turno", categoriaId: "cat_turnos", durationMin: 120,
+        descripcion: "Fines de semana, a partir de las 15:00." },
+      { id: "sv_cena_1", nombre: "Cena · primer turno", categoriaId: "cat_turnos", durationMin: 120,
+        descripcion: "Se sienta a partir de las 20:30." },
+      { id: "sv_cena_2", nombre: "Cena · segundo turno", categoriaId: "cat_turnos", durationMin: 120,
+        descripcion: "Jueves a sábado, a partir de las 22:30." },
+    ],
+    // Lunes cerrado y domingo solo comida: el descanso típico de la casa.
+    horario: {
+      0: L_V([{ desde: "13:00", hasta: "17:00" }]),
+      1: CERRADO,
+      2: L_V([{ desde: "13:00", hasta: "16:30" }, { desde: "20:00", hasta: "23:59" }]),
+      3: L_V([{ desde: "13:00", hasta: "16:30" }, { desde: "20:00", hasta: "23:59" }]),
+      4: L_V([{ desde: "13:00", hasta: "16:30" }, { desde: "20:00", hasta: "23:59" }]),
+      5: L_V([{ desde: "13:00", hasta: "16:30" }, { desde: "20:00", hasta: "23:59" }]),
+      6: L_V([{ desde: "13:00", hasta: "16:30" }, { desde: "20:00", hasta: "23:59" }]),
+    },
+    slotStepMin: 15,
+    leadTimeMin: 30,
+    cancelAntelacionMin: 120,
   },
 };
 
@@ -218,6 +263,18 @@ async function sembrarNegocio(d: TenantDemo): Promise<string> {
     empleados: previo?.empleados,
     logoUrl: previo?.logoUrl,
     heroImageUrl: previo?.heroImageUrl,
+    // Config de restauración solo donde aplica. Si ya la habían tocado a mano,
+    // se respeta: sembrar el demo no debe deshacer una configuración real.
+    restaurante: d.sector === "restaurante"
+      ? previo?.restaurante ?? {
+          modo: "captacion",
+          duracionMesaMin: DURACION_MESA_MIN,
+          cortesiaMin: CORTESIA_MIN,
+          turnos: TURNOS_POR_DEFECTO,
+          confirmacionAutomatica: false,
+          zonas: { terraza: true, interior: true },
+        }
+      : previo?.restaurante,
   };
   await saveBusiness(negocio);
   return plantilla.slug;

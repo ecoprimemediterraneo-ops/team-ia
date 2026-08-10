@@ -20,7 +20,7 @@ export default async function PerfilPage() {
 
   // El perfil que se enseña es el del TENANT (su ficha), no el del store por
   // login. Antes salía `user.business`, que es del usuario que ha iniciado
-  // sesión: en el panel del despacho de abogados aparecía la ficha de una
+  // sesión: en el panel del gestoría aparecía la ficha de una
   // clínica dental. Mismo fallo que el de los servicios, un nivel más abajo.
   const f = ctx.tenant?.ficha;
   const perfilNegocio = f

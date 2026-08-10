@@ -49,8 +49,8 @@ export default function ReservasPanel({
   /** Palabras del sector. Sin ellas se usan las genéricas de siempre. */
   vocabulario?: { clientePlural: string; servicioPlural: string; citaPlural: string };
 }) {
-  // Las etiquetas de las pestañas hablan el idioma del negocio: un despacho no
-  // tiene "clientes" a secas ni "servicios", tiene clientes del despacho y materias.
+  // Las etiquetas de las pestañas hablan el idioma del negocio: una gestoría no
+  // tiene "clientes" a secas ni "servicios", tiene clientes de la gestoría y trámites.
   const vv = vocabulario;
   const cap = (t: string) => (t ? t[0].toUpperCase() + t.slice(1) : t);
   const ETIQUETAS: Record<Tab, string> = {

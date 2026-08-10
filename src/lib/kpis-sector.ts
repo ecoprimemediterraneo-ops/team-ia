@@ -168,6 +168,32 @@ export async function calcularKpis(tenantId: string, perfil: PerfilSector): Prom
       case "consultas_recibidas":
         return { ...base, valor: String(remitentes.size) };
 
+      // --- Los dos del restaurante ---
+      // Se calculan sobre los registros, no sobre el informe: aquí lo que se
+      // mira antes de abrir es HOY, y el informe va por semana.
+      case "reservas_hoy": {
+        if (!negocio) return { ...base, valor: null, motivo: "Sin motor de reservas conectado." };
+        const hoy = ymd(new Date());
+        const delDia = recs.filter(
+          (r) => r.tipo !== "bloqueo" && r.estado !== "cancelada" && r.startIso.slice(0, 10) === hoy,
+        );
+        const personas = delDia.reduce((s, r) => s + (r.comensales ?? 0), 0);
+        // "12 · 34 personas" dice más que un 12 a secas: doce mesas de dos no es
+        // lo mismo que doce mesas de seis.
+        return { ...base, valor: personas ? `${delDia.length} · ${personas} personas` : String(delDia.length) };
+      }
+      case "comensales_semana": {
+        if (!negocio) return { ...base, valor: null, motivo: "Sin motor de reservas conectado." };
+        const semana = recs.filter(
+          (r) => r.tipo !== "bloqueo" && r.estado !== "cancelada"
+            && r.startIso.slice(0, 10) >= desde && r.startIso.slice(0, 10) <= hasta,
+        );
+        const personas = semana.reduce((s, r) => s + (r.comensales ?? 0), 0);
+        return personas
+          ? { ...base, valor: String(personas) }
+          : { ...base, valor: null, motivo: "Todavía no hay reservas con número de comensales esta semana." };
+      }
+
       // --- Los cuatro que se han desbloqueado ---
       case "tiempo_respuesta": {
         const v = tiempoRespuesta(eventos);
@@ -179,10 +205,22 @@ export async function calcularKpis(tenantId: string, perfil: PerfilSector): Prom
         return negocio
           ? { ...base, valor: String(huecosRellenados(recs, desde, hasta)) }
           : { ...base, valor: null, motivo: "Sin motor de reservas conectado." };
-      case "consultas_a_primera_cita":
       case "leads_a_valoracion": {
         const c = conversion(eventos);
         return { ...base, ...c };
+      }
+      // --- Gestoría ---
+      // Consultas de "¿cómo va lo mío?" que se han contestado solas. El dato lo
+      // escribe el propio agente al resolver un estado (evento `message_out` con
+      // meta.kind "estado_expediente"). Mientras no haya ninguno, sale con guion
+      // y su motivo: nunca un cero que parezca "no funciona".
+      case "estados_resueltos_solos": {
+        const resueltos = eventos.filter(
+          (e) => e.type === "message_out" && e.meta?.kind === "estado_expediente",
+        ).length;
+        return resueltos
+          ? { ...base, valor: String(resueltos) }
+          : { ...base, valor: null, motivo: "Todavía no se ha contestado ninguna consulta de estado." };
       }
 
       // --- Los dos de la clínica dental ---

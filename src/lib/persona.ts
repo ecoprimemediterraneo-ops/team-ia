@@ -4,7 +4,7 @@
 //
 // Objetivo: que Pablo no suene a bot genérico, sino a la recepcionista de ESE
 // negocio concreto. El mismo mensaje entrante tiene que sonar distinto en un
-// salón de belleza y en un despacho de abogados.
+// salón de belleza y en un gestoría.
 //
 // El prompt se monta con cuatro piezas, siempre en este orden:
 //

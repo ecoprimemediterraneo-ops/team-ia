@@ -2,11 +2,11 @@
 import { useState } from "react";
 import Logo from "./Logo";
 
-// Menú "PYMEs". Clínicas y Dentistas tienen landing propia; Abogados y
+// Menú "PYMEs". Clínicas y Dentistas tienen landing propia; Gestorías y
 // Estudios (arquitectura) aún NO tienen página → apuntan a /beta (pide demo).
 const PYMES = [
   { href: "/estetica", label: "Clínicas", emoji: "🩺" },
-  { href: "/beta", label: "Abogados", emoji: "⚖️" },
+  { href: "/beta", label: "Gestorías", emoji: "⚖️" },
   { href: "/dentistas", label: "Dentistas", emoji: "🦷" },
   { href: "/salones", label: "Salones de belleza", emoji: "💇" },
 ];

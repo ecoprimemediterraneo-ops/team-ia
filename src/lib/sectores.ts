@@ -3,8 +3,8 @@
 // para cada tipo de negocio.
 // =============================================================================
 //
-// Cuatro sectores en la beta: salón de belleza, clínica estética, dentista y
-// abogados. Un mismo mensaje entrante tiene que sonar distinto en cada uno, y el
+// Cinco sectores: salón de belleza, clínica estética, dentista, gestoría y
+// restaurante. Un mismo mensaje entrante tiene que sonar distinto en cada uno, y el
 // panel tiene que enseñar cosas distintas.
 //
 // Aquí NO hay prompts montados: hay DATOS. El prompt se compone en tiempo de
@@ -22,7 +22,7 @@
 
 import type { AgentSlug } from "./agents";
 
-export type SectorNegocio = "salon" | "estetica" | "dental" | "legal";
+export type SectorNegocio = "salon" | "estetica" | "dental" | "gestoria" | "restaurante";
 
 export const SECTOR_POR_DEFECTO: SectorNegocio = "salon";
 
@@ -47,8 +47,8 @@ export const VOCABULARIO_NEUTRO: Vocabulario = {
 // -----------------------------------------------------------------------------
 // Vocabulario del negocio
 // -----------------------------------------------------------------------------
-// Llamar "paciente" a una clienta de peluquería, o "cita" a una primera consulta
-// en un despacho, delata al bot al instante. Cada sector tiene sus palabras y se
+// Llamar "paciente" a una clienta de peluquería, o "cita" a un trámite de
+// gestoría, delata al bot al instante. Cada sector tiene sus palabras y se
 // usan TANTO en los prompts como en los textos del panel.
 
 export type Vocabulario = {
@@ -58,7 +58,7 @@ export type Vocabulario = {
   citaPlural: string;
   servicio: string;
   servicioPlural: string;
-  /** Cómo se llama al conjunto de la actividad ("el salón", "la clínica", "el despacho"). */
+  /** Cómo se llama al conjunto de la actividad ("el salón", "la clínica", "la gestoría"). */
   negocio: string;
 };
 
@@ -70,14 +70,16 @@ export type KpiId =
   | "ocupacion_semana" | "no_shows" | "huecos_rellenados"
   | "leads" | "leads_a_valoracion" | "pipeline"
   | "revisiones_recuperadas" | "presupuestos_convertidos" | "citas_semana"
-  | "consultas_recibidas" | "consultas_a_primera_cita" | "tiempo_respuesta";
+  | "consultas_recibidas" | "estados_resueltos_solos" | "tiempo_respuesta"
+  // Restaurante: lo que se mira antes de abrir es cuánta gente entra hoy.
+  | "reservas_hoy" | "comensales_semana";
 
 export type Kpi = { id: KpiId; etiqueta: string; ayuda: string };
 
 // -----------------------------------------------------------------------------
 // Funciones que se encienden o se apagan por sector
 // -----------------------------------------------------------------------------
-// Encender la lista de espera en un despacho de abogados no tiene sentido, y
+// Encender la lista de espera en una gestoría no tiene sentido, y
 // ofrecer bonos en una clínica estética abarata un ticket alto. Se declara aquí,
 // no se decide en cada pantalla.
 
@@ -91,7 +93,18 @@ export type FuncionSector =
   | "cualificacionLead"  // cualificar antes de agendar
   | "avisoLeadCaliente"  // avisar al dueño al momento
   | "rutaUrgencia"       // dolor / urgencia salta el orden
-  | "triajeMateria";     // clasificar por materia jurídica
+  | "triajeMateria"      // clasificar por materia (del perfil retirado de abogados)
+  // --- Gestoría ---
+  | "estadoExpediente"   // "¿cómo va lo mío?" contestado sin humano
+  | "reclamacionDocs"    // perseguir la documentación que falta
+  | "calendarioFiscal"   // avisos de vencimientos por perfil de cliente
+  | "clasificacionCorreo" // Lucía ordena el correo por cliente y expediente
+  // --- Restauración ---
+  | "turnosMesa"         // la reserva ocupa una mesa X tiempo, dentro de un turno
+  | "zonaMesa"           // terraza o interior
+  | "panelDelDia"        // la pantalla del servicio de hoy
+  | "copiarReserva"      // copiar la reserva para pegarla en el software externo
+  | "fichaComensal";     // historial del cliente que vuelve, solo para el dueño
 
 export type PerfilSector = {
   id: SectorNegocio;
@@ -149,6 +162,15 @@ const NINGUNA: Record<FuncionSector, boolean> = {
   avisoLeadCaliente: false,
   rutaUrgencia: false,
   triajeMateria: false,
+  estadoExpediente: false,
+  reclamacionDocs: false,
+  calendarioFiscal: false,
+  clasificacionCorreo: false,
+  turnosMesa: false,
+  zonaMesa: false,
+  panelDelDia: false,
+  copiarReserva: false,
+  fichaComensal: false,
 };
 
 // =============================================================================
@@ -397,87 +419,207 @@ const DENTAL: PerfilSector = {
 };
 
 // =============================================================================
-// ABOGADOS
+// GESTORÍA
 // =============================================================================
-const LEGAL: PerfilSector = {
-  id: "legal",
-  label: "Despacho de abogados",
-  descripcion: "Otro producto: no hay agenda de 30 minutos ni feed. Manda la recepción de consultas y el correo.",
-  agentes: ["lucia", "pablo", "carmen", "eva", "marta"],
+// Sustituye al perfil de ABOGADOS, que se retiró. El motivo no es de producto,
+// es de responsabilidad: la consulta jurídica es única y delicada, y una IA no
+// tiene nada que hacer ahí. Una gestoría es el caso contrario — mucho volumen de
+// preguntas que se repiten y clientes que vuelven cada trimestre—, que es justo
+// donde Pablo rinde.
+//
+// Se conserva la estructura del perfil anterior (Lucía primero porque el canal
+// sigue siendo el correo, horarios de oficina, cancelación con un día) y cambia
+// lo que tenía que cambiar: el vocabulario, los trámites y —importante— las
+// prohibiciones, porque una gestoría SÍ tiene tarifas cerradas y puede decirlas.
+const GESTORIA: PerfilSector = {
+  id: "gestoria",
+  label: "Gestoría",
+  descripcion: "Asesoría fiscal, laboral y contable. Mucha consulta repetida, clientes que vuelven cada trimestre.",
+  // Lucía primero: en una gestoría el canal es el correo, igual que en el
+  // despacho. Marta NO entra por defecto —aquí Instagram aporta poco—, pero se
+  // puede añadir a mano si el cliente la pide.
+  agentes: ["lucia", "pablo", "carmen", "eva"],
   kpis: [
-    { id: "consultas_recibidas", etiqueta: "Consultas recibidas", ayuda: "Casos que han entrado" },
-    { id: "consultas_a_primera_cita", etiqueta: "Pasan a primera consulta", ayuda: "Cuántas acaban en cita con el despacho" },
-    { id: "tiempo_respuesta", etiqueta: "Tiempo de respuesta", ayuda: "Cuánto se tarda en contestar una consulta" },
+    { id: "consultas_recibidas", etiqueta: "Consultas recibidas", ayuda: "Clientes distintos que han preguntado algo" },
+    { id: "estados_resueltos_solos", etiqueta: "Estados resueltos solos", ayuda: "Consultas de \u201ccómo va lo mío\u201d contestadas sin que intervenga nadie" },
+    { id: "tiempo_respuesta", etiqueta: "Tiempo de respuesta", ayuda: "Cuánto se tarda en contestar" },
   ],
   vocabulario: {
-    cliente: "cliente del despacho", clientePlural: "clientes del despacho",
-    cita: "primera consulta", citaPlural: "primeras consultas",
-    servicio: "materia", servicioPlural: "materias",
-    negocio: "el despacho",
+    cliente: "cliente de la gestoría", clientePlural: "clientes de la gestoría",
+    cita: "trámite", citaPlural: "trámites",
+    servicio: "trámite", servicioPlural: "trámites",
+    negocio: "la gestoría",
   },
   personalidad:
-    "Formal, sobria y precisa. Aquí NO se tutea salvo que la persona tutee primero: trata de usted por defecto. " +
-    "Nada de emojis. Nada de exclamaciones. Quien escribe suele estar en un problema serio: se nota respeto, no simpatía forzada.",
+    "Clara, práctica y con paciencia. Aquí se pregunta muchas veces lo mismo —qué papeles hacen falta, " +
+    "para cuándo es el plazo, cómo va lo mío— y cada persona lo pregunta por primera vez. Tuteo salvo que " +
+    "el cliente trate de usted. Sin jerga fiscal: se explica como se lo explicarías a alguien en el mostrador.",
   prioridad:
-    "RECOGER EL CASO y agendar la primera consulta. Tu trabajo es tomar los datos con orden y pasar el asunto " +
-    "al abogado. No resuelves nada tú.",
+    "RESOLVER la consulta en el momento si la respuesta está en los datos: el estado de su expediente, qué " +
+    "documentación falta, cuándo vence un modelo o cuánto cuesta un trámite. Solo se pasa a una persona lo " +
+    "que de verdad necesita a una persona.",
   reglas: [
-    "TRIAJE: lo primero es identificar la materia — laboral, familia, penal, civil o mercantil. Si no queda claro, pregúntalo directamente.",
-    "Recoge, en este orden: materia, qué ha pasado en dos líneas, quiénes son las partes, y MUY IMPORTANTE si hay algún plazo, citación, notificación o vista con fecha.",
-    "Si hay un plazo o una citación con fecha próxima, dilo con claridad y marca el asunto como urgente para el despacho.",
-    "Cuando tengas los datos, ofrece la primera consulta con dos huecos concretos.",
-    "Si la persona pregunta algo jurídico, contesta que esa valoración corresponde al abogado en la primera consulta. Sin excepciones y sin adelantar nada.",
-    "Atiendes 24/7: si escribe de madrugada, contestas igual y dejas claro que el despacho lo revisa en horario de oficina.",
+    "ESTADO DEL EXPEDIENTE: si pregunta \u201ccómo va lo mío\u201d, mira su expediente y dile en qué punto está y qué falta, con fecha si la hay. Es la pregunta más repetida del sector.",
+    "DOCUMENTACIÓN: si a su expediente le faltan papeles, dile exactamente cuáles y por dónde mandarlos.",
+    "PLAZOS: puedes decir las fechas de los vencimientos generales (trimestrales, renta, modelos) que estén en los datos del negocio.",
+    "PRECIOS: esta gestoría tiene tarifas cerradas. Si pregunta por el precio de un trámite y está en la lista, DILO. No lo escondas ni derives a una cita para algo que ya sabes.",
+    "Si el trámite no está en la lista del negocio, dilo y ofrece que lo mire el equipo, sin inventar una tarifa.",
+    "Cuando haga falta una persona (un caso raro, una inspección, una discrepancia), pásalo al equipo y dilo con claridad, sin dejar al cliente esperando una respuesta que no va a llegar.",
   ],
   prohibiciones: [
-    "PROHIBIDO ASESORAR. Cero orientación jurídica, cero interpretación de normas, cero “lo que deberías hacer es…”. Ni una pista.",
-    "PROHIBIDO estimar plazos legales, de prescripción o de procedimiento.",
-    "PROHIBIDO valorar probabilidades de éxito, aunque el caso parezca claro.",
-    "PROHIBIDO dar importes: ni de indemnización, ni de reclamación, ni de condena.",
-    "PROHIBIDO dar honorarios cerrados o presupuestos. Los honorarios se tratan en la primera consulta.",
-    "PROHIBIDO decir si un caso “tiene recorrido” o “no merece la pena”.",
+    "PROHIBIDO asesorar sobre el fondo de un asunto fiscal o laboral: qué le conviene tributar, cómo estructurar una sociedad, si le sale mejor una cosa u otra. Eso lo dice el gestor.",
+    "PROHIBIDO interpretar una notificación, un requerimiento o una sanción de Hacienda o de la Seguridad Social. Se recoge y lo mira el equipo.",
+    "PROHIBIDO estimar cuánto le va a salir a pagar, ni de renta ni de un impuesto. La tarifa del TRÁMITE sí; el resultado del impuesto no.",
+    "PROHIBIDO dar por presentado o por resuelto un trámite que no conste como tal en su expediente.",
+    "No inventes plazos, importes ni requisitos que no estén en los datos del negocio.",
   ],
   confidencialidad:
-    "Todo lo que nos cuentes se trata de forma estrictamente confidencial y solo lo ve el despacho.",
+    "Tus datos fiscales y laborales solo los ve la gestoría, y se tratan de forma confidencial.",
   porQue: {
     resumen:
-      "Un despacho no es un negocio de citas de treinta minutos ni tiene escaparate visual. Lo que se juega es recoger bien la consulta que entra y no perder un plazo.",
+      "Una gestoría no pierde dinero por no captar: lo pierde en el teléfono. Las mismas tres preguntas —qué papeles hacen falta, cuándo vence, cómo va lo mío— repetidas cien veces al mes, y un cliente que no manda la documentación a tiempo obliga a perseguirlo uno por uno.",
     queHacePorTi: [
-      "Recepción de consultas 24/7: quien escribe de madrugada recibe respuesta igual.",
-      "Triaje por materia: laboral, familia, penal, civil o mercantil, antes de nada.",
-      "Recoge el caso con orden: qué ha pasado, quiénes son las partes y —lo crítico— si hay plazo, citación o vista con fecha.",
-      "Agenda la primera consulta con el abogado.",
-      "Lucía va primero porque tu canal es el correo, no el chat ni el feed.",
+      "Contesta \u201ccómo va lo mío\u201d mirando el expediente, sin que nadie coja el teléfono.",
+      "Persigue él solo la documentación que falta, y vuelve a insistir a los tres días.",
+      "Avisa de los vencimientos —trimestrales, renta, modelos— según lo que tenga contratado cada cliente.",
+      "Lucía te ordena el correo por cliente y por expediente, que es donde se te acumula el trabajo.",
+      "Dice las tarifas de los trámites que ya tienes cerradas, sin marear al cliente con una cita.",
     ],
     queNoVeras: [
-      "Lista de espera, bonos y reactivación masiva: nada de eso existe en un despacho.",
-      "Instagram como motor del negocio: Marta está, pero la última, porque aquí no se capta por escaparate.",
-      "Ninguna estimación en el chat. Tu panel es el más estricto de los cuatro: cero asesoramiento jurídico, cero plazos, cero probabilidades de éxito, cero importes y cero honorarios cerrados. Todo eso es del abogado, en la primera consulta.",
+      "Asesoramiento de fondo en el chat: qué te conviene tributar o cómo montar la sociedad lo dice el gestor, no la IA.",
+      "Interpretación de requerimientos y sanciones: eso se recoge y lo mira una persona.",
+      "Marta (Instagram): en una gestoría el escaparate no trae clientes; los trae el boca a boca y la recomendación. Se puede añadir si la quieres.",
     ],
   },
   alta: {
-    paraQuien: "Despacho de abogados. Consultas que entran a cualquier hora y plazos que no perdonan.",
+    paraQuien: "Gestoría o asesoría fiscal, laboral y contable. Clientes que vuelven cada trimestre.",
     ejemplos: {
-      nombre: ["Serrano & Asociados", "Bufete Martín Abogados", "Despacho Jurídico Aranda"],
-      actividad: ["Despacho de abogados en Málaga", "Abogados especialistas en laboral y familia en Bilbao"],
-      ofrece: "Laboral, familia, penal, civil, mercantil",
-      publico: "Particulares y pequeñas empresas de la provincia",
-      tono: "Formal y sobrio. Trato de usted salvo que el cliente tutee. Sin emojis ni exclamaciones.",
+      nombre: ["Gestoría Márquez", "Asesoría Delgado", "Gestión Integral Peña"],
+      actividad: ["Gestoría fiscal y laboral en Málaga", "Asesoría de autónomos y pymes en Sevilla"],
+      ofrece: "Renta, nóminas y seguros sociales, altas y bajas de autónomos, impuestos trimestrales, constitución de sociedades",
+      publico: "Autónomos y pequeñas empresas de la provincia, muchos de años",
+      tono: "Claro y práctico, sin jerga fiscal. Se explica como en el mostrador.",
     },
-    categoria: "Materias",
+    categoria: "Trámites",
+    // Con TARIFA, al revés que en el perfil anterior: una gestoría las tiene
+    // cerradas y esconderlas solo genera una llamada más.
     servicios: [
-      { nombre: "Laboral · primera consulta", durationMin: 45 },
-      { nombre: "Familia · primera consulta", durationMin: 60 },
-      { nombre: "Penal · primera consulta", durationMin: 60 },
-      { nombre: "Civil · primera consulta", durationMin: 45 },
-      { nombre: "Mercantil · primera consulta", durationMin: 60 },
+      { nombre: "Declaración de la renta", durationMin: 45, precioEUR: 60 },
+      { nombre: "Nóminas y seguros sociales", durationMin: 30, precioEUR: 45 },
+      { nombre: "Alta o baja de autónomo", durationMin: 30, precioEUR: 50 },
+      { nombre: "Impuestos trimestrales", durationMin: 30, precioEUR: 75 },
+      { nombre: "Constitución de sociedad", durationMin: 60, precioEUR: 350 },
     ],
   },
   funciones: {
     ...NINGUNA,
-    triajeMateria: true,
-    avisoLeadCaliente: true,
-    rutaUrgencia: true,
+    // Las cuatro propias del sector.
+    estadoExpediente: true,
+    reclamacionDocs: true,
+    calendarioFiscal: true,
+    clasificacionCorreo: true,
+    // Heredadas del perfil anterior que siguen teniendo sentido.
+    recordatorioConfirmacion: true,
+    reactivacion: true,
+  },
+};
+
+// =============================================================================
+// RESTAURANTE
+// =============================================================================
+// De carta y mantel, con reserva previa. NO menú del día: ahí no se reserva, se
+// hace cola. Lo que se vende aquí no es una cita de 30 minutos, es una MESA
+// durante dos horas dentro de un turno, y el no-show de un viernes a las 21:30
+// es una mesa entera perdida en la única franja del día que da dinero.
+const RESTAURANTE: PerfilSector = {
+  id: "restaurante",
+  label: "Restaurante",
+  descripcion: "Carta y mantel con reserva previa. Mucho volumen concentrado en dos turnos y no-shows que duelen.",
+  // Carmen la segunda: en restauración el teléfono sigue siendo el canal number
+  // uno y una llamada perdida en plena hora punta es una mesa que no entra.
+  // Rocío por delante de Eva: aquí se elige restaurante por reseñas de Google.
+  agentes: ["pablo", "carmen", "marta", "rocio", "eva"],
+  kpis: [
+    { id: "reservas_hoy", etiqueta: "Reservas de hoy", ayuda: "Mesas que entran hoy, de los dos turnos" },
+    { id: "comensales_semana", etiqueta: "Comensales de la semana", ayuda: "Personas sentadas, no reservas" },
+    { id: "no_shows", etiqueta: "No-shows", ayuda: "Reservas que no aparecieron" },
+  ],
+  vocabulario: {
+    cliente: "comensal", clientePlural: "comensales",
+    cita: "reserva", citaPlural: "reservas",
+    servicio: "turno", servicioPlural: "turnos",
+    negocio: "el restaurante",
+  },
+  personalidad:
+    "Amable y muy rápida, con el tono de quien coge el teléfono en plena hora punta: cordial pero sin " +
+    "entretenerse. Tuteo. Frases cortas. Nada de florituras gastronómicas ni de vender el sitio: quien " +
+    "escribe ya ha decidido que quiere venir, solo falta cerrar la mesa.",
+  prioridad:
+    "CERRAR LA RESERVA con los cuatro datos que hacen falta: a nombre de quién, cuántas personas, qué día " +
+    "y hora, y si prefiere terraza o interior. Nada más. Si falta uno, pídelo; si están los cuatro, cierra.",
+  reglas: [
+    "Pide SIEMPRE los cuatro datos: nombre, número de personas, día y hora, y preferencia de terraza o interior. Si le da igual la zona, apúntalo como indiferente y sigue.",
+    "La mesa se reserva dentro de un TURNO. Si pide una hora que no existe en el turno, ofrécele la hora más cercana que sí exista, sin explicarle cómo funcionan los turnos.",
+    "Si no hay hueco a esa hora, ofrece OTRA HORA del mismo turno o del otro turno del día. Dos alternativas concretas, no un “¿qué otra hora te vendría bien?”.",
+    "Si ninguna de las dos alternativas le encaja, ofrécele la lista de espera y explícale en una línea que se le avisa por WhatsApp si se libera una mesa.",
+    "Por defecto la reserva queda PENDIENTE de que el restaurante la valide. Díselo con naturalidad: que la reserva está tomada y que se le confirma en un momento. No prometas una mesa confirmada si no lo está.",
+    "Si el grupo es grande, tómalo igual y avisa de que el restaurante lo confirma: una mesa de doce no se sienta sola.",
+    "Si pregunta por la carta o por un plato, responde con lo que haya en los datos del negocio y vuelve a la reserva.",
+  ],
+  prohibiciones: [
+    "No inventes platos, precios, menús ni disponibilidad que no estén en los datos del negocio.",
+    "PROHIBIDO dar por confirmada una reserva que está pendiente de que la valide el restaurante.",
+    "No garantices una mesa concreta, ni la de la ventana, ni una zona si el restaurante no la tiene.",
+    "No des consejos dietéticos ni médicos. Con alergias e intolerancias: apúntalas en la reserva y di que se avisa a cocina, nunca digas tú si un plato es apto.",
+    "No ofrezcas descuentos, invitaciones ni promociones que no estén en los datos del negocio.",
+  ],
+  porQue: {
+    resumen:
+      "Un restaurante de carta se juega el mes en dos turnos al día. Las reservas entran por teléfono en plena hora punta, por WhatsApp fuera de horario y por Instagram, y quien no coge el teléfono pierde la mesa. El no-show del viernes no se recupera: esa mesa ya no vuelve.",
+    queHacePorTi: [
+      "Coge las reservas por WhatsApp, Instagram y teléfono, también cuando está lleno y nadie puede atender.",
+      "Te las deja todas en un panel del día, ordenadas por hora, con personas, zona y quién es cliente habitual.",
+      "Recordatorio el día antes con botón de confirmar o cancelar: es lo único que baja los no-shows de verdad.",
+      "Si se llena, apunta a la gente en lista de espera y la avisa cuando se cae una mesa.",
+      "Si ya usas otro software de reservas, no hace falta que lo cambies: cada reserva trae un botón para copiarla y pegarla allí.",
+    ],
+    queNoVeras: [
+      "Sergio (vigilancia de la competencia): el restaurante de al lado no te quita mesas, te las quita el teléfono que nadie coge.",
+      "Lucía (correo y bandeja): aquí no se reserva por email.",
+      "Bonos y packs de sesiones: eso es de un salón, no de una mesa.",
+    ],
+  },
+  alta: {
+    paraQuien: "Restaurante de carta con reserva previa. Dos turnos, mesas que rotan y no-shows que duelen.",
+    ejemplos: {
+      nombre: ["Casa Gutiérrez", "El Rincón de María", "Taberna La Parra"],
+      actividad: ["Restaurante de cocina de mercado en Málaga", "Arrocería y carta en Fuengirola"],
+      ofrece: "Cocina de mercado, arroces, pescado del día, carta de vinos, terraza",
+      publico: "Parejas y familias del barrio entre semana, y mesas grandes de fin de semana",
+      tono: "Cercano y rápido, como quien coge el teléfono en plena hora punta. Tuteo, sin florituras.",
+    },
+    categoria: "Turnos",
+    // Los "servicios" de un restaurante son sus TURNOS: lo que se reserva es una
+    // mesa dentro de uno, y la duración por defecto es la de la mesa (2 h).
+    servicios: [
+      { nombre: "Comida · primer turno", durationMin: 120 },
+      { nombre: "Comida · segundo turno", durationMin: 120 },
+      { nombre: "Cena · primer turno", durationMin: 120 },
+      { nombre: "Cena · segundo turno", durationMin: 120 },
+    ],
+  },
+  funciones: {
+    ...NINGUNA,
+    // Se reutilizan tal cual las tres que ya existen en el sistema.
+    listaEspera: true,
+    reactivacion: true,
+    recordatorioConfirmacion: true,
+    // Y las propias de restauración.
+    turnosMesa: true,
+    zonaMesa: true,
+    panelDelDia: true,
+    copiarReserva: true,
+    fichaComensal: true,
   },
 };
 
@@ -489,13 +631,14 @@ export const SECTORES: Record<SectorNegocio, PerfilSector> = {
   salon: SALON,
   estetica: ESTETICA,
   dental: DENTAL,
-  legal: LEGAL,
+  gestoria: GESTORIA,
+  restaurante: RESTAURANTE,
 };
 
-export const SECTORES_LISTA: PerfilSector[] = [SALON, ESTETICA, DENTAL, LEGAL];
+export const SECTORES_LISTA: PerfilSector[] = [SALON, ESTETICA, DENTAL, GESTORIA, RESTAURANTE];
 
 export function esSectorNegocio(v: unknown): v is SectorNegocio {
-  return v === "salon" || v === "estetica" || v === "dental" || v === "legal";
+  return v === "salon" || v === "estetica" || v === "dental" || v === "gestoria" || v === "restaurante";
 }
 
 /** Perfil del sector pedido, con caída al de por defecto si no es válido. */
@@ -524,6 +667,10 @@ export function resolverSector(t: {
   sectorPrompt?: string | null;
 }): SectorNegocio | null {
   if (esSectorNegocio(t.sector)) return t.sector;
+  // El sector "legal" (despacho de abogados) se retiró y su perfil pasó a ser
+  // GESTORÍA. Los tenants guardados con el valor antiguo se mapean aquí en vez
+  // de migrar la base: es una línea y no deja a nadie con el panel roto.
+  if (t.sector === "legal") return "gestoria";
   if (t.sectorPrompt === "vendedor") return null; // cuenta comercial de AI-Team
   if (t.sectorPrompt === "dental") return "dental";
   if (t.sectorPrompt === "estetica") return "estetica";

@@ -9,7 +9,7 @@
 // A partir de ese primer paso, todo lo demás se adapta: los ejemplos de cada
 // campo, los marcadores de posición y los servicios de arranque salen del perfil
 // del sector elegido (`sectores.ts`). Nada de "Clínica Dental Sonrisa" a un
-// despacho de abogados.
+// gestoría.
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";

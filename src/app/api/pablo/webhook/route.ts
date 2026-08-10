@@ -23,7 +23,8 @@ import {
   type Conversation,
 } from "@/lib/conversation-store";
 import { logEvent, makeEventId, getMonthEvents, monthKey } from "@/lib/event-log";
-import { resolveTenantFromMeta, getTenantSector } from "@/lib/tenants";
+import { resolveTenantFromMeta, getTenantSector, getTenant } from "@/lib/tenants";
+import { resolverSector } from "@/lib/sectores";
 import { getFicha, fichaToPromptContext } from "@/lib/ficha";
 import { buildSectorSystem, getSectorPrompt } from "@/lib/sector-prompts";
 import { resolverPersona } from "@/lib/persona";
@@ -45,6 +46,9 @@ import {
   formatStartHumanES,
 } from "@/lib/appointment-intent";
 import { getBusinessByTenant } from "@/lib/booking";
+import { pasoRestauranteSinHueco } from "@/lib/restaurante-flujo";
+import { responderEstadoExpediente, anotarEnvioDeDocumentacion, diceQueEnvioDocumentacion } from "@/lib/gestoria-flujo";
+import { preguntaPorEstado } from "@/lib/gestoria";
 import { esIntencionCancelar, resolverCancelacion, textoCancelacionChat } from "@/lib/booking-cancel-intent";
 import {
   findEntryByProposalId,
@@ -483,6 +487,23 @@ export async function POST(req: Request) {
             sectorAgenda = getSectorPrompt(sk).agendaCitas;
           } catch { /* por defecto intentamos agendar */ }
 
+          // ¿Es un RESTAURANTE? De eso depende que se extraigan personas y zona
+          // y que no se le pida "motivo" a quien solo quiere una mesa. Se mira
+          // el perfil de sector del tenant, no se cablea en el flujo común: para
+          // los otros cuatro sectores `modoRest` queda en undefined y todo este
+          // bloque se comporta exactamente igual que antes.
+          let modoRest: { restaurante?: boolean } | undefined;
+          // ¿Y una GESTORÍA? Ahí la pregunta que más se repite no es una cita,
+          // es "¿cómo va lo mío?". Se resuelve en su propia rama, antes del
+          // interceptor de agenda. Para los otros sectores queda en undefined.
+          let modoGest: { gestoria?: boolean } | undefined;
+          try {
+            const t = await getTenant(tenantId);
+            const sec = t ? resolverSector(t) : null;
+            if (sec === "restaurante") modoRest = { restaurante: true };
+            if (sec === "gestoria") modoGest = { gestoria: true };
+          } catch { /* si no se puede saber, se trata como hasta ahora */ }
+
           // === INTERCEPTOR: ¿la clienta quiere CANCELAR o MOVER su cita? ===
           // Le pasamos su enlace de autocancelación web (por token) en vez de gestionarlo
           // a mano. Va ANTES del interceptor de reserva (un "quiero cancelar" no es reservar).
@@ -509,6 +530,56 @@ export async function POST(req: Request) {
             }
           }
 
+          // === INTERCEPTOR: GESTORÍA — "¿cómo va lo mío?" y "ya te lo he mandado" ===
+          // Va ANTES del de agenda a propósito: una consulta de estado NO es una
+          // cita, y si cayera en el interceptor de reserva acabaría ofreciendo
+          // hueco a quien solo preguntaba por su renta. Solo entra si el tenant
+          // es de sector gestoría, así que los otros cuatro ni pasan por aquí.
+          if (modoGest?.gestoria) try {
+            // Primero lo barato: si dice que ya ha mandado los papeles, se anota
+            // en su expediente y no se le contesta un estado que no ha pedido.
+            if (diceQueEnvioDocumentacion(text)) {
+              const anotado = await anotarEnvioDeDocumentacion({ tenantId, telefono: from });
+              if (anotado) {
+                await sendWhatsAppText(from, anotado.texto);
+                await appendTurn("pablo", from, "user", text, customerName);
+                await appendTurn("pablo", from, "assistant", anotado.texto, customerName);
+                await registrarIntercambio({
+                  tenantId, msgId: msg.id, from, nombre: customerName,
+                  entrante: text, respuesta: anotado.texto, rxTs, via: anotado.via,
+                });
+                continue;
+              }
+            }
+
+            // ¿Pregunta por el estado? El clasificador de siempre con el bloque
+            // de gestoría; `preguntaPorEstado` es el respaldo cuando no hay IA,
+            // igual que `fallbackDetection` lo es para las citas.
+            let esConsulta = preguntaPorEstado(text);
+            let tramitePedido: string | undefined;
+            if (process.env.ANTHROPIC_API_KEY) {
+              const ig = await detectAppointmentIntent(text, new Date(), modoGest);
+              if (ig.fields.consultaEstado) esConsulta = true;
+              tramitePedido = ig.fields.tramite;
+            }
+
+            if (esConsulta) {
+              const resp = await responderEstadoExpediente({ tenantId, telefono: from, tramitePedido });
+              if (resp) {
+                await sendWhatsAppText(from, resp.texto);
+                await appendTurn("pablo", from, "user", text, customerName);
+                await appendTurn("pablo", from, "assistant", resp.texto, customerName);
+                await registrarIntercambio({
+                  tenantId, msgId: msg.id, from, nombre: customerName,
+                  entrante: text, respuesta: resp.texto, rxTs, via: resp.via,
+                });
+                continue;
+              }
+            }
+          } catch (err) {
+            console.error("[pablo/webhook] interceptor gestoría falló:", err);
+          }
+
           if (sectorAgenda) try {
             // Los datos de la cita (nombre + servicio + día/hora) se reúnen a lo
             // largo de VARIOS turnos. Detectamos sobre el TRANSCRIPT completo de
@@ -522,7 +593,7 @@ export async function POST(req: Request) {
             ].join("\n");
 
             // Detección única sobre el transcript.
-            const intent = await detectAppointmentIntent(transcript);
+            const intent = await detectAppointmentIntent(transcript, new Date(), modoRest);
             if (!intent.fields.nombre && customerName) {
               intent.fields.nombre = customerName;
               intent.missing = intent.missing.filter((m) => m !== "nombre");
@@ -545,6 +616,7 @@ export async function POST(req: Request) {
               redirectUri: `https://aiteam.marketing/api/lucia/callback`,
               customerPhone: from,
               customerNameFallback: customerName,
+              modo: modoRest,
             });
             if (agRes.kind === "agendada") {
               const when = formatStartHumanES(agRes.intent.fields.startIso!);
@@ -561,6 +633,29 @@ export async function POST(req: Request) {
               continue;
             }
             if (agRes.kind === "slot_taken") {
+              // --- RESTAURANTE: alternativas del turno y, tras dos rondas, lista de espera ---
+              // Va en su propia rama y con `continue`, así que la rama de abajo
+              // —la de los otros cuatro sectores— se queda literalmente igual.
+              if (modoRest?.restaurante && agRes.intent.fields.startIso) {
+                const pasoRest = await pasoRestauranteSinHueco({
+                  tenantId,
+                  intent: agRes.intent,
+                  turnos: histTurns,
+                  telefono: from,
+                  nombreFallback: customerName,
+                  redirectUri: `https://aiteam.marketing/api/lucia/callback`,
+                });
+                if (pasoRest) {
+                  await sendWhatsAppText(from, pasoRest.texto);
+                  await appendTurn("pablo", from, "user", text, customerName);
+                  await appendTurn("pablo", from, "assistant", pasoRest.texto, customerName);
+                  await registrarIntercambio({
+                    tenantId, msgId: msg.id, from, nombre: customerName,
+                    entrante: text, respuesta: pasoRest.texto, rxTs, via: pasoRest.via,
+                  });
+                  continue;
+                }
+              }
               const suggested = agRes.suggested ? `\n\nEse hueco está ocupado. ¿Te encajaría el ${formatStartHumanES(agRes.suggested)}?` : `\n\nEse hueco está ocupado. ¿Te encajaría otra hora ese día?`;
               const respSlot = `Vale, lo intento agendar.${suggested}`;
               await sendWhatsAppText(from, respSlot);
@@ -573,7 +668,7 @@ export async function POST(req: Request) {
               continue;
             }
             if (agRes.kind === "incomplete") {
-              const q = missingFieldsToQuestion(agRes.missing);
+              const q = missingFieldsToQuestion(agRes.missing, modoRest);
               if (q) {
                 const respInc = `Perfecto, te agendo cita. ${q}`;
                 await sendWhatsAppText(from, respInc);
@@ -601,7 +696,7 @@ export async function POST(req: Request) {
 
           // Prompt de Pablo, compuesto EN ESTE MOMENTO con el perfil de sector del
           // tenant + la identidad de su negocio. Es lo que hace que el mismo mensaje
-          // suene distinto en un salón y en un despacho de abogados.
+          // suene distinto en un salón y en un gestoría.
           //
           // Excepción: la cuenta comercial de AI-Team (sector null) sigue con el
           // prompt de venta de siempre — no es un negocio de cliente.

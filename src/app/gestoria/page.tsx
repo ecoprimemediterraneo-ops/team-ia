@@ -3,9 +3,9 @@ import Footer from "@/components/Footer";
 import VerticalCTA from "@/components/dental/VerticalCTA";
 
 export const metadata = {
-  title: "AI-Team para Abogados — el sistema operativo que no deja escapar una consulta",
+  title: "AI-Team para Gestorías — el sistema operativo que no deja escapar una consulta",
   description:
-    "Un único sistema integrado para tu despacho. Responde las consultas por WhatsApp al instante, atiende las llamadas 24/7, cualifica el caso y agenda la primera consulta. Gestiona contacto y agenda cumpliendo el RGPD. Para despachos de abogados de 1-50 personas.",
+    "Un único sistema integrado para tu despacho. Responde las consultas por WhatsApp al instante, atiende las llamadas 24/7, cualifica el caso y agenda la primera consulta. Gestiona contacto y agenda cumpliendo el RGPD. Para gestorías de 1-50 personas.",
 };
 
 const legalPains = [
@@ -111,8 +111,8 @@ const legalFAQ = [
     a: "Sí. El sistema pregunta el tipo de asunto (laboral, civil, penal, mercantil, etc.) y la urgencia, y lo guarda en la ficha de la consulta. Así llegas a la primera cita sabiendo de qué va antes de sentarte con el cliente.",
   },
   {
-    q: "¿Esto sustituye a mis abogados?",
-    a: "No, y es a propósito. El sistema no sustituye al abogado: le quita la tarea de no perder ni una consulta —responder a deshora, coger la llamada, agendar la cita— para que se dedique a lo que de verdad importa: los casos.",
+    q: "¿Esto sustituye a mis gestorías?",
+    a: "No, y es a propósito. El sistema no sustituye al gestor: le quita las preguntas que se repiten —el estado de un trámite, qué papeles faltan, cuándo vence un modelo— para que el equipo se dedique a lo que de verdad requiere criterio.",
   },
   {
     q: "¿Y una consulta que necesita asesoramiento jurídico inmediato?",
@@ -120,7 +120,7 @@ const legalFAQ = [
   },
 ];
 
-export default function AbogadosPage() {
+export default function GestoríasPage() {
   return (
     <>
       <Navbar />
@@ -147,7 +147,7 @@ export default function AbogadosPage() {
               <span className="block mt-2 font-bold text-white">No son herramientas sueltas: es un solo sistema que contesta al instante, atiende la llamada, cualifica y agenda la primera consulta por ti.</span>
             </p>
             <div className="mt-10 flex flex-col items-center gap-3">
-              <a href="#waitlist-abogados" className="btn-mustard text-lg">Pide tu demo →</a>
+              <a href="#waitlist-gestorías" className="btn-mustard text-lg">Pide tu demo →</a>
               <p className="text-sm text-white/60">20 plazas · 6 meses gratis · sin tarjeta · 149€/mes fundador para siempre</p>
             </div>
           </div>
@@ -209,7 +209,7 @@ export default function AbogadosPage() {
 
             <div className="mt-12 card-hard bg-black text-[color:var(--cream)] p-6 md:p-8 text-center max-w-3xl mx-auto">
               <p className="font-display text-2xl md:text-3xl leading-tight">
-                El sistema <span className="text-[color:var(--mustard)]">no sustituye al abogado</span>.
+                El sistema <span className="text-[color:var(--mustard)]">no sustituye al gestor</span>.
               </p>
               <p className="mt-3 text-base md:text-lg text-white/85">
                 Le quita la tarea de no perder ninguna consulta —responder a deshora, coger la llamada, agendar la cita— para que se dedique a lo que paga las facturas: <span className="font-bold text-white">los casos</span>.
@@ -272,7 +272,7 @@ export default function AbogadosPage() {
                   <ul className="space-y-2 mb-6 text-sm flex-1">
                     {p.funciones.map((a) => (<li key={a} className="flex items-start gap-2"><span className="text-[color:var(--red)] font-bold">▸</span><span>{a}</span></li>))}
                   </ul>
-                  <a href="#waitlist-abogados" className="btn-mustard text-xs text-center block">{p.cta}</a>
+                  <a href="#waitlist-gestorías" className="btn-mustard text-xs text-center block">{p.cta}</a>
                 </article>
               ))}
             </div>
@@ -302,8 +302,8 @@ export default function AbogadosPage() {
         </section>
 
         <VerticalCTA
-          id="waitlist-abogados"
-          sector="Despacho de abogados"
+          id="waitlist-gestorías"
+          sector="Gestoría"
           city=""
           emoji="⚖️"
           headline="Pide tu demo y reserva plaza"

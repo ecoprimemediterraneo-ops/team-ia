@@ -32,7 +32,7 @@ export const ETIQUETA_COLECCION: Record<Coleccion, string> = {
 /** Orden de lectura de cada colección. Solo se sirven estos nombres. */
 const ORDENES: Record<Coleccion, string[]> = {
   tecnico: ["00-general", "pablo", "marta", "eva", "lucia", "rocio", "carmen", "sergio", "soporte"],
-  cliente: ["salon", "estetica", "dental", "abogados"],
+  cliente: ["salon", "estetica", "dental", "gestoria"],
 };
 
 export type Seccion = { id: string; texto: string; nivel: 2 | 3 };

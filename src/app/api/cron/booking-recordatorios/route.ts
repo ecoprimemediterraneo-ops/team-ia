@@ -8,7 +8,9 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { listRecords, getBusinessBySlug, saveRecord, localToEpoch } from "@/lib/booking";
 import { enviarRecordatorio } from "@/lib/booking-email";
+import { restauranteRecordatorioEnabled } from "@/lib/restaurante";
 import { barrerOfertasCaducadas } from "@/lib/booking-waitlist";
+import { pasadaGestoria, pasadaResenas } from "@/lib/pasadas-diarias";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -46,10 +48,21 @@ async function run(req: Request) {
   let fallidos = 0;
   const detalle: { id: string; email: string; whatsapp: string }[] = [];
 
+  let saltadosPorFlag = 0;
+
   for (const r of all) {
     if (r.estado !== "confirmada" || r.recordatorioEnviado) continue;
     const business = await getBusinessBySlug(r.slug);
     if (!business) continue;
+    // RESTAURACIÓN, fail-closed: el recordatorio de mesa del día antes no sale
+    // hasta que se encienda a mano. Un restaurante mete cien reservas al día y
+    // encender esto sin querer son cien WhatsApps a gente real de golpe. Se
+    // reconoce por tener config de restaurante, no por el sector del tenant:
+    // el registro no sabe de qué tenant cuelga sin otra lectura más.
+    if (business.restaurante && !restauranteRecordatorioEnabled()) {
+      saltadosPorFlag++;
+      continue;
+    }
     // startIso es hora local del negocio (sin TZ) → epoch con la zona del negocio
     // (mismo tzOffset/DST que computeFreeSlots; evita el desfase en runtime UTC).
     const startEpoch = localToEpoch(r.startIso, business.timezone || "Europe/Madrid");
@@ -72,7 +85,32 @@ async function run(req: Request) {
     console.error("[booking-recordatorios] barrido lista de espera falló (no crítico):", e);
   }
 
-  return NextResponse.json({ ok: true, enviados, fallidos, revisados: all.length, detalle, espera });
+  // --- GESTORÍA y RESEÑAS: cuelgan de ESTE cron ---
+  // No se crea ninguno nuevo a propósito. Los tres trabajos son diarios y de
+  // volumen bajo, así que caben en la misma pasada; y el plan Hobby solo da una
+  // ejecución al día por cron, de modo que añadir crons sería gastar el cupo
+  // para nada. Los tres son best-effort: si uno falla, no tumba los recordatorios.
+  const gestoria = await pasadaGestoria().catch((e) => {
+    console.error("[booking-recordatorios] pasada de gestoría falló (no crítico):", e);
+    return null;
+  });
+  const resenas = await pasadaResenas().catch((e) => {
+    console.error("[booking-recordatorios] pasada de reseñas falló (no crítico):", e);
+    return null;
+  });
+
+  return NextResponse.json({
+    ok: true, enviados, fallidos, revisados: all.length, detalle, espera,
+    // Cuántas reservas de restaurante se han dejado pasar por tener el
+    // interruptor apagado. Un cero aquí con reservas de mesa en la ventana
+    // significa que el flag ya está encendido.
+    saltadasRestaurante: saltadosPorFlag,
+    restauranteRecordatorio: restauranteRecordatorioEnabled() ? "encendido" : "APAGADO (RESTAURANTE_RECORDATORIO_ENABLED)",
+    // Con los interruptores apagados, estos tres bloques dicen CUÁNTOS mensajes
+    // habrían salido. Es lo que se mira antes de encender nada.
+    gestoria,
+    resenas,
+  });
 }
 
 export async function GET(req: Request) {

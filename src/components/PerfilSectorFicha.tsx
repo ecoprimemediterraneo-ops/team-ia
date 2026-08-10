@@ -2,7 +2,7 @@
 //
 // Sustituye al selector antiguo (`SectorSelector`), que listaba los tres
 // sectores viejos —dental, estética y "vendedor"— con sus descripciones. Un
-// despacho de abogados veía ahí una descripción que hablaba de ortodoncia, y
+// gestoría veía ahí una descripción que hablaba de ortodoncia, y
 // además ese campo ya no es el que decide nada: lo que manda es el `sector` del
 // tenant.
 //

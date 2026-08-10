@@ -19,7 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const user = await getUser(session.email);
 
   // Perfil de sector del cliente: decide QUÉ agentes ve y EN QUÉ ORDEN.
-  // Un salón no necesita a Sergio; un despacho de abogados abre por Lucía.
+  // Un salón no necesita a Sergio; una gestoría abre por Lucía.
   // Si el tenant es la cuenta comercial de AI-Team (sector null), se enseñan
   // todos, como hasta ahora.
   const ctx = await contextoPanelODefecto();
@@ -61,11 +61,43 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <span className="flex-1 min-w-0">
               {/* Se llamaba "AGENDA": no se identificaba como el módulo de reservas online
                   y no había forma de llegar a /dashboard/reservas salvo tecleando la URL. */}
-              <span className="block font-stencil text-xl leading-none">{ctx.perfil.id === "legal" ? "CONSULTAS" : "RESERVAS"}</span>
+              <span className="block font-stencil text-xl leading-none">{ctx.perfil.id === "gestoria" ? "EXPEDIENTES" : "RESERVAS"}</span>
               {/* Mismo orden que las pestañas de ReservasPanel: informes al final. */}
               <span className="block text-[10px] uppercase tracking-widest text-black/70">Agenda · {v.clientePlural} · compartir · informes mensuales</span>
             </span>
           </a>
+          {/* SERVICIO DE HOY: solo en restauración. Es la pantalla que se mira
+              antes de abrir, y va la primera por eso mismo. */}
+          {tieneFuncion(ctx.sector, "panelDelDia") && (
+            <a
+              href="/dashboard/servicio"
+              className="card-hard flex items-center gap-3 p-3 mb-3 hover:-translate-y-0.5 transition bg-white"
+            >
+              <span className="text-2xl">🍽️</span>
+              <span className="flex-1 min-w-0">
+                <span className="block font-stencil text-xl leading-none">SERVICIO DE HOY</span>
+                <span className="block text-[10px] uppercase tracking-widest text-black/70">
+                  Reservas · comensales · no-shows
+                </span>
+              </span>
+            </a>
+          )}
+          {/* EXPEDIENTES: solo en gestoría. Va la primera porque es donde se
+              contesta la pregunta que más llamadas genera: "¿cómo va lo mío?". */}
+          {tieneFuncion(ctx.sector, "estadoExpediente") && (
+            <a
+              href="/dashboard/expedientes"
+              className="card-hard flex items-center gap-3 p-3 mb-3 hover:-translate-y-0.5 transition bg-white"
+            >
+              <span className="text-2xl">📁</span>
+              <span className="flex-1 min-w-0">
+                <span className="block font-stencil text-xl leading-none">EXPEDIENTES</span>
+                <span className="block text-[10px] uppercase tracking-widest text-black/70">
+                  Estado · documentación · vencimientos
+                </span>
+              </span>
+            </a>
+          )}
           {/* Seguimiento (recall + presupuestos): solo donde el sector lo enciende.
               En un salón no existe la revisión a seis meses y enseñarlo vacío
               solo confunde. */}
@@ -104,6 +136,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 <span className="block font-stencil text-lg leading-none truncate">{a.name}</span>
                 <span className="block text-[10px] uppercase tracking-widest text-black/70 truncate">{a.role}</span>
               </span>
+              {/* Los carteles de estado se quitaron de todas las tarjetas el 6 de
+                  agosto. Vuelve UNO solo, y solo para Rocío: es la única que
+                  sigue sin conectar, y enseñarla como el resto haría que un
+                  cliente contase con las reseñas de Google desde el primer día. */}
+              {a.slug === "rocio" && (
+                <span className="absolute top-1 right-1 text-[8px] bg-black/70 text-white px-1 py-0.5 font-bold tracking-widest">
+                  PRÓXIMAMENTE
+                </span>
+              )}
             </a>
           ))}
           <a

@@ -388,7 +388,7 @@ La mayoría de las herramientas que prometen automatizar IG generan contenido ge
 - **Clínica dental:** 3 posts/sem + 1 reel/sem
 - **Peluquería:** 5 posts/sem (alta frecuencia visual)
 - **Restaurante:** 4 posts/sem + stories diarias
-- **Servicio profesional (abogado, consultor):** 2 posts/sem + 1 carrusel educativo/sem
+- **Servicio profesional (gestoría, consultor):** 2 posts/sem + 1 carrusel educativo/sem
 
 ## Lo que medimos en pilotos
 
