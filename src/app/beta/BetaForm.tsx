@@ -3,6 +3,8 @@ import { useState } from "react";
 
 export default function BetaForm({ sectores }: { sectores: string[] }) {
   const [name, setName] = useState("");
+  // Campo trampa anti-bot (ver el <input> oculto más abajo).
+  const [trampa, setTrampa] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [sector, setSector] = useState("");
@@ -30,7 +32,7 @@ export default function BetaForm({ sectores }: { sectores: string[] }) {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone, sector }),
+        body: JSON.stringify({ name, email, phone, sector, web_url: trampa || undefined }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "No hemos podido registrar tu demo. Inténtalo de nuevo.");
@@ -61,6 +63,14 @@ export default function BetaForm({ sectores }: { sectores: string[] }) {
         <label htmlFor="bf-name" className="block text-xs font-mono tracking-widest text-black/60 mb-1">
           NOMBRE *
         </label>
+          {/* Campo trampa anti-bot: oculto y fuera del tabulador, así que un
+              visitante nunca lo ve ni lo rellena. Si llega con algo, el servidor
+              descarta la petición sin guardar nada. */}
+          <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+            <label htmlFor="beta-web-url">No rellenes este campo</label>
+            <input id="beta-web-url" name="web_url" type="text" tabIndex={-1} autoComplete="off"
+              value={trampa} onChange={(e) => setTrampa(e.target.value)} />
+          </div>
         <input
           id="bf-name"
           name="name"

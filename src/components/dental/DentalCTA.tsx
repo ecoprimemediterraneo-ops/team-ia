@@ -3,6 +3,8 @@ import { useState } from "react";
 
 export default function DentalCTA() {
   const [name, setName] = useState("");
+  // Campo trampa anti-bot (ver el <input> oculto más abajo).
+  const [trampa, setTrampa] = useState("");
   const [email, setEmail] = useState("");
   const [city, setCity] = useState("");
   const [clinic, setClinic] = useState("");
@@ -17,6 +19,7 @@ export default function DentalCTA() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          web_url: trampa || undefined,
           email,
           name: clinic ? `${name} (${clinic})` : name,
           sector: "Clínica dental",
@@ -55,6 +58,14 @@ export default function DentalCTA() {
           </div>
         ) : (
           <form onSubmit={onSubmit} className="flex flex-col gap-3 max-w-lg mx-auto text-left">
+          {/* Campo trampa anti-bot: oculto y fuera del tabulador, así que un
+              visitante nunca lo ve ni lo rellena. Si llega con algo, el servidor
+              descarta la petición sin guardar nada. */}
+          <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+            <label htmlFor="dental-web-url">No rellenes este campo</label>
+            <input id="dental-web-url" name="web_url" type="text" tabIndex={-1} autoComplete="off"
+              value={trampa} onChange={(e) => setTrampa(e.target.value)} />
+          </div>
             <input
               required
               type="text"

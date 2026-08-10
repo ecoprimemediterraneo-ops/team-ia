@@ -53,7 +53,7 @@ const EMPTY: Answers = {
 const SECTORES = [
   "Clínica dental",
   "Clínica de estética",
-  "Abogados / despacho",
+  "Gestorías / despacho",
   "Inmobiliaria",
 ];
 
@@ -169,6 +169,10 @@ const SEM_LABEL: Record<string, string> = { rojo: "ROJO", ambar: "ÁMBAR", verde
 
 export default function DiagnosticoForm() {
   const [a, setA] = useState<Answers>(EMPTY);
+  // CAMPO TRAMPA. Un visitante no lo ve —está oculto con CSS y fuera del orden
+  // de tabulación—, así que si llega relleno es un bot rellenando todo lo que
+  // encuentra. El servidor descarta esa petición sin guardar nada.
+  const [trampa, setTrampa] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ApiResult | null>(null);
@@ -201,6 +205,7 @@ export default function DiagnosticoForm() {
       web: a.web || undefined,
       instagram: a.instagram || undefined,
       email: a.email,
+      web_url: trampa || undefined,
       respuestas: {
         q1_volumen: a.q1_volumen,
         q2_tiempo: a.q2_tiempo,
@@ -397,6 +402,23 @@ export default function DiagnosticoForm() {
 
       {/* ── Email obligatorio: la llave ──────────────────────────────── */}
       <div className="card-hard p-6 bg-black text-[color:var(--cream)]">
+        {/* Campo trampa. `aria-hidden` + `tabIndex={-1}` para que un lector de
+            pantalla y el tabulador lo salten: la accesibilidad no se sacrifica
+            por el anti-spam. El nombre `web_url` es deliberadamente apetecible
+            para un bot que busca dónde meter su enlace. */}
+        <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+          <label htmlFor="diag-web-url">No rellenes este campo</label>
+          <input
+            id="diag-web-url"
+            name="web_url"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={trampa}
+            onChange={(e) => setTrampa(e.target.value)}
+          />
+        </div>
+
         <div className="flex items-center gap-3 text-xs font-mono mb-3">
           <span className="bg-[color:var(--mustard)] text-black px-2 py-1 font-bold tracking-widest">ÚLTIMO PASO</span>
         </div>

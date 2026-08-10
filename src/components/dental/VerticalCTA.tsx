@@ -16,6 +16,8 @@ export default function VerticalCTA({
   id, sector, city = "", emoji, headline, plazas, priceFounder, ctaLabel,
 }: Props) {
   const [name, setName] = useState("");
+  // Campo trampa anti-bot (ver el <input> oculto más abajo).
+  const [trampa, setTrampa] = useState("");
   const [email, setEmail] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [cityValue, setCityValue] = useState(city);
@@ -30,6 +32,7 @@ export default function VerticalCTA({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          web_url: trampa || undefined,
           email,
           name: businessName ? `${name} (${businessName})` : name,
           sector,
@@ -65,6 +68,14 @@ export default function VerticalCTA({
           </div>
         ) : (
           <form onSubmit={onSubmit} className="flex flex-col gap-3 max-w-lg mx-auto text-left">
+          {/* Campo trampa anti-bot: oculto y fuera del tabulador, así que un
+              visitante nunca lo ve ni lo rellena. Si llega con algo, el servidor
+              descarta la petición sin guardar nada. */}
+          <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+            <label htmlFor="vertical-web-url">No rellenes este campo</label>
+            <input id="vertical-web-url" name="web_url" type="text" tabIndex={-1} autoComplete="off"
+              value={trampa} onChange={(e) => setTrampa(e.target.value)} />
+          </div>
             <input required type="text" placeholder="Tu nombre *" value={name} onChange={(e) => setName(e.target.value)} className="card-hard text-black px-4 py-3 text-base font-semibold focus:outline-none" />
             <input required type="text" placeholder={`Nombre de tu ${ctaLabel.toLowerCase()} *`} value={businessName} onChange={(e) => setBusinessName(e.target.value)} className="card-hard text-black px-4 py-3 text-base font-semibold focus:outline-none" />
             <input required type="email" placeholder="tu@correo.com *" value={email} onChange={(e) => setEmail(e.target.value)} className="card-hard text-black px-4 py-3 text-base font-semibold focus:outline-none" />

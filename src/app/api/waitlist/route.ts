@@ -1,10 +1,27 @@
+// Lista de espera de la beta.
+//
+//   POST → PÚBLICO. Lo llaman las CTAs de la web (/beta y las landings de dental
+//          y estética), así que tiene que seguir abierto. Lleva el mismo freno
+//          anti-bot que el diagnóstico: campo trampa + límite por IP.
+//   GET  → SOLO ADMINISTRADOR.
+//
+// EL GET ERA PÚBLICO Y DEVOLVÍA email, nombre, teléfono, sector y ciudad de
+// todos los apuntados, a cualquiera que tecleara la URL. Mismo agujero que tenía
+// /api/diagnostico y se cierra igual.
+
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { Resend } from "resend";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { requireFounder } from "@/lib/admin-auth";
+import { pasaElFreno, ipDe } from "@/lib/anti-bot";
 
 const schema = z.object({
+  // Campo TRAMPA, igual que en el diagnóstico: oculto para el visitante, y si
+  // llega relleno la petición se descarta en silencio.
+  web_url: z.string().max(300).optional(),
   email: z.string().email("Email no válido"),
   name: z.string().max(80).optional(),
   phone: z.string().max(40).optional(),
@@ -47,6 +64,21 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
+    // --- Freno anti-bot ---
+    // Se contesta ok:true de mentira a propósito: a un bot no se le avisa.
+    if (parsed.data.web_url && parsed.data.web_url.trim()) {
+      console.warn("[api/waitlist] honeypot relleno — petición descartada sin guardar");
+      return NextResponse.json({ ok: true });
+    }
+    const h = await headers();
+    const freno = pasaElFreno(`waitlist:${ipDe(h)}`);
+    if (!freno.ok) {
+      return NextResponse.json(
+        { error: "Demasiadas peticiones desde esta conexión. Inténtalo dentro de un rato." },
+        { status: 429, headers: { "Retry-After": String(freno.esperaSeg) } },
+      );
+    }
+
     const { email, name, phone, sector, city } = parsed.data;
 
     // 1. Guardar en waitlist (JSON)
@@ -125,6 +157,11 @@ export async function POST(req: Request) {
 
 // GET para que veas cuántos hay en lista
 export async function GET() {
+  // Puerta ANTES de leer: sin sesión de fundador no sale ni un email.
+  const auth = await requireFounder();
+  if (!auth.ok) {
+    return NextResponse.json({ error: "unauthorized" }, { status: auth.status });
+  }
   try {
     const entries = await readWaitlist();
     return NextResponse.json({ total: entries.length, entries });

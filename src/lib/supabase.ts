@@ -75,6 +75,18 @@ export async function kvTryLock(key: string, ttlMs: number, owner: string): Prom
   return true;
 }
 
+/**
+ * Borra una clave del kv. Mismo mecanismo que `kvUnlock`, que ya borraba, pero
+ * con nombre honesto: aquel se llama así porque libera un lock, y usarlo para
+ * borrar un registro de negocio se leería como un error.
+ */
+export async function kvDelete(key: string): Promise<void> {
+  if (!USE_SUPABASE) return;
+  const sb = getSupabase();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (sb.from("kv_store") as any).delete().eq("key", key);
+}
+
 export async function kvUnlock(key: string): Promise<void> {
   if (!USE_SUPABASE) return;
   const sb = getSupabase();

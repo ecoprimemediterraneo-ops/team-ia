@@ -1,13 +1,21 @@
-// API del diagnóstico/auditoría con IA — FASE 2.
-//   POST → ejecuta el motor (analiza web+IG+8 respuestas), calcula €/mes,
-//          evalúa los 5 frentes y GUARDA el lead. Devuelve el resultado.
-//   GET  → lista los diagnósticos guardados (para verificar la captación).
-//          GET ?id=<id> → devuelve uno concreto.
+// API del diagnóstico/auditoría con IA.
+//   POST → PÚBLICO. Es el formulario que rellena el visitante: analiza
+//          web+IG+8 respuestas, calcula €/mes, evalúa los 5 frentes y guarda el
+//          lead. Lleva freno anti-bot (honeypot + límite por IP + validación).
+//   GET  → SOLO ADMINISTRADOR. Lista los diagnósticos guardados.
+//
+// EL GET ERA PÚBLICO Y NO DEBÍA SERLO. Devolvía nombre, email, web e Instagram
+// de todos los registros a cualquiera que tecleara la URL — 103 personas cuando
+// se detectó. Ahora exige la misma sesión de fundador que el resto de /admin y,
+// sin ella, contesta 401 sin filtrar un solo dato.
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { headers } from "next/headers";
+import { requireFounder } from "@/lib/admin-auth";
 import { ejecutarDiagnostico, listarDiagnosticos, registrarEnvioInforme } from "@/lib/diagnostico";
 import { enviarInformeDiagnostico, construirInformeEmail } from "@/lib/diagnostico-email";
+import { pasaElFreno, ipDe, webParecePlausible } from "@/lib/anti-bot";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -27,6 +35,10 @@ const respuestasSchema = z.object({
 const schema = z.object({
   nombre: z.string().max(120).default(""),
   tipo: z.string().max(80).default(""),
+  // Campo TRAMPA. No se pinta para el visitante (ver DiagnosticoForm); un
+  // navegador humano lo deja vacío y un bot que rellena todo lo que encuentra
+  // lo completa. Si viene con algo, la petición se descarta EN SILENCIO.
+  web_url: z.string().max(300).optional(),
   web: z.string().max(300).optional(),
   instagram: z.string().max(120).optional(),
   ciudad: z.string().max(80).optional(),
@@ -41,6 +53,31 @@ export async function POST(req: Request) {
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ ok: false, error: parsed.error.issues[0].message }, { status: 400 });
+    }
+
+    // --- Freno anti-bot ---
+    // Se responde 200 con un ok:true de mentira a propósito: a un bot no se le
+    // dice que ha sido detectado, porque entonces prueba otra cosa. Al visitante
+    // real esto no le afecta nunca: el campo trampa está oculto para él.
+    if (parsed.data.web_url && parsed.data.web_url.trim()) {
+      console.warn("[api/diagnostico] honeypot relleno — petición descartada sin guardar");
+      return NextResponse.json({ ok: true, id: "descartado" });
+    }
+
+    const h = await headers();
+    const freno = pasaElFreno(ipDe(h));
+    if (!freno.ok) {
+      return NextResponse.json(
+        { ok: false, error: "Demasiadas peticiones desde esta conexión. Inténtalo dentro de un rato." },
+        { status: 429, headers: { "Retry-After": String(freno.esperaSeg) } },
+      );
+    }
+
+    if (!webParecePlausible(parsed.data.web)) {
+      return NextResponse.json(
+        { ok: false, error: "La dirección de la web no parece válida. Revísala o déjala en blanco." },
+        { status: 400 },
+      );
     }
 
     const { record, almacenado } = await ejecutarDiagnostico(parsed.data);
@@ -77,6 +114,12 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
+  // Puerta ANTES de tocar nada: si no hay sesión de fundador, no se lee ni se
+  // devuelve un solo registro.
+  const auth = await requireFounder();
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: auth.status });
+  }
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");

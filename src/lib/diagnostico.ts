@@ -24,6 +24,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { anthropic, MODELS } from "./claude";
 import { kvSet, kvListByPrefix, supabaseEnabled } from "./supabase";
+import { nombreParecePersona, webParecePlausible } from "./anti-bot";
 import {
   fetchWebSignals,
   fetchIgSignals,
@@ -41,7 +42,7 @@ export type { WebSignals, IgSignals, GoogleSignals, Verificabilidad };
 // Tipos
 // -----------------------------------------------------------------------------
 
-export type Sector = "dental" | "estetica" | "abogados" | "inmobiliaria" | "restaurante" | "generico";
+export type Sector = "dental" | "estetica" | "gestorías" | "inmobiliaria" | "restaurante" | "generico";
 export type Semaforo = "rojo" | "ambar" | "verde";
 export type FrenteKey = "velocidad" | "web" | "instagram" | "resenas" | "captacion";
 
@@ -187,6 +188,12 @@ export type DiagnosticoRecord = DiagnosticoInput & {
   // Foto ordenada de features para la Colmena Neuronal (2x1: auditoría + datos):
   colmena: ColmenaSnapshot;
   informeEmail?: InformeEmailInfo;
+  /**
+   * Marca manual del fundador desde /admin/leads. No la pone el motor: es un
+   * juicio humano sobre un registro concreto, y por eso se guarda aquí y no se
+   * recalcula. `undefined` = sin revisar.
+   */
+  spam?: boolean;
 };
 
 // -----------------------------------------------------------------------------
@@ -221,8 +228,8 @@ const SECTOR_PROFILES: Record<Sector, SectorProfile> = {
     perdidaTipica: "bonos y sesiones que no se reservan por no contestar a tiempo",
     ejemploResena: "en estética la clienta compara perfiles y reseñas antes de reservar",
   },
-  abogados: {
-    label: "despacho de abogados",
+  gestorías: {
+    label: "gestoría",
     ticketDefault: 900,
     cliente: "alguien con un problema legal urgente",
     canal: "una llamada fuera de horario",
@@ -259,7 +266,9 @@ export function normalizarSector(tipo: string): Sector {
   const t = (tipo || "").toLowerCase();
   if (t.includes("dental")) return "dental";
   if (t.includes("estétic") || t.includes("estetic") || t.includes("belleza")) return "estetica";
-  if (t.includes("abogad") || t.includes("despacho") || t.includes("legal")) return "abogados";
+  // Se conservan las palabras del sector retirado para que un texto antiguo que
+  // diga "despacho" siga clasificándose en el sector que hoy le corresponde.
+  if (t.includes("gestor") || t.includes("asesor") || t.includes("abogad") || t.includes("despacho")) return "gestorías";
   if (t.includes("inmobil")) return "inmobiliaria";
   if (t.includes("restaur")) return "restaurante";
   return "generico";
@@ -279,7 +288,7 @@ const CLOSE_RATE = 0.3;
 const CAP: Record<Sector, { maxOps: number; maxEur: number }> = {
   dental:       { maxOps: 25, maxEur: 6000 },
   estetica:     { maxOps: 15, maxEur: 7000 },
-  abogados:     { maxOps: 6,  maxEur: 9000 },
+  gestorías:     { maxOps: 6,  maxEur: 9000 },
   inmobiliaria: { maxOps: 2,  maxEur: 7000 },
   restaurante:  { maxOps: 45, maxEur: 4500 },
   generico:     { maxOps: 18, maxEur: 6000 },
@@ -288,7 +297,7 @@ const CAP: Record<Sector, { maxOps: number; maxEur: number }> = {
 const SECTOR_UNIDAD: Record<Sector, string> = {
   dental: "clientes",
   estetica: "clientes",
-  abogados: "casos",
+  gestorías: "casos",
   inmobiliaria: "operaciones",
   restaurante: "reservas",
   generico: "clientes",
@@ -431,8 +440,8 @@ function checksWeb(web: WebSignals, sector: Sector): Check[] {
     checks.push(C("Indexable por Google", web.noindex ? "falta" : "ok", "verificado", web.noindex ? "tiene noindex" : (web.hasSitemap ? "con sitemap" : "")));
     checks.push(C("Contacto claro (formulario / teléfono / WhatsApp)", (web.hasForm || web.hasTel || web.hasWhatsapp) ? "ok" : "falta", "verificado"));
     checks.push(C("Llamada a la acción visible", (web.ctaHits ?? 0) >= 1 ? "ok" : "flojo", "verificado", `${web.ctaHits ?? 0} CTA detectadas`));
-    // Legal/RGPD — crítico en clínicas y abogados
-    const legalCritico = sector === "dental" || sector === "estetica" || sector === "abogados";
+    // Legal/RGPD — crítico en clínicas y gestorías
+    const legalCritico = sector === "dental" || sector === "estetica" || sector === "gestorías";
     const tieneLegal = (web.legalLinks?.length ?? 0) > 0;
     checks.push(C("Aviso legal y privacidad (RGPD)", tieneLegal ? "ok" : (legalCritico ? "falta" : "flojo"), "verificado",
       tieneLegal ? web.legalLinks!.join(", ") : "no detectados"));
@@ -863,6 +872,65 @@ export async function listarDiagnosticos(): Promise<DiagnosticoRecord[]> {
   } catch {
     return [];
   }
+}
+
+/**
+ * Marca (o desmarca) un diagnóstico como spam. Solo cambia esa bandera: el
+ * registro se conserva entero por si la marca fue un error.
+ */
+export async function marcarSpam(id: string, spam: boolean): Promise<boolean> {
+  if (supabaseEnabled()) {
+    const rec = await kvGetRecord(id);
+    if (!rec) return false;
+    await kvSet(KV_PREFIX + id, { ...rec, spam });
+    return true;
+  }
+  const list = await listarDiagnosticos();
+  const i = list.findIndex((d) => d.id === id);
+  if (i < 0) return false;
+  list[i] = { ...list[i], spam };
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(LOCAL_FILE, JSON.stringify(list, null, 2));
+  return true;
+}
+
+/**
+ * Borra un diagnóstico. Irreversible a propósito y sin borrado masivo
+ * automático: quien decide qué se va es una persona mirando la lista.
+ */
+export async function borrarDiagnostico(id: string): Promise<boolean> {
+  if (supabaseEnabled()) {
+    const { kvDelete } = await import("./supabase");
+    const rec = await kvGetRecord(id);
+    if (!rec) return false;
+    await kvDelete(KV_PREFIX + id);
+    return true;
+  }
+  const list = await listarDiagnosticos();
+  const quedan = list.filter((d) => d.id !== id);
+  if (quedan.length === list.length) return false;
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(LOCAL_FILE, JSON.stringify(quedan, null, 2));
+  return true;
+}
+
+/**
+ * ¿Este registro tiene pinta de basura de bot?
+ *
+ * SOLO SUGIERE. Nunca borra ni oculta nada por su cuenta: el criterio es
+ * heurístico y equivocarse aquí significa tirar un cliente real a la papelera.
+ * Se marcan tres señales, y basta UNA para sospechar:
+ *   · el nombre del negocio no parece escrito por una persona
+ *   · la web no tiene forma de dominio
+ *   · el email usa el truco de los puntos infinitos de Gmail (a.b.c.d@gmail.com)
+ */
+export function motivosDeSpam(rec: DiagnosticoRecord): string[] {
+  const motivos: string[] = [];
+  if (!nombreParecePersona(rec.nombre)) motivos.push("nombre sin forma de negocio");
+  if (rec.web && !webParecePlausible(rec.web)) motivos.push("web sin forma de dominio");
+  const local = (rec.email || "").split("@")[0] || "";
+  if ((local.match(/\./g) || []).length >= 3) motivos.push("email con puntos de relleno");
+  return motivos;
 }
 
 export async function registrarEnvioInforme(id: string, info: InformeEmailInfo): Promise<void> {

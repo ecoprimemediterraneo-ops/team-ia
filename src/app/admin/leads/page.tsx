@@ -1,7 +1,17 @@
+// Panel de leads y diagnósticos.
+//
+// ANTES leía `diagnosticos.json` del disco, y en Vercel ese directorio es
+// EFÍMERO: en producción los diagnósticos se guardan en Supabase KV, así que
+// este panel salía vacío mientras había 103 registros captados. Ahora usa
+// `listarDiagnosticos()`, que es exactamente de donde lee el resto del sistema
+// y funciona igual en local (fichero) que en producción (Supabase), sin dos
+// caminos distintos.
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSessionLocal } from "@/lib/auth";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { listarDiagnosticos, motivosDeSpam } from "@/lib/diagnostico";
+import MarcarSpam from "@/components/MarcarSpam";
 
 const FOUNDER_EMAILS = [
   process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com",
@@ -17,19 +27,10 @@ async function readJson<T>(file: string, fallback: T): Promise<T> {
   }
 }
 
-type Diagnostico = {
-  nombre: string;
-  email: string;
-  whatsapp?: string;
-  negocio: string;
-  sector: string;
-  ciudad: string;
-  fecha: string;
-};
 type Newsletter = { email: string; date: string };
 
 export default async function AdminLeadsPage() {
-  const s = await getSession();
+  const s = await getSessionLocal();
   if (!s) redirect("/login");
   if (!FOUNDER_EMAILS.includes(s.email)) {
     return (
@@ -41,7 +42,20 @@ export default async function AdminLeadsPage() {
     );
   }
 
-  const diagnosticos = await readJson<Diagnostico[]>("diagnosticos.json", []);
+  // La forma REAL del registro (createdAt, nombre, web…) no era la que este
+  // panel esperaba (fecha, negocio, whatsapp): estaba roto por partida doble.
+  const registros = await listarDiagnosticos();
+  const diagnosticos = registros.map((d) => ({
+    id: d.id,
+    fecha: d.createdAt,
+    negocio: d.nombre,
+    email: d.email,
+    web: d.web,
+    sector: d.sector,
+    ciudad: d.ciudad,
+    spam: d.spam,
+    motivos: motivosDeSpam(d),
+  }));
   const newsletter = await readJson<Newsletter[]>("newsletter.json", []);
 
   const today = Date.now();
@@ -102,24 +116,31 @@ export default async function AdminLeadsPage() {
                 <thead>
                   <tr className="bg-black text-[color:var(--mustard)]">
                     <th className="text-left px-3 py-2 font-mono text-xs tracking-widest">FECHA</th>
-                    <th className="text-left px-3 py-2 font-mono text-xs tracking-widest">NOMBRE</th>
                     <th className="text-left px-3 py-2 font-mono text-xs tracking-widest">NEGOCIO</th>
-                    <th className="text-left px-3 py-2 font-mono text-xs tracking-widest">SECTOR</th>
-                    <th className="text-left px-3 py-2 font-mono text-xs tracking-widest">CIUDAD</th>
+                    <th className="text-left px-3 py-2 font-mono text-xs tracking-widest">WEB</th>
                     <th className="text-left px-3 py-2 font-mono text-xs tracking-widest">EMAIL</th>
-                    <th className="text-left px-3 py-2 font-mono text-xs tracking-widest">WHATSAPP</th>
+                    <th className="text-left px-3 py-2 font-mono text-xs tracking-widest">ESTADO</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {diagnosticos.slice().reverse().map((d, i) => (
-                    <tr key={i} className={i % 2 === 0 ? "bg-[color:var(--cream)]/40" : "bg-white"}>
+                  {diagnosticos.map((d, i) => (
+                    <tr key={d.id} className={d.spam ? "bg-black/10 opacity-60" : i % 2 === 0 ? "bg-[color:var(--cream)]/40" : "bg-white"}>
                       <td className="px-3 py-2 text-xs font-mono">{new Date(d.fecha).toLocaleDateString("es-ES")}</td>
-                      <td className="px-3 py-2">{d.nombre}</td>
-                      <td className="px-3 py-2 font-bold">{d.negocio}</td>
-                      <td className="px-3 py-2 capitalize">{d.sector}</td>
-                      <td className="px-3 py-2">{d.ciudad}</td>
-                      <td className="px-3 py-2 text-xs">{d.email}</td>
-                      <td className="px-3 py-2 text-xs">{d.whatsapp || "—"}</td>
+                      <td className="px-3 py-2 font-bold">{d.negocio || "—"}</td>
+                      <td className="px-3 py-2 text-xs break-all">{d.web || "—"}</td>
+                      <td className="px-3 py-2 text-xs break-all">{d.email}</td>
+                      <td className="px-3 py-2 text-xs">
+                        {d.spam ? (
+                          <span className="font-mono uppercase tracking-widest">spam</span>
+                        ) : d.motivos.length ? (
+                          <span className="font-mono text-[10px] text-black/60" title={d.motivos.join(" · ")}>
+                            sospechoso
+                          </span>
+                        ) : (
+                          <span className="font-mono text-[10px] text-black/40">ok</span>
+                        )}
+                        <MarcarSpam id={d.id} spam={!!d.spam} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
