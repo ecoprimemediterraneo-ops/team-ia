@@ -26,6 +26,7 @@ import { getTenant, DEFAULT_TENANT_ID } from "./tenants";
 import { freeBusyQuery, deleteEvent } from "./calendar";
 import { reservarSlotBooking } from "./booking-orchestrator";
 import { benditoArteSeed } from "./booking-seed-bendito";
+import { configRestaurante, estadoInicialReserva } from "./restaurante";
 
 // -----------------------------------------------------------------------------
 // Tipos
@@ -83,6 +84,12 @@ export type BusinessBooking = {
   lng?: number;
   telefono?: string; // teléfono de contacto público
   instagram?: string; // handle de Instagram (sin @); enlace en la ficha
+  /**
+   * Enlace DIRECTO para dejar reseña en Google. Se configura por negocio porque
+   * cada ficha de Google tiene el suyo y no hay forma de deducirlo. Sin él, la
+   * petición de reseña por WhatsApp no se manda (ver `resena-whatsapp.ts`).
+   */
+  resenaUrl?: string;
   calendarEmail?: string; // enganche multi-cliente al calendario Google
   timezone: string; // "Europe/Madrid"
   categorias: Categoria[];
@@ -92,6 +99,22 @@ export type BusinessBooking = {
   slotStepMin: number; // granularidad de la rejilla (default 15 min)
   leadTimeMin: number; // antelación mínima para reservar (default 60 min)
   cancelAntelacionMin: number; // antelación mínima para cancelar/reprogramar (default 120)
+  /**
+   * Config del sector RESTAURANTE: turnos, duración de mesa, zonas y modo de
+   * trabajo. Opcional y solo la usan los negocios de ese sector; el resto ni la
+   * miran. Los valores por defecto y los tipos viven en `restaurante.ts`, que es
+   * quien manda aquí — este campo es solo dónde se guarda.
+   */
+  restaurante?: {
+    modo?: "captacion" | "gestion";
+    duracionMesaMin?: number;
+    cortesiaMin?: number;
+    turnos?: Array<{ id: string; nombre: string; desde: string; hasta: string; dias: number[] }>;
+    confirmacionAutomatica?: boolean;
+    zonas?: { terraza?: boolean; interior?: boolean };
+    /** Hueco previsto para el plano de sala editable, que se construye aparte. */
+    plano?: { mesas?: unknown[]; version?: number };
+  };
   actualizadoEn?: string;
 };
 
@@ -127,6 +150,13 @@ export type BookingRecord = {
   origen?: OrigenCita; // ausente = "online" (compat con reservas previas)
   tipo?: TipoRegistro; // ausente = "cita"
   nota?: string; // nota interna del dueño / motivo del bloqueo
+  /**
+   * RESTAURANTE. Cuántos se sientan y dónde. Opcionales porque en los otros
+   * cuatro sectores no existen: una cita de peluquería no tiene comensales.
+   * "indiferente" es una respuesta válida del cliente, no un campo sin rellenar.
+   */
+  comensales?: number;
+  zona?: "terraza" | "interior" | "indiferente";
   creadaEn: string;
   canceladaEn?: string;
   reprogramadaEn?: string; // última vez que se movió/reprogramó (para la campanita)
@@ -309,8 +339,8 @@ export async function saveBusiness(b: BusinessBooking): Promise<BusinessBooking>
  * `getBusinessesForOwner` (abajo) resuelve por email de calendario, y eso tiene
  * un agujero: `resolveCalendarEmail` cae al email del fundador cuando el negocio
  * no declara calendario propio, así que el panel de un cliente podía acabar
- * enseñando los negocios del fundador. Pasó de verdad: el panel del despacho de
- * abogados mostraba los servicios de un centro de belleza.
+ * enseñando los negocios del fundador. Pasó de verdad: el panel de la gestoría de
+ * gestorías mostraba los servicios de un centro de belleza.
  *
  * Filtrando por `tenantId` eso es imposible: un negocio pertenece a un tenant y
  * a uno solo.
@@ -694,6 +724,9 @@ export type RegistrarRecordInput = {
   eventId?: string; // evento YA creado en Google por el orquestador
   htmlLink?: string;
   baseUrl?: string; // origen público (para el enlace de cancelar de la confirmación al cliente)
+  /** SOLO RESTAURACIÓN. Ausentes en los demás sectores, como hasta ahora. */
+  comensales?: number;
+  zona?: "terraza" | "interior" | "indiferente";
 };
 
 /**
@@ -721,9 +754,18 @@ export async function registrarRecordDeCita(input: RegistrarRecordInput): Promis
     durationMin: input.durationMin,
     startIso: startNorm,
     cliente: input.cliente,
+    comensales: input.comensales,
+    zona: input.zona,
     eventId: input.eventId,
     htmlLink: input.htmlLink,
-    estado: "confirmada",
+    // Confirmación HÍBRIDA, solo en restaurantes: la mesa nace PENDIENTE de que
+    // la valide el restaurante, salvo que el dueño haya encendido la
+    // confirmación automática. Un negocio sin config de restaurante entra por el
+    // `: "confirmada"` de siempre, así que salón, estética, dental y legal se
+    // comportan exactamente igual que antes.
+    estado: business.restaurante
+      ? estadoInicialReserva(configRestaurante(business))
+      : "confirmada",
     origen: "online",
     tipo: "cita",
     creadaEn: new Date().toISOString(),
@@ -867,6 +909,18 @@ export type CrearManualInput = {
   cliente: { nombre: string; telefono: string; email?: string };
   empleadoId?: string;
   nota?: string;
+  /**
+   * RESTAURANTE. Cuántos vienen y dónde quieren sentarse. En los otros sectores
+   * no se pasan y el registro sale sin ellos, como hasta ahora.
+   */
+  comensales?: number;
+  zona?: "terraza" | "interior" | "indiferente";
+  /**
+   * Estado con el que nace. Por defecto "confirmada", que es lo que ha hecho
+   * siempre una cita creada a mano por el dueño. Un restaurante en confirmación
+   * híbrida pasa "pendiente" (ver `estadoInicialReserva` en restaurante.ts).
+   */
+  estadoInicial?: EstadoCita;
   redirectUri: string;
 };
 
@@ -961,9 +1015,11 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
     empleadoId: empleado?.id,
     empleadoNombre: empleado?.nombre,
     nota: input.nota,
+    comensales: input.comensales,
+    zona: input.zona,
     eventId: res.eventId,
     htmlLink: res.htmlLink,
-    estado: "confirmada",
+    estado: input.estadoInicial ?? "confirmada",
     origen: "manual",
     tipo: "cita",
     creadaEn: new Date().toISOString(),
@@ -1391,6 +1447,11 @@ export type EsperaEntry = {
   fecha: string; // "YYYY-MM-DD" día deseado
   cliente: { nombre: string; telefono: string; email?: string };
   estado: "esperando" | "avisado" | "cancelada";
+  /** SOLO RESTAURACIÓN: los cuatro datos de la mesa viajan también a la espera. */
+  comensales?: number;
+  zona?: "terraza" | "interior" | "indiferente";
+  /** Hora que pidió y no había, "HH:mm". Sirve para reofertar en su turno. */
+  horaPedida?: string;
   creadaEn: string;
   avisadoEn?: string;
 };
@@ -1416,6 +1477,10 @@ export async function listEspera(slug: string): Promise<EsperaEntry[]> {
 export type CrearEsperaInput = {
   slug: string; serviceId: string; variantId?: string; empleadoId?: string; fecha: string;
   cliente: { nombre: string; telefono: string; email?: string };
+  /** SOLO RESTAURACIÓN. Ausentes en los demás sectores, como hasta ahora. */
+  comensales?: number;
+  zona?: "terraza" | "interior" | "indiferente";
+  horaPedida?: string;
 };
 
 export async function crearEspera(input: CrearEsperaInput): Promise<{ ok: true; entry: EsperaEntry } | { ok: false; reason: "not_found" | "service_not_found" }> {
@@ -1429,7 +1494,9 @@ export async function crearEspera(input: CrearEsperaInput): Promise<{ ok: true; 
     id: nuevoId("esp"), slug: business.slug, serviceId: service.id, servicioNombre: service.nombre,
     variantId: input.variantId, varianteNombre: variante?.nombre,
     empleadoId: empleado?.id, empleadoNombre: empleado?.nombre,
-    fecha: input.fecha, cliente: input.cliente, estado: "esperando", creadaEn: new Date().toISOString(),
+    fecha: input.fecha, cliente: input.cliente, estado: "esperando",
+    comensales: input.comensales, zona: input.zona, horaPedida: input.horaPedida,
+    creadaEn: new Date().toISOString(),
   };
   await saveEspera(entry);
   return { ok: true, entry };

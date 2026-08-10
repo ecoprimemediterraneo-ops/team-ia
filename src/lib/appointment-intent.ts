@@ -32,10 +32,38 @@ export type AppointmentIntent = {
     nombre?: string;
     motivo?: string;
     startIso?: string;         // ISO completa con fecha+hora si se pudo extraer
+    /**
+     * SOLO RESTAURACIÓN. Cuántos se sientan y dónde. Se extraen únicamente
+     * cuando quien llama pide el modo restaurante; en los otros cuatro sectores
+     * ni se piden al modelo ni se rellenan, así que el flujo de siempre no ve
+     * ninguna diferencia.
+     */
+    comensales?: number;
+    zona?: "terraza" | "interior" | "indiferente";
+    /**
+     * SOLO GESTORÍA. `consultaEstado` es la pregunta que más llamadas genera del
+     * sector: "¿cómo va lo mío?". No es una cita, así que no entra en `missing`
+     * ni bloquea nada; es una intención aparte que el webhook atiende antes.
+     * `tramite` es el trámite que menciona, si menciona alguno, para no tener que
+     * preguntarle cuál cuando ya lo ha dicho.
+     */
+    consultaEstado?: boolean;
+    tramite?: string;
   };
-  missing: ("nombre" | "motivo" | "fecha_hora")[];
+  /** "personas" solo aparece en modo restaurante. La zona NUNCA bloquea. */
+  missing: ("nombre" | "motivo" | "fecha_hora" | "personas")[];
   source: "ai" | "fallback";
 };
+
+/**
+ * Qué sector está escuchando. Cambia lo que se le pide al modelo y qué se
+ * considera imprescindible para cerrar.
+ *
+ * Restauración necesita el número de personas —una mesa de dos y una de doce no
+ * son la misma reserva— y en cambio NO necesita "motivo": el motivo de ir a un
+ * restaurante es comer. Pedírselo sonaría a formulario.
+ */
+export type ModoExtraccion = { restaurante?: boolean; gestoria?: boolean };
 
 export type AgendarFromTextResult =
   | { kind: "no_intent" }
@@ -74,15 +102,56 @@ REGLAS para los campos:
 
 Si el mensaje no es de reserva, los campos pueden ir todos a null.`;
 
-function fallbackDetection(text: string): AppointmentIntent {
+/**
+ * Añadido SOLO para restaurantes. Se concatena al prompt de siempre en vez de
+ * sustituirlo: la detección de intención y la resolución de fechas ya funcionan
+ * y no se tocan.
+ */
+const EXTRA_RESTAURANTE = `
+
+ESTE NEGOCIO ES UN RESTAURANTE. Añade DOS campos más al JSON:
+{
+  "comensales": número de personas que vienen, o null,
+  "zona": "terraza" | "interior" | "indiferente" | null
+}
+
+REGLAS de esos dos campos:
+- comensales: cualquier forma de decir cuántos son ("somos cuatro", "una mesa para 2", "seremos 6 o 7" → coge el mayor, "mi mujer y yo" → 2). null si no lo dicen.
+- zona: "terraza" si la piden, "interior" si piden dentro/salón/comedor, e "indiferente" SOLO si dicen expresamente que les da igual. null si no lo mencionan.
+- En un restaurante NO hace falta "motivo": el motivo es comer. Devuelve motivo null salvo que pidan algo concreto (menú degustación, celebración, evento).`;
+
+/**
+ * Añadido SOLO para gestorías. Igual que el de restaurante: se SUMA al prompt de
+ * siempre, nunca lo sustituye.
+ */
+const EXTRA_GESTORIA = `
+
+ESTE NEGOCIO ES UNA GESTORÍA. Añade DOS campos más al JSON:
+{
+  "consultaEstado": true|false,
+  "tramite": "renta" | "nominas" | "autonomos" | "trimestrales" | "sociedades" | null
+}
+
+REGLAS de esos dos campos:
+- consultaEstado: true si el cliente pregunta por el ESTADO de algo suyo ya en marcha: "¿cómo va lo mío?", "¿se sabe algo de mi renta?", "¿está ya el alta?", "¿lo habéis presentado?", "¿alguna novedad?". Es una pregunta por algo que YA existe, no una petición de trámite nuevo.
+- consultaEstado: false si lo que pide es empezar un trámite, un precio, una cita o información general.
+- tramite: el trámite concreto que menciona, si lo menciona. null si habla en general ("lo mío", "mi expediente").
+- Una consulta de estado NO es una cita: en ese caso wantsAppointment va a false.`;
+
+function fallbackDetection(text: string, modo?: ModoExtraccion): AppointmentIntent {
   const t = text.toLowerCase();
-  const intentRe = /\b(reserva|reservar|cita|hueco|hora|agendar|agéndame|agendame|pedir cita|me das hora|book|appointment)\b/i;
+  const intentRe = /\b(reserva|reservar|cita|hueco|hora|agendar|agéndame|agendame|pedir cita|me das hora|mesa|book|appointment)\b/i;
   const wantsAppointment = intentRe.test(t);
+  // Sin IA, el heurístico no adivina personas ni zona: los deja por preguntar,
+  // que es exactamente lo que hace hoy con nombre y fecha.
+  const missing: AppointmentIntent["missing"] = modo?.restaurante
+    ? ["nombre", "fecha_hora", "personas"]
+    : ["nombre", "motivo", "fecha_hora"];
   return {
     wantsAppointment,
     confidence: wantsAppointment ? 0.5 : 0,
     fields: {},
-    missing: wantsAppointment ? ["nombre", "motivo", "fecha_hora"] : [],
+    missing: wantsAppointment ? missing : [],
     source: "fallback",
   };
 }
@@ -96,19 +165,25 @@ function fallbackDetection(text: string): AppointmentIntent {
 export async function detectAppointmentIntent(
   text: string,
   referenceDate: Date = new Date(),
+  modo?: ModoExtraccion,
 ): Promise<AppointmentIntent> {
   if (!text?.trim()) {
     return { wantsAppointment: false, confidence: 0, fields: {}, missing: [], source: "fallback" };
   }
   if (!process.env.ANTHROPIC_API_KEY) {
-    return fallbackDetection(text);
+    return fallbackDetection(text, modo);
   }
 
   try {
     const ai = await anthropic.messages.create({
       model: MODELS.fast,
       max_tokens: 300,
-      system: SYSTEM_PROMPT,
+      // El prompt de restaurante se SUMA al de siempre; sin el flag, el system
+      // que se manda es byte por byte el que se mandaba antes.
+      // Cada sector suma SU bloque; sin ninguno, el system es el de siempre.
+      system: SYSTEM_PROMPT
+        + (modo?.restaurante ? EXTRA_RESTAURANTE : "")
+        + (modo?.gestoria ? EXTRA_GESTORIA : ""),
       messages: [
         {
           role: "user",
@@ -122,13 +197,13 @@ export async function detectAppointmentIntent(
       .join("\n")
       .trim();
     const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) return fallbackDetection(text);
+    if (!match) return fallbackDetection(text, modo);
 
     let parsed: unknown;
     try {
       parsed = JSON.parse(match[0]);
     } catch {
-      return fallbackDetection(text);
+      return fallbackDetection(text, modo);
     }
     const j = parsed as {
       wantsAppointment?: boolean;
@@ -136,6 +211,10 @@ export async function detectAppointmentIntent(
       nombre?: string | null;
       motivo?: string | null;
       startIso?: string | null;
+      comensales?: number | string | null;
+      zona?: string | null;
+      consultaEstado?: boolean | null;
+      tramite?: string | null;
     };
 
     const wantsAppointment = !!j.wantsAppointment;
@@ -144,23 +223,47 @@ export async function detectAppointmentIntent(
     const motivo = typeof j.motivo === "string" && j.motivo.trim() ? j.motivo.trim() : undefined;
     const startIso = typeof j.startIso === "string" && j.startIso.trim() ? j.startIso.trim() : undefined;
 
+    // --- Restauración: personas y zona ---
+    const nPersonas = Number(j.comensales);
+    const comensales = modo?.restaurante && Number.isFinite(nPersonas) && nPersonas > 0
+      ? Math.min(99, Math.round(nPersonas))
+      : undefined;
+    const zonaCruda = typeof j.zona === "string" ? j.zona.trim().toLowerCase() : "";
+    const zona = modo?.restaurante && (zonaCruda === "terraza" || zonaCruda === "interior" || zonaCruda === "indiferente")
+      ? (zonaCruda as "terraza" | "interior" | "indiferente")
+      : undefined;
+
+    // --- Gestoría: consulta de estado ---
+    const consultaEstado = modo?.gestoria ? j.consultaEstado === true : undefined;
+    const tramite = modo?.gestoria && typeof j.tramite === "string" && j.tramite.trim()
+      ? j.tramite.trim().toLowerCase()
+      : undefined;
+
     const missing: AppointmentIntent["missing"] = [];
     if (wantsAppointment) {
       if (!nombre) missing.push("nombre");
-      if (!motivo) missing.push("motivo");
+      // En un restaurante el "motivo" es comer: pedirlo suena a formulario. Lo
+      // que sí es imprescindible es cuántos son.
+      if (modo?.restaurante) {
+        if (!comensales) missing.push("personas");
+      } else if (!motivo) {
+        missing.push("motivo");
+      }
       if (!startIso) missing.push("fecha_hora");
     }
 
     return {
       wantsAppointment,
       confidence,
-      fields: { nombre, motivo, startIso },
+      // La zona NO entra en `missing` nunca: es opcional, y si el cliente dice
+      // que le da igual se guarda "indiferente" y no se vuelve a sacar el tema.
+      fields: { nombre, motivo, startIso, comensales, zona, consultaEstado, tramite },
       missing,
       source: "ai",
     };
   } catch (err) {
     console.error("[appointment-intent] AI detect falló:", err);
-    return fallbackDetection(text);
+    return fallbackDetection(text, modo);
   }
 }
 
@@ -240,11 +343,13 @@ export async function tryAgendarFromText(opts: {
   customerNameFallback?: string;
   durationMin?: number;
   intentOverride?: AppointmentIntent; // si Carmen/Eva ya extrajeron campos, los inyectamos
+  /** Modo restaurante: extrae personas y zona, y no exige "motivo". */
+  modo?: ModoExtraccion;
 }): Promise<AgendarFromTextResult> {
   const tenantId = opts.tenantId || DEFAULT_TENANT_ID;
   const founderEmail = opts.founderEmail || process.env.FOUNDER_EMAIL || FOUNDER_EMAIL_FALLBACK;
 
-  const intent = opts.intentOverride ?? (await detectAppointmentIntent(opts.text));
+  const intent = opts.intentOverride ?? (await detectAppointmentIntent(opts.text, new Date(), opts.modo));
   if (!intent.wantsAppointment) return { kind: "no_intent" };
 
   // Aplica fallback de nombre si no se detectó pero nos lo pasaron
@@ -267,11 +372,17 @@ export async function tryAgendarFromText(opts: {
       userEmail: founderEmail,
       redirectUri: opts.redirectUri,
       nombre: intent.fields.nombre!,
-      motivo: intent.fields.motivo!,
+      // En restauración el motivo no se pide: se pone uno fijo para que la
+      // agenda y el evento de Google sigan teniendo texto, como el resto.
+      motivo: intent.fields.motivo || (opts.modo?.restaurante ? "Mesa" : intent.fields.motivo!),
       startIso: intent.fields.startIso!,
       durationMin: opts.durationMin ?? DEFAULT_DURATION_MIN,
       agenteOrigen: opts.agenteOrigen,
       customerPhone: opts.customerPhone,
+      // Van como opcionales: en los otros sectores llegan undefined y todo se
+      // comporta igual que antes.
+      comensales: intent.fields.comensales,
+      zona: intent.fields.zona,
     });
     if (res.ok) {
       return {
@@ -292,13 +403,45 @@ export async function tryAgendarFromText(opts: {
 // Helpers de mensaje (para que Pablo/Carmen/Eva respondan al cliente)
 // -----------------------------------------------------------------------------
 
-export function missingFieldsToQuestion(missing: AppointmentIntent["missing"]): string {
+export function missingFieldsToQuestion(
+  missing: AppointmentIntent["missing"],
+  modo?: ModoExtraccion,
+): string {
   if (missing.length === 0) return "";
   // Pregunta solo por UNO (el más prioritario) para no saturar.
+  if (modo?.restaurante) {
+    // En restauración se juntan día/hora y personas en UNA sola pregunta cuando
+    // faltan las dos: "¿para qué día y cuántos sois?" es como se pregunta por
+    // teléfono. Encadenar dos preguntas seguidas es lo que suena a interrogatorio.
+    const faltaHora = missing.includes("fecha_hora");
+    const faltanPersonas = missing.includes("personas");
+    if (faltaHora && faltanPersonas) return "¿Para qué día y hora, y cuántos sois?";
+    if (faltaHora) return "¿Qué día y a qué hora?";
+    if (faltanPersonas) return "¿Cuántos sois?";
+    if (missing.includes("nombre")) return "¿A nombre de quién la pongo?";
+    return "";
+  }
   if (missing.includes("fecha_hora")) return "¿Qué día y a qué hora te viene bien?";
   if (missing.includes("motivo")) return "¿Para qué tratamiento o servicio?";
   if (missing.includes("nombre")) return "¿A nombre de quién la pongo?";
   return "";
+}
+
+/**
+ * La pregunta de la zona, que va APARTE de `missing` porque nunca bloquea la
+ * reserva. Se hace una sola vez y solo si el cliente no ha dicho nada.
+ *
+ * Con ficha previa no se pregunta en frío: se propone lo de siempre, que es lo
+ * que hace un maître que te conoce.
+ */
+export function preguntaZona(
+  zonaYaDicha: string | undefined,
+  zonaHabitual?: "terraza" | "interior" | "indiferente",
+): string {
+  if (zonaYaDicha) return "";
+  if (zonaHabitual === "terraza") return "¿Como siempre, en terraza?";
+  if (zonaHabitual === "interior") return "¿Como siempre, en el interior?";
+  return "¿Prefieres terraza o interior?";
 }
 
 export function formatStartHumanES(iso: string): string {

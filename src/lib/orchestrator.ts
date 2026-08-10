@@ -67,6 +67,13 @@ export type ReservaInput = {
   customerPhone?: string;
   attendees?: string[];
   location?: string;
+  /**
+   * SOLO RESTAURACIÓN. Cuántos se sientan y dónde. Viajan hasta el
+   * `BookingRecord` y hasta los metadatos del evento del informe mensual. En los
+   * otros sectores llegan `undefined` y nada cambia.
+   */
+  comensales?: number;
+  zona?: "terraza" | "interior" | "indiferente";
   /** Solo para pruebas locales sin tokens de Google: simula la disponibilidad. */
   simulate?: boolean;
 };
@@ -206,6 +213,8 @@ export async function reservarSlot(input: ReservaInput): Promise<ReservaResult> 
         attendees: input.attendees,
         location: input.location,
         redirectUri: input.redirectUri,
+        comensales: input.comensales,
+        zona: input.zona,
       });
       if (!res.ok) {
         await logDecision(tenantId, "error", { ...baseLog, detail: res.detail });
@@ -247,6 +256,8 @@ export async function reservarSlot(input: ReservaInput): Promise<ReservaResult> 
           eventId: result.eventId,
           htmlLink: result.htmlLink,
           baseUrl,
+          comensales: input.comensales,
+          zona: input.zona,
         });
       }
     } catch (e) {

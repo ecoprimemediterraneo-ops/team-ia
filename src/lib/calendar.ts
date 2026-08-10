@@ -61,6 +61,13 @@ export type AgendarCitaInput = {
   redirectUri?: string;              // override para tests; default infiere de env
   customerPhone?: string;            // opcional, para incluir en la descripción
   durationMin?: number;              // si end no se pasa, este es el largo (default 30)
+  /**
+   * SOLO RESTAURACIÓN. Van a los metadatos del evento `appointment_set` para que
+   * el informe mensual pueda contar PERSONAS y no solo reservas. Si no llegan,
+   * el evento sale exactamente con la forma de siempre.
+   */
+  comensales?: number;
+  zona?: "terraza" | "interior" | "indiferente";
 };
 
 export type AgendarCitaResult =
@@ -383,6 +390,13 @@ export async function agendarCita(input: AgendarCitaInput): Promise<AgendarCitaR
         htmlLink: result.htmlLink,
         ...(input.customerPhone ? { customerPhone: input.customerPhone } : {}),
         ...(input.location ? { location: input.location } : {}),
+        // RESTAURACIÓN. Se añaden solo si vienen, con el operador de propagación
+        // condicional: sin ellos el objeto `meta` es idéntico al de siempre, así
+        // que ningún informe ni KPI de los otros cuatro sectores ve un cambio.
+        // `comensales` es lo que permite contar PERSONAS en el informe mensual,
+        // que es distinto de contar reservas: doce mesas de dos no son doce.
+        ...(input.comensales ? { comensales: input.comensales } : {}),
+        ...(input.zona ? { zona: input.zona } : {}),
       },
     });
     eventLogId = ev.id;
