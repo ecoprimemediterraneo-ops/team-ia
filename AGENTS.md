@@ -107,7 +107,7 @@ Required for full functionality (see `.env.local.example`):
 - `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` — persistent storage (optional in dev, falls back to local JSON)
 - `WHATSAPP_ACCESS_TOKEN`, `INSTAGRAM_ACCESS_TOKEN` — Meta Cloud API tokens (same System User EAA)
 - `WEBHOOK_VERIFY_TOKEN`, `INSTAGRAM_VERIFY_TOKEN` — webhook validation
-- `META_APP_SECRET` — firma de los webhooks de Meta. **Mientras esté vacía, Pablo y Marta aceptan cualquier POST** y solo avisan por consola; en cuanto se rellena, rechazan lo que no venga firmado (`comprobarFirmaMeta` en `src/lib/meta-firma.ts`).
+- `META_APP_SECRET` + `META_FIRMA_ESTRICTA` — firma de los webhooks de Meta (`src/lib/meta-firma.ts`). Sin secreto no se comprueba nada. **Con secreto se comprueba pero NO se rechaza** hasta poner `META_FIRMA_ESTRICTA=true`: en el despliegue de agosto de 2026 el secreto guardado era el de la app anterior y la comprobación recién puesta devolvió 401 a todo, dejando a Pablo mudo. Primero se mira el log (`FIRMA SIN COMPROBAR: firma que no cuadra`), y cuando cuadra, se enciende el rechazo.
 - `FACEBOOK_PAGE_ID` — required for Instagram DM sending
 - `AUTH_SECRET` — JWT signing key
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` — billing

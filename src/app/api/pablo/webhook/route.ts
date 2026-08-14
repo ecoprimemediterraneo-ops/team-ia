@@ -248,7 +248,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "firma" }, { status: 401 });
   }
   if (!firma.comprobada) {
-    console.warn(`[pablo/webhook] ${firma.motivo} — cualquiera con la URL puede simular un mensaje`);
+    console.warn(`[pablo/webhook] FIRMA SIN COMPROBAR: ${firma.motivo}`);
   }
 
   let body: WebhookPayload;
