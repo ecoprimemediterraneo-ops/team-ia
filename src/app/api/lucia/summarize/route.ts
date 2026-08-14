@@ -4,6 +4,8 @@ import { requireSession } from "@/lib/auth";
 import { fetchInbox, getRedirectUri } from "@/lib/gmail";
 import { anthropic } from "@/lib/claude";
 import { getUser } from "@/lib/store";
+import { contextoPanelODefecto } from "@/lib/panel-contexto";
+import { tieneFuncion } from "@/lib/sectores";
 
 export async function POST() {
   try {
@@ -23,10 +25,42 @@ export async function POST() {
       ? `Contexto del negocio: ${user.business.nombre} — ${user.business.sector}. Ofrece: ${user.business.ofrece}.`
       : "";
 
+    // GESTORÍA: el resumen no opina sobre urgencia ni sobre qué hacer.
+    //
+    // Quién es importante lo dice la lista de remitentes, no el modelo. Y una
+    // gestoría no puede tener a una IA diciendo plazos, obligaciones o
+    // consecuencias fiscales: eso es asesorar, lo firma un profesional y aquí
+    // se equivocaría con toda la seguridad del mundo. Lucía cuenta DE QUÉ VA
+    // cada correo y se calla el resto.
+    const ctx = await contextoPanelODefecto();
+    const sinInterpretar = tieneFuncion(ctx.sector, "clasificacionCorreo");
+
+    const systemGestoria = `Eres Lucía, la asistente de correo de una gestoría. Te dan los últimos 20 correos de la bandeja. ${businessCtx} Devuelve en español, formato markdown, un resumen de DE QUÉ VA cada cosa, agrupado así:
+
+## 🏛️ De organismos y administración
+Quién escribe y sobre qué asunto, en una línea por correo.
+
+## 👤 De clientes
+Quién escribe y qué pide o envía.
+
+## 🧾 De proveedores y otros
+Una línea por correo.
+
+## 📰 Promociones y boletines
+Solo el número total y 2-3 ejemplos.
+
+PROHIBIDO, sin excepciones:
+- NO digas qué hay que hacer, ni recomiendes acciones, ni priorices.
+- NO menciones plazos, fechas límite, vencimientos ni "urgente".
+- NO expliques obligaciones, consecuencias, sanciones ni nada fiscal o legal.
+- NO decidas tú qué correo es importante: eso lo marca la lista de remitentes del gestor, no tú.
+
+Si un correo parece exigir algo, describe lo que dice y punto: "Hacienda escribe sobre el modelo 303". El gestor decide. Sé conciso.`;
+
     const response = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 1500,
-      system: `Eres Lucía, asistente ejecutiva. Te dan los últimos 20 correos de la bandeja de entrada del jefe. ${businessCtx} Devuelve un análisis útil en español, formato markdown, con esta estructura exacta:
+      system: sinInterpretar ? systemGestoria : `Eres Lucía, asistente ejecutiva. Te dan los últimos 20 correos de la bandeja de entrada del jefe. ${businessCtx} Devuelve un análisis útil en español, formato markdown, con esta estructura exacta:
 
 ## 🔴 Urgente / responder hoy
 Lista numerada con remitente y por qué es urgente. Si no hay, escribe "Nada urgente".

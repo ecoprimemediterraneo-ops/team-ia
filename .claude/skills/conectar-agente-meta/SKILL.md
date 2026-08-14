@@ -71,6 +71,12 @@ Para un agente WhatsApp nuevo necesitas:
 | `WHATSAPP_ACCESS_TOKEN` | EAA del System User con scope `whatsapp_business_messaging` | Business Manager → System Users → Generar |
 | `WHATSAPP_BUSINESS_ACCOUNT_ID` | WABA ID | Meta → WhatsApp → API setup |
 
+> **NO TE SALTES ESTO AL CAMBIAR DE CUENTA.** Suscribir la app a la WABA es un
+> paso aparte de configurar el webhook, y no se hereda de la cuenta anterior:
+> `POST /<WABA>/subscribed_apps`. Sin él, la URL aparece verificada, los campos
+> suscritos, y al webhook no llega ni una petición.
+> Compruébalo con `node scripts/whatsapp-waba.mjs --estado`.
+
 Para Instagram Messaging:
 
 | Var | Qué es | Dónde sacarla |

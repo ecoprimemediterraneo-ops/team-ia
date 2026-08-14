@@ -86,6 +86,8 @@ export type Expediente = {
   tenantId: string;
   /** Teléfono del cliente: es la clave con la que pregunta por WhatsApp. */
   telefono: string;
+  /** Email, si se conoce. Decide el canal del aviso cuando no hay teléfono. */
+  email?: string;
   clienteNombre: string;
   tramite: TramiteId;
   estado: EstadoExpediente;

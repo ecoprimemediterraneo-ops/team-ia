@@ -6,6 +6,8 @@ import { getFeed } from "@/lib/feed";
 import { contextoPanelODefecto } from "@/lib/panel-contexto";
 import { calcularKpis } from "@/lib/kpis-sector";
 import PorQueEstePanel from "@/components/PorQueEstePanel";
+import AvisoCriticos from "@/components/gestoria/AvisoCriticos";
+import { tieneFuncion } from "@/lib/sectores";
 
 const cap = (t: string) => (t ? t[0].toUpperCase() + t.slice(1) : t);
 
@@ -72,6 +74,11 @@ export default async function DashboardHome() {
 
   return (
     <div className="space-y-6">
+      {/* Lo primero de la portada, por encima del banner: si hay una
+          notificación crítica sin abrir, es lo único que importa hoy. Solo en
+          gestoría, y solo cuando la hay. */}
+      {tieneFuncion(ctx.sector, "clasificacionCorreo") && <AvisoCriticos />}
+
       {/* Banner heroico con los 6 avatares */}
       <div className="relative card-hard overflow-hidden">
         <div className="brick absolute inset-0 opacity-30" />

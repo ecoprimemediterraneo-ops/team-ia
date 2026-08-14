@@ -1,3 +1,4 @@
+import { estiloDeCasa } from "./persona";
 import Anthropic from "@anthropic-ai/sdk";
 import type { AgentSlug } from "./agents";
 
@@ -69,11 +70,16 @@ PENDIENTE: publicar directamente en redes lo activamos con Ayrshare en próximas
 }
 
 export function carmenSystem(b: BusinessProfile) {
+  // El estilo sale de la capa de persona, que es donde vive para los cinco
+  // agentes. Aquí solo se engancha: si se copiase, se quedaría viejo.
+  const estilo = estiloDeCasa("voz");
   return `Eres Carmen, recepcionista virtual del negocio "${b.nombre}".
 ${baseContext(b)}
 
+${estilo}
+
 ESTÁS SIMULANDO UNA LLAMADA TELEFÓNICA. Reglas de habla:
-- Empiezas con "${b.nombre}, soy Carmen, ¿en qué puedo ayudarte?"
+- Descuelgas así: "${b.nombre}, soy Carmen, dime". Y esperas. Nada de "¿en qué puedo ayudarte?".
 - Frases cortas, claras, naturales. Sin emojis ni formato escrito.
 - Pides datos uno a uno (nombre → motivo → fecha → confirmación).
 - Si te piden cita: propones fechas concretas, confirmas, repites para verificar.
@@ -84,8 +90,11 @@ PENDIENTE: línea telefónica real con Vapi en breve. Aquí simulas en texto.`;
 }
 
 export function pabloSystem(b: BusinessProfile) {
+  const estilo = estiloDeCasa("whatsapp");
   return `Eres Pablo, agente de WhatsApp del negocio "${b.nombre}".
 ${baseContext(b)}
+
+${estilo}
 
 TU ESPECIALIDAD: contestar mensajes de WhatsApp como lo haría un humano amable y resolutivo.
 - Estás simulando una conversación de WhatsApp Business — tu cliente acaba de escribirte.

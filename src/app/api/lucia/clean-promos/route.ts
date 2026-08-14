@@ -3,10 +3,25 @@ import { headers } from "next/headers";
 import { requireSession } from "@/lib/auth";
 import { archiveMessages, fetchInbox, getRedirectUri } from "@/lib/gmail";
 import { anthropic } from "@/lib/claude";
+import { contextoPanelODefecto } from "@/lib/panel-contexto";
+import { tieneFuncion } from "@/lib/sectores";
 
 export async function POST() {
   try {
     const { email } = await requireSession();
+
+    // En gestoría esta acción no existe: archiva correos fuera de la bandeja y
+    // elige cuáles con un modelo que los lee. La promesa allí es la contraria
+    // —solo marcar y ordenar, sin esconder nada— y una promesa que solo vive en
+    // el botón no es una promesa: se corta también aquí.
+    const ctx = await contextoPanelODefecto();
+    if (tieneFuncion(ctx.sector, "clasificacionCorreo")) {
+      return NextResponse.json(
+        { error: "Aquí Lucía no archiva correos: solo los marca y los ordena." },
+        { status: 403 },
+      );
+    }
+
     const h = await headers();
     const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
     const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");

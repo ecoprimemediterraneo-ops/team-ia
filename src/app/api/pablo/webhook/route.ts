@@ -15,6 +15,7 @@
 // Doc Meta: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks
 
 import { NextResponse } from "next/server";
+import { comprobarFirmaMeta } from "@/lib/meta-firma";
 import { anthropic, MODELS } from "@/lib/claude";
 import { PABLO_SYSTEM } from "@/lib/pablo-prompt";
 import {
@@ -49,6 +50,7 @@ import { getBusinessByTenant } from "@/lib/booking";
 import { pasoRestauranteSinHueco } from "@/lib/restaurante-flujo";
 import { responderEstadoExpediente, anotarEnvioDeDocumentacion, diceQueEnvioDocumentacion } from "@/lib/gestoria-flujo";
 import { preguntaPorEstado } from "@/lib/gestoria";
+import { guardarAdjuntosWhatsApp, acuseDeRecibo, type AdjuntoWa } from "@/lib/gestoria-adjuntos";
 import { esIntencionCancelar, resolverCancelacion, textoCancelacionChat } from "@/lib/booking-cancel-intent";
 import {
   findEntryByProposalId,
@@ -212,7 +214,10 @@ type IncomingMsg = {
   id: string;
   type: string;
   text?: { body: string };
-  // Otros tipos (image, audio, etc.) los ignoramos por ahora
+  // Adjuntos. En GESTORÍA, una imagen o un PDF son una FACTURA y van al saco del
+  // cliente; el resto de tipos (audio, vídeo, sticker) se siguen ignorando.
+  image?: { id: string; mime_type?: string; caption?: string };
+  document?: { id: string; mime_type?: string; filename?: string; caption?: string };
 };
 
 type WebhookPayload = {
@@ -233,9 +238,22 @@ type WebhookPayload = {
 };
 
 export async function POST(req: Request) {
+  // El cuerpo se lee CRUDO porque la firma de Meta es el HMAC de estos bytes
+  // exactos: parsear y volver a serializar cambia espacios y orden, y entonces
+  // no cuadra nunca.
+  const crudo = await req.text();
+  const firma = comprobarFirmaMeta(crudo, req.headers.get("x-hub-signature-256"));
+  if (!firma.ok) {
+    console.warn("[pablo/webhook] POST rechazado:", firma.motivo);
+    return NextResponse.json({ ok: false, error: "firma" }, { status: 401 });
+  }
+  if (!firma.comprobada) {
+    console.warn(`[pablo/webhook] ${firma.motivo} — cualquiera con la URL puede simular un mensaje`);
+  }
+
   let body: WebhookPayload;
   try {
-    body = (await req.json()) as WebhookPayload;
+    body = JSON.parse(crudo) as WebhookPayload;
   } catch {
     return NextResponse.json({ ok: false, error: "JSON inválido" }, { status: 400 });
   }
@@ -275,6 +293,51 @@ export async function POST(req: Request) {
         const messages = value.messages ?? [];
         const contacts = value.contacts ?? [];
         for (const msg of messages) {
+          // === GESTORÍA: adjunto = FACTURA ===
+          // Va lo PRIMERO y termina en `continue`: una foto de un ticket no
+          // tiene que pasar por el clasificador Haiku ni por el flujo de agenda.
+          // Cualquiera puede mandarla, también el propio gestor desde su móvil,
+          // así que NO se filtra por remitente.
+          if (msg.type === "image" || msg.type === "document") {
+            try {
+              const t = await getTenant(tenantId);
+              if (t && resolverSector(t) === "gestoria") {
+                if (!(await claimMessageOnce(msg.id))) {
+                  console.log(`[pablo/webhook] adjunto duplicado ignorado: ${msg.id}`);
+                  continue;
+                }
+                // Un mensaje puede traer varios: se crea un registro por cada uno.
+                const adjuntos: AdjuntoWa[] = [];
+                if (msg.image) adjuntos.push({ id: msg.image.id, mime_type: msg.image.mime_type });
+                if (msg.document) {
+                  adjuntos.push({
+                    id: msg.document.id,
+                    mime_type: msg.document.mime_type,
+                    filename: msg.document.filename,
+                  });
+                }
+
+                const creadas = await guardarAdjuntosWhatsApp({
+                  tenantId, telefono: msg.from, adjuntos,
+                });
+                if (creadas > 0) {
+                  const acuse = acuseDeRecibo(creadas);
+                  await sendWhatsAppText(msg.from, acuse);
+                  await registrarIntercambio({
+                    tenantId, msgId: msg.id, from: msg.from,
+                    nombre: contacts.find((c) => c.wa_id === msg.from)?.profile?.name,
+                    entrante: `[adjunto] ${msg.document?.filename ?? msg.type}`,
+                    respuesta: acuse, rxTs: new Date().toISOString(), via: "gestoria_factura_recibida",
+                  });
+                  continue;
+                }
+                // Sin nada aprovechable (audio, vídeo, sticker): sigue el flujo normal.
+              }
+            } catch (err) {
+              console.error("[pablo/webhook] interceptor de adjuntos falló:", err);
+            }
+          }
+
           // Solo texto por ahora
           if (msg.type !== "text" || !msg.text?.body) {
             console.log(`[pablo/webhook] mensaje no-texto ignorado: ${msg.type}`);

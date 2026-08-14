@@ -2,6 +2,11 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
+type Nivel = "critico" | "importante";
+
+/** La marca la pone el servidor mirando SOLO el remitente. Ver lib/lucia-remitentes. */
+type Marca = { etiqueta: string; nivel: Nivel; patron: string };
+
 type InboxMessage = {
   id: string;
   threadId: string;
@@ -10,12 +15,13 @@ type InboxMessage = {
   snippet: string;
   date: string;
   unread: boolean;
+  marca?: Marca | null;
 };
 
 type State =
   | { kind: "loading" }
   | { kind: "disconnected" }
-  | { kind: "connected"; connectedEmail: string; messages: InboxMessage[] }
+  | { kind: "connected"; connectedEmail: string; messages: InboxMessage[]; marcado: boolean }
   | { kind: "error"; msg: string };
 
 type DraftEditor = {
@@ -27,6 +33,24 @@ type DraftEditor = {
   saving: boolean;
   saved: boolean;
 };
+
+/**
+ * Insignia del remitente. El crítico va en rojo y grita; el importante
+ * destaca sin gritar, que si todo es rojo no lo es nada.
+ */
+function Insignia({ marca }: { marca: Marca }) {
+  const critico = marca.nivel === "critico";
+  return (
+    <span
+      className={`inline-flex items-center gap-1 border-2 border-black px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider whitespace-nowrap ${
+        critico ? "bg-[color:var(--red)] text-white" : "bg-[color:var(--mustard)] text-black"
+      }`}
+      title={`Marcado porque el remitente casa con "${marca.patron}" en tu lista de correo importante`}
+    >
+      {critico ? "🔴" : "🟡"} {marca.etiqueta}
+    </span>
+  );
+}
 
 export default function LuciaTools({ initialFlash }: { initialFlash?: { ok?: string; error?: string } }) {
   const [state, setState] = useState<State>({ kind: "loading" });
@@ -50,7 +74,12 @@ export default function LuciaTools({ initialFlash }: { initialFlash?: { ok?: str
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error");
       if (!data.connected) setState({ kind: "disconnected" });
-      else setState({ kind: "connected", connectedEmail: data.connectedEmail, messages: data.messages });
+      else setState({
+        kind: "connected",
+        connectedEmail: data.connectedEmail,
+        messages: data.messages,
+        marcado: !!data.marcado,
+      });
     } catch (e) {
       setState({ kind: "error", msg: e instanceof Error ? e.message : "Error" });
     }
@@ -252,6 +281,23 @@ export default function LuciaTools({ initialFlash }: { initialFlash?: { ok?: str
           </div>
         )}
 
+        {state.kind === "connected" && state.marcado && (
+          <div className="mb-4 border-2 border-black bg-[color:var(--cream)] p-3 text-xs flex items-start gap-2 flex-wrap">
+            <span className="text-base leading-none">📌</span>
+            <p className="flex-1 min-w-[14rem] leading-snug">
+              Los correos de <strong>Hacienda, Seguridad Social, juzgados y demás remitentes de tu lista</strong> salen
+              los primeros. Lucía no ha borrado ni escondido nada: están tus {state.messages.length} correos, y los que
+              no están en la lista siguen abajo, normales.
+            </p>
+            <a
+              href="/dashboard/correo-importante"
+              className="font-mono uppercase tracking-widest border-2 border-black px-2 py-1 hover:bg-black hover:text-white whitespace-nowrap"
+            >
+              Editar la lista
+            </a>
+          </div>
+        )}
+
         {state.kind === "connected" && (
           <>
             {summarizing && (
@@ -353,13 +399,20 @@ export default function LuciaTools({ initialFlash }: { initialFlash?: { ok?: str
                   className={`border-2 border-black px-2 py-1 font-bold tracking-wider ${filter === "no_leidos" ? "bg-black text-white" : "hover:bg-[color:var(--mustard)]"}`}
                 >NO LEÍDOS ({state.messages.filter((m) => m.unread).length})</button>
               </div>
-              <button
-                onClick={cleanPromos}
-                disabled={cleaning}
-                className="text-[10px] font-bold tracking-wider border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 hover:bg-[color:var(--red)] hover:text-white disabled:opacity-50 break-words text-center max-w-[180px] leading-tight"
-              >
-                {cleaning ? "LIMPIANDO…" : "🧹 LIMPIAR PROMOS"}
-              </button>
+              {/* LIMPIAR PROMOS saca correos de la bandeja —los archiva en una
+                  etiqueta— y quién se va lo decide un modelo leyendo el asunto.
+                  En gestoría eso está prohibido: aquí Lucía marca y ordena, y
+                  no esconde nada. El botón no se enseña, y la ruta también lo
+                  rechaza por su cuenta. */}
+              {!state.marcado && (
+                <button
+                  onClick={cleanPromos}
+                  disabled={cleaning}
+                  className="text-[10px] font-bold tracking-wider border-2 border-[color:var(--red)] text-[color:var(--red)] px-2 py-1 hover:bg-[color:var(--red)] hover:text-white disabled:opacity-50 break-words text-center max-w-[180px] leading-tight"
+                >
+                  {cleaning ? "LIMPIANDO…" : "🧹 LIMPIAR PROMOS"}
+                </button>
+              )}
             </div>
 
             <ul className="divide-y divide-black/10">
@@ -368,16 +421,30 @@ export default function LuciaTools({ initialFlash }: { initialFlash?: { ok?: str
               )}
               {state.messages.filter((m) => filter === "todos" || m.unread).map((m) => {
                 const exp = expanded[m.id];
+                const critico = m.marca?.nivel === "critico";
+                const importante = m.marca?.nivel === "importante";
                 return (
-                <li key={m.id} className={`py-3 ${m.unread ? "font-bold" : ""}`}>
+                <li
+                  key={m.id}
+                  className={`py-3 ${m.unread ? "font-bold" : ""} ${
+                    critico
+                      ? "border-l-[6px] border-[color:var(--red)] bg-red-50 pl-3"
+                      : importante
+                        ? "border-l-[6px] border-black bg-[color:var(--mustard)]/25 pl-3"
+                        : ""
+                  }`}
+                >
                   <div className="flex items-start gap-3">
                     {m.unread && <span className="text-[color:var(--red)] mt-1">●</span>}
                     <div className="flex-1 min-w-0">
                       <button onClick={() => toggleExpand(m.id)} className="text-left w-full">
                         <div className="flex items-baseline justify-between gap-2 mb-1">
-                          <span className="text-sm truncate">{m.from}</span>
+                          <span className={`text-sm truncate ${critico ? "text-[color:var(--red)]" : ""}`}>{m.from}</span>
                           <span className="text-xs font-mono text-black/50 shrink-0">{shortDate(m.date)}</span>
                         </div>
+                        {m.marca && (
+                          <div className="mb-1"><Insignia marca={m.marca} /></div>
+                        )}
                         <p className="text-sm truncate">{m.subject || "(sin asunto)"}</p>
                         {!exp && (
                           <p className="text-xs text-black/60 mt-1 line-clamp-2 font-normal">{m.snippet}</p>

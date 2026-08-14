@@ -207,7 +207,58 @@ async function readAll(): Promise<TenantMap> {
     data = { ...seedTenants(), ...(data ?? {}) };
     await writeAll(data);
   }
+
+  const reconciliado = reconciliarCuentaPropia(data);
+  if (reconciliado) {
+    data = reconciliado;
+    await writeAll(data);
+  }
   return data;
+}
+
+/**
+ * Devuelve el mapa corregido si el tenant PROPIO tenía identificadores de Meta
+ * distintos de los del entorno; null si no había nada que tocar.
+ *
+ * EL FALLO QUE ARREGLA: `seedTenants()` copia `WHATSAPP_PHONE_NUMBER_ID` e
+ * `INSTAGRAM_USER_ID` la ÚNICA vez que se crea el registro. A partir de ahí el
+ * dato queda congelado: al cambiar de número —agosto 2026, del número de prueba
+ * al de empresa— la variable de Vercel apuntaba al nuevo y el tenant guardado
+ * seguía con el viejo. No se notaba porque `resolveTenantFromMeta` no encontraba
+ * el id y caía al tenant por defecto, que es este mismo. El dato era mentira, y
+ * con un segundo cliente con número propio los mensajes se habrían enrutado al
+ * tenant equivocado.
+ *
+ * SE ELIGE RECONCILIAR AL LEER, y no dejar de guardarlo para leerlo siempre del
+ * entorno, porque el campo tiene que seguir existiendo en el registro: es la
+ * clave con la que se busca al tenant en `resolveTenantFromMeta`, y los OTROS
+ * tenants —clientes con su propio número— no tienen variable de entorno donde
+ * mirar. Solo se toca la cuenta propia, solo cuando el entorno dice algo
+ * distinto, y queda escrito en el log.
+ */
+function reconciliarCuentaPropia(data: TenantMap): TenantMap | null {
+  const propio = data[DEFAULT_TENANT_ID];
+  if (!propio) return null;
+
+  const delEntorno = {
+    whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    instagramUserId: process.env.INSTAGRAM_USER_ID,
+  };
+
+  const cambios: Partial<Tenant> = {};
+  for (const [campo, valor] of Object.entries(delEntorno) as Array<[keyof Tenant, string | undefined]>) {
+    // Una variable vacía NO borra lo que hay guardado: en un entorno donde no
+    // esté puesta —un preview, una consola local— se dejaría el tenant mudo.
+    if (!valor) continue;
+    if (propio[campo] === valor) continue;
+    (cambios as Record<string, string>)[campo] = valor;
+    console.warn(
+      `[tenants] ${DEFAULT_TENANT_ID}.${campo}: guardado "${propio[campo] ?? "(vacío)"}" ≠ entorno "${valor}". Se actualiza al del entorno.`,
+    );
+  }
+
+  if (!Object.keys(cambios).length) return null;
+  return { ...data, [DEFAULT_TENANT_ID]: { ...propio, ...cambios } };
 }
 
 async function writeAll(map: TenantMap): Promise<void> {
@@ -431,5 +482,25 @@ export async function resolveTenantFromMeta(input: {
       return t.id;
     }
   }
+
+  // Caer al tenant por defecto EN SILENCIO es lo que escondió durante semanas
+  // que el número guardado era el viejo: todo funcionaba porque el tenant por
+  // defecto resultaba ser el bueno. Con un segundo cliente con número propio,
+  // ese silencio habría metido sus mensajes en la cuenta de otro. Si llega un
+  // identificador que no conocemos, se dice en el log y se dice fuerte.
+  const quien =
+    input.whatsappPhoneNumberId
+      ? `phone_number_id "${input.whatsappPhoneNumberId}"`
+      : input.instagramUserId
+        ? `instagram_user_id "${input.instagramUserId}"`
+        : "una petición sin identificador de Meta";
+  const conocidos = Object.values(all)
+    .map((t) => `${t.id}:${t.whatsappPhoneNumberId || t.instagramUserId || "—"}`)
+    .join(", ");
+  console.warn(
+    `[tenants] SIN DUEÑO: llegó ${quien} y no es de ningún tenant. ` +
+      `Se atiende como "${DEFAULT_TENANT_ID}" (el de por defecto), que puede NO ser el suyo. ` +
+      `Conocidos: ${conocidos}`,
+  );
   return DEFAULT_TENANT_ID;
 }

@@ -60,8 +60,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <span className="text-2xl">📅</span>
             <span className="flex-1 min-w-0">
               {/* Se llamaba "AGENDA": no se identificaba como el módulo de reservas online
-                  y no había forma de llegar a /dashboard/reservas salvo tecleando la URL. */}
-              <span className="block font-stencil text-xl leading-none">{ctx.perfil.id === "gestoria" ? "EXPEDIENTES" : "RESERVAS"}</span>
+                  y no había forma de llegar a /dashboard/reservas salvo tecleando la URL.
+                  Después se le puso "EXPEDIENTES" en gestoría y quedaron DOS entradas
+                  seguidas con el mismo rótulo: esta —agenda, clientes, compartir e
+                  informes— y la de abajo, que es la de verdad (estado, documentación,
+                  vencimientos). Cambia SOLO el rótulo: la ruta, el icono y quién la ve
+                  siguen igual. */}
+              <span className="block font-stencil text-xl leading-none">{ctx.perfil.id === "gestoria" ? "CLIENTES" : "RESERVAS"}</span>
               {/* Mismo orden que las pestañas de ReservasPanel: informes al final. */}
               <span className="block text-[10px] uppercase tracking-widest text-black/70">Agenda · {v.clientePlural} · compartir · informes mensuales</span>
             </span>
@@ -94,6 +99,39 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 <span className="block font-stencil text-xl leading-none">EXPEDIENTES</span>
                 <span className="block text-[10px] uppercase tracking-widest text-black/70">
                   Estado · documentación · vencimientos
+                </span>
+              </span>
+            </a>
+          )}
+          {/* FACTURAS: solo en gestoría. Es el saco del cliente y la conciliación
+              contra el banco, que es donde se ve qué salió sin justificar. */}
+          {tieneFuncion(ctx.sector, "estadoExpediente") && (
+            <a
+              href="/dashboard/facturas"
+              className="card-hard flex items-center gap-3 p-3 mb-3 hover:-translate-y-0.5 transition bg-white"
+            >
+              <span className="text-2xl">🧾</span>
+              <span className="flex-1 min-w-0">
+                <span className="block font-stencil text-xl leading-none">FACTURAS</span>
+                <span className="block text-[10px] uppercase tracking-widest text-black/70">
+                  Saco · banco · conciliación
+                </span>
+              </span>
+            </a>
+          )}
+          {/* CORREO IMPORTANTE: solo en gestoría. La lista de remitentes que
+              hace que una notificación de Hacienda no se pierda entre 200
+              correos. */}
+          {tieneFuncion(ctx.sector, "clasificacionCorreo") && (
+            <a
+              href="/dashboard/correo-importante"
+              className="card-hard flex items-center gap-3 p-3 mb-3 hover:-translate-y-0.5 transition bg-white"
+            >
+              <span className="text-2xl">🔴</span>
+              <span className="flex-1 min-w-0">
+                <span className="block font-stencil text-xl leading-none">CORREO IMPORTANTE</span>
+                <span className="block text-[10px] uppercase tracking-widest text-black/70">
+                  Hacienda · Seguridad Social · juzgados
                 </span>
               </span>
             </a>

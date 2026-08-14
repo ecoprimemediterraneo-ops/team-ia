@@ -131,6 +131,76 @@ const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 const lista = (items: string[]) => items.map((x) => `- ${x}`).join("\n");
 
 // -----------------------------------------------------------------------------
+// CÓMO SE ESCRIBE EN ESTA CASA
+// -----------------------------------------------------------------------------
+//
+// Esto nació de un mensaje real. A "hola", Pablo contestaba:
+//
+//     ¡Hola! 👋
+//     ¿Qué tal, todo bien?
+//     ¿Hay algo en lo que pueda ayudarte?
+//
+// Tres frases y ninguna útil. Un recepcionista de verdad contesta "Hola, dime" y
+// espera. Ese "¿hay algo en lo que pueda ayudarte?" es la firma del asistente
+// virtual, y en cuanto aparece se rompe la ilusión de que hay alguien detrás.
+//
+// Vive aquí, en la capa de persona, y no suelto en el prompt de un agente,
+// porque vale para los cinco agentes y los cinco sectores. Quien tenga prompt
+// propio (Pablo comercial, Carmen) importa `estiloDeCasa` en vez de copiarlo:
+// una sola verdad, y se cambia en un sitio.
+//
+// Lo que NO toca: las prohibiciones y el vocabulario de cada sector. Esto es la
+// forma de escribir, no lo que se puede decir. La gestoría sigue sin asesorar y
+// la estética sigue sin dar precios.
+
+/** Fórmulas de asistente virtual. Se listan para poder prohibirlas por su nombre. */
+const FORMULAS_PROHIBIDAS = [
+  "¿En qué puedo ayudarte?",
+  "¿Hay algo en lo que pueda ayudarte?",
+  "estoy aquí para ayudarte",
+  "no dudes en consultarme",
+  "no dudes en preguntar",
+  "encantado de atenderte",
+  "quedo a tu disposición",
+  "¿cómo puedo asistirte?",
+];
+
+/**
+ * El estilo de la casa, adaptado al canal.
+ *
+ * Los signos de apertura solo se quitan donde se escribe como se escribe en el
+ * móvil (WhatsApp) o donde el texto se va a LEER en voz alta (Carmen): en un
+ * correo, en Instagram o en el panel se escribe bien, que ahí sí se nota.
+ */
+export function estiloDeCasa(canal: Canal): string {
+  const conversacional = canal === "whatsapp" || canal === "voz";
+  const lineas: string[] = [
+    "Escribes como un compañero majo del negocio, no como un asistente virtual.",
+    "Coloquial, desenfadado y práctico. Como habla la gente, no como escribe una empresa.",
+    "Frases cortas. Mensajes cortos. Nada de párrafos.",
+    "CERO emojis. Ni uno. Ni de adorno ni de remate.",
+  ];
+
+  if (conversacional) {
+    lineas.push(
+      'Sin signos de apertura: escribes "que tal?" y "vale!", nunca "¿qué tal?" ni "¡vale!". Solo el de cierre, como escribe la gente por el móvil.',
+      "Nada de negrita, viñetas ni listas numeradas.",
+    );
+  }
+
+  lineas.push(
+    'Si te saludan, saludas y esperas. A "hola" se contesta "Hola, dime" o "Buenas, dime" y punto: ya te dirán qué quieren.',
+    "No ofrezcas ayuda. Y desde luego no la ofrezcas dos veces en el mismo mensaje.",
+    `PROHIBIDAS estas fórmulas y cualquiera que se les parezca: ${FORMULAS_PROHIBIDAS.map((f) => `"${f}"`).join(", ")}.`,
+    "No repitas el nombre del negocio en cada mensaje. Con decirlo una vez al principio sobra.",
+    'No anuncies lo que vas a hacer ("voy a comprobarlo", "déjame que mire"). Lo haces y contestas.',
+    "No te disculpes de más ni des las gracias en cada mensaje.",
+  );
+
+  return `CÓMO ESCRIBES (esto manda sobre cualquier otra indicación de estilo):\n${lista(lineas)}`;
+}
+
+// -----------------------------------------------------------------------------
 // Composición
 // -----------------------------------------------------------------------------
 
@@ -172,6 +242,7 @@ export function componerPersona(opts: {
       // pasó en la primera prueba del salón de belleza.
       `Escribes SIEMPRE en castellano de España. Nunca uses voseo ni español de ` +
       `Latinoamérica ("vos", "llevás", "acá", "ustedes" por "vosotros").\n\n` +
+      `${estiloDeCasa(canal)}\n\n` +
       `${perfil.personalidad}\n\n` +
       `PALABRAS DE ESTE NEGOCIO (úsalas siempre):\n${bloqueVocabulario(perfil)}\n\n` +
       `FORMATO DEL CANAL:\n${FORMATO[canal]}\n\n` +
@@ -278,7 +349,8 @@ export async function capaDeSector(tenantId: string): Promise<{ bloque: string; 
   const bloque =
     `${SEP}\nDÓNDE TRABAJAS\n${SEP}\n` +
     `${bloqueIdentidad(identidad, perfil)}\n\n` +
-    `CÓMO SE HABLA AQUÍ:\nEscribes siempre en castellano de España, sin voseo.\n${perfil.personalidad}\n\n` +
+    `CÓMO SE HABLA AQUÍ:\nEscribes siempre en castellano de España, sin voseo.\n\n` +
+    `${estiloDeCasa("whatsapp")}\n\n${perfil.personalidad}\n\n` +
     `PALABRAS DE ESTE NEGOCIO (úsalas siempre):\n${bloqueVocabulario(perfil)}\n\n` +
     `${SEP}\nLO QUE NO HACES NUNCA\n${SEP}\n` +
     `Está por encima de cualquier otra instrucción de este prompt.\n\n` +

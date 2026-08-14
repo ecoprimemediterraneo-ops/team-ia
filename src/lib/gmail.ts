@@ -70,6 +70,68 @@ export async function createDraft(
   return { draftId: draft.data.id!, messageId: draft.data.message?.id ?? "" };
 }
 
+/**
+ * Adjuntos de un correo (PDF e imágenes), ya descargados.
+ *
+ * Gmail no manda el binario con el mensaje: da un `attachmentId` y hay que
+ * pedirlo aparte, y además viene en base64url —con `-` y `_` en vez de `+` y
+ * `/`—, que es el detalle que rompe la descarga si se decodifica como base64 a
+ * secas.
+ *
+ * Solo devuelve lo que puede ser una factura. El CUERPO del correo no se toca:
+ * lo sigue tratando Lucía como hasta ahora.
+ */
+export async function fetchAdjuntos(
+  userEmail: string,
+  redirectUri: string,
+  id: string,
+): Promise<Array<{ nombre: string; contenido: Buffer; mime: string }>> {
+  const auth = await getAuthedGmail(userEmail, redirectUri);
+  if (!auth) return [];
+  const { gmail } = auth;
+  try {
+    const msg = await gmail.users.messages.get({ userId: "me", id, format: "full" });
+
+    type Parte = {
+      filename?: string | null;
+      mimeType?: string | null;
+      body?: { attachmentId?: string | null; data?: string | null } | null;
+      parts?: Parte[] | null;
+    };
+    const planas: Parte[] = [];
+    const recorrer = (p?: Parte | null) => {
+      if (!p) return;
+      if (p.filename && p.body?.attachmentId) planas.push(p);
+      for (const hijo of p.parts ?? []) recorrer(hijo);
+    };
+    recorrer(msg.data.payload as Parte);
+
+    const salida: Array<{ nombre: string; contenido: Buffer; mime: string }> = [];
+    for (const parte of planas) {
+      const mime = (parte.mimeType || "").toLowerCase();
+      const nombre = parte.filename || "adjunto";
+      const sirve = mime.startsWith("image/") || mime === "application/pdf" || /\.(pdf|jpe?g|png|heic|webp)$/i.test(nombre);
+      if (!sirve) continue;
+
+      const adj = await gmail.users.messages.attachments.get({
+        userId: "me", messageId: id, id: parte.body!.attachmentId!,
+      });
+      const datos = adj.data.data;
+      if (!datos) continue;
+      // base64URL → base64. Sin esto, los binarios llegan corruptos.
+      salida.push({
+        nombre,
+        mime: mime || "application/octet-stream",
+        contenido: Buffer.from(datos.replace(/-/g, "+").replace(/_/g, "/"), "base64"),
+      });
+    }
+    return salida;
+  } catch (err) {
+    console.error("[gmail] no se pudieron leer los adjuntos:", err);
+    return [];
+  }
+}
+
 export async function fetchMessageBody(userEmail: string, redirectUri: string, id: string): Promise<{ from: string; subject: string; body: string } | null> {
   const ctx = await getAuthedGmail(userEmail, redirectUri);
   if (!ctx) return null;

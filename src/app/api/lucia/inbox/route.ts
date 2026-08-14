@@ -1,7 +1,20 @@
+// La bandeja que lee Lucía.
+//
+// En gestoría, además, cada correo sale MARCADO si su remitente está en la
+// lista de importantes del tenant, y la lista sale ordenada: críticos arriba,
+// importantes después, el resto detrás.
+//
+// Lo que NO hace, y no debe hacer nunca: quitar correos. Se devuelven los
+// mismos que devuelve Gmail, ni uno menos. Un correo sin marca aparece normal,
+// no escondido.
+
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { requireSession } from "@/lib/auth";
 import { fetchInbox, getRedirectUri } from "@/lib/gmail";
+import { contextoPanelODefecto } from "@/lib/panel-contexto";
+import { tieneFuncion } from "@/lib/sectores";
+import { listarRemitentes, clasificarRemitente, ordenarPorAviso } from "@/lib/lucia-remitentes";
 
 export async function GET() {
   try {
@@ -11,7 +24,26 @@ export async function GET() {
     const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
     const result = await fetchInbox(email, getRedirectUri(host, proto), 20);
     if (!result) return NextResponse.json({ connected: false }, { status: 200 });
-    return NextResponse.json({ connected: true, ...result });
+
+    // El marcado es solo del sector que lo tiene encendido. En una peluquería
+    // la bandeja se queda exactamente como estaba.
+    const ctx = await contextoPanelODefecto();
+    if (!tieneFuncion(ctx.sector, "clasificacionCorreo")) {
+      return NextResponse.json({ connected: true, marcado: false, ...result });
+    }
+
+    const lista = await listarRemitentes(ctx.tenantId);
+    const marcados = result.messages.map((m) => ({
+      ...m,
+      marca: clasificarRemitente(m.from, lista),
+    }));
+
+    return NextResponse.json({
+      connected: true,
+      marcado: true,
+      connectedEmail: result.connectedEmail,
+      messages: ordenarPorAviso(marcados),
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
     return NextResponse.json({ error: msg }, { status: 500 });

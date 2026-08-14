@@ -21,6 +21,7 @@
 // Doc Meta: https://developers.facebook.com/docs/messenger-platform/instagram/webhook
 
 import { NextResponse } from "next/server";
+import { comprobarFirmaMeta } from "@/lib/meta-firma";
 import { anthropic, MODELS } from "@/lib/claude";
 import { martaPrompt } from "@/lib/marta-prompt";
 import {
@@ -106,9 +107,22 @@ type WebhookPayload = {
 };
 
 export async function POST(req: Request) {
+  // El cuerpo se lee CRUDO porque la firma de Meta es el HMAC de estos bytes
+  // exactos: parsear y volver a serializar cambia espacios y orden, y entonces
+  // no cuadra nunca.
+  const crudo = await req.text();
+  const firma = comprobarFirmaMeta(crudo, req.headers.get("x-hub-signature-256"));
+  if (!firma.ok) {
+    console.warn("[marta/webhook] POST rechazado:", firma.motivo);
+    return NextResponse.json({ ok: false, error: "firma" }, { status: 401 });
+  }
+  if (!firma.comprobada) {
+    console.warn(`[marta/webhook] ${firma.motivo} — cualquiera con la URL puede simular un mensaje`);
+  }
+
   let body: WebhookPayload;
   try {
-    body = (await req.json()) as WebhookPayload;
+    body = JSON.parse(crudo) as WebhookPayload;
   } catch {
     return NextResponse.json({ ok: false, error: "JSON inválido" }, { status: 400 });
   }
