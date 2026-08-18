@@ -61,7 +61,13 @@ export function comprobarFirmaMeta(cuerpoCrudo: string, cabecera: string | null)
   const b = Buffer.from(esperado, "hex");
   // Comparación en tiempo constante: comparar con === filtra el secreto poco a
   // poco a base de medir cuánto tarda en fallar.
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return fallo("firma que no cuadra");
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+    // Los ocho primeros hex de cada uno. No es el secreto ni permite deducirlo,
+    // y es la diferencia entre "no cuadra" —que no dice nada— y saber si Meta
+    // firma con otro secreto o si el cuerpo ha llegado tocado. Sin esto, la
+    // única salida era desplegar a ciegas y volver a mirar.
+    return fallo(`firma que no cuadra (recibida ${recibido.slice(0, 8)}…, esperada ${esperado.slice(0, 8)}…)`);
+  }
 
   return { ok: true, comprobada: true };
 }

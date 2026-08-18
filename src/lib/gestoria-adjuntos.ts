@@ -12,12 +12,31 @@ import "server-only";
 import { crearFactura, tipoDeFichero, type OrigenFactura } from "./gestoria-facturas";
 import { clienteIdDeTelefono, listarClientes } from "./gestoria-clientes";
 
-const GRAPH = "https://graph.facebook.com/v21.0";
+/**
+ * Graph de Meta. `META_GRAPH_URL` permite apuntar a otro sitio para poder probar
+ * el camino ENTERO —webhook, descarga, alta de la factura, bandeja— sin
+ * depender de que Meta tenga un medio real esperando. Sin eso, la única forma de
+ * saber si esto funciona es mandar una foto de verdad y cruzar los dedos.
+ *
+ * **Se ignora en Vercel a propósito.** En producción siempre es el Graph de
+ * verdad, pase lo que pase en las variables de entorno: una variable capaz de
+ * redirigir llamadas que llevan el token dentro es un agujero, y aquí no puede
+ * usarse ni por error.
+ */
+const GRAPH = (!process.env.VERCEL && process.env.META_GRAPH_URL) || "https://graph.facebook.com/v21.0";
 
 function tokenMeta(): string | undefined {
-  return process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_ACCESS_TOKEN.length > 0
-    ? process.env.WHATSAPP_ACCESS_TOKEN
-    : process.env.INSTAGRAM_ACCESS_TOKEN;
+  const real =
+    process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_ACCESS_TOKEN.length > 0
+      ? process.env.WHATSAPP_ACCESS_TOKEN
+      : process.env.INSTAGRAM_ACCESS_TOKEN;
+  if (real) return real;
+  // Contra el Graph de mentira de la prueba local no hay token que valga ni
+  // hace falta. Sin esto, la prueba de punta a punta se paraba en la descarga y
+  // había que meter un token de verdad en la máquina para probar algo que no
+  // llega a Meta. Las dos condiciones juntas no pueden darse en producción.
+  if (!process.env.VERCEL && process.env.META_GRAPH_URL) return "prueba-local";
+  return undefined;
 }
 
 export type AdjuntoWa = { id: string; mime_type?: string; filename?: string };

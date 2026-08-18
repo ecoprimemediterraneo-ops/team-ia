@@ -129,6 +129,78 @@ Cuando llega un `phone_number_id` que no es de ningún tenant, el log lo grita (
 
 Diagnóstico y prueba de envío sin exponer el token: `node scripts/whatsapp-prueba.mjs --estado` y `node scripts/whatsapp-prueba.mjs <movil>`.
 
+### Facturas por WhatsApp: a qué gestoría van
+
+**El camino que sostiene todo el módulo**: el cliente manda la foto de una
+factura y sale en la bandeja del gestor. Nunca se había ejecutado entero hasta
+el 18/08/2026. El webhook devolvía 200 y ahí se acababa lo que se sabía — un 200
+en un webhook de Meta solo significa que no ha explotado.
+
+**Lo que fallaba.** El interceptor de adjuntos solo entra si el tenant que
+resuelve el número es del sector `gestoria`. El número de AI-Team resuelve a
+`tenant_aiteam`, que no lo es, así que la foto se caía a la rama
+"mensaje no-texto ignorado" y desaparecía **sin decir nada y sin contestar al
+cliente**. Ahora esa rama grita `[pablo/webhook] ADJUNTO NO GUARDADO: … no es
+gestoría` con el tenant y el sector.
+
+**Cómo se enruta de verdad: un número por gestoría.** Cada gestoría con su
+número de WhatsApp dado de alta en Meta y su `whatsappPhoneNumberId` en el
+tenant. Se descartó el número compartido enrutando por remitente, y no por
+comodidad:
+
+- El caso que importa es el cliente que manda su primera foto ANTES de estar
+  dado de alta. Por remitente no hay forma de saber de qué gestoría es — y ese
+  es justo el caso para el que existe la bandeja de "sin asignar".
+- Un negocio puede ser cliente de dos gestorías: el mismo remitente apuntaría a
+  dos cuentas.
+- En Meta la calidad, la ventana de 24 h y las plantillas van POR NÚMERO.
+  Compartir número es compartir reputación.
+
+**El desvío** (`src/lib/gestoria-desvio.ts`) cubre los días entre que entra una
+gestoría y tiene su número: los ADJUNTOS que llegan a un número van a la cuenta
+de esa gestoría. Solo los adjuntos — el texto sigue yendo a Pablo con el tenant
+de siempre, así que la cuenta comercial no se toca.
+
+| Ruta | Qué hace |
+|---|---|
+| `/api/admin/gestoria-desvio` | Estado y lista de gestorías |
+| `…?tenant=<id>` | Enciende el desvío hacia esa gestoría |
+| `…?apagar=1` | Lo quita |
+
+**Los audios.** Pablo no los transcribe. Antes se callaba, que por fuera se ve
+igual que estar roto: el cliente ve el "visto" y ninguna respuesta. Ahora
+contesta corto y con la verdad, distinto en gestoría (pide la foto) que en el
+resto.
+
+**Prueba de punta a punta, sin depender de Meta:**
+
+```bash
+node scripts/probar-factura-whatsapp.mjs --tenant tenant_demo_gestoria
+```
+
+Levanta un Graph de mentira en el 4545, manda al webhook local un mensaje de
+imagen con la forma exacta de Meta y comprueba que la factura acaba en la
+bandeja, sin asignar, sin duplicar en el reintento. Necesita el servidor de
+desarrollo levantado con `META_GRAPH_URL=http://127.0.0.1:4545` (ya está en
+`.env.development.local`). **Esa variable se ignora en Vercel a propósito**: una
+variable capaz de redirigir llamadas que llevan el token dentro no puede existir
+en producción.
+
+### "FIRMA SIN COMPROBAR": los tres motivos
+
+El mismo mensaje sale por tres causas que desde fuera se ven igual: no hay
+`META_APP_SECRET`; la petición llegó sin cabecera de firma (un `curl` de prueba
+deja exactamente esa línea); o el secreto no es el que usa Meta. El tercero
+engaña, porque **las variables de Vercel se congelan en el despliegue**: rotar
+el secreto y actualizarlo sin volver a desplegar deja el viejo corriendo
+mientras el panel enseña el nuevo.
+
+`GET /api/admin/meta-firma` (founder-only, solo lee) no pregunta si la variable
+está: le pregunta a Meta si ese secreto sirve, usando `APP_ID|APP_SECRET` como
+token de aplicación. Y el log de firma que no cuadra ahora lleva los ocho
+primeros hex de la recibida y la esperada, que no revelan nada y distinguen
+"otro secreto" de "cuerpo tocado".
+
 ### Instagram Business Login: el único sitio de donde salen los permisos business_*
 
 **El token del System User no vale para esto, por mucho que parezca que sí.**

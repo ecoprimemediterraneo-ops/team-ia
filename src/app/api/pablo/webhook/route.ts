@@ -51,6 +51,7 @@ import { pasoRestauranteSinHueco } from "@/lib/restaurante-flujo";
 import { responderEstadoExpediente, anotarEnvioDeDocumentacion, diceQueEnvioDocumentacion } from "@/lib/gestoria-flujo";
 import { preguntaPorEstado } from "@/lib/gestoria";
 import { guardarAdjuntosWhatsApp, acuseDeRecibo, type AdjuntoWa } from "@/lib/gestoria-adjuntos";
+import { destinoDeAdjunto } from "@/lib/gestoria-desvio";
 import { esIntencionCancelar, resolverCancelacion, textoCancelacionChat } from "@/lib/booking-cancel-intent";
 import {
   findEntryByProposalId,
@@ -218,6 +219,9 @@ type IncomingMsg = {
   // cliente; el resto de tipos (audio, vídeo, sticker) se siguen ignorando.
   image?: { id: string; mime_type?: string; caption?: string };
   document?: { id: string; mime_type?: string; filename?: string; caption?: string };
+  // Las notas de voz llegan como `audio` con `voice: true`. Un audio adjuntado
+  // desde la galería llega igual pero sin ese campo; para nosotros da lo mismo.
+  audio?: { id: string; mime_type?: string; voice?: boolean };
 };
 
 type WebhookPayload = {
@@ -300,8 +304,25 @@ export async function POST(req: Request) {
           // así que NO se filtra por remitente.
           if (msg.type === "image" || msg.type === "document") {
             try {
-              const t = await getTenant(tenantId);
-              if (t && resolverSector(t) === "gestoria") {
+              // A qué cuenta va la factura. Normalmente la del número que la ha
+              // recibido; con un desvío puesto, la de la gestoría a la que le
+              // hace de puente ese número mientras no tiene el suyo.
+              const destino = await destinoDeAdjunto({ phoneNumberId, tenantResuelto: tenantId });
+              const t = await getTenant(destino.tenantId);
+              const sector = t ? resolverSector(t) : null;
+
+              // Antes esta rama se saltaba en silencio y el mensaje acababa en
+              // "no-texto ignorado": la foto se perdía y Pablo no contestaba
+              // nada, que por fuera se ve igual que si estuviera roto. Ahora se
+              // dice por qué no se ha guardado.
+              if (!t || sector !== "gestoria") {
+                console.warn(
+                  `[pablo/webhook] ADJUNTO NO GUARDADO: ${msg.type} de ${msg.from} → tenant ${destino.tenantId}` +
+                    ` (sector ${sector ?? "sin sector"}, no es gestoría). ${destino.motivo}.` +
+                    ` Para que entre, ese número tiene que resolver a una gestoría o hay que poner un desvío` +
+                    ` en /api/admin/gestoria-desvio`,
+                );
+              } else {
                 if (!(await claimMessageOnce(msg.id))) {
                   console.log(`[pablo/webhook] adjunto duplicado ignorado: ${msg.id}`);
                   continue;
@@ -318,24 +339,60 @@ export async function POST(req: Request) {
                 }
 
                 const creadas = await guardarAdjuntosWhatsApp({
-                  tenantId, telefono: msg.from, adjuntos,
+                  tenantId: destino.tenantId, telefono: msg.from, adjuntos,
                 });
+                console.log(
+                  `[pablo/webhook] adjunto de ${msg.from}: ${creadas} factura(s) en ${destino.tenantId}` +
+                    `${destino.desviado ? " (POR DESVÍO)" : ""}`,
+                );
                 if (creadas > 0) {
                   const acuse = acuseDeRecibo(creadas);
                   await sendWhatsAppText(msg.from, acuse);
                   await registrarIntercambio({
-                    tenantId, msgId: msg.id, from: msg.from,
+                    tenantId: destino.tenantId, msgId: msg.id, from: msg.from,
                     nombre: contacts.find((c) => c.wa_id === msg.from)?.profile?.name,
                     entrante: `[adjunto] ${msg.document?.filename ?? msg.type}`,
                     respuesta: acuse, rxTs: new Date().toISOString(), via: "gestoria_factura_recibida",
                   });
                   continue;
                 }
-                // Sin nada aprovechable (audio, vídeo, sticker): sigue el flujo normal.
+                // Llegó algo que no era ni imagen ni PDF aprovechable. Se avisa
+                // en vez de dejar al cliente esperando una respuesta que no llega.
+                const nada = "no he podido leer ese archivo. mandamelo como foto o en pdf y lo guardo";
+                await sendWhatsAppText(msg.from, nada);
+                continue;
               }
             } catch (err) {
               console.error("[pablo/webhook] interceptor de adjuntos falló:", err);
             }
+          }
+
+          // === AUDIOS ===
+          // Pablo no los escucha todavía. Callarse es la peor respuesta posible:
+          // el cliente ve el "visto" y ni contestación, y da por hecho que el
+          // sistema está roto. Se contesta corto y con la verdad.
+          if (msg.type === "audio") {
+            try {
+              if (!(await claimMessageOnce(msg.id))) {
+                console.log(`[pablo/webhook] audio duplicado ignorado: ${msg.id}`);
+                continue;
+              }
+              const t = await getTenant(tenantId);
+              const esGestoria = t ? resolverSector(t) === "gestoria" : false;
+              const respuesta = esGestoria
+                ? "perdona, los audios todavia no los escucho. escribemelo o mandame la foto de la factura"
+                : "perdona, los audios todavia no los escucho. me lo escribes?";
+              await sendWhatsAppText(msg.from, respuesta);
+              await registrarIntercambio({
+                tenantId, msgId: msg.id, from: msg.from,
+                nombre: contacts.find((c) => c.wa_id === msg.from)?.profile?.name,
+                entrante: "[audio]",
+                respuesta, rxTs: new Date().toISOString(), via: "audio_no_soportado",
+              });
+            } catch (err) {
+              console.error("[pablo/webhook] no se pudo contestar al audio:", err);
+            }
+            continue;
           }
 
           // Solo texto por ahora
