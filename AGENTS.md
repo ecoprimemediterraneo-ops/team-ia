@@ -129,6 +129,58 @@ Cuando llega un `phone_number_id` que no es de ningún tenant, el log lo grita (
 
 Diagnóstico y prueba de envío sin exponer el token: `node scripts/whatsapp-prueba.mjs --estado` y `node scripts/whatsapp-prueba.mjs <movil>`.
 
+### Instagram Business Login: el único sitio de donde salen los permisos business_*
+
+**El token del System User no vale para esto, por mucho que parezca que sí.**
+Es válido, es de la app correcta y trae 17 permisos, pero ninguno de los cuatro
+`instagram_business_*`, y no responde contra `graph.instagram.com`. Comprobado
+el 17/08/2026 con `/api/admin/instagram-app-review`.
+
+Esos cuatro permisos solo se conceden por el OAuth nativo de Instagram, y sin al
+menos una llamada registrada por permiso, Meta no deja ni enviar el App Review.
+
+| Ruta | Qué hace |
+|---|---|
+| `/api/instagram/login` | Manda a autorizar a instagram.com (founder-only) |
+| `/api/instagram/callback` | Recibe el código, lo canjea por el token de 60 días y lo guarda |
+| `/api/admin/instagram-token` | Estado del token · `?refrescar=1` · `?borrar=1` |
+| `/api/admin/instagram-app-review` | `?llamar=1` hace las cuatro llamadas y publica de verdad |
+
+El token vive en Supabase, clave `instagram_login_token`, y el panel `/admin` lo
+enseña con la fecha de caducidad. **Caduca a los 60 días**; se renueva con
+`?refrescar=1` mientras esté vivo y tenga más de 24 horas. Si caduca, hay que
+repetir el login a mano.
+
+| Variable | Qué es |
+|---|---|
+| `INSTAGRAM_APP_ID` | El **Instagram** App ID, NO el de Meta (`2156272571817837`) |
+| `INSTAGRAM_APP_SECRET` | El **Instagram** App Secret, NO `META_APP_SECRET` |
+| `INSTAGRAM_REDIRECT_URI` | Opcional. Por defecto `https://aiteam.marketing/api/instagram/callback` |
+
+Las dos primeras salen de *App Dashboard > Instagram > API setup with Instagram
+login*. Confundirlas con las de Meta da un error de credenciales con pinta de
+problema de permisos.
+
+**Las tres trampas del flujo**, las tres ya pagadas:
+
+1. Los dos identificadores de arriba son distintos de los de Meta.
+2. Instagram pega `#_` al final de la URL de vuelta. No es parte del código; sin
+   quitarlo, el canje dice que el código no vale.
+3. El `redirect_uri` tiene que coincidir carácter a carácter con el dado de alta,
+   también en el canje. Por eso es una constante y no se deduce del host: si se
+   dedujera, en preview valdría una cosa y en producción otra, y el fallo saldría
+   en el canje, no en el login.
+
+Y el canje son **dos pasos**: primero un token corto (1 hora) contra
+`api.instagram.com/oauth/access_token`, y ese se cambia por el de 60 días contra
+`graph.instagram.com/access_token`. Saltarse el segundo deja un token que muere
+esa misma tarde.
+
+**Marta sigue usando el token del System User** para publicar y para los DMs. Eso
+no se toca hasta que los cuatro permisos estén aprobados: cambiarlo antes sería
+mover un camino que hoy funciona a un token cuyos permisos aún no ha bendecido
+Meta. `tokenParaInstagramLogin()` ya está disponible para cuando toque.
+
 ### Cambiar de cuenta de WhatsApp: SUSCRIBIR LA APP A LA WABA
 
 **El paso que se olvida, y deja el webhook mudo sin un solo error a la vista.**

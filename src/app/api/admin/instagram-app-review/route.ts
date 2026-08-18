@@ -1,6 +1,6 @@
 // /api/admin/instagram-app-review — founder-only.
 //
-//   GET              inspecciona el token y dice qué permisos trae. No llama a nada.
+//   GET              mira qué token hay y qué permisos trae. No llama a nada.
 //   GET ?llamar=1    hace las CUATRO llamadas de la familia instagram_business_*,
 //                    publicando de verdad en la cuenta.
 //
@@ -8,25 +8,31 @@
 // menos una llamada real. Mientras la columna esté a cero, el botón de enviar no
 // se activa.
 //
-// POR QUÉ AQUÍ Y NO EN UN SCRIPT: el token y el App Secret ya están en el
-// entorno de producción. Pasarlos a mano por la terminal es como se acaba
-// enseñando un secreto en una captura de pantalla — pasó. Aquí no se teclea
-// nada: se abre una URL con la sesión de fundador y el servidor usa lo que ya
-// tiene.
+// QUÉ TOKEN USA, y por qué importa tanto
+// --------------------------------------
+// Primero el de **Instagram Business Login** (el que guarda /api/instagram/login
+// en Supabase). Si no lo hay, cae al del System User (INSTAGRAM_ACCESS_TOKEN) y
+// LO DICE, porque con ese token estas llamadas no cuentan:
 //
-// EL FALLO DE JULIO, que esta ruta evita: se llamó a graph.facebook.com con un
-// token de Página. Salieron tres 200 y el contador siguió a cero, porque esos
-// endpoints registran la familia VIEJA (instagram_manage_*), la del producto
-// "Instagram Graph API" con Facebook Login. Los instagram_business_* son de otro
-// producto —"Instagram API con Instagram Login"— y sus llamadas van a
-// graph.instagram.com. Por eso aquí se detecta qué host acepta el token y se
-// dice cuál se ha usado, en vez de suponerlo.
+// - El System User es válido, es de la app correcta y trae 17 permisos, pero
+//   ninguno de los cuatro instagram_business_*, y no vale contra
+//   graph.instagram.com. Comprobado el 17/08/2026 con esta misma ruta.
+// - Los instagram_business_* pertenecen al producto "Instagram API con Instagram
+//   Login". Sus llamadas van a graph.instagram.com. Los parecidos
+//   instagram_manage_* son del producto viejo, con Facebook Login, y van a
+//   graph.facebook.com.
 //
-// NUNCA se devuelve el token ni el App Secret. Ni siquiera dentro de un mensaje
+// EL FALLO DE JULIO fue justo ese: se llamó a graph.facebook.com, salieron tres
+// 200 y el contador siguió a cero, porque sumaron en la familia equivocada. Por
+// eso aquí el host no se supone: se elige por el origen del token y se dice cuál
+// se ha usado.
+//
+// NUNCA se devuelve el token ni ningún secreto. Ni siquiera dentro de un mensaje
 // de error de Meta, que los devuelve enteros ("Malformed access token EAA…").
 
 import { NextResponse } from "next/server";
 import { requireFounder } from "@/lib/admin-auth";
+import { estadoToken, tokenParaInstagramLogin, SCOPES } from "@/lib/instagram-login";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,32 +58,14 @@ Mas en aiteam.marketing
 
 #IA #Automatizacion #PYMES #InteligenciaArtificial`;
 
-const PERMISOS = [
-  "instagram_business_basic",
-  "instagram_business_content_publish",
-  "instagram_business_manage_comments",
-  "instagram_business_manage_messages",
-] as const;
-
-function credenciales() {
-  // El de Instagram manda; el de WhatsApp es el mismo System User y sirve de
-  // respaldo, que es como lo resuelve el resto del sistema.
-  const token = process.env.INSTAGRAM_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN || "";
-  return {
-    token,
-    deDonde: process.env.INSTAGRAM_ACCESS_TOKEN ? "INSTAGRAM_ACCESS_TOKEN" : "WHATSAPP_ACCESS_TOKEN",
-    secret: process.env.META_APP_SECRET || "",
-    appId: process.env.META_APP_ID || "2156272571817837",
+/** Devuelve una función que tapa este token y todos los secretos del entorno. */
+function taparCon(token: string) {
+  const secretos = [token, process.env.META_APP_SECRET, process.env.INSTAGRAM_APP_SECRET, process.env.INSTAGRAM_ACCESS_TOKEN];
+  return (t: unknown): string => {
+    let s = typeof t === "string" ? t : JSON.stringify(t);
+    for (const v of secretos) if (v && v.length > 6) s = s.split(v).join("«oculto»");
+    return s.replace(/(EAA|IGAA|IGQ)[A-Za-z0-9_.-]{20,}/g, "«token oculto»").slice(0, 400);
   };
-}
-
-/** Tapa el token y el App Secret en cualquier cosa que se vaya a devolver. */
-function tapar(t: unknown): string {
-  const { token, secret } = credenciales();
-  let s = typeof t === "string" ? t : JSON.stringify(t);
-  if (token) s = s.split(token).join("«token oculto»");
-  if (secret) s = s.split(secret).join("«app secret oculto»");
-  return s.replace(/(EAA|IGAA)[A-Za-z0-9_-]{15,}/g, "«token oculto»").slice(0, 400);
 }
 
 type Respuesta = { ok: boolean; status: number; json: Record<string, unknown> };
@@ -94,98 +82,81 @@ async function llamar(url: string, opciones: RequestInit = {}): Promise<Respuest
   }
 }
 
-/** El error de Meta entero, que es lo que hace falta para arreglarlo. */
-function errorDe(r: Respuesta): string | null {
-  const e = r.json?.error as
-    | { message?: string; type?: string; code?: number; error_subcode?: number; error_user_msg?: string; fbtrace_id?: string }
-    | undefined;
-  if (!e) return null;
-  const partes = [
-    tapar(e.message ?? "sin mensaje"),
-    e.type ? `tipo ${e.type}` : "",
-    e.code ? `código ${e.code}${e.error_subcode ? `/${e.error_subcode}` : ""}` : "",
-    e.error_user_msg ? `· ${tapar(e.error_user_msg)}` : "",
-    e.fbtrace_id ? `· fbtrace_id ${e.fbtrace_id}` : "",
-  ].filter(Boolean);
-  return partes.join(" · ");
-}
-
 export async function GET(req: Request) {
   const auth = await requireFounder();
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const { token, deDonde, secret, appId } = credenciales();
   const llamarDeVerdad = new URL(req.url).searchParams.get("llamar") === "1";
+
+  // --- Qué token se usa -----------------------------------------------------
+  const deLogin = await tokenParaInstagramLogin();
+  const deSystemUser = process.env.INSTAGRAM_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN || "";
+  const token = deLogin || deSystemUser;
+  const esDeLogin = Boolean(deLogin);
 
   if (!token) {
     return NextResponse.json({
-      veredicto: "NO HAY TOKEN en el entorno del servidor. Sin él no se puede llamar a nada.",
-      revisa: "INSTAGRAM_ACCESS_TOKEN (o WHATSAPP_ACCESS_TOKEN) en Vercel.",
+      veredicto: "NO HAY NINGÚN TOKEN. Autoriza primero en /api/instagram/login.",
+      siguiente: "/api/instagram/login",
     });
   }
 
-  const info: Record<string, unknown> = {
-    tokenSacadoDe: deDonde,
-    token: `${token.length} caracteres (no se muestra)`,
-    appSecret: secret ? `${secret.length} caracteres (no se muestra)` : "NO PUESTO",
-    cuentaInstagram: IG_USER_ID,
+  const tapar = taparCon(token);
+
+  /** El error de Meta entero, que es lo que hace falta para arreglarlo. */
+  const errorDe = (r: Respuesta): string | null => {
+    const e = r.json?.error as
+      | { message?: string; type?: string; code?: number; error_subcode?: number; error_user_msg?: string; fbtrace_id?: string }
+      | undefined;
+    const plano = r.json as { error_message?: string; error_type?: string };
+    if (!e && !plano?.error_message) return null;
+    return [
+      tapar(e?.message ?? plano?.error_message ?? "sin mensaje"),
+      (e?.type ?? plano?.error_type) ? `tipo ${e?.type ?? plano?.error_type}` : "",
+      e?.code ? `código ${e.code}${e.error_subcode ? `/${e.error_subcode}` : ""}` : "",
+      e?.error_user_msg ? `· ${tapar(e.error_user_msg)}` : "",
+      e?.fbtrace_id ? `· fbtrace_id ${e.fbtrace_id}` : "",
+    ].filter(Boolean).join(" · ");
   };
 
-  // --- 1. ¿Qué permisos trae el token? -------------------------------------
-  // debug_token NO puede inspeccionarse a sí mismo: el `access_token` tiene que
-  // ser un token de aplicación (APP_ID|APP_SECRET) y el token a mirar va en
-  // `input_token`. Pasando el mismo token en los dos sitios, Meta contesta un
-  // error y parece que el token está roto cuando lo que está mal es la pregunta.
-  let permisos: string[] = [];
-  if (!secret) {
-    info.debugToken = "no se ha podido comprobar: falta META_APP_SECRET en el entorno";
-  } else {
-    const d = await llamar(
-      `${FB}/debug_token?input_token=${encodeURIComponent(token)}&access_token=${encodeURIComponent(`${appId}|${secret}`)}`,
-    );
-    const data = (d.json?.data ?? {}) as {
-      scopes?: string[]; is_valid?: boolean; app_id?: string; type?: string; expires_at?: number;
-    };
-    permisos = data.scopes ?? [];
-    info.debugToken = d.ok
-      ? {
-          valido: data.is_valid ?? null,
-          tipo: data.type ?? null,
-          appDelToken: data.app_id ?? null,
-          appEsperada: appId,
-          mismaApp: data.app_id ? data.app_id === appId : null,
-          caduca: data.expires_at ? new Date(data.expires_at * 1000).toISOString() : "no caduca",
-          permisos,
-        }
-      : { error: errorDe(d) ?? `HTTP ${d.status}`, respuestaCruda: tapar(d.json) };
-  }
+  const estado = await estadoToken();
+  const info: Record<string, unknown> = {
+    tokenQueSeUsa: esDeLogin
+      ? "Instagram Business Login (el bueno para los permisos business_*)"
+      : "System User (INSTAGRAM_ACCESS_TOKEN) — NO sirve para los business_*",
+    tokenInstagramLogin: estado.resumen,
+    ...(esDeLogin
+      ? { cuentaAutorizada: estado.usuario ? `@${estado.usuario}` : estado.cuenta, caduca: estado.caduca }
+      : {}),
+  };
 
-  const faltan = PERMISOS.filter((p) => !permisos.includes(p));
-  info.permisosBusinessQueFaltan = permisos.length ? (faltan.length ? faltan : "ninguno, están los cuatro") : "no se han podido leer";
-
-  // --- 2. ¿Qué host acepta este token? -------------------------------------
-  const pruebaIg = await llamar(`${IG}/me?fields=id,username&access_token=${encodeURIComponent(token)}`);
+  // El System User no vale para este host; el de Instagram Login sí. Se
+  // comprueba en vez de darlo por hecho.
+  const pruebaIg = await llamar(`${IG}/me?fields=user_id,username&access_token=${encodeURIComponent(token)}`);
   const enInstagram = pruebaIg.ok;
   const HOST = enInstagram ? IG : FB;
   const BASE = enInstagram ? "me" : IG_USER_ID;
-  info.host = enInstagram ? "graph.instagram.com" : "graph.facebook.com";
+  info.host = enInstagram ? "graph.instagram.com (el correcto)" : "graph.facebook.com";
+
   if (!enInstagram) {
     info.porQueNoInstagram = errorDe(pruebaIg) ?? `HTTP ${pruebaIg.status}`;
     info.aviso =
-      "El token NO vale contra graph.instagram.com, que es el host de la familia instagram_business_*. " +
-      "Las llamadas irán por graph.facebook.com y puede que registren la familia vieja (instagram_manage_*), " +
-      "que es exactamente lo que pasó en julio.";
+      "Este token NO vale contra graph.instagram.com, que es donde cuentan los instagram_business_*. " +
+      "Las llamadas irían por graph.facebook.com y sumarían en la familia vieja (instagram_manage_*), " +
+      "que es exactamente lo que pasó en julio. Autoriza en /api/instagram/login antes de seguir.";
   }
+
+  const faltan = estado.hay ? (estado.faltanPermisos ?? []) : [...SCOPES];
 
   if (!llamarDeVerdad) {
     return NextResponse.json({
-      veredicto: permisos.length
-        ? faltan.length
-          ? `Al token le faltan ${faltan.length} permiso(s) business_*: ${faltan.join(", ")}. Las llamadas registrarían el permiso equivocado.`
-          : "El token trae los cuatro permisos. Abre esta misma dirección con ?llamar=1 para hacer las llamadas."
-        : "No se han podido leer los permisos del token. Puedes intentar las llamadas igualmente con ?llamar=1: el resultado dirá si sirve.",
+      veredicto: !esDeLogin
+        ? "PARA. No hay token de Instagram Login, así que estas llamadas no contarían. Empieza en /api/instagram/login."
+        : faltan.length
+          ? `Al token de Instagram Login le faltan permisos: ${faltan.join(", ")}. Vuelve a autorizar aceptándolos todos.`
+          : "Todo listo. Abre esta misma dirección con ?llamar=1 para hacer las cuatro llamadas.",
       ...info,
-      paraLlamar: "Añade ?llamar=1 a esta dirección. Publicará de verdad en la cuenta.",
+      siguiente: esDeLogin && !faltan.length ? "añade ?llamar=1 · publicará de verdad en la cuenta" : "/api/instagram/login",
     });
   }
 
@@ -199,18 +170,19 @@ export async function GET(req: Request) {
   };
 
   // 1) basic
-  const basic = await llamar(`${HOST}/${BASE}?fields=id,username,account_type&access_token=${encodeURIComponent(token)}`);
-  anota("instagram_business_basic", basic, `GET /${BASE}?fields=id,username`);
+  const basic = await llamar(
+    `${HOST}/${BASE}?fields=${enInstagram ? "user_id,username,account_type" : "id,username"}&access_token=${encodeURIComponent(token)}`,
+  );
+  anota("instagram_business_basic", basic, `GET /${BASE}?fields=user_id,username`);
   if (basic.ok) info.cuenta = `@${(basic.json as { username?: string }).username ?? "?"}`;
 
   // 2) content_publish — publica de verdad
   let permalink: string | null = null;
   let mediaId = "";
-  const cuerpo = new URLSearchParams({ image_url: IMAGEN, caption: PIE, access_token: token });
   const cont = await llamar(`${HOST}/${BASE}/media`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: cuerpo.toString(),
+    body: new URLSearchParams({ image_url: IMAGEN, caption: PIE, access_token: token }).toString(),
   });
   const creationId = (cont.json as { id?: string }).id ?? "";
 
@@ -218,19 +190,19 @@ export async function GET(req: Request) {
     anota("instagram_business_content_publish", cont, `POST /${BASE}/media`);
   } else {
     // El contenedor tarda unos segundos en quedar listo; publicar antes falla.
-    let estado = "";
+    let estadoCont = "";
     for (let i = 0; i < 6; i++) {
       const st = await llamar(`${HOST}/${creationId}?fields=status_code&access_token=${encodeURIComponent(token)}`);
-      estado = ((st.json as { status_code?: string }).status_code ?? "").toUpperCase();
-      if (estado === "FINISHED" || estado === "ERROR") break;
+      estadoCont = ((st.json as { status_code?: string }).status_code ?? "").toUpperCase();
+      if (estadoCont === "FINISHED" || estadoCont === "ERROR") break;
       await new Promise((r) => setTimeout(r, 2500));
     }
-    if (estado !== "FINISHED") {
+    if (estadoCont !== "FINISHED") {
       detalle.push({
         permiso: "instagram_business_content_publish",
         http: cont.status,
         endpoint: `POST /${BASE}/media`,
-        resultado: `el contenedor se quedó en "${estado || "sin estado"}" y no se pudo publicar`,
+        resultado: `el contenedor se quedó en "${estadoCont || "sin estado"}" y no se pudo publicar`,
       });
     } else {
       const pub = await llamar(`${HOST}/${BASE}/media_publish`, {
@@ -266,7 +238,7 @@ export async function GET(req: Request) {
 
   // 4) manage_messages
   const conv = await llamar(`${HOST}/${BASE}/conversations?fields=id,updated_time&access_token=${encodeURIComponent(token)}`);
-  if (!anota("instagram_business_manage_messages", conv, `GET /${BASE}/conversations`)) {
+  if (!anota("instagram_business_manage_messages", conv, `GET /${BASE}/conversations`) && !enInstagram) {
     // En el host de Facebook las conversaciones cuelgan de la PÁGINA.
     const conv2 = await llamar(
       `${FB}/${PAGE_ID}/conversations?platform=instagram&fields=id,updated_time&access_token=${encodeURIComponent(token)}`,
@@ -279,12 +251,14 @@ export async function GET(req: Request) {
     const base = d.permiso.replace(" (2º intento)", "");
     okPorPermiso.set(base, (okPorPermiso.get(base) ?? false) || d.http === 200);
   }
-  const fallan = PERMISOS.filter((p) => !okPorPermiso.get(p));
+  const fallan = SCOPES.filter((p) => !okPorPermiso.get(p));
 
   return NextResponse.json({
     veredicto: fallan.length
       ? `NO. Han fallado ${fallan.length} de 4: ${fallan.join(", ")}. Mira el detalle.`
-      : "LISTO: las cuatro llamadas en 200. Meta tarda hasta 24 horas en reflejarlas en el formulario.",
+      : esDeLogin
+        ? "LISTO: las cuatro llamadas en 200 con el token de Instagram Login. Meta tarda hasta 24 horas en reflejarlas."
+        : "Las cuatro han dado 200, PERO con el token del System User: no cuentan para los business_*. Autoriza en /api/instagram/login y repite.",
     publicacion: permalink ?? "no se ha publicado",
     ...info,
     detalle,

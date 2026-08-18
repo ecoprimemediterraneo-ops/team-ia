@@ -4,6 +4,7 @@
  */
 import { redirect } from "next/navigation";
 import { getSessionLocal } from "@/lib/auth";
+import { estadoToken as estadoTokenInstagram } from "@/lib/instagram-login";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -44,6 +45,10 @@ export default async function AdminPage() {
   const bookings = await readJson<Booking[]>("calendar-bookings.json", []);
   const evals = await readJson<EvalResult[]>("evals.json", []);
 
+  // Token de Instagram Business Login: caduca a los 60 días y si nadie mira la
+  // fecha, se entera uno el día que Marta deja de publicar.
+  const ig = await estadoTokenInstagram();
+
   const last7 = evals.filter((e) => new Date(e.ts).getTime() > Date.now() - 7 * 86400000);
   const avgScore = last7.length > 0 ? (last7.reduce((s, r) => s + r.score, 0) / last7.length).toFixed(1) : "—";
 
@@ -68,6 +73,27 @@ export default async function AdminPage() {
           <div className="card-hard p-5"><div className="text-xs uppercase font-mono text-black/60">Bookings (Cal.com)</div><div className="font-stencil text-5xl mt-1">{bookings.length}</div></div>
           <div className="card-hard p-5"><div className="text-xs uppercase font-mono text-black/60">Evals 7d</div><div className="font-stencil text-5xl mt-1">{last7.length}</div></div>
           <div className="card-hard p-5 bg-[color:var(--mustard)]"><div className="text-xs uppercase font-mono">Score medio 7d</div><div className="font-stencil text-5xl mt-1">{avgScore}/10</div></div>
+        </div>
+
+        <div className={`card-hard p-5 mb-6 ${!ig.hay || ig.caducado ? "bg-[color:var(--red)] text-white" : (ig.diasQueQuedan ?? 99) <= 7 ? "bg-[color:var(--mustard)]" : ""}`}>
+          <h2 className="font-stencil text-2xl mb-2">Token de Instagram (Business Login)</h2>
+          <p className="text-sm mb-2">{ig.resumen}</p>
+          {ig.hay && (
+            <ul className="text-xs font-mono space-y-1 mb-3">
+              <li>Cuenta: {ig.usuario ? `@${ig.usuario}` : ig.cuenta || "—"}</li>
+              <li>Caduca: {ig.caduca ? new Date(ig.caduca).toLocaleString("es-ES") : "—"}</li>
+              <li>Permisos: {ig.permisos?.length ? ig.permisos.join(", ") : "no los ha dicho"}</li>
+              {ig.faltanPermisos?.length ? <li>FALTAN: {ig.faltanPermisos.join(", ")}</li> : null}
+            </ul>
+          )}
+          <div className="flex gap-2 flex-wrap">
+            <a href="/api/instagram/login" className="text-xs font-mono border-2 border-current px-3 py-2">
+              {ig.hay ? "VOLVER A AUTORIZAR" : "AUTORIZAR EN INSTAGRAM"}
+            </a>
+            <a href="/api/admin/instagram-token" className="text-xs font-mono border-2 border-current px-3 py-2">VER ESTADO</a>
+            <a href="/api/admin/instagram-token?refrescar=1" className="text-xs font-mono border-2 border-current px-3 py-2">RENOVAR 60 DIAS</a>
+            <a href="/api/admin/instagram-app-review" className="text-xs font-mono border-2 border-current px-3 py-2">APP REVIEW</a>
+          </div>
         </div>
 
         <div className="card-hard p-5 mb-6">
