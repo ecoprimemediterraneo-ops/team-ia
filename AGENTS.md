@@ -186,6 +186,27 @@ desarrollo levantado con `META_GRAPH_URL=http://127.0.0.1:4545` (ya está en
 variable capaz de redirigir llamadas que llevan el token dentro no puede existir
 en producción.
 
+### `data/` NO viaja al despliegue
+
+Lo que se siembra en local vive solo en la máquina de quien lo sembró. En
+producción manda Supabase, y ahí **solo existía `tenant_aiteam`**: ni una
+gestoría, ni un expediente, ni el bucket de ficheros. Se descubrió el 18/08/2026
+al abrir el desvío y ver la lista de gestorías vacía — un módulo entero que en
+local funcionaba y en producción no tenía dónde caerse.
+
+**Antes de enseñar el módulo a alguien: `GET /api/admin/gestoria-preflight`**
+(founder-only). Mira de una vez si hay gestoría, si tiene clientes, si está el
+bucket privado de ficheros y si el desvío está puesto. Con `?preparar=1` deja
+lista la gestoría de demostración por los caminos de siempre —`sembrarDemos()`
+para el tenant, `guardarExpedientes()` para los clientes— sin inventarse un
+almacén nuevo.
+
+**Los clientes de una gestoría salen de sus expedientes** (`gestoria-clientes.ts`
+los deduce del teléfono). Sin expedientes no hay a quién asignarle una factura y
+el desplegable de la bandeja sale vacío. El alta de expediente vive en
+`/dashboard/expedientes` — **faltaba**: el panel los enseñaba pero no dejaba
+crear ninguno, y los que había en local estaban metidos a mano en el fichero.
+
 ### "FIRMA SIN COMPROBAR": los tres motivos
 
 El mismo mensaje sale por tres causas que desde fuera se ven igual: no hay

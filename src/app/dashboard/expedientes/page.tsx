@@ -14,8 +14,10 @@ import { tieneFuncion } from "@/lib/sectores";
 import {
   listarExpedientes, resumenExpedientes, reclamacionesPendientes,
   ESTADO_LABEL, tramiteById, reclamacionDocsEnabled, calendarioFiscalEnabled,
+  TRAMITES,
   type EstadoExpediente,
 } from "@/lib/gestoria";
+import NuevoExpediente from "@/components/gestoria/NuevoExpediente";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +59,10 @@ export default async function ExpedientesPage() {
           Lo que Pablo contesta cuando un cliente pregunta cómo va lo suyo.
         </p>
       </div>
+
+      {/* El alta. Los CLIENTES de la gestoría salen de aquí: sin un expediente
+          no hay a quién asignarle una factura. */}
+      <NuevoExpediente tramites={TRAMITES.map((t) => ({ id: t.id, nombre: t.nombre, precioEUR: t.precioEUR }))} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="card-hard bg-white p-3">
