@@ -27,7 +27,24 @@ export default async function SectoresPage({
 
   const sp = await searchParams;
   let sembrado: { id: string; sector: string; creado: boolean; slug: string }[] | null = null;
-  if (sp.sembrar === "1") sembrado = await sembrarDemos();
+  // El fallo de antes: se llamaba a sembrarDemos() y se pintaba "listo" sin
+  // volver a mirar. Si la escritura se perdía —y se perdía, en silencio— la
+  // pantalla decía que había ido bien y los cinco seguían "sin crear". Ahora se
+  // comprueba leyendo, y si falla se ve el motivo aquí mismo.
+  let falloAlSembrar: string | null = null;
+  if (sp.sembrar === "1") {
+    try {
+      sembrado = await sembrarDemos();
+      const noEstan: string[] = [];
+      for (const d of DEMOS) if (!(await getTenant(d.id))) noEstan.push(d.id);
+      if (noEstan.length) {
+        falloAlSembrar = `Se han creado pero al volver a leerlos NO están: ${noEstan.join(", ")}. El almacén no está guardando.`;
+        sembrado = null;
+      }
+    } catch (e) {
+      falloAlSembrar = e instanceof Error ? e.message : String(e);
+    }
+  }
 
   const estado = await Promise.all(
     DEMOS.map(async (d) => ({ ...d, existe: !!(await getTenant(d.id)) })),
@@ -54,6 +71,14 @@ export default async function SectoresPage({
               {hayDemos ? "🔄 REPONER LOS 4" : "＋ CREAR LOS 4"}
             </a>
           </div>
+          {falloAlSembrar && (
+            <div className="card-hard bg-[color:var(--red)] text-white p-3 mb-3 text-sm">
+              <strong>No se han creado.</strong> {falloAlSembrar}
+              <div className="text-xs mt-1 opacity-90">
+                Diagnóstico paso a paso en <code>/api/admin/sembrar-demos</code>.
+              </div>
+            </div>
+          )}
           {sembrado && (
             <p className="text-xs font-mono bg-green-100 border-2 border-black px-2 py-1 mb-3 inline-block">
               Listo: {sembrado.filter((x) => x.creado).length} creados, {sembrado.filter((x) => !x.creado).length} actualizados.

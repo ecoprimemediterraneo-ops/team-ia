@@ -264,6 +264,17 @@ function reconciliarCuentaPropia(data: TenantMap): TenantMap | null {
 async function writeAll(map: TenantMap): Promise<void> {
   if (USE_SUPABASE) {
     await kvSet(KV_KEY, map);
+    // Y se vuelve a leer. `kvSet` no lanza excepción cuando falla —a propósito,
+    // para no tumbar un webhook por un fallo de escritura—, así que "no ha dado
+    // error" no prueba nada. Sin esta comprobación, dar de alta un cliente en
+    // producción podía no guardar NADA y la pantalla decía que sí: es
+    // exactamente lo que pasó con los negocios de ejemplo el 19/08/2026.
+    const vuelta = await kvGet<TenantMap>(KV_KEY);
+    const faltan = Object.keys(map).filter((id) => !vuelta?.[id]);
+    if (faltan.length) {
+      console.error(`[tenants] NO SE HAN GUARDADO: ${faltan.join(", ")}. El almacén devuelve ${vuelta ? Object.keys(vuelta).length : 0} tenants.`);
+      throw new Error(`No se ha podido guardar en el almacén: falta ${faltan.join(", ")} al volver a leer.`);
+    }
   } else {
     await fs.mkdir(DATA_DIR, { recursive: true });
     await fs.writeFile(FILE, JSON.stringify(map, null, 2));
