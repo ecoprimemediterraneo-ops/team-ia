@@ -25,6 +25,7 @@ import { listarExpedientes, guardarExpedientes, TRAMITES, type Expediente } from
 import { listarClientes } from "@/lib/gestoria-clientes";
 import { kvGet, kvSet, kvDelete, supabaseEnabled } from "@/lib/supabase";
 import { getBusinessBySlug } from "@/lib/booking";
+import { guardarDesvio, leerDesvio } from "@/lib/gestoria-desvio";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -178,6 +179,28 @@ export async function GET(req: Request) {
   // --- 4. Dónde se guardan los ficheros ------------------------------------
   const bucket = await bucketFacturas();
   anota("Bucket privado de facturas", bucket.includes("privado"), bucket);
+
+  // --- 5. El desvío de adjuntos --------------------------------------------
+  // Se deja puesto aquí mismo: dejarlo como un paso suelto a mano es lo que
+  // hace que el día de la demostración falte justo eso.
+  if (demoOk) {
+    const yaEsta = await leerDesvio();
+    if (!yaEsta?.activo || yaEsta.tenantId !== TENANT_DEMO) {
+      await guardarDesvio({
+        phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "1189470684259465",
+        tenantId: TENANT_DEMO,
+        activo: true,
+        puesto_en: new Date().toISOString(),
+        nota: "Puente mientras la gestoría no tiene su propio número de WhatsApp.",
+      });
+    }
+    const ahora = await leerDesvio();
+    anota(
+      "Desvío de adjuntos",
+      !!ahora?.activo && ahora.tenantId === TENANT_DEMO,
+      ahora?.activo ? `los adjuntos de ${ahora.phoneNumberId} van a ${ahora.tenantId}` : "no se ha podido dejar puesto",
+    );
+  }
 
   const gestorias = (await listTenants())
     .filter((t) => resolverSector(t) === "gestoria")
