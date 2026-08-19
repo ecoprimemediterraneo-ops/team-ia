@@ -24,6 +24,7 @@ import { resolverSector } from "@/lib/sectores";
 import { listarExpedientes, guardarExpedientes, TRAMITES, type Expediente } from "@/lib/gestoria";
 import { listarClientes } from "@/lib/gestoria-clientes";
 import { kvGet, kvSet, kvDelete, supabaseEnabled } from "@/lib/supabase";
+import { getBusinessBySlug } from "@/lib/booking";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -139,6 +140,19 @@ export async function GET(req: Request) {
     `Comprobar que "${TENANT_DEMO}" está guardado`,
     demoOk,
     demoOk ? "sí, se lee después de escribirlo" : `NO. Tenants antes: [${antes.join(", ")}] · después: [${despues.join(", ")}]`,
+  );
+
+  // --- 2b. El negocio de reservas del tenant --------------------------------
+  // Va por OTRA clave del almacén (`booking:configs`) y por otra función, así
+  // que puede perderse aunque el tenant se haya guardado. Se comprueba aparte:
+  // el tenant guardado y su negocio perdido es un panel a medias.
+  const negocio = await getBusinessBySlug("demo-gestoria-marquez");
+  anota(
+    "Negocio de reservas de la gestoría",
+    !!negocio,
+    negocio
+      ? `"${negocio.nombre}" con ${negocio.servicios?.length ?? 0} servicios`
+      : "NO se lee después de escribirlo: la escritura de booking:configs se está perdiendo",
   );
 
   // --- 3. Clientes de la gestoría ------------------------------------------
