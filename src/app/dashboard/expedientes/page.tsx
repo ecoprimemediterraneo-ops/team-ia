@@ -18,6 +18,7 @@ import {
   type EstadoExpediente,
 } from "@/lib/gestoria";
 import NuevoExpediente from "@/components/gestoria/NuevoExpediente";
+import IdentificacionClientes from "@/components/gestoria/IdentificacionClientes";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,12 @@ export default async function ExpedientesPage() {
       {/* El alta. Los CLIENTES de la gestoría salen de aquí: sin un expediente
           no hay a quién asignarle una factura. */}
       <NuevoExpediente tramites={TRAMITES.map((t) => ({ id: t.id, nombre: t.nombre, precioEUR: t.precioEUR }))} />
+
+      {/* Los datos con los que se reconocen las facturas que entran solas. Va
+          justo debajo del alta: es lo siguiente que hay que rellenar de un
+          cliente nuevo, y arriba del todo se ve de un vistazo a cuántos les
+          falta. */}
+      <IdentificacionClientes />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="card-hard bg-white p-3">

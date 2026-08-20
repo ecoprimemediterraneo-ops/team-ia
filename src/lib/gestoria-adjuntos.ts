@@ -9,7 +9,7 @@
 // justo ese caso.
 
 import "server-only";
-import { crearFactura, leerYGuardar, tipoDeFichero, type OrigenFactura } from "./gestoria-facturas";
+import { crearFactura, leerYGuardar, marcarLeyendo, tipoDeFichero, type OrigenFactura } from "./gestoria-facturas";
 import { clienteIdDeTelefono, listarClientes } from "./gestoria-clientes";
 
 /**
@@ -83,6 +83,41 @@ export async function descargarMedia(mediaId: string): Promise<{ buffer: Buffer;
  * aprovechable —un audio, un sticker, un vídeo—, y entonces el webhook sigue con
  * el flujo normal de Pablo como si no hubiera pasado nada.
  */
+/**
+ * Arranca la lectura SIN hacer esperar a quien llama.
+ *
+ * POR QUÉ: el webhook de Meta tiene que contestar rápido. Antes se esperaba a
+ * que la IA terminase de leer cada documento dentro de la propia petición del
+ * webhook; con un PDF eso son varios segundos, y en Vercel la función se corta
+ * antes de guardar nada — el documento se quedaba para siempre "sin leer" y
+ * solo se leía cuando el gestor lo asignaba a mano. Justo al revés de como
+ * tiene que ser: el gestor necesita ver el proveedor y el importe PARA poder
+ * decidir de quién es.
+ *
+ * `after()` de Next corre el trabajo DESPUÉS de mandar la respuesta, y en
+ * Vercel mantiene viva la función mientras tanto. Fuera de un contexto de
+ * petición (un script, una prueba) no hay respuesta que esperar, así que se
+ * hace en el momento.
+ */
+async function leerEnSegundoPlano(opts: {
+  tenantId: string; facturaId: string; contenido: Buffer; mime: string; nombre: string;
+}): Promise<void> {
+  // Se marca YA, no dentro del trabajo diferido: la lista tiene que decir
+  // "Leyendo…" desde el primer refresco, no dentro de diez segundos.
+  await marcarLeyendo(opts.tenantId, opts.facturaId).catch(() => {});
+
+  const trabajo = () =>
+    leerYGuardar(opts).catch((e) => console.error("[gestoria-adjuntos] lectura fallida:", e));
+
+  try {
+    const { after } = await import("next/server");
+    after(trabajo());
+  } catch {
+    // Sin contexto de petición: se lee aquí mismo.
+    await trabajo();
+  }
+}
+
 export async function guardarAdjuntosWhatsApp(opts: {
   tenantId: string;
   telefono: string;
@@ -119,10 +154,11 @@ export async function guardarAdjuntosWhatsApp(opts: {
       });
       // Leer va DESPUÉS de guardar y sin poder tumbar nada: el documento ya
       // está a salvo. Si la lectura falla, el gestor lo ve igual con el motivo.
-      await leerYGuardar({
+      // Y va en segundo plano: el webhook no puede quedarse esperando a la IA.
+      await leerEnSegundoPlano({
         tenantId: opts.tenantId, facturaId: factura.id,
         contenido: media.buffer, mime: media.mime, nombre: factura.nombre_original,
-      }).catch((e) => console.error("[gestoria-adjuntos] lectura fallida:", e));
+      });
       creadas++;
     } catch (err) {
       console.error("[gestoria-adjuntos] no se pudo guardar la factura:", err);
@@ -164,10 +200,11 @@ export async function guardarAdjuntosEmail(opts: {
         remitente: opts.remitente,
         asunto: opts.asunto,
       });
-      await leerYGuardar({
+      // Igual que en WhatsApp: se lee solo, y sin bloquear la respuesta.
+      await leerEnSegundoPlano({
         tenantId: opts.tenantId, facturaId: factura.id,
         contenido: a.contenido, mime: a.mime, nombre: a.nombre,
-      }).catch((e) => console.error("[gestoria-adjuntos] lectura fallida:", e));
+      });
       creadas++;
     } catch (err) {
       console.error("[gestoria-adjuntos] no se pudo guardar el adjunto de correo:", err);

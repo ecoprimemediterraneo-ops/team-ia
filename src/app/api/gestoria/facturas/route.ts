@@ -12,6 +12,7 @@ import {
   listarFacturas, listarSinAsignar, crearFactura, actualizarFactura,
   asignarCliente, urlFirmada, leerYGuardar, corregirLectura,
 } from "@/lib/gestoria-facturas";
+import { listarClientes, sugerirCliente } from "@/lib/gestoria-clientes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,13 +34,30 @@ export async function GET(req: Request) {
   // `?sinAsignar=1` devuelve la bandeja de las que entraron sin dueño. Es una
   // lista aparte a propósito: no pertenecen a ningún cliente y no deben
   // aparecer mezcladas en el saco de nadie.
-  const facturas = q.get("sinAsignar") === "1"
+  const esSinAsignar = q.get("sinAsignar") === "1";
+  const facturas = esSinAsignar
     ? await listarSinAsignar(g.tenantId)
     : await listarFacturas(g.tenantId, clienteId);
 
+  // A las que no tienen dueño se les propone uno, pero SOLO por NIF o por
+  // teléfono. Nunca se asigna sola: el desplegable viene preseleccionado y el
+  // clic lo da el gestor.
+  const clientes = esSinAsignar ? await listarClientes(g.tenantId).catch(() => []) : [];
+
   // La URL firmada se genera al vuelo y caduca: nunca se guarda ni se cachea.
   const conUrl = await Promise.all(
-    facturas.map(async (f) => ({ ...f, verUrl: await urlFirmada(f.fichero_url) })),
+    facturas.map(async (f) => ({
+      ...f,
+      verUrl: await urlFirmada(f.fichero_url),
+      ...(esSinAsignar
+        ? {
+            sugerencia: sugerirCliente(clientes, {
+              nifDestinatario: f.lectura?.nifDestinatario?.valor ?? null,
+              remitente: f.remitente ?? null,
+            }),
+          }
+        : {}),
+    })),
   );
   return NextResponse.json({ ok: true, total: conUrl.length, facturas: conUrl });
 }

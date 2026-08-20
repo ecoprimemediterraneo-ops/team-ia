@@ -89,6 +89,12 @@ export type Expediente = {
   /** Email, si se conoce. Decide el canal del aviso cuando no hay teléfono. */
   email?: string;
   clienteNombre: string;
+  /**
+   * NIF/CIF del cliente. Es lo que permite reconocer de quién es una factura
+   * que entra sin dueño: el NIF del destinatario viene impreso en el papel.
+   * Opcional porque los expedientes viejos no lo traen.
+   */
+  nif?: string;
   tramite: TramiteId;
   estado: EstadoExpediente;
   /** Periodo al que se refiere ("2025", "1T 2026"). Lo que el cliente nombra. */

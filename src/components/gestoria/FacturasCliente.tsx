@@ -26,9 +26,113 @@ type Factura = {
   asunto?: string;
   lectura?: LecturaTipo | null;
   lectura_error?: string;
+  lectura_estado?: "leyendo" | "hecha" | "error";
   clase?: string;
   contable?: boolean;
+  /** De quién PARECE, solo por NIF o por teléfono. La pone el servidor. */
+  sugerencia?: { clienteId: string; clienteNombre: string; motivo: "nif" | "telefono"; texto: string } | null;
 };
+
+// La clase del documento, con el MISMO código de color que la ficha de lectura:
+// verde solo lo que deduce IVA, mostaza lo que se guarda pero no deduce, rojo lo
+// que ni siquiera es contable. Si el color cambiara entre la lista y la ficha,
+// el gestor tendría que volver a mirarlo todo cada vez que abre una.
+const CLASE_ETIQUETA: Record<string, string> = {
+  factura_completa: "FACTURA",
+  ticket: "TICKET",
+  albaran: "ALBARÁN",
+  abono: "ABONO",
+  presupuesto: "PRESUPUESTO",
+  otro: "SIN CLASIFICAR",
+};
+
+const CLASE_COLOR: Record<string, string> = {
+  factura_completa: "bg-green-700 text-white",
+  ticket: "bg-[color:var(--mustard)] text-black",
+  albaran: "bg-[color:var(--red)] text-white",
+  abono: "bg-black text-white",
+  presupuesto: "bg-[color:var(--red)] text-white",
+  otro: "bg-black/70 text-white",
+};
+
+function ClaseEtiqueta({ clase }: { clase?: string }) {
+  if (!clase) return null;
+  return (
+    <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 ${CLASE_COLOR[clase] ?? CLASE_COLOR.otro}`}>
+      {CLASE_ETIQUETA[clase] ?? clase}
+    </span>
+  );
+}
+
+/**
+ * Lo que la IA ha sacado del papel, en una línea: proveedor · importe · tipo.
+ *
+ * Los tres estados se dicen distinto A PROPÓSITO. "Sin leer todavía" servía
+ * para todo y no distinguía entre "espera dos segundos" y "esto ha fallado,
+ * haz algo": el gestor no sabía si refrescar o reintentar.
+ */
+function ResumenLeido({
+  f,
+  onReintentar,
+  reintentando,
+}: {
+  f: { lectura?: LecturaTipo | null; lectura_error?: string; lectura_estado?: string; clase?: string; importe: number | null; proveedor: string | null };
+  onReintentar: () => void;
+  reintentando: boolean;
+}) {
+  if (f.lectura_estado === "leyendo" && !f.lectura) {
+    return (
+      <div className="text-[11px] font-mono text-black/60 mt-0.5 animate-pulse">
+        Leyendo… (unos segundos)
+      </div>
+    );
+  }
+
+  if (f.lectura_error || (f.lectura_estado === "error" && !f.lectura)) {
+    return (
+      <div className="flex items-center gap-2 flex-wrap mt-0.5">
+        <span className="text-[11px] font-bold text-[color:var(--red)]">
+          No se ha podido leer. El documento está guardado igual.
+        </span>
+        <button
+          type="button"
+          onClick={onReintentar}
+          disabled={reintentando}
+          className="text-[9px] font-mono uppercase border-2 border-black px-1.5 py-0.5 bg-white hover:bg-black hover:text-white disabled:opacity-50"
+        >
+          {reintentando ? "leyendo…" : "reintentar"}
+        </button>
+      </div>
+    );
+  }
+
+  if (!f.lectura) {
+    return (
+      <div className="flex items-center gap-2 flex-wrap mt-0.5">
+        <span className="text-[11px] font-mono text-black/50">Sin leer todavía.</span>
+        <button
+          type="button"
+          onClick={onReintentar}
+          disabled={reintentando}
+          className="text-[9px] font-mono uppercase border-2 border-black px-1.5 py-0.5 bg-white hover:bg-black hover:text-white disabled:opacity-50"
+        >
+          {reintentando ? "leyendo…" : "leerlo ahora"}
+        </button>
+      </div>
+    );
+  }
+
+  const total = f.lectura.total?.valor ?? f.importe;
+  return (
+    <div className="flex items-center gap-2 flex-wrap mt-0.5">
+      <ClaseEtiqueta clase={f.clase ?? f.lectura.clase} />
+      <span className="text-[11px] font-mono text-black/70 truncate">
+        {f.lectura.emisor?.valor || f.proveedor || "proveedor sin leer"}
+        {total != null ? ` · ${euros(total)}` : ""}
+      </span>
+    </div>
+  );
+}
 
 // Por dónde entró cada factura. Se dice con el nombre del agente que la recogió
 // ("Pablo", "Lucía") porque es como el gestor los tiene en la cabeza: no le
@@ -133,6 +237,13 @@ export default function FacturasCliente({
   // de ningún cliente: mezclarlas en el saco de quien esté seleccionado sería
   // exactamente el error que esta pantalla existe para evitar.
   const [sinAsignar, setSinAsignar] = useState<Factura[]>([]);
+  /** Qué documento se está releyendo ahora ("todos" = la tanda entera). */
+  const [releyendo, setReleyendo] = useState<string | null>(null);
+  /** Lo que se ofrece apuntar en la ficha del cliente tras asignar a mano. */
+  const [aprender, setAprender] = useState<
+    { clienteId: string; clienteNombre: string; nif: string; telefono: string } | null
+  >(null);
+  const [guardandoAprendido, setGuardandoAprendido] = useState(false);
   const [destino, setDestino] = useState<Record<string, string>>({});
   const [cargando, setCargando] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
@@ -179,14 +290,72 @@ export default function FacturasCliente({
   }, [clienteId, recarga]);
 
   async function asignar(f: Factura) {
-    const destinoId = destino[f.id] || clientes[0]?.id;
+    const destinoId = destino[f.id] || f.sugerencia?.clienteId || clientes[0]?.id;
     if (!destinoId) return;
     await fetch("/api/gestoria/facturas", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: f.id, cliente_id: destinoId }),
     });
+
+    // APRENDER DEL CLIC: este documento traía un NIF (o venía de un teléfono)
+    // que no estaba en la ficha de nadie, y el gestor acaba de decir de quién
+    // es. Se le ofrece guardarlo para que la próxima se reconozca sola. Así la
+    // ficha se rellena con el uso y nadie tiene que picar cincuenta NIF.
+    //
+    // Se OFRECE, no se guarda: si el gestor se equivoca de cliente al asignar y
+    // encima le pegáramos el NIF a la ficha, el error quedaría escrito y a
+    // partir de ahí se repetiría solo en todas las facturas siguientes.
+    const cliente = clientes.find((c) => c.id === destinoId);
+    const nifDelPapel = f.lectura?.nifDestinatario?.valor?.trim() || "";
+    const telefonoDelEnvio = f.origen === "whatsapp" ? (f.remitente || "").replace(/\D/g, "") : "";
+    const yaSeSabiaPorNif = f.sugerencia?.motivo === "nif";
+    const yaSeSabiaPorTel = f.sugerencia?.motivo === "telefono";
+
+    if (cliente && ((nifDelPapel && !yaSeSabiaPorNif) || (telefonoDelEnvio && !yaSeSabiaPorTel))) {
+      setAprender({
+        clienteId: destinoId,
+        clienteNombre: cliente.nombre,
+        nif: yaSeSabiaPorNif ? "" : nifDelPapel,
+        telefono: yaSeSabiaPorTel ? "" : telefonoDelEnvio,
+      });
+    }
+
     recargar();
+  }
+
+  /** Guarda en la ficha del cliente lo que traía el documento. Un clic, el suyo. */
+  async function guardarAprendido() {
+    if (!aprender) return;
+    setGuardandoAprendido(true);
+    try {
+      // Se lee la ficha actual para AÑADIR, no para pisar: un cliente puede
+      // tener ya tres teléfonos apuntados y guardar solo el nuevo los borraría.
+      const actual = await fetch("/api/gestoria/clientes/identidad")
+        .then((r) => r.json())
+        .then((j) => (j.clientes || []).find((c: { id: string }) => c.id === aprender.clienteId))
+        .catch(() => null);
+
+      const res = await fetch("/api/gestoria/clientes/identidad", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clienteId: aprender.clienteId,
+          nif: aprender.nif || actual?.nif || "",
+          telefonos: [...(actual?.telefonos ?? []), ...(aprender.telefono ? [aprender.telefono] : [])],
+          emails: actual?.emails ?? [],
+        }),
+      });
+      const j = await res.json();
+      setAviso(
+        j.error
+          ? j.error
+          : `Guardado en la ficha de ${aprender.clienteNombre}. Sus próximas facturas se reconocerán solas.`,
+      );
+      if (!j.error) setAprender(null);
+    } finally {
+      setGuardandoAprendido(false);
+    }
   }
 
   async function subir(lista: FileList | File[]) {
@@ -238,6 +407,49 @@ export default function FacturasCliente({
     recargar();
   }
 
+  /** Volver a leer UNO. El botón de reintentar de la tarjeta. */
+  async function releer(id: string) {
+    setReleyendo(id);
+    try {
+      const res = await fetch("/api/gestoria/facturas/leer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const j = await res.json();
+      if (j.error) setAviso(j.error);
+      await recargar();
+    } finally {
+      setReleyendo(null);
+    }
+  }
+
+  /** Ponerse al día con los que entraron antes de que esto se leyera solo. */
+  async function releerPendientes() {
+    setReleyendo("todos");
+    setAviso("Leyendo los que faltan… esto tarda unos segundos por documento.");
+    try {
+      const res = await fetch("/api/gestoria/facturas/leer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pendientes: true }),
+      });
+      const j = await res.json();
+      if (j.error) setAviso(j.error);
+      else {
+        // Se dice lo que ha fallado y lo que queda: un tope callado parece
+        // "ya está todo leído" cuando no lo está.
+        const partes = [`Leídos ${j.leidos}.`];
+        if (j.fallos?.length) partes.push(`${j.fallos.length} no se han podido leer.`);
+        if (j.quedan > 0) partes.push(`Quedan ${j.quedan}: dale otra vez.`);
+        setAviso(partes.join(" "));
+      }
+      await recargar();
+    } finally {
+      setReleyendo(null);
+    }
+  }
+
   async function descartar(f: Factura) {
     if (!confirm(`¿Descartar "${f.nombre_original}"? No se borra: se guarda igual, pero deja de cuadrarse con el banco.`)) return;
     await fetch("/api/gestoria/facturas", {
@@ -253,14 +465,60 @@ export default function FacturasCliente({
       {/* BANDEJA SIN ASIGNAR — solo aparece si hay algo. Va la primera porque es
           trabajo parado: hasta que no tengan dueño no entran en ninguna
           conciliación y no le cuadran a nadie. */}
+      {/* LO QUE SE ACABA DE APRENDER. Sale después de asignar a mano y se guarda
+          SOLO si el gestor le da al botón. */}
+      {aprender && (
+        <div className="card-hard bg-white p-3 border-4">
+          <div className="font-bold text-sm mb-1">
+            ¿Lo apunto en la ficha de {aprender.clienteNombre}?
+          </div>
+          <p className="text-xs text-black/70 mb-2">
+            Este documento traía {aprender.nif ? <>el NIF <b className="font-mono">{aprender.nif}</b></> : null}
+            {aprender.nif && aprender.telefono ? " y " : null}
+            {aprender.telefono ? <>el teléfono <b className="font-mono">{aprender.telefono}</b></> : null}
+            , y no estaba en la ficha de nadie. Si lo guardo, la próxima factura suya se reconoce sola y no
+            tendrás que asignarla a mano.
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={guardarAprendido}
+              disabled={guardandoAprendido}
+              className="btn-mustard text-xs px-3 py-1.5 disabled:opacity-50"
+            >
+              {guardandoAprendido ? "Guardando…" : `Guardar en la ficha de ${aprender.clienteNombre}`}
+            </button>
+            <button
+              type="button"
+              onClick={() => setAprender(null)}
+              className="text-[10px] font-mono uppercase border-2 border-black px-2 py-1 hover:bg-black hover:text-white"
+            >
+              ahora no
+            </button>
+          </div>
+        </div>
+      )}
+
       {sinAsignar.length > 0 && (
         <div className="card-hard bg-[color:var(--mustard)] p-4">
           <h2 className="font-stencil text-2xl leading-none mb-1">
             Facturas sin asignar · {sinAsignar.length}
           </h2>
-          <p className="text-xs text-black/70 mb-3">
-            Llegaron de un número o un correo que no está en ninguna ficha. Diles de quién son para que cuenten en su cuadre.
+          <p className="text-xs text-black/70 mb-2">
+            Llegaron de un número o un correo que no está en ninguna ficha. Se leen solas al entrar; diles de quién son para que cuenten en su cuadre.
           </p>
+          {/* Ponerse al día: los documentos que entraron ANTES de que esto se
+              leyera solo siguen en blanco, y no se arreglan con esperar. */}
+          {sinAsignar.some((f) => !f.lectura) && (
+            <button
+              type="button"
+              onClick={releerPendientes}
+              disabled={releyendo !== null}
+              className="text-[10px] font-mono uppercase tracking-widest border-2 border-black bg-white px-2 py-1 mb-3 hover:bg-black hover:text-white disabled:opacity-50"
+            >
+              {releyendo === "todos" ? "Leyendo…" : "Leer los que faltan"}
+            </button>
+          )}
           <div className="space-y-2">
             {sinAsignar.map((f) => (
               <div key={f.id} className="border-2 border-black bg-white p-2 flex items-center gap-3 flex-wrap">
@@ -285,6 +543,18 @@ export default function FacturasCliente({
                   {f.asunto && (
                     <div className="text-[11px] font-mono text-black/60 truncate">Asunto: {f.asunto}</div>
                   )}
+                  {/* LO QUE DICE EL PAPEL, aquí arriba. Antes solo se veía el
+                      nombre del fichero, así que había que decidir de quién era
+                      un documento sin ver ni el proveedor ni el importe. */}
+                  <ResumenLeido f={f} onReintentar={() => releer(f.id)} reintentando={releyendo === f.id} />
+                  {/* De quién PARECE. Solo por NIF o por teléfono, nunca por el
+                      contenido: un proveedor sale en las facturas de veinte
+                      clientes distintos. Se propone, no se asigna. */}
+                  {f.sugerencia && (
+                    <div className="text-[11px] font-bold bg-white border-2 border-black px-2 py-1 mt-1 inline-block">
+                      👉 {f.sugerencia.texto}
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-1 items-center flex-wrap">
                   {f.verUrl && (
@@ -292,7 +562,7 @@ export default function FacturasCliente({
                       className="text-[10px] font-mono uppercase border-2 border-black px-2 py-1 hover:bg-black hover:text-white">ver</a>
                   )}
                   <select
-                    value={destino[f.id] ?? clientes[0]?.id ?? ""}
+                    value={destino[f.id] ?? f.sugerencia?.clienteId ?? clientes[0]?.id ?? ""}
                     onChange={(e) => setDestino((d) => ({ ...d, [f.id]: e.target.value }))}
                     className="border-2 border-black px-2 py-1 text-xs bg-white"
                   >
@@ -306,7 +576,7 @@ export default function FacturasCliente({
                 {/* Qué es y qué pone. En la MISMA tarjeta: si hay que abrir otra
                     pestaña para comprobar un NIF, se deja de comprobar. */}
                 <div className="w-full">
-                  <LecturaDocumento facturaId={f.id} lectura={f.lectura} error={f.lectura_error} onCambio={recargar} />
+                  <LecturaDocumento facturaId={f.id} lectura={f.lectura} error={f.lectura_error} estado={f.lectura_estado} onCambio={recargar} />
                 </div>
               </div>
             ))}
@@ -359,9 +629,21 @@ export default function FacturasCliente({
       </div>
 
       <div className="card-hard bg-white p-4">
-        <h2 className="font-stencil text-2xl leading-none mb-3">
-          Facturas de este cliente {cargando ? "· cargando…" : `· ${facturas.length}`}
-        </h2>
+        <div className="flex items-center gap-2 flex-wrap mb-3">
+          <h2 className="font-stencil text-2xl leading-none">
+            Facturas de este cliente {cargando ? "· cargando…" : `· ${facturas.length}`}
+          </h2>
+          {facturas.some((f) => !f.lectura) && (
+            <button
+              type="button"
+              onClick={releerPendientes}
+              disabled={releyendo !== null}
+              className="text-[10px] font-mono uppercase tracking-widest border-2 border-black bg-white px-2 py-1 hover:bg-black hover:text-white disabled:opacity-50"
+            >
+              {releyendo === "todos" ? "Leyendo…" : "Leer los que faltan"}
+            </button>
+          )}
+        </div>
         {facturas.length === 0 ? (
           <p className="text-sm text-black/60">Todavía no hay facturas de este cliente.</p>
         ) : (
@@ -385,6 +667,7 @@ export default function FacturasCliente({
                         "03/03" seguidas no dicen cuál es cuál, y confundir la
                         fecha de la factura con la de entrada es lo que hace que
                         se cuele una factura en el trimestre que no toca. */}
+                    <ClaseEtiqueta clase={f.clase} />
                     <span className="text-[11px] font-mono text-black/60">
                       Entró: {entradaCorta(f.fecha_recepcion)} · {ESTADO_TEXTO[f.estado]}
                     </span>
@@ -394,6 +677,9 @@ export default function FacturasCliente({
                     {f.fecha_factura ? ` · Factura: ${fechaCorta(f.fecha_factura)}` : ""}
                     {f.proveedor ? ` · ${f.proveedor}` : ""}
                   </div>
+                  {!f.lectura && (
+                    <ResumenLeido f={f} onReintentar={() => releer(f.id)} reintentando={releyendo === f.id} />
+                  )}
                 </div>
                 <div className="flex gap-1">
                   {f.verUrl && (
@@ -406,7 +692,7 @@ export default function FacturasCliente({
                     className="text-[10px] font-mono uppercase border-2 border-black px-2 py-1 hover:bg-black hover:text-white">descartar</button>
                 </div>
                 <div className="w-full">
-                  <LecturaDocumento facturaId={f.id} lectura={f.lectura} error={f.lectura_error} onCambio={recargar} />
+                  <LecturaDocumento facturaId={f.id} lectura={f.lectura} error={f.lectura_error} estado={f.lectura_estado} onCambio={recargar} />
                 </div>
               </div>
             ))}

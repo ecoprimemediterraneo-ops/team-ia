@@ -70,6 +70,15 @@ export type FacturaRecibida = {
    */
   lectura?: Lectura;
   lectura_error?: string;
+  /**
+   * En qué punto va la lectura con IA.
+   *
+   * Hace falta un estado propio porque "no hay lectura" ya no significa una
+   * sola cosa: puede ser que acabe de entrar y se esté leyendo AHORA MISMO, o
+   * que la lectura fallara. Sin distinguirlo, la pantalla decía "Sin leer
+   * todavía" en los dos casos y el gestor no sabía si esperar o reintentar.
+   */
+  lectura_estado?: "leyendo" | "hecha" | "error";
   /** Copia plana de `lectura.clase` para poder filtrar sin abrir la lectura. */
   clase?: ClaseDocumento;
   /**
@@ -372,6 +381,26 @@ export async function leerFicheroLocal(ruta: string): Promise<Buffer | null> {
   return fs.readFile(destino).catch(() => null);
 }
 
+/**
+ * Los bytes de un documento ya guardado, venga de Supabase o del disco.
+ *
+ * Existe para poder RELEER: si la lectura falló (o el documento entró antes de
+ * que hubiera lectura automática), hay que volver a pasarlo por la IA, y para
+ * eso hace falta el fichero, no la URL.
+ */
+export async function leerFicheroGuardado(ruta: string): Promise<Buffer | null> {
+  if (!supabaseEnabled()) return leerFicheroLocal(ruta);
+  try {
+    const sb = getSupabase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (sb.storage.from(BUCKET) as any).download(ruta);
+    if (error || !data) return null;
+    return Buffer.from(await data.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Alta de una factura — el único camino, vengan de donde vengan
 // -----------------------------------------------------------------------------
@@ -451,7 +480,7 @@ export async function leerYGuardar(opts: {
   if (i < 0) return null;
 
   if (!r.ok) {
-    todas[i] = { ...todas[i], lectura_error: r.error };
+    todas[i] = { ...todas[i], lectura_error: r.error, lectura_estado: "error" };
     await guardarFacturas(opts.tenantId, todas);
     console.warn(`[gestoria] no se ha podido leer ${opts.facturaId}: ${r.error}`);
     return todas[i];
@@ -462,6 +491,7 @@ export async function leerYGuardar(opts: {
     ...todas[i],
     lectura: r.lectura,
     lectura_error: undefined,
+    lectura_estado: "hecha",
     clase: r.lectura.clase,
     contable: ES_CONTABLE[r.lectura.clase],
     // Lo leído solo rellena lo que estaba vacío: si el gestor ya escribió un
@@ -486,6 +516,66 @@ export async function leerYGuardar(opts: {
 
   console.log(`[gestoria] leído ${opts.facturaId}: ${r.lectura.clase} (${r.lectura.confianza}, ${r.lectura.modelo})`);
   return todas[i];
+}
+
+/**
+ * Deja escrito que este documento SE ESTÁ LEYENDO.
+ *
+ * Se marca antes de arrancar la lectura para que la lista lo diga desde el
+ * primer segundo. Sin esto, entre que entra el documento y termina la IA hay
+ * unos segundos en los que la pantalla mentía diciendo "sin leer".
+ */
+export async function marcarLeyendo(tenantId: string, facturaId: string): Promise<void> {
+  const todas = await listarFacturas(tenantId);
+  const i = todas.findIndex((f) => f.id === facturaId);
+  if (i < 0) return;
+  todas[i] = { ...todas[i], lectura_estado: "leyendo", lectura_error: undefined };
+  await guardarFacturas(tenantId, todas);
+}
+
+/**
+ * Vuelve a leer un documento que ya está guardado.
+ *
+ * Para dos cosas: el botón de reintentar cuando la lectura falló, y ponerse al
+ * día con los que entraron antes de que esto se leyera solo. Se baja el fichero
+ * del almacén y se pasa por el mismo camino de siempre — no hay una segunda
+ * forma de leer, que es como acaban divergiendo dos resultados.
+ */
+export async function releerDocumento(
+  tenantId: string,
+  facturaId: string,
+): Promise<{ ok: true; factura: FacturaRecibida } | { ok: false; error: string }> {
+  const todas = await listarFacturas(tenantId);
+  const f = todas.find((x) => x.id === facturaId);
+  if (!f) return { ok: false, error: "Ese documento ya no está." };
+
+  const contenido = await leerFicheroGuardado(f.fichero_url);
+  if (!contenido) {
+    return { ok: false, error: "No se ha podido recuperar el fichero guardado para volver a leerlo." };
+  }
+
+  await marcarLeyendo(tenantId, facturaId);
+  const leida = await leerYGuardar({
+    tenantId, facturaId, contenido, mime: mimeDeTipo(f.tipo, f.nombre_original), nombre: f.nombre_original,
+  }).catch((e) => {
+    console.error("[gestoria] relectura fallida:", e);
+    return null;
+  });
+  if (!leida) return { ok: false, error: "La lectura ha fallado. Puedes volver a intentarlo." };
+  return { ok: true, factura: leida };
+}
+
+/**
+ * El mime a partir de lo poco que guardamos. Suficiente para la lectura: solo
+ * necesita saber si es PDF o imagen, y el nombre desempata.
+ */
+function mimeDeTipo(tipo: TipoFichero, nombre: string): string {
+  if (tipo === "pdf") return "application/pdf";
+  const n = (nombre || "").toLowerCase();
+  if (n.endsWith(".png")) return "image/png";
+  if (n.endsWith(".webp")) return "image/webp";
+  if (n.endsWith(".gif")) return "image/gif";
+  return "image/jpeg";
 }
 
 /**

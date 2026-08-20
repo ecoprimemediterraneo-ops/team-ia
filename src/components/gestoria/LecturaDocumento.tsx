@@ -125,11 +125,14 @@ export default function LecturaDocumento({
   facturaId,
   lectura,
   error,
+  estado,
   onCambio,
 }: {
   facturaId: string;
   lectura?: Lectura | null;
   error?: string;
+  /** En qué punto va la lectura. Distingue "espera" de "no se ha leído". */
+  estado?: "leyendo" | "hecha" | "error";
   onCambio?: () => void;
 }) {
   const [editando, setEditando] = useState<string | null>(null);
@@ -159,6 +162,15 @@ export default function LecturaDocumento({
     );
   }
   if (!lectura) {
+    // "Leyendo" y "sin leer" NO son lo mismo: uno se resuelve solo en unos
+    // segundos y el otro no se resuelve nunca si nadie hace nada.
+    if (estado === "leyendo") {
+      return (
+        <div className="border-2 border-dashed border-black/30 p-2 text-[11px] text-black/60 animate-pulse">
+          Leyendo… la IA está sacando el proveedor, el importe y el tipo.
+        </div>
+      );
+    }
     return (
       <div className="border-2 border-dashed border-black/30 p-2 text-[11px] text-black/50">
         Sin leer todavía.
