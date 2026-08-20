@@ -40,7 +40,7 @@ const DEFAULT_DURATION_MIN = 30;
 const LOCK_TTL_MS = 30_000;
 
 // Agentes de AI-Team cuyas citas se registran además como BookingRecord (visibles y
-// cancelables en /dashboard/reservas, sujetas a anti-doble-reserva por records y con
+// cancelables en /dashboard/clientes, sujetas a anti-doble-reserva por records y con
 // aviso al dueño). TODOS pasan por reservarSlot(): el record apunta al MISMO evento de
 // Google que se acaba de crear, sin segundo evento ni segundo camino de reserva.
 // Añadir un canal aquí es lo único necesario para unificarlo al motor.

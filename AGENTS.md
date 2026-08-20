@@ -186,6 +186,185 @@ desarrollo levantado con `META_GRAPH_URL=http://127.0.0.1:4545` (ya está en
 variable capaz de redirigir llamadas que llevan el token dentro no puede existir
 en producción.
 
+### Leer los documentos: Haiku, y por qué
+
+La lectura clasifica el documento ANTES de sacar ningún dato (`gestoria-lectura.ts`).
+Un ticket con pinta de factura es lo que le cuesta dinero al cliente meses
+después, cuando Hacienda le quita una deducción que nunca tuvo. Clases:
+`factura_completa` (la única que deduce IVA), `ticket`, `albaran`, `abono`,
+`presupuesto`, `otro`. `ES_CONTABLE` decide qué entra en el cruce con el banco:
+un albarán cruzándose con un cargo daría por justificado un pago que no lo está.
+
+**Red de seguridad en código, no en el prompt**: sin NIF del destinatario leído
+con seguridad, la clase baja a `ticket` aunque el modelo diga factura. Esa regla
+separa deducir el IVA de no deducirlo y es demasiado cara para dejarla solo en
+un prompt.
+
+**El modelo es Haiku** (`MODELO_LECTURA`). Comparado campo a campo con Sonnet
+sobre los tres documentos de prueba (ticket de bar, albarán, abono): misma
+clase, misma confianza, mismos importes, mismos NIF, mismas líneas de IVA. La
+única diferencia real fue cosmética — Haiku escribió `B93035848` donde Sonnet
+puso `B-93035848`. Coste por documento: **$0.0046 con Haiku frente a $0.0119
+con Sonnet**, 2,6 veces menos. Leer una factura no es razonar: los datos están
+escritos en el papel.
+
+```bash
+node scripts/probar-lectura-documentos.mjs            # los tres documentos, camino real
+node scripts/probar-lectura-documentos.mjs --comparar # Haiku contra Sonnet, campo a campo
+```
+
+**El gasto se cuenta, no se estima** (`gestoria-coste.ts`): cada lectura suma
+los tokens que devuelve la llamada. El panel `/admin` lo enseña por gestoría,
+con el coste por documento y la proyección a 500 documentos al mes — que es una
+gestoría de 50 clientes mandando 10 facturas cada uno, la cifra que decide si el
+precio mensual aguanta. Los precios por millón viven en `PRECIOS`.
+
+### Las ventas: el otro lado del banco
+
+Las compras entran de una en una (el cliente hace la foto del ticket). Las
+ventas no: el cliente emite desde su programa y manda un **listado mensual** en
+Excel, CSV o PDF. Pedirle las ventas de una en una sería pedirle que trabaje el
+doble para dárnoslo peor.
+
+Y lo que se busca es **lo contrario**. En compras falta la factura de un cargo:
+IVA que pierde el cliente. En ventas falta la factura de un **ingreso**: una
+venta sin declarar. Lo primero se reclama, lo segundo se avisa — por eso sale
+arriba y en rojo, en la misma pantalla de conciliación (`VentasDelCliente`).
+
+**Cómo se lee el listado, y por qué no se le pide todo a la IA.** Un listado
+trae doscientas filas de números. Pedirle a un modelo que las transcriba es caro
+y es la forma más fácil de que se cuele un importe cambiado — que aquí significa
+una base imponible mal declarada. Así que se parte en dos: **la IA dice qué
+columna es cada una** (mirando cabecera y tres filas de muestra) y **el código
+lee las filas**. Los números no pasan por el modelo. Solo el PDF, que no tiene
+columnas, se transcribe entero.
+
+Tres trampas que ya se pagaron y están cubiertas:
+
+1. **El separador del CSV se decide mirando todo el fichero**, no la primera
+   línea. Los listados de verdad empiezan con el nombre del negocio y el
+   periodo —líneas sin separador—, así que salía coma y los importes se partían
+   por el decimal (`5.656` y `33`).
+2. **La fila de totales no es una factura.** Se reconoce por lo que le falta: una
+   factura siempre lleva número. Sin esto, `TOTAL MES` entraba como una venta
+   fantasma de veinte mil euros.
+3. **La columna "IVA" puede ser el porcentaje.** Se le dice al modelo que si ve
+   21/10/4 en todas las filas, esa columna es el tipo y no la cuota.
+
+**El cruce** (`gestoria-conciliacion-ventas.ts`) es el espejo del de compras con
+dos diferencias: la ventana es de **75 días** (una factura emitida se cobra a
+30 o 60; un cargo se paga el día que se paga) y **no se cruza por nombre** — el
+concepto del banco trae al pagador, no al emisor.
+
+**Cuatro bloques, y ninguno esconde nada:** ingresos sin factura (lo grave), por
+revisar, **ingresos de meses sin listado** y lo que no es una venta
+(`gestoria-ingresos.ts`: traspasos, devoluciones, préstamos, subvenciones,
+devoluciones de Hacienda, abonos del banco). El tercero existe porque la primera
+vez que subes el listado de enero contra un extracto de todo el año, la pantalla
+gritaba **"112 ventas sin facturar"** — y eran meses sin cargar, no delitos. Una
+cifra así no te hace revisar: te hace no volver a mirar.
+
+Lee `.xlsx`, `.csv` y `.pdf`. El Excel va con **`exceljs`**, que arrastra
+dependencias viejas (`uuid@8`, `glob@7`) con avisos de `npm audit` — ninguno
+alcanzable desde este camino, pero está ahí.
+
+### Documentos del gestor al cliente
+
+La vuelta que faltaba. **Por WhatsApp, no por un portal**: el cliente ya manda
+sus facturas por ahí. Bilky tiene portal y de sus cincuenta clientes lo usan
+cinco — un documento que hay que ir a buscar es un documento que no se recoge.
+
+`gestoria-envio-docs.ts`. Dos modos, y el nombre del fichero decide por defecto:
+
+- **fichero** para lo normal (un certificado se puede reenviar sin daño).
+- **enlace que caduca** para lo delicado — modelos de impuestos, nóminas,
+  balances, libros. Un 390 con el resumen anual reenviado a un grupo es un
+  problema; el enlace caduca en 10 minutos y mañana no abre nada. **Pero llega
+  al mismo chat**: no hay que registrarse en ningún sitio.
+
+El enlace se firma con la misma función que las facturas y se hace **absoluto**:
+una ruta relativa dentro de un WhatsApp no es un enlace, es texto.
+
+**La ventana de 24 h.** WhatsApp solo deja escribir libremente durante las 24 h
+siguientes al último mensaje del cliente. Cuando el cliente acaba de pedir el
+documento —el caso normal— está abierta. Fuera, Meta devuelve `131047` y aquí se
+dice con esas palabras en vez de dar el envío por bueno.
+
+### ¿Está listo para enseñárselo a alguien?
+
+`GET /api/admin/gestoria-listo` (founder-only): qué variable falta, qué enciende
+cada una y **qué pasa exactamente si no está**. Incluye el `ownerWhatsapp` de
+cada gestoría, que no es una variable de entorno sino un campo del tenant.
+
+| Variable | Enciende | Si falta |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Leer facturas, listados y fechas del correo | Los documentos se guardan sin leer: tarjeta vacía, nada que cruzar |
+| `OPENAI_API_KEY` | Transcribir los audios del gestor | Pablo pide que se lo escriban |
+| `GESTORIA_AVISO_DIARIO_ENABLED` | El aviso de cada mañana | El cron calcula y lo deja en el log, no manda |
+| `GESTORIA_ENVIO_DOCS_ENABLED` | Mandar documentos al cliente | Se prepara el mensaje y se enseña, no sale |
+| `CRON_SECRET` | Que n8n dispare el aviso | La ruta del cron queda abierta |
+| `ownerWhatsapp` (campo del tenant) | Quién recibe el aviso y de quién se transcriben los audios | Sin él no hay aviso y los audios del gestor se tratan como los de un cliente |
+
+### La lista de HOY y cómo se llena sola
+
+`/dashboard/hoy` (`gestoria-hoy.ts`) ordena por **fecha límite legal**, no por
+orden de llegada: una plusvalía que vence mañana va por encima de un ticket que
+un cliente pidió la semana pasada. Por encima del cálculo manda el gestor: lo
+que marque urgente sube. **Rojo solo lo que vence hoy, mañana o ya venció** — si
+todo va en rojo, el rojo deja de significar nada. Y el aviso de arriba no se
+puede cerrar: se va cuando se marca hecho.
+
+Lo derivado (expedientes, facturas sin asignar, cargos sin justificar) se
+**deriva en cada lectura, no se copia**: una copia se queda vieja y el gestor
+sigue viendo "asigna esta factura" después de asignarla. Los cargos del banco
+van **agrupados por cliente**: uno por movimiento daba 537 tareas y enterraba
+las cuatro que tenían fecha legal.
+
+| Entra por | Cómo |
+|---|---|
+| Correo oficial | `gestoria-plazos.ts`. Solo se lee el texto si el REMITENTE ya estaba marcado como importante — leer todos los correos sería una llamada por correo abierto y llenaría la lista de ruido. Enganchado en `/api/lucia/message/[id]`. |
+| Audio del gestor | `gestoria-audio.ts`, ver abajo |
+| A mano | Botón en `/dashboard/hoy` |
+
+**Si el correo no trae fecha, NO se inventa**: se apunta sin plazo y el detalle
+dice "SIN FECHA LÍMITE en el correo — míralo". Si no se sabe de qué cliente es,
+va sin cliente: atribuir mal un vencimiento fiscal es peor que dejarlo huérfano.
+
+### WhatsApp con el gestor, en los dos sentidos
+
+**Cada mañana** (`gestoria-aviso-diario.ts` + `/api/cron/gestoria-aviso-diario`):
+**dos mensajes, no uno**. El resumen del día, y aparte lo que vence hoy o mañana
+y sigue sin hacer. Mezclados, lo urgente se lee como un renglón más. El segundo
+mensaje solo sale si de verdad hay algo, y por eso se lee.
+
+**El audio del gestor SÍ se transcribe; el de un cliente NO.** Decide el número:
+solo el `ownerWhatsapp` del tenant. Abrir la transcripción a cualquiera que
+escriba al número es una llamada de pago por nota de voz y no hace falta para
+mandar una factura. Jose se lo dicta en el coche: Pablo transcribe (Whisper de
+OpenAI — Claude no oye), entiende si es un recordatorio o una pregunta, **lo
+apunta con su fecha y su cliente, y SIEMPRE confirma por escrito lo que ha
+entendido**. La confirmación no es cortesía: es cómo el gestor se entera de que
+Pablo oyó "Bar El Puerto" donde él dijo otra cosa. La urgencia se entiende como
+la diga ("esto es urgente", "corre prisa"), sin códigos que aprender.
+
+| Variable | Qué enciende | Por defecto |
+|---|---|---|
+| `GESTORIA_AVISO_DIARIO_ENABLED` | El aviso de cada mañana por WhatsApp. Apagado, el cron calcula, escribe los dos mensajes en el log y no manda nada. | off |
+| `OPENAI_API_KEY` | Transcripción de los audios del gestor. Sin ella, Pablo dice que no ha podido entender el audio y pide que se lo escriban. | — |
+
+El cron **no está en `vercel.json`** (el plan Hobby ya va lleno): se dispara
+desde n8n con `CRON_SECRET`, como los otros cuatro.
+
+**Banco de pruebas** (founder-only), porque el correo real está en Gmail y el
+audio real en un móvil:
+
+| Ruta | Qué prueba |
+|---|---|
+| `GET /api/admin/gestoria-probar?que=aviso` | Los dos mensajes de la mañana, sin enviarlos |
+| `POST` con `{correo:{remitente,asunto,cuerpo}}` | Lee el correo y crea el vencimiento en HOY |
+| `POST` con `{texto:"..."}` | Lo que Pablo entiende de un audio del gestor |
+| `POST /api/admin/lectura-comparar` | El mismo documento por dos modelos |
+
 ### `data/` NO viaja al despliegue
 
 Lo que se siembra en local vive solo en la máquina de quien lo sembró. En

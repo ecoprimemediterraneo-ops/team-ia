@@ -10,7 +10,7 @@ import { getSessionLocal } from "@/lib/auth";
 import { contextoPanelODefecto } from "@/lib/panel-contexto";
 import {
   listarFacturas, listarSinAsignar, crearFactura, actualizarFactura,
-  asignarCliente, urlFirmada,
+  asignarCliente, urlFirmada, leerYGuardar, corregirLectura,
 } from "@/lib/gestoria-facturas";
 
 export const runtime = "nodejs";
@@ -19,7 +19,7 @@ export const maxDuration = 60;
 
 async function guardia() {
   const s = await getSessionLocal();
-  if (!s) return { ok: false as const, res: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
+  if (!s) return { ok: false as const, res: NextResponse.json({ error: "Tu sesión ha caducado. Vuelve a entrar en el panel." }, { status: 401 }) };
   const ctx = await contextoPanelODefecto();
   return { ok: true as const, tenantId: ctx.tenantId };
 }
@@ -62,16 +62,21 @@ export async function POST(req: Request) {
     for (const f of ficheros) {
       try {
         const buf = Buffer.from(await f.arrayBuffer());
-        creadas.push(
-          await crearFactura({
-            tenantId: g.tenantId,
-            clienteId,
-            origen: "manual",
-            nombre: f.name || "factura",
-            contenido: buf,
-            mime: f.type || "",
-          }),
-        );
+        const nueva = await crearFactura({
+          tenantId: g.tenantId,
+          clienteId,
+          origen: "manual",
+          nombre: f.name || "factura",
+          contenido: buf,
+          mime: f.type || "",
+        });
+        // Se lee aquí mismo: el gestor está mirando la pantalla y espera ver
+        // los datos, no una tarjeta vacía que se rellene sola más tarde.
+        const leida = await leerYGuardar({
+          tenantId: g.tenantId, facturaId: nueva.id,
+          contenido: buf, mime: f.type || "", nombre: f.name,
+        }).catch(() => null);
+        creadas.push(leida ?? nueva);
       } catch (e) {
         // Un fichero que no vale no tumba la subida de los demás.
         rechazadas.push(`${f.name}: ${e instanceof Error ? e.message : "error"}`);
@@ -94,6 +99,20 @@ export async function PATCH(req: Request) {
     notas?: string; cliente_id?: string;
   };
   if (!body.id) return NextResponse.json({ error: "falta id" }, { status: 400 });
+
+  // Corregir un dato leído por la IA. Va por su camino porque toca la lectura,
+  // no el registro: lo que corrige el gestor queda marcado como seguro.
+  const b = body as { campo?: string; valor?: string };
+  if (b.campo) {
+    const campos = ["emisor", "nifEmisor", "nifDestinatario", "numero", "fecha", "total", "clase"] as const;
+    if (!(campos as readonly string[]).includes(b.campo)) {
+      return NextResponse.json({ error: "campo no válido" }, { status: 400 });
+    }
+    const r = await corregirLectura(g.tenantId, body.id, b.campo as (typeof campos)[number], b.valor ?? "");
+    return r
+      ? NextResponse.json({ ok: true, factura: r })
+      : NextResponse.json({ error: "no se ha podido corregir" }, { status: 400 });
+  }
 
   // Asignar cliente va por su propio camino: cambia dueño Y estado a la vez, y
   // así no depende de que quien llama se acuerde de mandar los dos campos.

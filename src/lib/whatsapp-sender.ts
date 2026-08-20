@@ -11,33 +11,66 @@
 const GRAPH_VERSION = "v21.0";
 
 export type WhatsAppSendResult =
-  | { ok: true; messageId?: string; raw: unknown }
+  | { ok: true; messageId?: string; raw: unknown; simulado?: true }
   | { ok: false; reason: "missing_credentials" | "graph_error" | "network_error"; detail: string };
 
-function endpoint(): { url: string; token: string } | null {
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const token = process.env.WHATSAPP_ACCESS_TOKEN;
-  if (!phoneNumberId || !token) return null;
+/**
+ * Doble candado, igual que en `gestoria-adjuntos.ts` y `auth.ts`: en local
+ * NODE_ENV no es production Y no existe VERCEL. Las dos cosas juntas no pueden
+ * darse en producción.
+ */
+function esLocal(): boolean {
+  return process.env.NODE_ENV !== "production" && !process.env.VERCEL;
+}
+
+/**
+ * POR QUÉ ESTO EXISTE: antes este fichero llamaba SIEMPRE a graph.facebook.com.
+ * En cuanto hubiera un token de verdad en el `.env.local` del portátil, darle al
+ * botón de "enviar documento" mandaba un WhatsApp REAL a un cliente real desde
+ * una máquina de desarrollo. Ahora en local es IMPOSIBLE salir a Meta:
+ *   - si hay `META_GRAPH_URL`, se va al Graph de mentira (127.0.0.1:4545);
+ *   - si no lo hay, no se llama a nadie: se escribe en consola y se devuelve
+ *     éxito simulado.
+ * `META_GRAPH_URL` se ignora en Vercel a propósito: una variable capaz de
+ * redirigir llamadas que llevan el token dentro sería un agujero en producción.
+ */
+function destinoGraph(phoneNumberId: string): { url: string; simulado: boolean } {
+  const falso = process.env.META_GRAPH_URL;
+  if (esLocal()) {
+    if (falso) {
+      return { url: `${falso.replace(/\/+$/, "")}/${phoneNumberId}/messages`, simulado: false };
+    }
+    return { url: "", simulado: true };
+  }
   return {
     url: `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`,
-    token,
+    simulado: false,
   };
 }
 
 async function postGraph(payload: unknown): Promise<WhatsAppSendResult> {
-  const e = endpoint();
-  if (!e) {
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  if (!phoneNumberId || !token) {
     return {
       ok: false,
       reason: "missing_credentials",
       detail: "Faltan WHATSAPP_PHONE_NUMBER_ID o WHATSAPP_ACCESS_TOKEN.",
     };
   }
+  const destino = destinoGraph(phoneNumberId);
+  if (destino.simulado) {
+    console.warn(
+      "[whatsapp-sender] LOCAL sin META_GRAPH_URL: no se envía nada a Meta. Mensaje simulado:",
+      JSON.stringify(payload),
+    );
+    return { ok: true, messageId: `simulado-local-${Date.now()}`, raw: payload, simulado: true };
+  }
   try {
-    const res = await fetch(e.url, {
+    const res = await fetch(destino.url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${e.token}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
@@ -123,6 +156,32 @@ export async function sendWhatsAppImage(
  * dueño). `bodyParams` son las variables {{1}}, {{2}}… del cuerpo, EN ORDEN.
  * Reutiliza el mismo cliente/credenciales (WHATSAPP_PHONE_NUMBER_ID/ACCESS_TOKEN).
  */
+/**
+ * Envía un documento (PDF, imagen, hoja) por URL, con nombre de fichero.
+ *
+ * La URL tiene que ser alcanzable por Meta: Meta se la descarga desde sus
+ * servidores, no desde el navegador del gestor. Por eso una URL firmada de
+ * Supabase vale y una ruta de `localhost` no.
+ */
+export async function sendWhatsAppDocument(
+  to: string,
+  documentUrl: string,
+  filename: string,
+  caption?: string,
+): Promise<WhatsAppSendResult> {
+  return postGraph({
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to,
+    type: "document",
+    document: {
+      link: documentUrl,
+      filename: filename.slice(0, 240),
+      ...(caption ? { caption: caption.slice(0, 1024) } : {}),
+    },
+  });
+}
+
 export async function sendWhatsAppTemplate(
   to: string,
   templateName: string,

@@ -25,7 +25,7 @@ const MOTIVOS: MotivoNoReclamar[] = ["la_tengo", "no_corresponde", "ahora_no"];
 
 export async function POST(req: Request) {
   const s = await getSessionLocal();
-  if (!s) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!s) return NextResponse.json({ error: "Tu sesión ha caducado. Vuelve a entrar en el panel." }, { status: 401 });
   const ctx = await contextoPanelODefecto();
 
   const body = (await req.json().catch(() => ({}))) as {

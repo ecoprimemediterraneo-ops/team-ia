@@ -38,6 +38,7 @@ const FILE = path.join(DATA_DIR, "queue.json");
 
 // Seed bundled (commiteado en src/data/queue-seed.json) — siempre disponible incluso si /tmp se borra
 import seedJson from "@/data/queue-seed.json";
+import { baseGraph, simulado } from "./meta-graph-local";
 const SEED: Publicacion[] = seedJson as Publicacion[];
 
 async function load(): Promise<Publicacion[]> {
@@ -167,7 +168,15 @@ export const InstagramAdapter: RedAdapter = {
         mediaParams.set("image_url", pub.imagenUrl!);
       }
 
-      const r1 = await fetch(`https://graph.facebook.com/v21.0/${igUserId}/media`, {
+      // EL CANDADO (ver src/lib/meta-graph-local.ts): publicar en Instagram desde
+      // el portátil publicaría en la cuenta REAL del cliente.
+      const base = baseGraph();
+      if (!base) {
+        simulado("redes/instagram", { igUserId, caption: pub.contenido });
+        return { ok: true, asistido: true, mensaje: "LOCAL: no se publica de verdad (no hay Graph de pruebas)" };
+      }
+
+      const r1 = await fetch(`${base}/${igUserId}/media`, {
         method: "POST",
         body: mediaParams,
       });
@@ -177,7 +186,7 @@ export const InstagramAdapter: RedAdapter = {
       const containerId = j1.id;
 
       // Paso 2: publicar contenedor
-      const r2 = await fetch(`https://graph.facebook.com/v21.0/${igUserId}/media_publish`, {
+      const r2 = await fetch(`${base}/${igUserId}/media_publish`, {
         method: "POST",
         body: new URLSearchParams({ creation_id: containerId, access_token: token }),
       });
@@ -218,7 +227,14 @@ export const FacebookAdapter: RedAdapter = {
       });
       if (pub.imagenUrl) params.set("link", pub.imagenUrl);
 
-      const r = await fetch(`https://graph.facebook.com/v21.0/${pageId}/feed`, {
+      // Mismo candado que en Instagram: en local no se publica en la Página real.
+      const base = baseGraph();
+      if (!base) {
+        simulado("redes/facebook", { pageId, message: pub.contenido });
+        return { ok: true, asistido: true, mensaje: "LOCAL: no se publica de verdad (no hay Graph de pruebas)" };
+      }
+
+      const r = await fetch(`${base}/${pageId}/feed`, {
         method: "POST",
         body: params,
       });

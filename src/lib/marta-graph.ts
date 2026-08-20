@@ -44,10 +44,16 @@
 // primera ejecución real deja escrito cuál es el bueno para esta cuenta.
 
 import "server-only";
+import { baseGraph, baseGraphInstagram, simulado } from "./meta-graph-local";
 
 const GRAPH_VERSION = "v21.0";
-const HOST_FACEBOOK = `https://graph.facebook.com/${GRAPH_VERSION}`;
-const HOST_INSTAGRAM = `https://graph.instagram.com/${GRAPH_VERSION}`;
+
+// EL CANDADO (ver src/lib/meta-graph-local.ts). Antes eran dos constantes fijas
+// apuntando a Meta: en local, con un token de verdad puesto, Marta contestaba
+// comentarios y mandaba DMs REALES desde el portátil, en la cuenta del cliente.
+// Ahora son funciones y devuelven `null` cuando no hay a quién llamar.
+const hostFacebook = () => baseGraph(GRAPH_VERSION);
+const hostInstagram = () => baseGraphInstagram(GRAPH_VERSION);
 
 export function getSystemUserToken(): string | undefined {
   return process.env.INSTAGRAM_ACCESS_TOKEN && process.env.INSTAGRAM_ACCESS_TOKEN.length > 0
@@ -72,7 +78,12 @@ export function invalidatePageTokenCache(): void {
 export async function getPageAccessToken(userToken: string, pageId: string): Promise<string> {
   const now = Date.now();
   if (cachedPageToken && cachedPageToken.expiresAt > now) return cachedPageToken.token;
-  const url = `${HOST_FACEBOOK}/${pageId}?fields=access_token`;
+  const base = hostFacebook();
+  if (!base) {
+    simulado("marta/graph", { pide: "page access token", pageId });
+    throw new Error("[marta/graph] LOCAL sin META_GRAPH_URL: no se pide el token de Página a Meta.");
+  }
+  const url = `${base}/${pageId}?fields=access_token`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${userToken}` } });
   if (!res.ok) {
     const body = await res.text();
@@ -111,7 +122,12 @@ export async function sendInstagramMessage(recipient: IGRecipient, text: string)
     return { error: "missing token" };
   }
 
-  const endpoint = `${HOST_FACEBOOK}/${pageId}/messages`;
+  const baseDm = hostFacebook();
+  if (!baseDm) {
+    simulado("marta/graph", { manda: "DM", pageId, recipient, text });
+    return { simulado: true };
+  }
+  const endpoint = `${baseDm}/${pageId}/messages`;
   const payload = {
     recipient,
     message: { text },
@@ -218,7 +234,17 @@ async function intentarReply(
   text: string,
   cred: Credencial,
 ): Promise<IntentoGraph> {
-  const base = cred.host === "graph.facebook.com" ? HOST_FACEBOOK : HOST_INSTAGRAM;
+  const base = cred.host === "graph.facebook.com" ? hostFacebook() : hostInstagram();
+  if (!base) {
+    simulado("marta/graph", { responde: "comentario público", commentId, text });
+    return {
+      credencial: cred.tipo,
+      host: cred.host,
+      status: 0,
+      ok: false,
+      message: "LOCAL sin META_GRAPH_URL: no se ha llamado a Meta.",
+    };
+  }
   const endpoint = `${base}/${commentId}/replies`;
   try {
     const res = await fetch(endpoint, {

@@ -6,6 +6,8 @@ import { agents, agentBySlug } from "@/lib/agents";
 import { contextoPanelODefecto, puedeCambiarDeCuenta } from "@/lib/panel-contexto";
 import SelectorCuenta from "@/components/SelectorCuenta";
 import { tieneFuncion } from "@/lib/sectores";
+import EnlaceLateral from "@/components/EnlaceLateral";
+import EnlaceAgente from "@/components/EnlaceAgente";
 
 // Las tarjetas de agente NO llevan insignia de estado. Había un "LIVE" verde en los
 // conectados y un "PRÓXIMAMENTE" en Carmen y Rocío: al cliente no le dice nada útil y
@@ -52,138 +54,104 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
       <div className="max-w-7xl mx-auto grid md:grid-cols-[260px_1fr] gap-6 px-5 py-6">
         <aside className="space-y-2">
-          <a
-            href="/dashboard/reservas"
-            className="card-hard flex items-center gap-3 p-3 mb-3 hover:-translate-y-0.5 transition"
-            style={{ background: "var(--mustard)" }}
-          >
-            <span className="text-2xl">📅</span>
-            <span className="flex-1 min-w-0">
-              {/* Se llamaba "AGENDA": no se identificaba como el módulo de reservas online
-                  y no había forma de llegar a /dashboard/reservas salvo tecleando la URL.
-                  Después se le puso "EXPEDIENTES" en gestoría y quedaron DOS entradas
-                  seguidas con el mismo rótulo: esta —agenda, clientes, compartir e
-                  informes— y la de abajo, que es la de verdad (estado, documentación,
-                  vencimientos). Cambia SOLO el rótulo: la ruta, el icono y quién la ve
-                  siguen igual. */}
-              <span className="block font-stencil text-xl leading-none">{ctx.perfil.id === "gestoria" ? "CLIENTES" : "RESERVAS"}</span>
-              {/* Mismo orden que las pestañas de ReservasPanel: informes al final. */}
-              <span className="block text-[10px] uppercase tracking-widest text-black/70">Agenda · {v.clientePlural} · compartir · informes mensuales</span>
-            </span>
-          </a>
+          <EnlaceLateral
+            href="/dashboard/clientes"
+            emoji="📅"
+            fondo="var(--mustard)"
+            /* Se llamaba "AGENDA": no se identificaba como el módulo de reservas online
+               y no había forma de llegar a esta pantalla salvo tecleando la URL.
+               Después se le puso "EXPEDIENTES" en gestoría y quedaron DOS entradas
+               seguidas con el mismo rótulo: esta —agenda, clientes, compartir e
+               informes— y la de abajo, que es la de verdad (estado, documentación,
+               vencimientos). Cambia SOLO el rótulo: la ruta, el icono y quién la ve
+               siguen igual. */
+            titulo={ctx.perfil.id === "gestoria" ? "CLIENTES" : "RESERVAS"}
+            /* Mismo orden que las pestañas de ReservasPanel: informes al final. */
+            subtitulo={`Agenda · ${v.clientePlural} · compartir · informes mensuales`}
+          />
           {/* SERVICIO DE HOY: solo en restauración. Es la pantalla que se mira
               antes de abrir, y va la primera por eso mismo. */}
           {tieneFuncion(ctx.sector, "panelDelDia") && (
-            <a
+            <EnlaceLateral
               href="/dashboard/servicio"
-              className="card-hard flex items-center gap-3 p-3 mb-3 hover:-translate-y-0.5 transition bg-white"
-            >
-              <span className="text-2xl">🍽️</span>
-              <span className="flex-1 min-w-0">
-                <span className="block font-stencil text-xl leading-none">SERVICIO DE HOY</span>
-                <span className="block text-[10px] uppercase tracking-widest text-black/70">
-                  Reservas · comensales · no-shows
-                </span>
-              </span>
-            </a>
+              emoji="🍽️"
+              titulo="SERVICIO DE HOY"
+              subtitulo="Reservas · comensales · no-shows"
+              fondo="#ffffff"
+            />
+          )}
+          {/* HOY: solo en gestoría, y la PRIMERA de todas. Es el sitio por el
+              que se entra: la secretaria no te enseña el archivo, te dice qué
+              te queda por hacer. */}
+          {tieneFuncion(ctx.sector, "estadoExpediente") && (
+            <EnlaceLateral
+              href="/dashboard/hoy"
+              emoji="☑️"
+              titulo="HOY"
+              subtitulo="Lo que toca · por fecha límite"
+              fondo="var(--mustard)"
+            />
           )}
           {/* EXPEDIENTES: solo en gestoría. Va la primera porque es donde se
               contesta la pregunta que más llamadas genera: "¿cómo va lo mío?". */}
           {tieneFuncion(ctx.sector, "estadoExpediente") && (
-            <a
+            <EnlaceLateral
               href="/dashboard/expedientes"
-              className="card-hard flex items-center gap-3 p-3 mb-3 hover:-translate-y-0.5 transition bg-white"
-            >
-              <span className="text-2xl">📁</span>
-              <span className="flex-1 min-w-0">
-                <span className="block font-stencil text-xl leading-none">EXPEDIENTES</span>
-                <span className="block text-[10px] uppercase tracking-widest text-black/70">
-                  Estado · documentación · vencimientos
-                </span>
-              </span>
-            </a>
+              emoji="📁"
+              titulo="EXPEDIENTES"
+              subtitulo="Estado · documentación · vencimientos"
+              fondo="#ffffff"
+            />
           )}
           {/* FACTURAS: solo en gestoría. Es el saco del cliente y la conciliación
               contra el banco, que es donde se ve qué salió sin justificar. */}
           {tieneFuncion(ctx.sector, "estadoExpediente") && (
-            <a
+            <EnlaceLateral
               href="/dashboard/facturas"
-              className="card-hard flex items-center gap-3 p-3 mb-3 hover:-translate-y-0.5 transition bg-white"
-            >
-              <span className="text-2xl">🧾</span>
-              <span className="flex-1 min-w-0">
-                <span className="block font-stencil text-xl leading-none">FACTURAS</span>
-                <span className="block text-[10px] uppercase tracking-widest text-black/70">
-                  Saco · banco · conciliación
-                </span>
-              </span>
-            </a>
+              emoji="🧾"
+              titulo="FACTURAS"
+              subtitulo="Saco · banco · conciliación"
+              fondo="#ffffff"
+            />
           )}
           {/* CORREO IMPORTANTE: solo en gestoría. La lista de remitentes que
               hace que una notificación de Hacienda no se pierda entre 200
               correos. */}
           {tieneFuncion(ctx.sector, "clasificacionCorreo") && (
-            <a
+            <EnlaceLateral
               href="/dashboard/correo-importante"
-              className="card-hard flex items-center gap-3 p-3 mb-3 hover:-translate-y-0.5 transition bg-white"
-            >
-              <span className="text-2xl">🔴</span>
-              <span className="flex-1 min-w-0">
-                <span className="block font-stencil text-xl leading-none">CORREO IMPORTANTE</span>
-                <span className="block text-[10px] uppercase tracking-widest text-black/70">
-                  Hacienda · Seguridad Social · juzgados
-                </span>
-              </span>
-            </a>
+              emoji="🔴"
+              titulo="CORREO IMPORTANTE"
+              subtitulo="Hacienda · Seguridad Social · juzgados"
+              fondo="#ffffff"
+            />
           )}
           {/* Seguimiento (recall + presupuestos): solo donde el sector lo enciende.
               En un salón no existe la revisión a seis meses y enseñarlo vacío
               solo confunde. */}
           {(tieneFuncion(ctx.sector, "recall") || tieneFuncion(ctx.sector, "seguimientoPresupuestos")) && (
-            <a
+            <EnlaceLateral
               href="/dashboard/seguimiento"
-              className="card-hard flex items-center gap-3 p-3 mb-3 hover:-translate-y-0.5 transition bg-white"
-            >
-              <span className="text-2xl">🔁</span>
-              <span className="flex-1 min-w-0">
-                <span className="block font-stencil text-xl leading-none">SEGUIMIENTO</span>
-                <span className="block text-[10px] uppercase tracking-widest text-black/70">
-                  Revisiones · presupuestos
-                </span>
-              </span>
-            </a>
+              emoji="🔁"
+              titulo="SEGUIMIENTO"
+              subtitulo="Revisiones · presupuestos"
+              fondo="#ffffff"
+            />
           )}
           <div className="text-xs font-mono uppercase tracking-widest text-black/50 px-1 mb-2">
             Tu equipo · {visibles.length} {visibles.length === 1 ? "agente" : "agentes"}
           </div>
           {visibles.map((a) => (
-            <a
+            <EnlaceAgente
               key={a.slug}
-              href={`/dashboard/${a.slug}`}
-              className="card-hard flex items-center gap-3 p-2.5 hover:-translate-y-0.5 transition relative overflow-hidden"
-              style={{ background: a.color }}
-            >
-              <div className="relative w-12 h-12 border-[2px] border-black overflow-hidden shrink-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={a.avatar} alt={a.name} className="w-full h-full object-cover" />
-                <span className="absolute -bottom-0.5 -right-0.5 bg-white border-2 border-black w-5 h-5 flex items-center justify-center text-[10px]">
-                  {a.emoji}
-                </span>
-              </div>
-              <span className="flex-1 min-w-0">
-                <span className="block font-stencil text-lg leading-none truncate">{a.name}</span>
-                <span className="block text-[10px] uppercase tracking-widest text-black/70 truncate">{a.role}</span>
-              </span>
-              {/* Los carteles de estado se quitaron de todas las tarjetas el 6 de
-                  agosto. Vuelve UNO solo, y solo para Rocío: es la única que
-                  sigue sin conectar, y enseñarla como el resto haría que un
-                  cliente contase con las reseñas de Google desde el primer día. */}
-              {a.slug === "rocio" && (
-                <span className="absolute top-1 right-1 text-[8px] bg-black/70 text-white px-1 py-0.5 font-bold tracking-widest">
-                  PRÓXIMAMENTE
-                </span>
-              )}
-            </a>
+              slug={a.slug}
+              nombre={a.name}
+              rol={a.role}
+              avatar={a.avatar}
+              emoji={a.emoji}
+              color={a.color}
+              proximamente={a.slug === "rocio"}
+            />
           ))}
           <a
             href="/dashboard/perfil"

@@ -52,6 +52,8 @@ import { responderEstadoExpediente, anotarEnvioDeDocumentacion, diceQueEnvioDocu
 import { preguntaPorEstado } from "@/lib/gestoria";
 import { guardarAdjuntosWhatsApp, acuseDeRecibo, type AdjuntoWa } from "@/lib/gestoria-adjuntos";
 import { destinoDeAdjunto } from "@/lib/gestoria-desvio";
+import { esElGestor, transcribir, entender } from "@/lib/gestoria-audio";
+import { descargarMedia } from "@/lib/gestoria-adjuntos";
 import { esIntencionCancelar, resolverCancelacion, textoCancelacionChat } from "@/lib/booking-cancel-intent";
 import {
   findEntryByProposalId,
@@ -64,6 +66,7 @@ import {
   recordRocioClientReply,
 } from "@/lib/rocio-proposals";
 import { replyToReview } from "@/lib/google-business";
+import { baseGraph, simulado } from "@/lib/meta-graph-local";
 
 // Logging de eventos del informe mensual. Silencioso ante fallos para no
 // romper el flujo principal del webhook.
@@ -379,6 +382,27 @@ export async function POST(req: Request) {
               }
               const t = await getTenant(tenantId);
               const esGestoria = t ? resolverSector(t) === "gestoria" : false;
+
+              // EL GESTOR SÍ, LOS CLIENTES NO.
+              //
+              // Jose se lo dicta en el coche y Pablo tiene que actuar. Para un
+              // cliente cualquiera la transcripción no está decidida: sería una
+              // llamada de pago por cada nota de voz que entre al número, y no
+              // hace falta para mandar una factura. Decide el número, no el
+              // sector: solo el ownerWhatsapp del tenant.
+              if (esGestoria && msg.audio && esElGestor(msg.from, t?.ownerWhatsapp)) {
+                const contestado = await atenderAudioDelGestor({
+                  tenantId, telefono: msg.from, mediaId: msg.audio.id, mime: msg.audio.mime_type || "audio/ogg",
+                });
+                await registrarIntercambio({
+                  tenantId, msgId: msg.id, from: msg.from,
+                  nombre: contacts.find((c) => c.wa_id === msg.from)?.profile?.name,
+                  entrante: "[audio del gestor]",
+                  respuesta: contestado, rxTs: new Date().toISOString(), via: "gestoria_audio_gestor",
+                });
+                continue;
+              }
+
               const respuesta = esGestoria
                 ? "perdona, los audios todavia no los escucho. escribemelo o mandame la foto de la factura"
                 : "perdona, los audios todavia no los escucho. me lo escribes?";
@@ -927,7 +951,6 @@ async function sendWhatsAppText(to: string, body: string): Promise<unknown> {
     return { error: "missing credentials" };
   }
 
-  const endpoint = `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`;
   const payload = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
@@ -935,6 +958,16 @@ async function sendWhatsAppText(to: string, body: string): Promise<unknown> {
     type: "text",
     text: { body, preview_url: false },
   };
+
+  // EL CANDADO (ver src/lib/meta-graph-local.ts): en local esto no sale a Meta.
+  // Pablo contesta a clientes de verdad; un token real en el portátil y este
+  // `fetch` le manda un WhatsApp a alguien mientras se está programando.
+  const base = baseGraph(GRAPH_VERSION);
+  if (!base) {
+    simulado("pablo/webhook", { to, body });
+    return { simulado: true };
+  }
+  const endpoint = `${base}/${phoneNumberId}/messages`;
 
   try {
     const res = await fetch(endpoint, {
@@ -954,4 +987,85 @@ async function sendWhatsAppText(to: string, body: string): Promise<unknown> {
     console.error("[pablo/webhook] fetch Graph API falló:", err);
     return { error: err instanceof Error ? err.message : "fetch failed" };
   }
+}
+
+
+/**
+ * El audio de Jose: se transcribe, se entiende y se CONFIRMA POR ESCRITO.
+ *
+ * La confirmación no es cortesía: es cómo el gestor se entera de que Pablo ha
+ * oído "Bar El Puerto" donde él dijo "Bar del Puerto". Se manda siempre, tanto
+ * si se apunta algo como si no.
+ */
+async function atenderAudioDelGestor(opts: {
+  tenantId: string; telefono: string; mediaId: string; mime: string;
+}): Promise<string> {
+  const media = await descargarMedia(opts.mediaId);
+  if (!media) {
+    const m = "no he podido bajar el audio. me lo escribes?";
+    await sendWhatsAppText(opts.telefono, m);
+    return m;
+  }
+
+  const tr = await transcribir(media.buffer, media.mime || opts.mime);
+  if (!tr.ok) {
+    console.warn(`[pablo/webhook] no se ha transcrito el audio: ${tr.error}`);
+    const m = "no he podido entender el audio. me lo escribes?";
+    await sendWhatsAppText(opts.telefono, m);
+    return m;
+  }
+
+  const { listarClientes } = await import("@/lib/gestoria-clientes");
+  const { apuntarTarea, listarTareas, esRojo, diasHasta } = await import("@/lib/gestoria-hoy");
+  const clientes = await listarClientes(opts.tenantId).catch(() => []);
+  const intencion = await entender(tr.texto, clientes.map((c) => ({ id: c.id, nombre: c.nombre })));
+
+  let respuesta: string;
+
+  if (intencion.tipo === "recordatorio") {
+    const cliente = clientes.find((c) => c.nombre === intencion.clienteNombre) ?? null;
+    await apuntarTarea(opts.tenantId, {
+      titulo: intencion.titulo,
+      detalle: `Dictado por WhatsApp: "${tr.texto}"`,
+      vence: intencion.vence,
+      clienteId: cliente?.id ?? null,
+      clienteNombre: cliente?.nombre ?? null,
+      origen: "whatsapp",
+      urgente: intencion.urgente,
+    });
+    respuesta = [
+      "apuntado:",
+      `- ${intencion.titulo}`,
+      intencion.clienteNombre ? `cliente: ${intencion.clienteNombre}` : "sin cliente",
+      intencion.vence ? `vence: ${intencion.vence}` : "sin fecha",
+      intencion.urgente ? "marcado urgente, sube arriba del todo" : "",
+      "si he entendido mal algo, dimelo y lo cambio.",
+    ].filter(Boolean).join("\n");
+  } else if (intencion.tipo === "pregunta" && intencion.sobre === "hoy") {
+    const tareas = (await listarTareas(opts.tenantId)).filter((t) => !t.hecho);
+    if (!tareas.length) {
+      respuesta = "hoy no tienes nada pendiente.";
+    } else {
+      const rojas = tareas.filter(esRojo);
+      const dia = (v?: string | null) => {
+        const d = diasHasta(v);
+        if (d === null) return "sin plazo";
+        if (d < 0) return `vencio hace ${-d}`;
+        if (d === 0) return "hoy";
+        if (d === 1) return "mañana";
+        return `en ${d} dias`;
+      };
+      respuesta = [
+        `tienes ${tareas.length} cosa${tareas.length === 1 ? "" : "s"}${rojas.length ? `, ${rojas.length} para hoy o mañana` : ""}:`,
+        tareas.slice(0, 6).map((t) => `- ${t.titulo}${t.clienteNombre ? ` (${t.clienteNombre})` : ""}, ${dia(t.vence)}`).join("\n"),
+        tareas.length > 6 ? `y ${tareas.length - 6} mas en el panel.` : "",
+      ].filter(Boolean).join("\n\n");
+    }
+  } else {
+    respuesta = `he entendido: "${tr.texto}". no se si quieres que lo apunte o que te conteste algo. dimelo y lo hago.`;
+  }
+
+  await sendWhatsAppText(opts.telefono, respuesta);
+  console.log(`[pablo/webhook] audio del gestor (${intencion.tipo}): "${tr.texto.slice(0, 80)}"`);
+  return respuesta;
 }

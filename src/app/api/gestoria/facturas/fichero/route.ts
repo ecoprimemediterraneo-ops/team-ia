@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const s = await getSessionLocal();
-  if (!s) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!s) return NextResponse.json({ error: "Tu sesión ha caducado. Vuelve a entrar en el panel." }, { status: 401 });
 
   const ruta = new URL(req.url).searchParams.get("ruta") || "";
   if (!ruta) return NextResponse.json({ error: "falta ruta" }, { status: 400 });
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
   // sin esto, cualquiera con sesión podría leer los ficheros de otra gestoría.
   const ctx = await contextoPanelODefecto();
   if (!ruta.startsWith(`${ctx.tenantId}/`)) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    return NextResponse.json({ error: "Este documento no es de tu gestoría." }, { status: 403 });
   }
 
   const buf = await leerFicheroLocal(ruta);

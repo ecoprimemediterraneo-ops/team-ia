@@ -20,7 +20,7 @@ const csv = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
 
 export async function GET(req: Request) {
   const s = await getSessionLocal();
-  if (!s) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!s) return NextResponse.json({ error: "Tu sesión ha caducado. Vuelve a entrar en el panel." }, { status: 401 });
   const ctx = await contextoPanelODefecto();
 
   const p = new URL(req.url).searchParams;

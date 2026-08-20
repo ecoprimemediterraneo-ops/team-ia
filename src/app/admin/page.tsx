@@ -5,6 +5,10 @@
 import { redirect } from "next/navigation";
 import { getSessionLocal } from "@/lib/auth";
 import { estadoToken as estadoTokenInstagram } from "@/lib/instagram-login";
+import { listTenants } from "@/lib/tenants";
+import { resolverSector } from "@/lib/sectores";
+import { resumenCoste, PRECIOS } from "@/lib/gestoria-coste";
+import { MODELO_LECTURA } from "@/lib/gestoria-lectura";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -49,6 +53,16 @@ export default async function AdminPage() {
   // fecha, se entera uno el día que Marta deja de publicar.
   const ig = await estadoTokenInstagram();
 
+  // Lo que llevamos gastado leyendo documentos, por gestoría. Sin esto no hay
+  // forma de saber si el precio mensual aguanta.
+  const gestorias = (await listTenants().catch(() => [])).filter((t) => resolverSector(t) === "gestoria");
+  const costes = await Promise.all(
+    gestorias.map(async (t) => ({ id: t.id, nombre: t.name, ...(await resumenCoste(t.id)) })),
+  );
+  const costeTotal = costes.reduce((s, c) => s + c.dolares, 0);
+  const docsTotal = costes.reduce((s, c) => s + c.documentos, 0);
+  const precioLectura = PRECIOS[MODELO_LECTURA];
+
   const last7 = evals.filter((e) => new Date(e.ts).getTime() > Date.now() - 7 * 86400000);
   const avgScore = last7.length > 0 ? (last7.reduce((s, r) => s + r.score, 0) / last7.length).toFixed(1) : "—";
 
@@ -73,6 +87,65 @@ export default async function AdminPage() {
           <div className="card-hard p-5"><div className="text-xs uppercase font-mono text-black/60">Bookings (Cal.com)</div><div className="font-stencil text-5xl mt-1">{bookings.length}</div></div>
           <div className="card-hard p-5"><div className="text-xs uppercase font-mono text-black/60">Evals 7d</div><div className="font-stencil text-5xl mt-1">{last7.length}</div></div>
           <div className="card-hard p-5 bg-[color:var(--mustard)]"><div className="text-xs uppercase font-mono">Score medio 7d</div><div className="font-stencil text-5xl mt-1">{avgScore}/10</div></div>
+        </div>
+
+        {/* GASTO DE LECTURA DE DOCUMENTOS */}
+        <div className="card-hard bg-white p-5 mb-6">
+          <h2 className="font-stencil text-2xl mb-1">Lectura de documentos · lo que llevamos gastado</h2>
+          <p className="text-xs text-black/60 mb-3">
+            Cada documento que entra por WhatsApp, correo o a mano cuesta una llamada al modelo.
+            Modelo actual: <b>{MODELO_LECTURA}</b>
+            {precioLectura ? ` (${precioLectura.entrada} $/M entrada · ${precioLectura.salida} $/M salida)` : " (sin precio en la tabla)"}.
+          </p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-3">
+            <div className="border-2 border-black p-3">
+              <div className="text-[10px] font-mono uppercase tracking-widest text-black/50">Documentos leídos</div>
+              <div className="font-stencil text-4xl leading-none mt-1">{docsTotal}</div>
+            </div>
+            <div className="border-2 border-black p-3">
+              <div className="text-[10px] font-mono uppercase tracking-widest text-black/50">Gasto acumulado</div>
+              <div className="font-stencil text-4xl leading-none mt-1">${costeTotal.toFixed(2)}</div>
+            </div>
+            <div className="border-2 border-black p-3">
+              <div className="text-[10px] font-mono uppercase tracking-widest text-black/50">Por documento</div>
+              <div className="font-stencil text-4xl leading-none mt-1">
+                ${docsTotal ? (costeTotal / docsTotal).toFixed(4) : "0.0000"}
+              </div>
+            </div>
+            {/* La cifra que decide si el precio aguanta: 500 documentos al mes es
+                una gestoría de 50 clientes mandando 10 facturas cada uno. */}
+            <div className="border-2 border-black p-3 bg-[color:var(--mustard)]">
+              <div className="text-[10px] font-mono uppercase tracking-widest">Proyección 500 doc/mes</div>
+              <div className="font-stencil text-4xl leading-none mt-1">
+                ${docsTotal ? ((costeTotal / docsTotal) * 500).toFixed(2) : "—"}
+              </div>
+            </div>
+          </div>
+          {costes.length === 0 ? (
+            <p className="text-sm text-black/60 italic">Todavía no hay ninguna gestoría.</p>
+          ) : (
+            <table className="w-full text-xs">
+              <thead className="bg-black text-white">
+                <tr><th className="p-2 text-left">Gestoría</th><th className="p-2 text-right">Documentos</th><th className="p-2 text-right">Gasto</th><th className="p-2 text-left">Modelos</th></tr>
+              </thead>
+              <tbody>
+                {costes.map((c) => (
+                  <tr key={c.id} className="border-b border-black/10">
+                    <td className="p-2 font-bold">{c.nombre}</td>
+                    <td className="p-2 text-right font-mono">{c.documentos}</td>
+                    <td className="p-2 text-right font-mono">${c.dolares.toFixed(4)}</td>
+                    <td className="p-2 font-mono text-[11px]">
+                      {c.detalle.length === 0 ? "—" : c.detalle.map((d) =>
+                        `${d.modelo}: ${d.documentos}${d.conPrecio ? "" : " (sin precio)"}`).join(" · ")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <p className="text-[11px] text-black/50 mt-2">
+            Es gasto contado, no estimado: se suman los tokens que devuelve cada llamada.
+          </p>
         </div>
 
         <div className={`card-hard p-5 mb-6 ${!ig.hay || ig.caducado ? "bg-[color:var(--red)] text-white" : (ig.diasQueQuedan ?? 99) <= 7 ? "bg-[color:var(--mustard)]" : ""}`}>

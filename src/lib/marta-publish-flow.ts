@@ -15,6 +15,7 @@ import { markProposalPublished, type MartaProposal } from "./marta-proposals";
 import { findEntryByProposalId, markCalendarEntryPublished } from "./marta-calendar";
 import { closeRoute } from "./wa-route";
 import { logEvent, makeEventId } from "./event-log";
+import { baseGraph } from "./meta-graph-local";
 
 export type PublishFlowResult =
   | { ok: true; igMediaId: string; permalink?: string }
@@ -33,11 +34,13 @@ export async function publishProposal(proposal: MartaProposal): Promise<PublishF
     try {
       const tk = process.env.INSTAGRAM_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN;
       if (tk) {
-        const r = await fetch(
-          `https://graph.facebook.com/v21.0/${pub.igMediaId}?fields=permalink`,
+        // Mismo candado que el resto: en local no se pregunta a Meta.
+        const base = baseGraph();
+        const r = base ? await fetch(
+          `${base}/${pub.igMediaId}?fields=permalink`,
           { headers: { Authorization: `Bearer ${tk}` } },
-        );
-        if (r.ok) {
+        ) : null;
+        if (r && r.ok) {
           const j = (await r.json()) as { permalink?: string };
           permalink = j.permalink;
         }

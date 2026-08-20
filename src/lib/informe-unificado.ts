@@ -442,7 +442,7 @@ export function urlPanelInformes(slug?: string, mes?: string): string {
   if (!slug) return `${PANEL_BASE}/dashboard`;
   const qs = new URLSearchParams({ negocio: slug, tab: "informes" });
   if (mes) qs.set("mes", mes);
-  return `${PANEL_BASE}/dashboard/reservas?${qs.toString()}`;
+  return `${PANEL_BASE}/dashboard/clientes?${qs.toString()}`;
 }
 
 /**

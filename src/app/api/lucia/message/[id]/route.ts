@@ -12,6 +12,8 @@ import { contextoPanelODefecto } from "@/lib/panel-contexto";
 import { tieneFuncion } from "@/lib/sectores";
 import { guardarAdjuntosEmail } from "@/lib/gestoria-adjuntos";
 import { listarClientes, clienteIdDeTelefono } from "@/lib/gestoria-clientes";
+import { listarRemitentes, clasificarRemitente } from "@/lib/lucia-remitentes";
+import { apuntarPlazoDeCorreo } from "@/lib/gestoria-plazos";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -67,7 +69,38 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       console.error("[lucia/message] no se pudieron guardar los adjuntos:", err);
     }
 
-    return NextResponse.json({ ...m, adjuntosGuardados, clienteUsado });
+    // --- FECHA LÍMITE, solo en gestoría y solo en correos oficiales ---
+    //
+    // Se lee el texto SOLO si el remitente ya estaba marcado como importante.
+    // Leer todos los correos costaría una llamada por correo abierto y llenaría
+    // la lista de HOY de ruido: quien decide que esto es oficial sigue siendo el
+    // remitente, como hasta ahora. Lo que cambia es que ahora, además, se saca
+    // la fecha.
+    let plazo: { fecha: string | null; titulo: string; cliente: string | null } | null = null;
+    try {
+      const ctx = await contextoPanelODefecto();
+      if (tieneFuncion(ctx.sector, "clasificacionCorreo")) {
+        const marca = clasificarRemitente(m.from || "", await listarRemitentes(ctx.tenantId));
+        if (marca) {
+          const r = await apuntarPlazoDeCorreo({
+            tenantId: ctx.tenantId,
+            remitente: m.from || "",
+            asunto: m.subject || "",
+            cuerpo: m.body || "",
+          });
+          if (r.ok) {
+            plazo = { fecha: r.plazo.fechaLimite, titulo: r.plazo.deQueVa, cliente: r.plazo.clienteNombre };
+          } else {
+            console.warn(`[lucia/message] no se ha podido leer el plazo: ${r.error}`);
+          }
+        }
+      }
+    } catch (err) {
+      // Igual que los adjuntos: nunca rompe la lectura del correo.
+      console.error("[lucia/message] fallo leyendo la fecha límite:", err);
+    }
+
+    return NextResponse.json({ ...m, adjuntosGuardados, clienteUsado, plazo });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
   }

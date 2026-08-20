@@ -34,7 +34,7 @@ export const maxDuration = 60;
 
 async function guardia() {
   const s = await getSessionLocal();
-  if (!s) return { ok: false as const, res: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
+  if (!s) return { ok: false as const, res: NextResponse.json({ error: "Tu sesión ha caducado. Vuelve a entrar en el panel." }, { status: 401 }) };
   const ctx = await contextoPanelODefecto();
   return { ok: true as const, tenantId: ctx.tenantId };
 }

@@ -168,8 +168,17 @@ export function cruzar(movimientos: MovimientoBanco[], facturas: FacturaRecibida
 
   // Solo entran facturas utilizables: con importe Y fecha, y sin descartar ni
   // conciliar ya. Las que no tienen importe se quedan fuera a propósito.
+  // Y solo DOCUMENTOS CONTABLES. Un albarán o un presupuesto cruzándose con un
+  // cargo daría por justificado un pago que no lo está: el gestor vería el mes
+  // cuadrado y le seguiría faltando la factura. `contable !== false` y no
+  // `=== true` a propósito: las facturas de antes de la lectura no traen el
+  // campo, y dejarlas fuera sería peor que el problema que se arregla.
   const disponibles = facturas.filter(
-    (f) => f.estado === "pendiente" && typeof f.importe === "number" && !!f.fecha_factura,
+    (f) =>
+      f.estado === "pendiente" &&
+      typeof f.importe === "number" &&
+      !!f.fecha_factura &&
+      f.contable !== false,
   );
 
   const automaticos: ResultadoCruce["automaticos"] = [];

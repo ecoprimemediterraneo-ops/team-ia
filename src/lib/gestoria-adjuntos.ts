@@ -9,7 +9,7 @@
 // justo ese caso.
 
 import "server-only";
-import { crearFactura, tipoDeFichero, type OrigenFactura } from "./gestoria-facturas";
+import { crearFactura, leerYGuardar, tipoDeFichero, type OrigenFactura } from "./gestoria-facturas";
 import { clienteIdDeTelefono, listarClientes } from "./gestoria-clientes";
 
 /**
@@ -107,7 +107,7 @@ export async function guardarAdjuntosWhatsApp(opts: {
     if (!tipoDeFichero(media.mime, adj.filename || "")) continue;
 
     try {
-      await crearFactura({
+      const factura = await crearFactura({
         tenantId: opts.tenantId,
         clienteId,
         origen: "whatsapp",
@@ -117,6 +117,12 @@ export async function guardarAdjuntosWhatsApp(opts: {
         notas: `Entró por WhatsApp desde ${opts.telefono}`,
         remitente: opts.telefono,
       });
+      // Leer va DESPUÉS de guardar y sin poder tumbar nada: el documento ya
+      // está a salvo. Si la lectura falla, el gestor lo ve igual con el motivo.
+      await leerYGuardar({
+        tenantId: opts.tenantId, facturaId: factura.id,
+        contenido: media.buffer, mime: media.mime, nombre: factura.nombre_original,
+      }).catch((e) => console.error("[gestoria-adjuntos] lectura fallida:", e));
       creadas++;
     } catch (err) {
       console.error("[gestoria-adjuntos] no se pudo guardar la factura:", err);
@@ -147,7 +153,7 @@ export async function guardarAdjuntosEmail(opts: {
   for (const a of opts.adjuntos) {
     if (!tipoDeFichero(a.mime, a.nombre)) continue;
     try {
-      await crearFactura({
+      const factura = await crearFactura({
         tenantId: opts.tenantId,
         clienteId: opts.clienteId,
         origen: "email" as OrigenFactura,
@@ -158,6 +164,10 @@ export async function guardarAdjuntosEmail(opts: {
         remitente: opts.remitente,
         asunto: opts.asunto,
       });
+      await leerYGuardar({
+        tenantId: opts.tenantId, facturaId: factura.id,
+        contenido: a.contenido, mime: a.mime, nombre: a.nombre,
+      }).catch((e) => console.error("[gestoria-adjuntos] lectura fallida:", e));
       creadas++;
     } catch (err) {
       console.error("[gestoria-adjuntos] no se pudo guardar el adjunto de correo:", err);

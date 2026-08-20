@@ -13,7 +13,14 @@ export default async function BancoPage() {
   if (!s) redirect("/login");
   const ctx = await contextoPanelODefecto();
   if (!tieneFuncion(ctx.sector, "estadoExpediente")) {
-    return <div className="card-hard bg-white p-6 text-sm text-black/70">Esta pantalla es para gestorías.</div>;
+    // Con salida: era una tarjeta suelta sin ningún enlace, y desde ahí solo se
+    // salía con el botón atrás del navegador.
+    return (
+      <div className="card-hard bg-white p-6 text-sm text-black/70">
+        Esta pantalla es para gestorías.{" "}
+        <a href="/dashboard" className="underline font-bold">Volver al panel</a>.
+      </div>
+    );
   }
   const clientes = await listarClientes(ctx.tenantId);
 
@@ -28,6 +35,14 @@ export default async function BancoPage() {
   return (
     <div className="space-y-4">
       <div>
+        {/* Esta pantalla cuelga de Facturas y era la única del módulo sin vuelta
+            escrita: se salía de ella con el botón atrás del navegador. */}
+        <a
+          href="/dashboard/facturas"
+          className="inline-block text-xs font-mono uppercase tracking-widest text-black/60 hover:text-black hover:underline mb-1"
+        >
+          ← Volver a Facturas
+        </a>
         <h1 className="font-stencil text-3xl md:text-4xl leading-none">Extracto bancario</h1>
         <p className="text-sm text-black/60 mt-1">Se compara con las facturas de ese cliente, y solo con las suyas.</p>
       </div>

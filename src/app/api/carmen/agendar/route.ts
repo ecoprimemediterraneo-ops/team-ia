@@ -3,7 +3,7 @@
 //
 // Carmen (agente de voz en Retell) llama a esta URL como "Custom Function"
 // MIENTRAS habla con el cliente. Reserva por el MOTOR DE BOOKING (crearReservaManual):
-// crea un BookingRecord con `slug` → la cita sale en /dashboard/reservas del salón, en
+// crea un BookingRecord con `slug` → la cita sale en /dashboard/clientes del salón, en
 // el MISMO Google Calendar (un solo evento, sin duplicar) y con el anti-doble-reserva
 // del booking. El `slug` llega en el body de Retell; si no viene, cae a "bendito-arte".
 //
@@ -292,7 +292,7 @@ export async function POST(req: Request) {
   }
 
   // 4) Reservar por el MOTOR DE BOOKING (crearReservaManual) → crea un BookingRecord
-  // con `slug`, así la cita sale en /dashboard/reservas del salón, en el MISMO Google
+  // con `slug`, así la cita sale en /dashboard/clientes del salón, en el MISMO Google
   // Calendar (sin duplicar el evento) y con el anti-doble-reserva del booking.
   const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
   const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");

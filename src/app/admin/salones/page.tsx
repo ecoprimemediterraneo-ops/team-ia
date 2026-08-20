@@ -41,7 +41,7 @@ export default async function SalonesPage({ searchParams }: { searchParams: Prom
               </div>
               <div className="flex gap-2 shrink-0">
                 <a href={`/reservas/${b.slug}`} className="border-2 border-black px-3 py-1.5 text-xs font-bold uppercase tracking-widest bg-white hover:bg-[color:var(--cream)]">Ficha</a>
-                <a href={`/reservas/${b.slug}`} className="border-2 border-black px-3 py-1.5 text-xs font-bold uppercase tracking-widest bg-white hover:bg-[color:var(--cream)]" title="Panel del dueño en /dashboard/reservas">↗</a>
+                <a href={`/reservas/${b.slug}`} className="border-2 border-black px-3 py-1.5 text-xs font-bold uppercase tracking-widest bg-white hover:bg-[color:var(--cream)]" title="Panel del dueño en /dashboard/clientes">↗</a>
               </div>
             </div>
           ))}

@@ -26,22 +26,34 @@ export default async function DashboardReservasPage({
   const v = ctx.vocabulario;
   const esGestoria = ctx.perfil.id === "gestoria";
 
+  // MISMO envoltorio que Hoy, Expedientes, Facturas y Correo importante:
+  // `space-y-4` a secas. Antes esta pantalla llevaba `max-w-3xl mx-auto px-4
+  // py-8`, así que se centraba y quedaba más estrecha mientras las otras cuatro
+  // salían pegadas a la izquierda: al cambiar de pestaña el panel entero daba un
+  // salto. El ancho y el sitio del título los pone el layout, no la pantalla.
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="mb-6">
-        <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-black/40">AI-Team Booking</div>
-        <h1 className="font-stencil text-3xl sm:text-4xl leading-none mt-1">
-          {esGestoria ? "Consultas y agenda" : "Reservas online"}
+    <div className="space-y-4">
+      <div>
+        <div className="text-xs font-mono uppercase tracking-widest text-black/50">{ctx.tenant?.name}</div>
+        {/* El título tiene que decir LO MISMO que la pestaña del menú. En Hoy pone
+            "Hoy", en Facturas pone "Facturas"; aquí ponía "Consultas y agenda"
+            mientras la pestaña decía CLIENTES, y no había forma de saber que era
+            la misma pantalla. Lo que la pestaña no cabe explicar baja a la línea
+            gris de debajo. */}
+        <h1 className="font-stencil text-3xl md:text-4xl leading-none">
+          {esGestoria ? "Clientes" : "Reservas online"}
         </h1>
-        <p className="text-sm text-black/60 mt-2">
-          Configura tus {v.servicioPlural} y tu horario. Las {v.citaPlural} entran solas en tu agenda de Google.
+        <p className="text-sm text-black/60 mt-1">
+          {esGestoria
+            ? "Consultas y agenda."
+            : `Configura tus ${v.servicioPlural} y tu horario. Las ${v.citaPlural} entran solas en tu agenda de Google.`}
         </p>
       </div>
 
       {negocios.length === 0 ? (
         <div className="card-hard bg-white p-6">
           <div className="font-bold mb-1">
-            {esGestoria ? "Aún no tienes materias configuradas" : "Aún no tienes reservas configuradas"}
+            {esGestoria ? "Todavía no tienes clientes configurados" : "Aún no tienes reservas configuradas"}
           </div>
           <p className="text-sm text-black/60">
             {ctx.tenant?.name || ctx.tenantId} todavía no tiene {v.negocio} de {v.citaPlural} asociado.

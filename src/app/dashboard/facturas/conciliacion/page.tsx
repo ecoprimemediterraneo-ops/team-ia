@@ -10,6 +10,7 @@ import { resumenConciliacion, reclamacionSendEnabled, textoReclamacion } from "@
 import { bloqueDe } from "@/lib/gestoria-bloques";
 import { ETIQUETA_GRUPO, type GrupoSinFactura } from "@/lib/gestoria-clasificacion";
 import PanelConciliacion from "@/components/gestoria/PanelConciliacion";
+import VentasDelCliente from "@/components/gestoria/VentasDelCliente";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,14 @@ export default async function ConciliacionPage({
   if (!s) redirect("/login");
   const ctx = await contextoPanelODefecto();
   if (!tieneFuncion(ctx.sector, "estadoExpediente")) {
-    return <div className="card-hard bg-white p-6 text-sm text-black/70">Esta pantalla es para gestorías.</div>;
+    // Con salida: era una tarjeta suelta sin ningún enlace, y desde ahí solo se
+    // salía con el botón atrás del navegador.
+    return (
+      <div className="card-hard bg-white p-6 text-sm text-black/70">
+        Esta pantalla es para gestorías.{" "}
+        <a href="/dashboard" className="underline font-bold">Volver al panel</a>.
+      </div>
+    );
   }
 
   const clientes = await listarClientes(ctx.tenantId);
@@ -164,6 +172,13 @@ export default async function ConciliacionPage({
             : "Primero asigna las facturas que están sin cliente"}
           envioEncendido={reclamacionSendEnabled()}
         />
+      )}
+
+      {/* Las VENTAS, debajo y en la misma pantalla: es el mismo extracto visto
+          por el otro lado, y el gestor quiere ver de una vez qué le falta por
+          los dos. */}
+      {clientes.length > 0 && (
+        <VentasDelCliente clienteId={clienteId} clienteNombre={cliente?.nombre ?? ""} />
       )}
     </div>
   );

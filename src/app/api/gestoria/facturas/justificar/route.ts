@@ -22,7 +22,7 @@ export const maxDuration = 60;
 
 export async function POST(req: Request) {
   const s = await getSessionLocal();
-  if (!s) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!s) return NextResponse.json({ error: "Tu sesión ha caducado. Vuelve a entrar en el panel." }, { status: 401 });
   const ctx = await contextoPanelODefecto();
 
   try {

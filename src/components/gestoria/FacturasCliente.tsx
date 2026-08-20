@@ -7,6 +7,8 @@
 // buscando ficheros en un explorador.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import LecturaDocumento, { type Lectura as LecturaTipo } from "./LecturaDocumento";
+import EnviarDocumento from "./EnviarDocumento";
 
 type Factura = {
   id: string;
@@ -22,6 +24,10 @@ type Factura = {
   verUrl: string | null;
   remitente?: string;
   asunto?: string;
+  lectura?: LecturaTipo | null;
+  lectura_error?: string;
+  clase?: string;
+  contable?: boolean;
 };
 
 // Por dónde entró cada factura. Se dice con el nombre del agente que la recogió
@@ -57,10 +63,59 @@ const ESTADO_TEXTO = {
 const euros = (n: number) =>
   n.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
 
+/**
+ * Lo último que ha entrado, arriba. Se ordena AQUÍ además de en el servidor: la
+ * lista se repinta al asignar o editar documentos sin volver a preguntar, y sin
+ * esto lo recién llegado se quedaba donde estuviera.
+ */
+function porEntradaReciente(lista: Factura[]): Factura[] {
+  return [...lista].sort((a, b) => b.fecha_recepcion.localeCompare(a.fecha_recepcion));
+}
+
 /** Fecha corta en español. Acepta AAAA-MM-DD o fecha completa. */
 function fechaCorta(valor: string): string {
   const d = new Date(valor);
   return isNaN(d.getTime()) ? valor : d.toLocaleDateString("es-ES");
+}
+
+/**
+ * CUÁNDO ENTRÓ el documento, con hora y en hora de Madrid.
+ *
+ * Es un dato distinto de la fecha de la factura y hacía falta: en la lista solo
+ * se veía la fecha del papel, así que una factura de marzo que acababa de llegar
+ * por WhatsApp hace dos minutos parecía vieja, y no había forma de saber qué era
+ * lo último que había caído. Con hora, porque el gestor mira esto varias veces
+ * al día. En `Europe/Madrid` explícito: el servidor va en UTC y sin decírselo
+ * enseñaría dos horas menos en verano.
+ */
+function entradaCorta(valor: string): string {
+  const d = new Date(valor);
+  if (isNaN(d.getTime())) return valor;
+  return d.toLocaleString("es-ES", {
+    timeZone: "Europe/Madrid",
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** ¿Ha entrado en las últimas 24 h? Es lo que el gestor no ha visto todavía. */
+function esReciente(valor: string): boolean {
+  const d = new Date(valor).getTime();
+  return !isNaN(d) && Date.now() - d < 24 * 60 * 60 * 1000;
+}
+
+/** El cartelito de recién llegado. */
+function Nuevo() {
+  return (
+    <span
+      title="Ha entrado en las últimas 24 horas"
+      className="text-[9px] font-mono font-bold uppercase tracking-widest bg-[color:var(--mustard)] border-2 border-black px-1.5 py-0.5"
+    >
+      NUEVO
+    </span>
+  );
 }
 
 type ExtractoPrevio = { total: number; desde: string; hasta: string; ultimaImportacion: string; lotes: number };
@@ -100,7 +155,7 @@ export default function FacturasCliente({
       try {
         const res = await fetch("/api/gestoria/facturas?sinAsignar=1");
         const json = await res.json();
-        if (vivo) setSinAsignar(json.facturas ?? []);
+        if (vivo) setSinAsignar(porEntradaReciente(json.facturas ?? []));
       } catch {
         // La bandeja no es crítica: si falla, el saco del cliente sigue igual.
       }
@@ -115,7 +170,7 @@ export default function FacturasCliente({
       try {
         const res = await fetch(`/api/gestoria/facturas?clienteId=${encodeURIComponent(clienteId)}`);
         const json = await res.json();
-        if (vivo) setFacturas(json.facturas ?? []);
+        if (vivo) setFacturas(porEntradaReciente(json.facturas ?? []));
       } finally {
         if (vivo) setCargando(false);
       }
@@ -221,8 +276,9 @@ export default function FacturasCliente({
                   <div className="text-sm font-bold truncate">{f.nombre_original}</div>
                   <div className="flex items-center gap-2 flex-wrap mt-0.5">
                     <Origen origen={f.origen} />
+                    {esReciente(f.fecha_recepcion) && <Nuevo />}
                     <span className="text-[11px] font-mono text-black/60 truncate">
-                      {fechaCorta(f.fecha_recepcion)}
+                      Entró: {entradaCorta(f.fecha_recepcion)}
                       {f.remitente ? ` · ${f.remitente}` : ""}
                     </span>
                   </div>
@@ -247,6 +303,11 @@ export default function FacturasCliente({
                   <button type="button" onClick={() => descartar(f)}
                     className="text-[10px] font-mono uppercase border-2 border-black px-2 py-1 hover:bg-black hover:text-white">descartar</button>
                 </div>
+                {/* Qué es y qué pone. En la MISMA tarjeta: si hay que abrir otra
+                    pestaña para comprobar un NIF, se deja de comprobar. */}
+                <div className="w-full">
+                  <LecturaDocumento facturaId={f.id} lectura={f.lectura} error={f.lectura_error} onCambio={recargar} />
+                </div>
               </div>
             ))}
           </div>
@@ -266,6 +327,10 @@ export default function FacturasCliente({
           {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
       </div>
+
+      {/* La vuelta: del gestor al cliente. Va aquí, en la ficha del cliente,
+          porque es donde el gestor ya está cuando le escriben "mandame el 303". */}
+      <EnviarDocumento clienteId={clienteId} clienteNombre={clientes.find((c) => c.id === clienteId)?.nombre ?? ""} />
 
       {/* Zona de arrastre */}
       <div
@@ -315,13 +380,18 @@ export default function FacturasCliente({
                   <div className="text-sm font-bold truncate">{f.nombre_original}</div>
                   <div className="flex items-center gap-2 flex-wrap mt-0.5">
                     <Origen origen={f.origen} />
+                    {esReciente(f.fecha_recepcion) && <Nuevo />}
+                    {/* Las DOS fechas van etiquetadas. Sin etiqueta, "12/08" y
+                        "03/03" seguidas no dicen cuál es cuál, y confundir la
+                        fecha de la factura con la de entrada es lo que hace que
+                        se cuele una factura en el trimestre que no toca. */}
                     <span className="text-[11px] font-mono text-black/60">
-                      {fechaCorta(f.fecha_recepcion)} · {ESTADO_TEXTO[f.estado]}
+                      Entró: {entradaCorta(f.fecha_recepcion)} · {ESTADO_TEXTO[f.estado]}
                     </span>
                   </div>
                   <div className="text-[11px] font-mono text-black/60">
                     {f.importe != null ? euros(f.importe) : "sin importe todavía"}
-                    {f.fecha_factura ? ` · ${fechaCorta(f.fecha_factura)}` : ""}
+                    {f.fecha_factura ? ` · Factura: ${fechaCorta(f.fecha_factura)}` : ""}
                     {f.proveedor ? ` · ${f.proveedor}` : ""}
                   </div>
                 </div>
@@ -334,6 +404,9 @@ export default function FacturasCliente({
                     className="text-[10px] font-mono uppercase border-2 border-black px-2 py-1 hover:bg-black hover:text-white">editar</button>
                   <button type="button" onClick={() => descartar(f)}
                     className="text-[10px] font-mono uppercase border-2 border-black px-2 py-1 hover:bg-black hover:text-white">descartar</button>
+                </div>
+                <div className="w-full">
+                  <LecturaDocumento facturaId={f.id} lectura={f.lectura} error={f.lectura_error} onCambio={recargar} />
                 </div>
               </div>
             ))}

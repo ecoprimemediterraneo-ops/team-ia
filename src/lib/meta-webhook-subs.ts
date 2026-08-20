@@ -38,8 +38,12 @@
 // secreto en una query string acaba en logs y en cachés.
 
 import "server-only";
+import { baseGraph, simulado } from "./meta-graph-local";
 
-const GRAPH = "https://graph.facebook.com/v21.0";
+// EL CANDADO (ver src/lib/meta-graph-local.ts): esto SUSCRIBE y DESUSCRIBE
+// webhooks en la app de Meta. Hacerlo desde el portátil cambia la configuración
+// de producción sin querer.
+const graph = () => baseGraph();
 
 /** Campos de PÁGINA que necesita Marta (los DMs entran por aquí). */
 export const CAMPOS_PAGINA = ["messages"] as const;
@@ -83,6 +87,11 @@ export function formaDelToken(t: string) {
 }
 
 async function graphFetch(path: string, token: string, init?: RequestInit): Promise<GraphRes> {
+  const GRAPH = graph();
+  if (!GRAPH) {
+    simulado("meta-webhook-subs", { path, metodo: init?.method || "GET" });
+    return { ok: false, status: 0, message: "LOCAL sin META_GRAPH_URL: no se ha llamado a Meta.", json: {} };
+  }
   try {
     const res = await fetch(`${GRAPH}${path}`, {
       ...init,

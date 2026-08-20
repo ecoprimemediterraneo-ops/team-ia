@@ -56,8 +56,26 @@
 // un cron cuando llegue el momento.
 // =============================================================================
 
+import { baseGraph } from "./meta-graph-local";
+
 const GRAPH_VERSION = "v21.0";
-const GRAPH = `https://graph.facebook.com/${GRAPH_VERSION}`;
+
+/**
+ * EL CANDADO (ver src/lib/meta-graph-local.ts). Era una constante fija a Meta.
+ * Este módulo PUBLICA en la cuenta de Instagram del cliente; en local, con un
+ * token puesto, publicaría de verdad. En local sin Graph de mentira revienta
+ * aquí a propósito, con un mensaje claro, en vez de salir a internet — igual que
+ * el resto de fallos de este fichero, que también se lanzan.
+ */
+function G(): string {
+  const base = baseGraph(GRAPH_VERSION);
+  if (!base) {
+    throw new Error(
+      "[marta/publish] LOCAL sin META_GRAPH_URL: no se publica en Instagram desde una máquina de desarrollo.",
+    );
+  }
+  return base;
+}
 
 // Máximo tiempo esperando a que Meta procese vídeo/Reel antes de publicar.
 const VIDEO_PROCESS_TIMEOUT_MS = 60_000;
@@ -156,7 +174,7 @@ async function resolveIgUserId(token: string): Promise<string> {
     throw new Error("FACEBOOK_PAGE_ID no configurado y INSTAGRAM_USER_ID ausente");
   }
 
-  const url = `${GRAPH}/${pageId}?fields=instagram_business_account`;
+  const url = `${G()}/${pageId}?fields=instagram_business_account`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) {
     const err = await readGraphError(res);
@@ -200,7 +218,7 @@ async function createMediaContainer(
   }
   if (input.caption) params.set("caption", input.caption);
 
-  const url = `${GRAPH}/${igUserId}/media`;
+  const url = `${G()}/${igUserId}/media`;
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -227,7 +245,7 @@ async function createMediaContainer(
 
 async function waitForContainerReady(creationId: string, token: string): Promise<void> {
   const deadline = Date.now() + VIDEO_PROCESS_TIMEOUT_MS;
-  const url = `${GRAPH}/${creationId}?fields=status_code`;
+  const url = `${G()}/${creationId}?fields=status_code`;
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
@@ -261,7 +279,7 @@ async function publishContainer(
   token: string,
   creationId: string,
 ): Promise<string> {
-  const url = `${GRAPH}/${igUserId}/media_publish`;
+  const url = `${G()}/${igUserId}/media_publish`;
   const params = new URLSearchParams({ creation_id: creationId });
   const res = await fetch(url, {
     method: "POST",
@@ -375,7 +393,7 @@ export async function fetchPermalink(igMediaId: string): Promise<string | null> 
   const token = getToken();
   if (!token || !igMediaId) return null;
   try {
-    const res = await fetch(`${GRAPH}/${igMediaId}?fields=permalink`, {
+    const res = await fetch(`${G()}/${igMediaId}?fields=permalink`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) {
@@ -445,7 +463,7 @@ export async function checkPublishReadiness(): Promise<PublishReadiness> {
   const token = getToken();
   if (!token) return { flagEnabled, tokenConfigured: false, graph: { skipped: "no_token" } };
   try {
-    const res = await fetch(`${GRAPH}/me/permissions?access_token=${encodeURIComponent(token)}`);
+    const res = await fetch(`${G()}/me/permissions?access_token=${encodeURIComponent(token)}`);
     if (!res.ok) {
       const e = await readGraphError(res);
       return { flagEnabled, tokenConfigured: true, graph: { ok: false, error: e.message, code: e.code } };

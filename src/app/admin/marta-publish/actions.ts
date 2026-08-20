@@ -11,6 +11,7 @@ import {
   type PublishResult,
 } from "@/lib/marta-publish";
 import type { PublishActionState } from "./types";
+import { baseGraph } from "@/lib/meta-graph-local";
 
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
 
@@ -85,11 +86,13 @@ export async function publishAction(
     try {
       const token = process.env.INSTAGRAM_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN;
       if (token) {
-        const r = await fetch(
-          `https://graph.facebook.com/v21.0/${result.igMediaId}?fields=permalink`,
+        // Mismo candado que el resto: en local no se pregunta a Meta.
+        const base = baseGraph();
+        const r = base ? await fetch(
+          `${base}/${result.igMediaId}?fields=permalink`,
           { headers: { Authorization: `Bearer ${token}` } },
-        );
-        if (r.ok) {
+        ) : null;
+        if (r && r.ok) {
           const j = (await r.json()) as { permalink?: string };
           permalink = j.permalink;
         }

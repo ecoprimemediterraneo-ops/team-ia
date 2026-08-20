@@ -29,6 +29,8 @@ import { kvGet, kvSet, getSupabase, supabaseEnabled } from "./supabase";
 // Modelo
 // -----------------------------------------------------------------------------
 
+import type { Lectura, ClaseDocumento } from "./gestoria-lectura";
+
 export type OrigenFactura = "whatsapp" | "email" | "manual";
 export type TipoFichero = "imagen" | "pdf";
 /**
@@ -62,6 +64,19 @@ export type FacturaRecibida = {
    */
   remitente?: string;
   asunto?: string;
+  /**
+   * Qué es este documento y qué pone, según la lectura con IA. Ausente = todavía
+   * no se ha leído (o falló la lectura, ver `lectura_error`).
+   */
+  lectura?: Lectura;
+  lectura_error?: string;
+  /** Copia plana de `lectura.clase` para poder filtrar sin abrir la lectura. */
+  clase?: ClaseDocumento;
+  /**
+   * ¿Cuenta como documento contable? Un albarán o un presupuesto NO: cruzarlos
+   * con un cargo daría por justificado un pago que no lo está.
+   */
+  contable?: boolean;
   /**
    * Justificante de un cargo que no lleva factura de proveedor: el modelo
    * presentado, el TC de la Seguridad Social, la nómina. Lo aporta el gestor.
@@ -411,6 +426,106 @@ export async function crearFactura(opts: {
   const todas = await listarFacturas(opts.tenantId);
   await guardarFacturas(opts.tenantId, [...todas, factura]);
   return factura;
+}
+
+/**
+ * Lee el documento con IA y guarda lo que dice en el registro.
+ *
+ * Se llama DESPUÉS de crear la factura, nunca antes, y no lanza: si la lectura
+ * falla, el documento ya está guardado y el gestor lo ve igual, con el motivo
+ * escrito. El orden importa — leer primero y guardar después significaría
+ * perder la factura cada vez que la IA tenga un mal día.
+ */
+export async function leerYGuardar(opts: {
+  tenantId: string;
+  facturaId: string;
+  contenido: Buffer;
+  mime: string;
+  nombre?: string;
+}): Promise<FacturaRecibida | null> {
+  const { leerDocumento, datosDeLectura, ES_CONTABLE } = await import("./gestoria-lectura");
+  const r = await leerDocumento({ contenido: opts.contenido, mime: opts.mime, nombre: opts.nombre });
+
+  const todas = await listarFacturas(opts.tenantId);
+  const i = todas.findIndex((f) => f.id === opts.facturaId);
+  if (i < 0) return null;
+
+  if (!r.ok) {
+    todas[i] = { ...todas[i], lectura_error: r.error };
+    await guardarFacturas(opts.tenantId, todas);
+    console.warn(`[gestoria] no se ha podido leer ${opts.facturaId}: ${r.error}`);
+    return todas[i];
+  }
+
+  const d = datosDeLectura(r.lectura);
+  todas[i] = {
+    ...todas[i],
+    lectura: r.lectura,
+    lectura_error: undefined,
+    clase: r.lectura.clase,
+    contable: ES_CONTABLE[r.lectura.clase],
+    // Lo leído solo rellena lo que estaba vacío: si el gestor ya escribió un
+    // importe a mano, manda el suyo. La IA propone, el gestor dispone.
+    importe: todas[i].importe ?? d.importe,
+    fecha_factura: todas[i].fecha_factura ?? d.fechaFactura,
+    proveedor: todas[i].proveedor ?? d.proveedor,
+  };
+  await guardarFacturas(opts.tenantId, todas);
+
+  // El gasto se anota SIEMPRE que la lectura devuelva tokens, incluso si el
+  // documento se descarta después: la llamada ya está pagada.
+  if (r.lectura.tokens) {
+    const { anotarLectura } = await import("./gestoria-coste");
+    await anotarLectura({
+      tenantId: opts.tenantId,
+      modelo: r.lectura.modelo,
+      entrada: r.lectura.tokens.entrada,
+      salida: r.lectura.tokens.salida,
+    });
+  }
+
+  console.log(`[gestoria] leído ${opts.facturaId}: ${r.lectura.clase} (${r.lectura.confianza}, ${r.lectura.modelo})`);
+  return todas[i];
+}
+
+/**
+ * Corrige a mano un dato leído. Lo que toca el gestor queda marcado como seguro:
+ * su palabra vale más que la de la IA y no tiene que volver a mirarlo.
+ */
+export async function corregirLectura(
+  tenantId: string,
+  id: string,
+  campo: "emisor" | "nifEmisor" | "nifDestinatario" | "numero" | "fecha" | "total" | "clase",
+  valor: string,
+): Promise<FacturaRecibida | null> {
+  const { ES_CONTABLE } = await import("./gestoria-lectura");
+  const todas = await listarFacturas(tenantId);
+  const i = todas.findIndex((f) => f.id === id);
+  if (i < 0 || !todas[i].lectura) return null;
+  const l = { ...todas[i].lectura! };
+
+  if (campo === "clase") {
+    const clases = ["factura_completa", "ticket", "albaran", "abono", "presupuesto", "otro"];
+    if (!clases.includes(valor)) return null;
+    l.clase = valor as ClaseDocumento;
+    l.confianza = "alta";
+    l.porQue = "Clasificado a mano por el gestor.";
+    todas[i] = { ...todas[i], lectura: l, clase: l.clase, contable: ES_CONTABLE[l.clase] };
+  } else if (campo === "total") {
+    const n = Number(valor.replace(",", "."));
+    if (!Number.isFinite(n)) return null;
+    l.total = { valor: n, seguro: true };
+    todas[i] = { ...todas[i], lectura: l, importe: l.clase === "abono" ? -Math.abs(n) : n };
+  } else if (campo === "fecha") {
+    l.fecha = { valor: valor || null, seguro: true };
+    todas[i] = { ...todas[i], lectura: l, fecha_factura: valor || null };
+  } else {
+    l[campo] = { valor: valor || null, seguro: true };
+    todas[i] = { ...todas[i], lectura: l, ...(campo === "emisor" ? { proveedor: valor || null } : {}) };
+  }
+
+  await guardarFacturas(tenantId, todas);
+  return todas[i];
 }
 
 /**
