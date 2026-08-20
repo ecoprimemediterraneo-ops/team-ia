@@ -179,6 +179,19 @@ async function alreadyBookedForPhone(
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+/**
+ * 60 segundos, que es el techo del plan Hobby.
+ *
+ * NO es para contestarle a Meta —eso tarda milisegundos— sino para el trabajo
+ * que queda corriendo DESPUÉS de contestar: leer el documento con la IA. Ese
+ * trabajo cuenta dentro de la duración de la misma función, y sin esto se
+ * aplicaba el límite por defecto de 10 segundos: la respuesta a Meta salía
+ * bien, pero a la lectura la cortaban a mitad y el documento se quedaba en
+ * blanco. Justo el fallo que la lectura automática venía a arreglar, movido de
+ * sitio. Si aun así se corta (un mensaje con varios PDF), el documento sigue
+ * guardado y se recupera con el botón "Leer los que faltan".
+ */
+export const maxDuration = 60;
 
 const GRAPH_VERSION = "v21.0";
 
