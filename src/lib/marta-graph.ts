@@ -106,7 +106,50 @@ export async function getPageAccessToken(userToken: string, pageId: string): Pro
 export type IGRecipient = { id: string } | { comment_id: string };
 
 /** Envía un mensaje (DM o private reply) vía POST /{PAGE_ID}/messages. */
-export async function sendInstagramMessage(recipient: IGRecipient, text: string): Promise<unknown> {
+/**
+ * Credencial de UN CLIENTE, para mandar desde la cuenta que él conectó.
+ *
+ * Sin esto, el envío va por `POST /{FACEBOOK_PAGE_ID}/messages` con el token del
+ * System User de la casa — que es lo que hacen el webhook y comentario→DM y lo
+ * que se queda EXACTAMENTE igual. Con esto va por `POST /me/messages` contra
+ * graph.instagram.com con el token de Instagram Business Login del cliente, que
+ * es otro host y otro endpoint: el token de Instagram Login no vale contra
+ * graph.facebook.com, y el del System User no vale contra graph.instagram.com.
+ */
+export type CredencialTenant = { token: string; igUserId: string };
+
+export async function sendInstagramMessage(
+  recipient: IGRecipient,
+  text: string,
+  cred?: CredencialTenant,
+): Promise<unknown> {
+  // CAMINO DEL CLIENTE. Va delante y sale antes: por debajo no comparte nada
+  // con el de la casa, así que mezclarlos en el mismo cuerpo solo habría dado
+  // ramas dentro de ramas.
+  if (cred) {
+    const baseIg = hostInstagram();
+    if (!baseIg) {
+      simulado("marta/graph", { manda: "DM (cuenta del cliente)", igUserId: cred.igUserId, recipient, text });
+      return { simulado: true };
+    }
+    try {
+      const res = await fetch(`${baseIg}/v21.0/me/messages`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${cred.token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ recipient, message: { text } }),
+      });
+      const bodyText = await res.text();
+      if (!res.ok) {
+        console.error(`[marta/graph] DM del cliente rechazado status=${res.status} body=${bodyText.slice(0, 400)}`);
+        return { error: "graph_error", status: res.status, body: bodyText.slice(0, 400) };
+      }
+      return JSON.parse(bodyText || "{}");
+    } catch (err) {
+      console.error("[marta/graph] fetch del DM del cliente falló:", err);
+      return { error: err instanceof Error ? err.message : "fetch failed" };
+    }
+  }
+
   const pageId = process.env.FACEBOOK_PAGE_ID;
   const systemUserToken = getSystemUserToken();
 
@@ -328,15 +371,21 @@ export async function replyToComment(
 
     if (intento.ok) {
       const gano = `${intento.host} + ${intento.credencial}`;
-      console.log(
-        `[marta/graph] respuesta pública OK comment=${commentId} vía ${gano} status=${intento.status}`,
-      );
       let replyId: string | undefined;
       try {
         replyId = (JSON.parse(intento.body || "{}") as { id?: string }).id;
       } catch {
         /* da igual: lo importante es el ok */
       }
+      // El id de la respuesta se saca ANTES de loguear y se imprime: un "OK" a
+      // secas no distingue "Meta la aceptó" de "Meta la publicó", y la duda
+      // aparece en cuanto alguien mira el post y no la ve —en Instagram las
+      // respuestas van plegadas tras "ver respuestas", así que parece que falta
+      // aunque esté—. Con el id se comprueba contra Meta sin depender de la app.
+      console.log(
+        `[marta/graph] respuesta pública OK comment=${commentId} reply=${replyId ?? "?"} ` +
+          `vía ${gano} status=${intento.status}`,
+      );
       return { ok: true, replyId, gano, intentos };
     }
 

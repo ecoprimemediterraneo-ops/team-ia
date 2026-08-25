@@ -30,15 +30,62 @@
 // Los tokens de este flujo CADUCAN A LOS 60 DÍAS. Se pueden refrescar mientras
 // estén vivos y tengan más de 24 horas. Si caduca, hay que volver a autorizar a
 // mano. Por eso el panel enseña la fecha.
+//
+// UN TOKEN POR CLIENTE (agosto 2026)
+// ----------------------------------
+// Esto NACIÓ como herramienta del fundador para desbloquear el App Review: una
+// sola clave, `instagram_login_token`, con el token de @ai.team.marketing. Con
+// una cuenta funcionaba; con clientes no, porque cada alta eran horas de pegar
+// tokens a mano en variables de entorno.
+//
+// Ahora cada tenant tiene la suya: `instagram_login_token:<tenantId>`. La clave
+// global vieja NO se borra y se sigue leyendo como respaldo (ver `leerToken`),
+// para que lo que hoy funciona siga funcionando el día del cambio.
+//
+// OJO: esto es solo el ALMACÉN. El camino de producción de Marta —publicar,
+// DMs, respuestas públicas— sigue usando `getSystemUserToken()` de
+// `marta-graph.ts`, que lee INSTAGRAM_ACCESS_TOKEN y no se ha tocado. Enchufar
+// el envío real al token del cliente es otra ronda.
 
 import "server-only";
-import { kvGet, kvSet, kvDelete, supabaseEnabled } from "./supabase";
+import { createHmac, timingSafeEqual, randomBytes } from "node:crypto";
+import { kvGet, kvSet, kvDelete, kvListByPrefix, supabaseEnabled } from "./supabase";
 
 const AUTORIZAR = "https://www.instagram.com/oauth/authorize";
 const CANJE_CORTO = "https://api.instagram.com/oauth/access_token";
 const GRAPH_IG = "https://graph.instagram.com";
 
-export const CLAVE_KV = "instagram_login_token";
+/**
+ * Los campos que se le piden a `GET /me`.
+ *
+ * `account_type` sirve para avisar de un caso que pasa: una cuenta PERSONAL no
+ * puede publicar por API. Enterarse en la pantalla de conectar es un minuto;
+ * enterarse cuando falla la primera publicación son dos días.
+ */
+export const CAMPOS_ME = "user_id,username,profile_picture_url,account_type";
+
+type PerfilCrudo = {
+  user_id?: string | number;
+  username?: string;
+  profile_picture_url?: string;
+  account_type?: string;
+};
+
+/**
+ * La clave de antes de que esto fuera multi-cliente: un único token para toda
+ * la instalación. Se conserva como RESPALDO DE LECTURA y no se escribe nunca
+ * más. Borrarla dejaría sin Instagram a la cuenta propia el mismo día del
+ * despliegue, sin que nadie lo notase hasta la siguiente llamada.
+ */
+export const CLAVE_KV_GLOBAL = "instagram_login_token";
+
+/** Prefijo de las claves por cliente. Sirve también para recorrerlas todas. */
+export const PREFIJO_KV = "instagram_login_token:";
+
+/** Dónde vive el token de un cliente concreto. */
+export function claveDeTenant(tenantId: string): string {
+  return `${PREFIJO_KV}${tenantId}`;
+}
 
 /** Cookie donde viaja el `state` entre la salida y la vuelta del OAuth. */
 export const COOKIE_STATE = "ig_login_state";
@@ -68,6 +115,28 @@ export type TokenInstagram = {
   refrescado_en?: string;
   /** Cuenta que autorizó, para que en el panel se vea que es la que toca. */
   usuario?: string;
+  /** De quién es esta conexión. Ausente en el token global antiguo. */
+  tenantId?: string;
+  /**
+   * Cuándo conectó el cliente su cuenta POR PRIMERA VEZ. Distinto de
+   * `obtenido_en`, que un refresco pisa: sin este campo, a los dos meses parece
+   * que el cliente se dio de alta ayer.
+   */
+  conectado_en?: string;
+  /** Foto de perfil y tipo de cuenta, tal y como los devuelve `GET /me`. */
+  foto?: string;
+  tipo_cuenta?: string;
+  /**
+   * CUÁNDO CONFIRMÓ EL CLIENTE QUE ESA ES SU CUENTA.
+   *
+   * Sin este campo la conexión está a medias: el token existe y funciona, pero
+   * el cliente todavía no ha dicho "sí, esa es". No es una formalidad — Meta lo
+   * exige por escrito para el App Review ("asset selection... a live send action
+   * from your app"), y además evita el caso real de autorizar sin querer la
+   * cuenta personal en vez de la del negocio, que en Instagram se cambia con dos
+   * toques y no se nota hasta que se publica donde no tocaba.
+   */
+  confirmado_en?: string;
 };
 
 export function credenciales() {
@@ -90,6 +159,64 @@ export function tapar(t: unknown, extra?: string): string {
     if (v && v.length > 6) s = s.split(v).join("«oculto»");
   }
   return s.replace(/(EAA|IGAA|IGQ)[A-Za-z0-9_.-]{20,}/g, "«token oculto»").slice(0, 500);
+}
+
+// -----------------------------------------------------------------------------
+// EL `state`: ahora lleva el tenant dentro, firmado
+// -----------------------------------------------------------------------------
+// Antes era una cadena al azar y el único sitio donde vivía era una cookie. Con
+// un solo cliente daba igual. Con muchos, no: a la vuelta hay que saber DE QUIÉN
+// es la conexión, y la cookie sola no sirve para eso —Instagram manda la vuelta
+// desde su dominio, el navegador puede haber cambiado de pestaña o de sesión, y
+// una cookie perdida convertiría la conexión de un cliente en la de otro—.
+//
+// Así que el tenant viaja en el propio `state`, FIRMADO. La firma es lo que
+// impide que alguien se invente un `state` con el tenantId de otro y le enchufe
+// su cuenta de Instagram. La cookie se sigue comprobando además, como segundo
+// candado, pero quien manda para saber el tenant es la firma.
+//
+// Formato: <tenantId-b64url>.<nonce-b64url>.<hmac-b64url>
+
+function claveDeFirma(): string {
+  // La misma jerarquía que el resto de la casa: el secreto de sesión primero.
+  // El de Instagram vale como respaldo porque sin él no hay OAuth que firmar.
+  return process.env.AUTH_SECRET || process.env.INSTAGRAM_APP_SECRET || "dev-instagram-state";
+}
+
+const b64u = (b: Buffer | string) =>
+  Buffer.from(b).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+function firmar(payload: string): string {
+  return b64u(createHmac("sha256", claveDeFirma()).update(payload).digest());
+}
+
+/** Construye el `state` de ida para un cliente concreto. */
+export function crearState(tenantId: string): string {
+  const partes = `${b64u(tenantId)}.${b64u(randomBytes(16))}`;
+  return `${partes}.${firmar(partes)}`;
+}
+
+/**
+ * Comprueba la firma y devuelve el tenant. `null` si el `state` está tocado,
+ * mal formado o firmado con otra clave.
+ */
+export function leerState(state: string | null | undefined): { tenantId: string } | null {
+  if (!state) return null;
+  // Trampa 2 otra vez: Instagram puede pegar "#_" también aquí.
+  const limpio = state.replace(/#_$/, "").trim();
+  const trozos = limpio.split(".");
+  if (trozos.length !== 3) return null;
+
+  const [tid, nonce, firma] = trozos;
+  const esperada = firmar(`${tid}.${nonce}`);
+  // Comparación en tiempo constante: comparar firmas con === filtra información
+  // sobre cuántos caracteres se acertaron.
+  const a = Buffer.from(firma);
+  const b = Buffer.from(esperada);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+
+  const tenantId = Buffer.from(tid.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
+  return tenantId ? { tenantId } : null;
 }
 
 export function urlDeAutorizacion(state: string): string {
@@ -145,7 +272,10 @@ async function pedir(url: string, opciones: RequestInit = {}): Promise<Resultado
  * cambia por el de 60 días contra graph.instagram.com. Saltarse el segundo deja
  * un token que muere esa misma tarde.
  */
-export async function canjearCodigo(codigoCrudo: string): Promise<Resultado<TokenInstagram>> {
+export async function canjearCodigo(
+  tenantId: string,
+  codigoCrudo: string,
+): Promise<Resultado<TokenInstagram>> {
   const { appId, secret } = credenciales();
   if (!appId || !secret) {
     return { ok: false, error: "Faltan INSTAGRAM_APP_ID y/o INSTAGRAM_APP_SECRET en el entorno." };
@@ -200,31 +330,45 @@ export async function canjearCodigo(codigoCrudo: string): Promise<Resultado<Toke
   }
 
   const ahora = Date.now();
+  // Si el cliente ya había conectado antes, la fecha de alta se conserva: es
+  // reconexión, no alta nueva.
+  const previo = await kvGet<TokenInstagram>(claveDeTenant(tenantId));
   const token: TokenInstagram = {
     access_token: l.access_token,
     user_id: String(bueno.user_id ?? ""),
     permisos,
     obtenido_en: new Date(ahora).toISOString(),
     caduca_en: new Date(ahora + (l.expires_in ?? 5_184_000) * 1000).toISOString(),
+    tenantId,
+    conectado_en: previo?.conectado_en || new Date(ahora).toISOString(),
+    // OJO: `confirmado_en` NO se hereda del token anterior. Al volver a
+    // autorizar, el cliente ha podido elegir OTRA cuenta en el selector de
+    // Instagram; dar por confirmada la de antes dejaría el panel enseñando un
+    // @usuario que ya no es el del token.
   };
 
   // Con el token ya bueno, se pregunta de quién es. Si falla no se aborta: el
   // token sirve igual, solo se queda el panel sin el nombre de la cuenta.
   const quien = await pedir(
-    `${GRAPH_IG}/v21.0/me?fields=user_id,username&access_token=${encodeURIComponent(token.access_token)}`,
+    `${GRAPH_IG}/v21.0/me?${new URLSearchParams({
+      fields: CAMPOS_ME,
+      access_token: token.access_token,
+    }).toString()}`,
   );
   if (quien.ok) {
-    const u = quien.valor as { username?: string; user_id?: string | number };
+    const u = quien.valor as PerfilCrudo;
     token.usuario = u.username;
+    token.foto = u.profile_picture_url;
+    token.tipo_cuenta = u.account_type;
     if (!token.user_id && u.user_id) token.user_id = String(u.user_id);
   }
 
-  const guardado = await guardar(token);
+  const guardado = await guardar(tenantId, token);
   if (!guardado.ok) return guardado;
   return { ok: true, valor: token };
 }
 
-async function guardar(token: TokenInstagram): Promise<Resultado<TokenInstagram>> {
+async function guardar(tenantId: string, token: TokenInstagram): Promise<Resultado<TokenInstagram>> {
   if (!supabaseEnabled()) {
     return {
       ok: false,
@@ -233,28 +377,60 @@ async function guardar(token: TokenInstagram): Promise<Resultado<TokenInstagram>
         "Este flujo hay que hacerlo en producción.",
     };
   }
-  await kvSet(CLAVE_KV, token);
+  const clave = claveDeTenant(tenantId);
+  await kvSet(clave, token);
   // kvSet no lanza si falla —a propósito, para no tumbar un webhook—, así que
   // se vuelve a leer. Un token que se cree guardado y no lo esté es peor que no
   // tenerlo: el flujo entero parece haber salido bien.
-  const vuelta = await kvGet<TokenInstagram>(CLAVE_KV);
+  const vuelta = await kvGet<TokenInstagram>(clave);
   if (!vuelta || vuelta.access_token !== token.access_token) {
     return { ok: false, error: "el token NO se ha guardado en Supabase; mira los logs del servidor." };
   }
   return { ok: true, valor: token };
 }
 
-export async function leerToken(): Promise<TokenInstagram | null> {
+/**
+ * El token de un cliente. Sin `tenantId` lee la clave global de siempre.
+ *
+ * EL RESPALDO IMPORTA: si el cliente aún no ha conectado lo suyo, se cae al
+ * token global antiguo. Es lo que hace que el día del despliegue no se apague
+ * nada — la cuenta propia sigue funcionando con el token que ya tenía, aunque
+ * su tenant no haya pasado por el OAuth nuevo.
+ */
+export async function leerToken(tenantId?: string): Promise<TokenInstagram | null> {
   if (!supabaseEnabled()) return null;
-  return kvGet<TokenInstagram>(CLAVE_KV);
+  if (tenantId) {
+    const propio = await kvGet<TokenInstagram>(claveDeTenant(tenantId));
+    if (propio) return propio;
+  }
+  return kvGet<TokenInstagram>(CLAVE_KV_GLOBAL);
 }
 
-export async function borrarToken(): Promise<void> {
-  if (supabaseEnabled()) await kvDelete(CLAVE_KV);
+/**
+ * Borra SOLO lo del cliente. Nunca la clave global: si un cliente se equivoca de
+ * cuenta y le da a empezar de cero, no puede llevarse por delante la conexión
+ * de la casa.
+ */
+export async function borrarToken(tenantId?: string): Promise<void> {
+  if (!supabaseEnabled()) return;
+  await kvDelete(tenantId ? claveDeTenant(tenantId) : CLAVE_KV_GLOBAL);
+}
+
+/** Todos los clientes que tienen token propio guardado. */
+export async function listarTokens(): Promise<Array<{ tenantId: string; token: TokenInstagram }>> {
+  if (!supabaseEnabled()) return [];
+  const filas = await kvListByPrefix<TokenInstagram>(PREFIJO_KV);
+  return filas.map((f) => ({
+    tenantId: f.value?.tenantId || f.key.slice(PREFIJO_KV.length),
+    token: f.value,
+  }));
 }
 
 export type EstadoToken = {
   hay: boolean;
+  /** "tenant" = lo autorizó este cliente. "global" = respaldo del token viejo. */
+  origen?: "tenant" | "global";
+  conectadoEn?: string;
   usuario?: string;
   cuenta?: string;
   caduca?: string;
@@ -265,8 +441,8 @@ export type EstadoToken = {
   resumen: string;
 };
 
-export async function estadoToken(): Promise<EstadoToken> {
-  const t = await leerToken();
+export async function estadoToken(tenantId?: string): Promise<EstadoToken> {
+  const t = await leerToken(tenantId);
   if (!t) {
     return {
       hay: false,
@@ -275,8 +451,14 @@ export async function estadoToken(): Promise<EstadoToken> {
   }
   const quedan = Math.floor((new Date(t.caduca_en).getTime() - Date.now()) / 86_400_000);
   const faltan = SCOPES.filter((s) => !t.permisos.includes(s));
+  // Que se vea de dónde sale: un token heredado del global no es lo mismo que
+  // uno que este cliente ha autorizado, aunque los dos funcionen.
+  const origen: EstadoToken["origen"] =
+    tenantId && t.tenantId === tenantId ? "tenant" : "global";
   return {
     hay: true,
+    origen,
+    conectadoEn: t.conectado_en,
     usuario: t.usuario,
     cuenta: t.user_id,
     caduca: t.caduca_en,
@@ -297,8 +479,13 @@ export async function estadoToken(): Promise<EstadoToken> {
  * Estira el token otros 60 días. Meta solo lo permite si está vivo y tiene más
  * de 24 horas; con un token recién sacado responde que no, y eso no es un fallo.
  */
-export async function refrescarToken(): Promise<Resultado<TokenInstagram>> {
-  const t = await leerToken();
+export async function refrescarToken(tenantId?: string): Promise<Resultado<TokenInstagram>> {
+  // A propósito NO usa el respaldo global: refrescar el token de la casa
+  // creyendo que se refresca el de un cliente y guardárselo al cliente sería
+  // repartir la misma conexión entre varios.
+  const t = tenantId
+    ? await kvGet<TokenInstagram>(claveDeTenant(tenantId))
+    : await kvGet<TokenInstagram>(CLAVE_KV_GLOBAL);
   if (!t) return { ok: false, error: "no hay token guardado que refrescar" };
 
   const r = await pedir(
@@ -318,7 +505,44 @@ export async function refrescarToken(): Promise<Resultado<TokenInstagram>> {
     caduca_en: new Date(Date.now() + (v.expires_in ?? 5_184_000) * 1000).toISOString(),
     refrescado_en: new Date().toISOString(),
   };
-  return guardar(nuevo);
+  // Sin tenant se está refrescando la clave global antigua: se escribe donde
+  // estaba, no en una clave de cliente que no existe.
+  if (!tenantId) {
+    if (!supabaseEnabled()) return { ok: false, error: "sin Supabase no se puede guardar" };
+    await kvSet(CLAVE_KV_GLOBAL, nuevo);
+    return { ok: true, valor: nuevo };
+  }
+  return guardar(tenantId, nuevo);
+}
+
+/**
+ * Refresca el token de TODOS los clientes que tengan uno propio.
+ *
+ * Para el cron. Cada cliente por separado y sin cortar: si el de uno falla —le
+ * quedan menos de 24 h de vida, o ya caducó y hay que volver a autorizar— los
+ * demás se refrescan igual. Un barrido que se para en el primer fallo deja sin
+ * refrescar a todos los que van detrás por orden alfabético.
+ */
+export async function refrescarTodos(): Promise<{
+  total: number;
+  refrescados: number;
+  fallidos: Array<{ tenantId: string; error: string }>;
+}> {
+  const todos = await listarTokens();
+  const fallidos: Array<{ tenantId: string; error: string }> = [];
+  let refrescados = 0;
+
+  for (const { tenantId } of todos) {
+    const r = await refrescarToken(tenantId);
+    if (r.ok) {
+      refrescados++;
+      console.log(`[instagram-login] token refrescado tenant=${tenantId}`);
+    } else {
+      fallidos.push({ tenantId, error: r.error });
+      console.error(`[instagram-login] refresco FALLIDO tenant=${tenantId}: ${r.error}`);
+    }
+  }
+  return { total: todos.length, refrescados, fallidos };
 }
 
 /**
@@ -328,9 +552,190 @@ export async function refrescarToken(): Promise<Resultado<TokenInstagram>> {
  * para este host, y hacerlo pasar por bueno es justo lo que hizo que en julio
  * salieran cuatro 200 con el contador a cero.
  */
-export async function tokenParaInstagramLogin(): Promise<string | null> {
-  const t = await leerToken();
+export async function tokenParaInstagramLogin(tenantId?: string): Promise<string | null> {
+  const t = await leerToken(tenantId);
   if (!t) return null;
   if (new Date(t.caduca_en).getTime() < Date.now()) return null;
   return t.access_token;
+}
+
+/** Lo que necesita una pantalla para pintar "conectado como @quien, caduca el X". */
+export type ConexionInstagram = {
+  token: string;
+  usuario?: string;
+  userId: string;
+  foto?: string;
+  tipoCuenta?: string;
+  caducaEn: string;
+  diasQueQuedan: number;
+  conectadoEn?: string;
+  /** Cuándo pulsó "Usar esta cuenta". Sin esto, la conexión está a medias. */
+  confirmadoEn?: string;
+  permisos: string[];
+  /** "tenant" = suyo. "global" = heredado del token único antiguo. */
+  origen: "tenant" | "global";
+};
+
+/**
+ * LA PUERTA DE ENTRADA: la cuenta CONFIRMADA de un cliente.
+ *
+ * Devuelve `null` si no hay conexión, si el token caducó, o si el cliente
+ * todavía NO ha confirmado que esa es su cuenta (ver `confirmado_en`). Un token
+ * sin confirmar existe y funciona, pero para el producto la cuenta aún no está
+ * conectada: quien pregunte por aquí quiere saber si puede publicar en nombre
+ * del cliente, y la respuesta hasta que confirme es que no.
+ *
+ * Un token caducado tampoco se devuelve como bueno: quien lo reciba haría la
+ * llamada, se comería el error de Meta y no sabría por qué.
+ *
+ * EL TOKEN GLOBAL ANTIGUO SE DA POR CONFIRMADO. Es de antes de que existiera
+ * este paso; exigirle una confirmación que nadie pudo dar apagaría la cuenta de
+ * la casa el día del despliegue.
+ */
+export async function tokenInstagramDeTenant(tenantId: string): Promise<ConexionInstagram | null> {
+  const t = await leerToken(tenantId);
+  if (!t) return null;
+  if (new Date(t.caduca_en).getTime() < Date.now()) return null;
+
+  const heredado = t.tenantId !== tenantId;
+  if (!t.confirmado_en && !heredado) return null;
+
+  return {
+    token: t.access_token,
+    usuario: t.usuario,
+    userId: t.user_id,
+    foto: t.foto,
+    tipoCuenta: t.tipo_cuenta,
+    caducaEn: t.caduca_en,
+    diasQueQuedan: Math.floor((new Date(t.caduca_en).getTime() - Date.now()) / 86_400_000),
+    conectadoEn: t.conectado_en,
+    confirmadoEn: t.confirmado_en,
+    permisos: t.permisos ?? [],
+    origen: heredado ? "global" : "tenant",
+  };
+}
+
+// -----------------------------------------------------------------------------
+// EL PASO DE ELEGIR CUENTA
+// -----------------------------------------------------------------------------
+// Meta lo pide por escrito para el App Review: "asset selection (Page, account,
+// or number visible)". El revisor quiere ver al usuario ELIGIENDO, no una cuenta
+// que aparece ya puesta.
+//
+// CUÁNTAS CUENTAS PUEDEN VENIR: **UNA**. Con Instagram Business Login el
+// selector de cuenta lo pinta INSTAGRAM, dentro de su propio flujo de
+// autorización, y el token que vuelve pertenece ya a esa cuenta. `GET /me`
+// contra graph.instagram.com describe al dueño del token, y no existe ningún
+// `/me/accounts` en ese host — eso es de graph.facebook.com y de Facebook Login
+// for Business, que es el otro flujo, el que NO estamos construyendo.
+//
+// Así que la lista es de un elemento. Se modela como array igualmente para no
+// tener que rehacer la pantalla el día que se añada Facebook Login, y sobre todo
+// para no mentir: se enseña lo que Meta devuelve, ni una fila más.
+
+export type CuentaCandidata = {
+  userId: string;
+  usuario?: string;
+  foto?: string;
+  tipoCuenta?: string;
+};
+
+export type CuentasDisponibles = {
+  cuentas: CuentaCandidata[];
+  /** Qué contestó Meta, si contestó mal. Para enseñarlo sin adivinar. */
+  error?: string;
+  /** true si los datos salen de lo guardado porque la llamada a Meta falló. */
+  deCache: boolean;
+};
+
+/**
+ * Le pregunta a Meta qué cuenta hay detrás del token de este cliente.
+ *
+ * Si la llamada falla se cae a lo que se guardó en el canje en vez de dejar la
+ * pantalla vacía: el cliente ya autorizó, y quedarse sin poder confirmar por un
+ * corte de red sería perder el alta entera.
+ */
+export async function cuentasDisponibles(tenantId: string): Promise<CuentasDisponibles> {
+  const t = await leerToken(tenantId);
+  if (!t) return { cuentas: [], deCache: false };
+
+  const r = await pedir(
+    `${GRAPH_IG}/v21.0/me?${new URLSearchParams({
+      fields: CAMPOS_ME,
+      access_token: t.access_token,
+    }).toString()}`,
+  );
+
+  if (r.ok) {
+    const u = r.valor as PerfilCrudo;
+    return {
+      cuentas: [
+        {
+          userId: String(u.user_id ?? t.user_id ?? ""),
+          usuario: u.username ?? t.usuario,
+          foto: u.profile_picture_url ?? t.foto,
+          tipoCuenta: u.account_type ?? t.tipo_cuenta,
+        },
+      ],
+      deCache: false,
+    };
+  }
+
+  console.error(`[instagram-login] no se ha podido leer /me tenant=${tenantId}: ${tapar(r.error)}`);
+  return {
+    cuentas: t.user_id || t.usuario
+      ? [{ userId: t.user_id, usuario: t.usuario, foto: t.foto, tipoCuenta: t.tipo_cuenta }]
+      : [],
+    error: r.error,
+    deCache: true,
+  };
+}
+
+/**
+ * La conexión que existe pero AÚN NO se ha confirmado.
+ *
+ * Es lo que hace que el paso de elegir reaparezca si el cliente se va a medias
+ * en vez de dejarle un estado raro que no se entiende.
+ */
+export async function conexionPendienteDeTenant(tenantId: string): Promise<ConexionInstagram | null> {
+  if (!supabaseEnabled()) return null;
+  const t = await kvGet<TokenInstagram>(claveDeTenant(tenantId));
+  if (!t || t.confirmado_en) return null;
+  if (new Date(t.caduca_en).getTime() < Date.now()) return null;
+
+  return {
+    token: t.access_token,
+    usuario: t.usuario,
+    userId: t.user_id,
+    foto: t.foto,
+    tipoCuenta: t.tipo_cuenta,
+    caducaEn: t.caduca_en,
+    diasQueQuedan: Math.floor((new Date(t.caduca_en).getTime() - Date.now()) / 86_400_000),
+    conectadoEn: t.conectado_en,
+    permisos: t.permisos ?? [],
+    origen: "tenant",
+  };
+}
+
+/**
+ * El cliente ha pulsado "Usar esta cuenta". A partir de aquí está conectada.
+ *
+ * Se comprueba que el id confirmado es el del token: si el cliente dejó la
+ * pantalla abierta, volvió a autorizar en otra pestaña con otra cuenta y luego
+ * confirmó la vieja, se estaría dando por buena una cuenta que ya no es la del
+ * token guardado.
+ */
+export async function confirmarCuenta(
+  tenantId: string,
+  userId: string,
+): Promise<Resultado<TokenInstagram>> {
+  if (!supabaseEnabled()) return { ok: false, error: "sin Supabase no se puede guardar la confirmación" };
+
+  const t = await kvGet<TokenInstagram>(claveDeTenant(tenantId));
+  if (!t) return { ok: false, error: "no hay ninguna conexión pendiente que confirmar" };
+  if (t.user_id && userId && t.user_id !== userId) {
+    return { ok: false, error: "la cuenta que se confirma no es la del token guardado" };
+  }
+
+  return guardar(tenantId, { ...t, confirmado_en: new Date().toISOString() });
 }

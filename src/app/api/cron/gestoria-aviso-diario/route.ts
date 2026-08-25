@@ -47,9 +47,15 @@ export async function GET(req: Request) {
     } else if (!encendido) {
       fila.envio = "APAGADO (GESTORIA_AVISO_DIARIO_ENABLED no está en true)";
     } else {
-      const r1 = await sendWhatsAppText(destino, aviso.resumen);
+      const r1 = await sendWhatsAppText(destino, aviso.resumen, {
+        tenantId: t.id, a: destino, motivo: "aviso_diario_resumen",
+      });
       // El segundo mensaje solo sale si de verdad hay algo que vence.
-      const r2 = aviso.urgente ? await sendWhatsAppText(destino, aviso.urgente) : null;
+      const r2 = aviso.urgente
+        ? await sendWhatsAppText(destino, aviso.urgente, {
+            tenantId: t.id, a: destino, motivo: "aviso_diario_urgente",
+          })
+        : null;
       fila.envio = `enviado a ${destino}`;
       fila.resultado = { resumen: !!r1, urgente: aviso.urgente ? !!r2 : "no hacía falta" };
     }

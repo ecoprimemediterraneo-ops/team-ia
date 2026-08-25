@@ -313,6 +313,8 @@ export async function POST(req: Request) {
         const messages = value.messages ?? [];
         const contacts = value.contacts ?? [];
         for (const msg of messages) {
+          /** true = este mensaje ya pasó el control de duplicados (venía en audio). */
+          let yaReclamado = false;
           // === GESTORÍA: adjunto = FACTURA ===
           // Va lo PRIMERO y termina en `continue`: una foto de un ticket no
           // tiene que pasar por el clasificador Haiku ni por el flujo de agenda.
@@ -416,20 +418,53 @@ export async function POST(req: Request) {
                 continue;
               }
 
-              const respuesta = esGestoria
-                ? "perdona, los audios todavia no los escucho. escribemelo o mandame la foto de la factura"
-                : "perdona, los audios todavia no los escucho. me lo escribes?";
-              await sendWhatsAppText(msg.from, respuesta);
-              await registrarIntercambio({
-                tenantId, msgId: msg.id, from: msg.from,
-                nombre: contacts.find((c) => c.wa_id === msg.from)?.profile?.name,
-                entrante: "[audio]",
-                respuesta, rxTs: new Date().toISOString(), via: "audio_no_soportado",
-              });
+              // EL RESTO DE AUDIOS: se transcriben y siguen el MISMO camino que
+              // un mensaje escrito.
+              //
+              // Antes aquí se contestaba "los audios todavia no los escucho" y
+              // se acababa la conversación. Media España manda notas de voz en
+              // vez de escribir, y a un cliente que le pide a su gestoría "oye,
+              // ¿cómo va lo mío?" hablando no se le puede pedir que lo teclee.
+              //
+              // Se transcribe y se REESCRIBE el mensaje como si hubiera llegado
+              // en texto: así no hay un segundo camino que mantener al día. Todo
+              // lo que sabe hacer Pablo con un texto lo sabe hacer con un audio.
+              const media = msg.audio ? await descargarMedia(msg.audio.id) : null;
+              const tr = media
+                ? await transcribir(media.buffer, media.mime || msg.audio?.mime_type || "audio/ogg")
+                : ({ ok: false, error: "no se ha podido descargar el audio" } as const);
+
+              if (tr.ok && tr.texto.trim()) {
+                console.log(`[pablo/webhook] audio de ${msg.from} transcrito: "${tr.texto.slice(0, 80)}"`);
+                // A partir de aquí es un mensaje de texto normal y corriente. El
+                // `claimMessageOnce` ya se ha consumido arriba, así que se marca
+                // para que el camino de texto no lo descarte por duplicado.
+                msg.type = "text";
+                msg.text = { body: tr.texto.trim() };
+                yaReclamado = true;
+              } else {
+                // NUNCA callado. Si no se ha podido escuchar, se dice y se pide
+                // por escrito: el silencio se lee como "esto está roto".
+                const respuesta = esGestoria
+                  ? "no he podido escuchar ese audio. me lo escribes, o me mandas la foto de la factura?"
+                  : "no he podido escuchar ese audio. me lo escribes?";
+                console.warn(`[pablo/webhook] audio de ${msg.from} sin transcribir: ${"error" in tr ? tr.error : "vacío"}`);
+                await sendWhatsAppText(msg.from, respuesta);
+                await registrarIntercambio({
+                  tenantId, msgId: msg.id, from: msg.from,
+                  nombre: contacts.find((c) => c.wa_id === msg.from)?.profile?.name,
+                  entrante: "[audio que no se ha podido escuchar]",
+                  respuesta, rxTs: new Date().toISOString(), via: "audio_sin_transcribir",
+                });
+                continue;
+              }
             } catch (err) {
-              console.error("[pablo/webhook] no se pudo contestar al audio:", err);
+              // Un fallo aquí tampoco puede dejar al cliente sin respuesta.
+              console.error("[pablo/webhook] no se pudo atender el audio:", err);
+              const respuesta = "no he podido escuchar ese audio. me lo escribes?";
+              await sendWhatsAppText(msg.from, respuesta).catch(() => {});
+              continue;
             }
-            continue;
           }
 
           // Solo texto por ahora
@@ -441,7 +476,10 @@ export async function POST(req: Request) {
           // Idempotencia: procesa cada mensaje UNA sola vez. Los reintentos de
           // Meta (cuando la regeneración tarda) se ignoran aquí → no se encadenan
           // varias generaciones para el mismo mensaje.
-          if (!(await claimMessageOnce(msg.id))) {
+          // `yaReclamado` = venía de un audio, que ya pasó por `claimMessageOnce`
+          // arriba. Sin esto, un audio transcrito se descartaría aquí como si
+          // fuera un reintento de Meta y Pablo se quedaría mudo.
+          if (!yaReclamado && !(await claimMessageOnce(msg.id))) {
             console.log(`[pablo/webhook] mensaje duplicado (reintento de Meta) ignorado: ${msg.id}`);
             continue;
           }

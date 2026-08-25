@@ -24,10 +24,11 @@ import {
 } from "./types";
 import type { MartaProposal } from "@/lib/marta-proposals";
 import type { MartaSchedule } from "@/lib/marta-schedule";
+import { traductor, type Idioma } from "@/lib/idioma";
 import type { CommentRule, MatchMode } from "@/lib/marta-comment-rules";
 import { MARTA_TOPICS } from "@/lib/marta-topics";
 
-type Tab = "nuevo" | "arranque" | "historial" | "calendario" | "comentarios";
+type Tab = "nuevo" | "arranque" | "mensajes" | "historial" | "calendario" | "comentarios";
 
 export default function MartaLivePanel({
   initialProposals,
@@ -35,7 +36,10 @@ export default function MartaLivePanel({
   initialCommentRules,
   commentDmEnabled,
   calendario,
+  conectar,
+  mensajes,
   initialTab,
+  idioma = "es",
 }: {
   initialProposals: MartaProposal[];
   enabled: boolean;
@@ -51,21 +55,32 @@ export default function MartaLivePanel({
   commentDmEnabled: boolean;
   /** Calendario del mes (server component) montado como slot en la pestaña "Calendario". */
   calendario: React.ReactNode;
+  /**
+   * Conectar Instagram (server component) montado como slot arriba del todo de
+   * "Empezar cuenta". Va de slot y no de componente normal por lo mismo que el
+   * calendario: este panel es de cliente y no puede leer el token del tenant ni
+   * llamar a la acción de desconectar.
+   */
+  conectar: React.ReactNode;
+  /** Bandeja de DMs (server component) montada como slot en "Mensajes". */
+  mensajes: React.ReactNode;
   /** Pestaña abierta al entrar (p. ej. "calendario" desde la ruta redirigida). */
   initialTab?: Tab;
+  /** Solo los rótulos de las pestañas. El resto del panel no se traduce. */
+  idioma?: Idioma;
 }) {
-  const [tab, setTab] = useState<Tab>(initialTab ?? "calendario");
+  const t = traductor(idioma);
+  // Por defecto abre por "Empezar cuenta": es el paso cero —sin cuenta conectada
+  // el resto del panel no puede hacer nada— y hasta ahora se entraba por el
+  // calendario, que es justo lo que no sirve si aún no has conectado.
+  const [tab, setTab] = useState<Tab>(initialTab ?? "arranque");
 
   return (
     <div className="space-y-5">
       {!enabled && (
         <div className="card-hard bg-white p-4 border-[3px] border-[color:var(--mustard)] text-sm">
-          <div className="font-bold mb-1">Publicación pausada por configuración</div>
-          <p className="text-xs text-black/70 leading-snug">
-            El interruptor de publicación de Marta está apagado en producción.
-            Las propuestas se generan y llegan a tu WhatsApp, pero al aprobar no
-            se publica en Instagram hasta que se reactive.
-          </p>
+          <div className="font-bold mb-1">{t("pausa_titulo")}</div>
+          <p className="text-xs text-black/70 leading-snug">{t("pausa_texto")}</p>
         </div>
       )}
 
@@ -74,10 +89,18 @@ export default function MartaLivePanel({
       {/* "Nuevo post" se fusionó en "Subir un post propio" (dentro de Calendario de
           posts) → ya no aparece en la barra. NuevoPostBlock queda como legacy abajo. */}
       <div className="card-hard bg-white p-1 flex gap-1 text-xs font-mono uppercase tracking-widest flex-wrap">
-        <TabBtn id="calendario" active={tab} setTab={setTab}>Calendario de posts</TabBtn>
-        <TabBtn id="arranque" active={tab} setTab={setTab}>Empezar cuenta</TabBtn>
-        <TabBtn id="historial" active={tab} setTab={setTab}>Historial</TabBtn>
-        <TabBtn id="comentarios" active={tab} setTab={setTab}>Comentarios → DM</TabBtn>
+        {/* ORDEN = EL CAMINO QUE RECORRE UN CLIENTE NUEVO: conecta la cuenta,
+            programa lo que se publica, monta el comentario→DM y, al final, mira
+            lo que ya pasó. El historial es lo único que no sirve para hacer
+            nada, así que va el último. */}
+        {/* Las pestañas NO tocan la URL: son estado de React. Por eso `?lang=en`
+            sobrevive solo al cambiar de pestaña, que es justo lo que hace falta
+            para que la grabación no se quede a medias en español. */}
+        <TabBtn id="arranque" active={tab} setTab={setTab}>{t("tab_arranque")}</TabBtn>
+        <TabBtn id="mensajes" active={tab} setTab={setTab}>{t("tab_mensajes")}</TabBtn>
+        <TabBtn id="calendario" active={tab} setTab={setTab}>{t("tab_calendario")}</TabBtn>
+        <TabBtn id="comentarios" active={tab} setTab={setTab}>{t("tab_comentarios")}</TabBtn>
+        <TabBtn id="historial" active={tab} setTab={setTab}>{t("tab_historial")}</TabBtn>
       </div>
 
       {/* Pestaña "Calendario": el calendario del mes nuevo, montado como slot
@@ -90,7 +113,13 @@ export default function MartaLivePanel({
           commentDmEnabled={commentDmEnabled}
         />
       )}
-      {tab === "arranque" && <ArranqueBlock />}
+      {tab === "arranque" && (
+        <div className="space-y-5">
+          {conectar}
+          <ArranqueBlock />
+        </div>
+      )}
+      {tab === "mensajes" && mensajes}
       {tab === "historial" && <HistorialBlock proposals={initialProposals} />}
     </div>
   );

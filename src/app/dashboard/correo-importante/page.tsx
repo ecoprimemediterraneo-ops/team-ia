@@ -6,6 +6,7 @@ import { getSessionLocal } from "@/lib/auth";
 import { contextoPanelODefecto } from "@/lib/panel-contexto";
 import { tieneFuncion } from "@/lib/sectores";
 import RemitentesImportantes from "@/components/gestoria/RemitentesImportantes";
+import BarraGestoria from "@/components/gestoria/BarraGestoria";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,9 @@ export default async function CorreoImportantePage() {
 
   return (
     <div className="space-y-4">
+      {/* Lo que aprieta y el cuadro de preguntar, en todas las pantallas. */}
+      <BarraGestoria />
+
       <div>
         <div className="text-xs font-mono uppercase tracking-widest text-black/50">{ctx.tenant?.name}</div>
         <h1 className="font-stencil text-3xl md:text-4xl leading-none">Correo importante</h1>

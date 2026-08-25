@@ -21,6 +21,7 @@
 
 import "server-only";
 import type { FacturaRecibida, MovimientoBanco } from "./gestoria-facturas";
+import { TIPO_VISIBLE } from "./gestoria-lectura";
 
 /** Días arriba y abajo entre fecha de factura y fecha del cargo. */
 export const VENTANA_DIAS = 5;
@@ -178,7 +179,10 @@ export function cruzar(movimientos: MovimientoBanco[], facturas: FacturaRecibida
       f.estado === "pendiente" &&
       typeof f.importe === "number" &&
       !!f.fecha_factura &&
-      f.contable !== false,
+      f.contable !== false &&
+      // Un duplicado NO justifica nada: si el mismo papel entró dos veces y los
+      // dos cruzaran, se darían por buenos dos cargos con un solo gasto real.
+      !f.duplicado_de,
   );
 
   const automaticos: ResultadoCruce["automaticos"] = [];
@@ -467,4 +471,111 @@ export function textoReclamacion(mov: MovimientoBanco): string {
     `del ${fechaLarga(mov.fecha)}${concepto ? `, concepto ${concepto}` : ""}. ` +
     `¿Puedes mandármela por aquí?`
   );
+}
+
+// -----------------------------------------------------------------------------
+// Pagado, pero sin factura: albaranes y tickets que cuadran con un cargo
+// -----------------------------------------------------------------------------
+//
+// LO QUE PASABA ANTES: `cruzar()` deja fuera los albaranes a propósito
+// (`contable !== false`), así que un pago con albarán salía como "sin factura" y
+// se mezclaba con los cargos de los que no se sabe nada. Y un ticket sí entraba
+// y daba el cargo por justificado — pero un ticket NO deduce IVA, así que ese
+// cargo se veía cuadrado cuando en realidad le falta la factura buena.
+//
+// Los dos casos son el mismo problema y el mismo trabajo para Jose: hay un
+// papel, se sabe de qué proveedor es y cuánto, y hay que pedir la factura. No es
+// un misterio, es una gestión. Se separa para poder decirlo con nombre y
+// apellidos —"Bar El Puerto: 5 albaranes pagados sin factura · 1.240 €"— en vez
+// de dejarlo dentro del montón de lo no justificado.
+//
+// NO cambia el cruce. Esto es una LECTURA de lo mismo, no una conciliación: un
+// albarán sigue sin justificar nada y el cargo sigue estando pendiente.
+
+
+export type PagoSinFactura = {
+  movimiento: MovimientoBanco;
+  /** El albarán o ticket que cuadra con ese pago. */
+  documento: FacturaRecibida;
+  tipo: "ALBARAN" | "TICKET";
+};
+
+export type ClienteConPagosSinFactura = {
+  clienteId: string;
+  /** Cuántos documentos, para el titular del aviso. */
+  cuantos: number;
+  /** Lo que suman. Es la cifra que hace que a Jose le importe. */
+  total: number;
+  albaranes: number;
+  tickets: number;
+  pagos: PagoSinFactura[];
+};
+
+/**
+ * Pagos del banco que cuadran con un albarán o un ticket en vez de con una
+ * factura.
+ *
+ * Mismo criterio de emparejamiento que el cruce de verdad —misma ventana de
+ * días y mismo margen de céntimos— para que no haya dos formas distintas de
+ * decir que un pago y un papel son lo mismo.
+ */
+export function pagosSinFactura(
+  movimientos: MovimientoBanco[],
+  facturas: FacturaRecibida[],
+): PagoSinFactura[] {
+  const cargos = movimientos.filter((m) => m.signo === "cargo" && m.estado !== "ignorado");
+
+  // Solo lo que NO deduce IVA: albaranes y tickets. Con importe y fecha, o no
+  // hay con qué cuadrar.
+  const sinValorFiscal = facturas.filter((f) => {
+    if (f.estado === "descartada") return false;
+    if (f.duplicado_de) return false;
+    if (typeof f.importe !== "number" || !f.fecha_factura) return false;
+    if (!f.clase) return false;
+    const t = TIPO_VISIBLE[f.clase];
+    return t === "ALBARAN" || t === "TICKET";
+  });
+  if (!sinValorFiscal.length) return [];
+
+  const encontrados: PagoSinFactura[] = [];
+  const yaUsados = new Set<string>();
+
+  for (const mov of cargos) {
+    const candidato = sinValorFiscal.find(
+      (f) =>
+        !yaUsados.has(f.id) &&
+        f.cliente_id === mov.cliente_id &&
+        casiMismoImporte(Math.abs(f.importe as number), mov.importe) &&
+        dentroDeVentana(f.fecha_factura as string, mov.fecha),
+    );
+    if (!candidato) continue;
+    yaUsados.add(candidato.id);
+    encontrados.push({
+      movimiento: mov,
+      documento: candidato,
+      tipo: TIPO_VISIBLE[candidato.clase!] === "ALBARAN" ? "ALBARAN" : "TICKET",
+    });
+  }
+  return encontrados;
+}
+
+/** Lo mismo, agrupado por cliente y ordenado por lo que más duele primero. */
+export function pagosSinFacturaPorCliente(
+  movimientos: MovimientoBanco[],
+  facturas: FacturaRecibida[],
+): ClienteConPagosSinFactura[] {
+  const porCliente = new Map<string, ClienteConPagosSinFactura>();
+  for (const p of pagosSinFactura(movimientos, facturas)) {
+    const id = p.movimiento.cliente_id;
+    const g =
+      porCliente.get(id) ??
+      { clienteId: id, cuantos: 0, total: 0, albaranes: 0, tickets: 0, pagos: [] as PagoSinFactura[] };
+    g.cuantos += 1;
+    g.total += p.movimiento.importe;
+    if (p.tipo === "ALBARAN") g.albaranes += 1;
+    else g.tickets += 1;
+    g.pagos.push(p);
+    porCliente.set(id, g);
+  }
+  return [...porCliente.values()].sort((a, b) => b.total - a.total);
 }

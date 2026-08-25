@@ -35,34 +35,30 @@ export type Lectura = {
   avisos: string[];
 };
 
+// CUATRO tipos en pantalla, no seis. Dentro se siguen distinguiendo el abono y
+// el presupuesto —la regla del IVA y el cruce con el banco los necesitan— pero
+// al gestor se le enseñan cuatro cajas. Un abono es una FACTURA en negativo: es
+// la misma factura corrigiéndose, y darle caja propia obligaba a explicar una
+// diferencia a alguien que ya sabe lo que es una rectificativa.
 const ETIQUETA: Record<Lectura["clase"], string> = {
-  factura_completa: "FACTURA COMPLETA",
-  ticket: "TICKET / FACTURA SIMPLIFICADA",
+  factura_completa: "FACTURA",
+  abono: "FACTURA (ABONO, EN NEGATIVO)",
+  ticket: "TICKET",
   albaran: "ALBARÁN",
-  abono: "ABONO / RECTIFICATIVA",
-  presupuesto: "PRESUPUESTO O PROFORMA",
-  otro: "SIN CLASIFICAR",
+  presupuesto: "OTROS",
+  otro: "OTROS",
 };
 
-// Verde solo la que sirve para deducir. Lo demás es mostaza (guárdalo pero ojo)
-// o rojo (no es documento contable). El color dice qué hacer, no qué es.
+// Verde solo lo que sirve para deducir. Mostaza: guárdalo pero ojo. Rojo: no es
+// documento contable. El color dice qué hacer, no qué es.
 const COLOR: Record<Lectura["clase"], string> = {
   factura_completa: "bg-green-700 text-white",
+  abono: "bg-green-700 text-white",
   ticket: "bg-[color:var(--mustard)] text-black",
   albaran: "bg-[color:var(--red)] text-white",
-  abono: "bg-black text-white",
-  presupuesto: "bg-[color:var(--red)] text-white",
+  presupuesto: "bg-black/70 text-white",
   otro: "bg-black/70 text-white",
 };
-
-const CLASES_A_MANO: Array<{ id: Lectura["clase"]; label: string }> = [
-  { id: "factura_completa", label: "Factura completa" },
-  { id: "ticket", label: "Ticket / simplificada" },
-  { id: "albaran", label: "Albarán" },
-  { id: "abono", label: "Abono / rectificativa" },
-  { id: "presupuesto", label: "Presupuesto / proforma" },
-  { id: "otro", label: "Otra cosa" },
-];
 
 const euros = (n: number | null) =>
   n == null ? "—" : n.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
@@ -190,14 +186,12 @@ export default function LecturaDocumento({
             confianza {lectura.confianza}
           </span>
         )}
-        <select
-          value={lectura.clase}
-          onChange={(e) => guardar("clase", e.target.value)}
-          title="Cámbialo si la IA se ha equivocado"
-          className="text-[10px] font-mono border-2 border-black px-1 py-0.5 bg-white ml-auto"
-        >
-          {CLASES_A_MANO.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-        </select>
+        {/* AQUÍ HABÍA UN DESPLEGABLE para cambiar el tipo a mano. Se ha quitado:
+            clasificar no es trabajo del gestor, es trabajo del sistema. Con cien
+            facturas al mes por cliente, un desplegable por documento es una
+            decisión que se le pide diez mil veces al mes y que además invita a
+            "corregir" a la IA cuando la IA tenía razón. La corrección sigue
+            existiendo por la API (`PATCH campo=clase`) para administración. */}
       </div>
 
       {lectura.porQue && <p className="text-[11px] text-black/60 leading-snug">{lectura.porQue}</p>}

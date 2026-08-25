@@ -5,6 +5,7 @@
 import { useState } from "react";
 import type { BusinessBooking } from "@/lib/booking";
 import AgendaView from "./AgendaView";
+import AgendaObligaciones from "../gestoria/AgendaObligaciones";
 import ClientesView from "./ClientesView";
 import InformesView from "./InformesView";
 import OwnerConfig from "./OwnerConfig";
@@ -20,6 +21,20 @@ import NotificacionesBell from "./NotificacionesBell";
 // rompería el enlace de todos los correos ya enviados.
 const TABS = ["agenda", "clientes", "compartir", "config", "informes"] as const;
 type Tab = (typeof TABS)[number];
+
+/**
+ * Las pestañas que NO tiene sentido enseñarle a una gestoría.
+ *
+ * "Compartir" da un enlace público para que la gente pida cita; "Trámites y
+ * horario" configura servicios y franjas horarias; "Informes mensuales" cuenta
+ * reservas y no-shows. Las tres son del módulo de peluquería, donde sí sirven.
+ * Un gestor no tiene enlace de reservas ni horario de atención por franjas, y
+ * cada pestaña que sobra es una que hay que abrir para descubrir que no era.
+ *
+ * Se quitan SOLO en gestoría: peluquerías, clínicas y restaurantes las siguen
+ * viendo exactamente igual.
+ */
+const TABS_FUERA_EN_GESTORIA: Tab[] = ["compartir", "config", "informes"];
 
 function esTab(v: string | undefined): v is Tab {
   return !!v && (TABS as readonly string[]).includes(v);
@@ -41,6 +56,7 @@ export default function ReservasPanel({
   tabInicial,
   mesInicial,
   vocabulario,
+  esGestoria,
 }: {
   negocios: BusinessBooking[];
   negocioInicial?: string;
@@ -48,19 +64,32 @@ export default function ReservasPanel({
   mesInicial?: string;
   /** Palabras del sector. Sin ellas se usan las genéricas de siempre. */
   vocabulario?: { clientePlural: string; servicioPlural: string; citaPlural: string };
+  /**
+   * En gestoría la pestaña de agenda enseña VENCIMIENTOS, no citas: fechas
+   * límite legales, requerimientos y reclamaciones. La agenda de franjas
+   * horarias sigue intacta para peluquerías y clínicas, que sí dan citas.
+   */
+  esGestoria?: boolean;
 }) {
   // Las etiquetas de las pestañas hablan el idioma del negocio: una gestoría no
   // tiene "clientes" a secas ni "servicios", tiene clientes de la gestoría y trámites.
   const vv = vocabulario;
   const cap = (t: string) => (t ? t[0].toUpperCase() + t.slice(1) : t);
   const ETIQUETAS: Record<Tab, string> = {
-    agenda: "Agenda",
+    // En una gestoría la pestaña no enseña citas: enseña fechas límite legales.
+    agenda: esGestoria ? "Vencimientos" : "Agenda",
     clientes: vv ? cap(vv.clientePlural) : "Clientes",
     compartir: "Compartir",
     config: vv ? `${cap(vv.servicioPlural)} y horario` : "Servicios y horario",
     informes: "Informes mensuales",
   };
-  const [tab, setTab] = useState<Tab>(esTab(tabInicial) ? tabInicial : "agenda");
+  // Si llega ?tab=informes en una gestoría —de un enlace viejo de un email— se
+  // cae a la agenda en vez de pintar una pestaña que ya no está en la tira.
+  const [tab, setTab] = useState<Tab>(() => {
+    if (!esTab(tabInicial)) return "agenda";
+    if (esGestoria && TABS_FUERA_EN_GESTORIA.includes(tabInicial)) return "agenda";
+    return tabInicial;
+  });
   // Slug desconocido (o ausente) → primer negocio, como hasta ahora.
   const [idx, setIdx] = useState(() => {
     const i = negocios.findIndex((n) => n.slug === negocioInicial);
@@ -82,7 +111,7 @@ export default function ReservasPanel({
             Solo se toca por DEBAJO de `md` (`max-md:`): dejándolo suelto, en escritorio la
             tira también envolvía a dos filas, que antes no hacía. Ahí sigue en una sola. */}
         <div className="inline-flex border-[3px] border-black max-md:flex-wrap max-md:max-w-full">
-          {TABS.map((t) => (
+          {TABS.filter((t) => !(esGestoria && TABS_FUERA_EN_GESTORIA.includes(t))).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -104,7 +133,11 @@ export default function ReservasPanel({
       </div>
 
       {tab === "agenda" ? (
-        <AgendaView slug={b.slug} nombre={b.nombre} timezone={b.timezone} servicios={b.servicios} empleados={b.empleados || []} target={agendaTarget} />
+        esGestoria ? (
+          <AgendaObligaciones />
+        ) : (
+          <AgendaView slug={b.slug} nombre={b.nombre} timezone={b.timezone} servicios={b.servicios} empleados={b.empleados || []} target={agendaTarget} />
+        )
       ) : tab === "clientes" ? (
         <ClientesView slug={b.slug} />
       ) : tab === "informes" ? (

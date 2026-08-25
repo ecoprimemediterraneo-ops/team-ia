@@ -78,6 +78,51 @@ export const ETIQUETA_CLASE: Record<ClaseDocumento, string> = {
   otro: "Sin clasificar",
 };
 
+// -----------------------------------------------------------------------------
+// LO QUE VE EL GESTOR: cuatro tipos y no seis
+// -----------------------------------------------------------------------------
+//
+// Dentro se sigue distinguiendo entre abono, presupuesto y "otro": la regla del
+// IVA y el cruce con el banco necesitan esa finura. Pero en pantalla seis tipos
+// son cinco decisiones que Jose no tiene que tomar. Cuatro cajas y a correr:
+//
+//   FACTURA   deduce IVA. Un abono es una factura en negativo, no otra cosa:
+//             es literalmente la misma factura corrigiéndose, y ponerlo en su
+//             propia caja obligaba a explicar la diferencia a alguien que ya
+//             sabe lo que es una rectificativa.
+//   TICKET    lleva IVA pero sin NIF del destinatario: no deduce.
+//   ALBARÁN   no es documento contable. Falta la factura.
+//   OTROS     presupuestos, proformas y lo que no se ha podido clasificar.
+//
+// El SIGNO del importe lo sigue poniendo `datosDeLectura`: un abono se guarda
+// en negativo. Por eso mostrarlo como FACTURA no cuadra nada de menos.
+
+export type TipoVisible = "FACTURA" | "TICKET" | "ALBARAN" | "OTROS";
+
+export const TIPO_VISIBLE: Record<ClaseDocumento, TipoVisible> = {
+  factura_completa: "FACTURA",
+  abono: "FACTURA",
+  ticket: "TICKET",
+  albaran: "ALBARAN",
+  presupuesto: "OTROS",
+  otro: "OTROS",
+};
+
+export const ETIQUETA_TIPO: Record<TipoVisible, string> = {
+  FACTURA: "FACTURA",
+  TICKET: "TICKET",
+  ALBARAN: "ALBARÁN",
+  OTROS: "OTROS",
+};
+
+/** Verde solo lo que deduce IVA. El color dice qué hacer, no qué es. */
+export const COLOR_TIPO: Record<TipoVisible, string> = {
+  FACTURA: "bg-green-700 text-white",
+  TICKET: "bg-[color:var(--mustard)] text-black",
+  ALBARAN: "bg-[color:var(--red)] text-white",
+  OTROS: "bg-black/70 text-white",
+};
+
 /**
  * ¿Cuenta como documento contable? Decide si entra en el cruce con el banco.
  *

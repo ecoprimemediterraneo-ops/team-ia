@@ -427,7 +427,13 @@ function hexValido(v: unknown): v is string {
 export async function extraerColoresAction(imagenBase64Jpeg: string): Promise<ColoresResult> {
   const s = await getSessionLocal();
   if (!s) return { ok: false, error: "No autorizado" };
-  if (!process.env.ANTHROPIC_API_KEY) return { ok: false, error: "Falta ANTHROPIC_API_KEY; pon los colores a mano." };
+  // El nombre de la variable NO sale a pantalla: es un dato de servidor y, si un
+  // revisor de Meta se lo encuentra, lee "esta aplicación se configura pegando
+  // claves". Al cliente se le dice qué hacer, no qué le falta al servidor.
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error("[marta/calendario] falta ANTHROPIC_API_KEY: no se pueden deducir los colores");
+    return { ok: false, error: "No se han podido deducir los colores automáticamente; ponlos a mano." };
+  }
 
   // Aceptamos tanto data URL como base64 pelado.
   const data = imagenBase64Jpeg.replace(/^data:image\/[a-zA-Z]+;base64,/, "").trim();

@@ -10,9 +10,10 @@ import { getSessionLocal } from "@/lib/auth";
 import { contextoPanelODefecto } from "@/lib/panel-contexto";
 import {
   listarFacturas, listarSinAsignar, crearFactura, actualizarFactura,
-  asignarCliente, urlFirmada, leerYGuardar, corregirLectura,
+  asignarCliente, urlFirmada, leerYGuardar, corregirLectura, noEsDuplicado,
 } from "@/lib/gestoria-facturas";
-import { listarClientes, sugerirCliente } from "@/lib/gestoria-clientes";
+import { duplicadosDelMes } from "@/lib/gestoria-duplicados";
+import { hoyMadrid } from "@/lib/gestoria-hoy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,27 +40,28 @@ export async function GET(req: Request) {
     ? await listarSinAsignar(g.tenantId)
     : await listarFacturas(g.tenantId, clienteId);
 
-  // A las que no tienen dueño se les propone uno, pero SOLO por NIF o por
-  // teléfono. Nunca se asigna sola: el desplegable viene preseleccionado y el
-  // clic lo da el gestor.
-  const clientes = esSinAsignar ? await listarClientes(g.tenantId).catch(() => []) : [];
-
   // La URL firmada se genera al vuelo y caduca: nunca se guarda ni se cachea.
   const conUrl = await Promise.all(
-    facturas.map(async (f) => ({
-      ...f,
-      verUrl: await urlFirmada(f.fichero_url),
-      ...(esSinAsignar
-        ? {
-            sugerencia: sugerirCliente(clientes, {
-              nifDestinatario: f.lectura?.nifDestinatario?.valor ?? null,
-              remitente: f.remitente ?? null,
-            }),
-          }
-        : {}),
-    })),
+    facturas.map(async (f) => ({ ...f, verUrl: await urlFirmada(f.fichero_url) })),
   );
-  return NextResponse.json({ ok: true, total: conUrl.length, facturas: conUrl });
+
+  // El contador de la bandeja. Se cuenta sobre TODAS las del tenant, no sobre lo
+  // que se está pidiendo: "18 sin identificar" solo significa algo al lado de
+  // las 1.240 que se colocaron solas. Sin ese contraste, dieciocho parece mucho.
+  let recuento: { asignadas: number; sinIdentificar: number; conflictos: number; duplicadosMes: number } | undefined;
+  if (esSinAsignar) {
+    const todas = await listarFacturas(g.tenantId);
+    const vivas = todas.filter((f) => f.estado !== "descartada");
+    recuento = {
+      // Los duplicados no cuentan como asignadas: son el mismo papel otra vez.
+      asignadas: vivas.filter((f) => f.cliente_id && !f.duplicado_de).length,
+      sinIdentificar: vivas.filter((f) => !f.cliente_id && !f.duplicado_de).length,
+      conflictos: vivas.filter((f) => !f.cliente_id && f.conflicto).length,
+      duplicadosMes: duplicadosDelMes(vivas, hoyMadrid()).length,
+    };
+  }
+
+  return NextResponse.json({ ok: true, total: conUrl.length, facturas: conUrl, recuento });
 }
 
 export async function POST(req: Request) {
@@ -114,7 +116,7 @@ export async function PATCH(req: Request) {
     id?: string; importe?: number | null; fecha_factura?: string | null;
     proveedor?: string | null;
     estado?: "sin_asignar" | "pendiente" | "conciliada" | "descartada";
-    notas?: string; cliente_id?: string;
+    notas?: string; cliente_id?: string; no_es_duplicado?: boolean;
   };
   if (!body.id) return NextResponse.json({ error: "falta id" }, { status: 400 });
 
@@ -134,6 +136,14 @@ export async function PATCH(req: Request) {
 
   // Asignar cliente va por su propio camino: cambia dueño Y estado a la vez, y
   // así no depende de que quien llama se acuerde de mandar los dos campos.
+  // "No es duplicado": lo devuelve a normal y no se le vuelve a marcar.
+  if (body.no_es_duplicado) {
+    const r = await noEsDuplicado(g.tenantId, body.id);
+    return r
+      ? NextResponse.json({ ok: true, factura: r })
+      : NextResponse.json({ error: "no encontrada" }, { status: 404 });
+  }
+
   if (body.cliente_id) {
     const asignada = await asignarCliente(g.tenantId, body.id, body.cliente_id);
     return asignada

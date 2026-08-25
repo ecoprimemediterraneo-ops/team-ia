@@ -1,11 +1,26 @@
 import { redirect } from "next/navigation";
 import { getSessionLocal } from "@/lib/auth";
+import { requireFounder } from "@/lib/admin-auth";
 import { listar, type Publicacion } from "@/lib/redes";
 import AprobarClient from "./AprobarClient";
 
 export default async function AprobarPage() {
   const s = await getSessionLocal();
   if (!s) redirect("/login");
+
+  // FUERA DE LA VISTA DEL CLIENTE (agosto 2026).
+  //
+  // Esta pantalla es del sistema de publicación VIEJO, el que funciona en "modo
+  // asistido": copiar el contenido al portapapeles y pegarlo a mano en la red
+  // social. No pide tokens, pero enseña una parte del producto que publica a
+  // mano — justo lo contrario de lo que dice el vídeo del App Review, donde la
+  // aplicación publica y contesta sola con el permiso del cliente.
+  //
+  // No se borra: el almacén que hay debajo (`src/lib/redes.ts`) lo siguen usando
+  // `/api/cron/publicar`, `/api/redes` y el importador, y esos no se tocan. Lo
+  // que se cierra es la puerta: sin enlace en el panel y solo para el fundador.
+  if (!(await requireFounder()).ok) redirect("/dashboard");
+
 
   const borradores = await listar({ estado: "borrador" });
   const aprobadas = await listar({ estado: "aprobada" });

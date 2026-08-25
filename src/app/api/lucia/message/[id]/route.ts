@@ -87,6 +87,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             remitente: m.from || "",
             asunto: m.subject || "",
             cuerpo: m.body || "",
+            // El id del correo viaja para poder volver a él desde la agenda, y
+            // para que abrirlo dos veces no cree dos obligaciones.
+            correoId: id,
           });
           if (r.ok) {
             plazo = { fecha: r.plazo.fechaLimite, titulo: r.plazo.deQueVa, cliente: r.plazo.clienteNombre };

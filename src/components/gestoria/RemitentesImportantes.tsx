@@ -154,12 +154,19 @@ export default function RemitentesImportantes() {
         </div>
       </form>
 
-      {/* La lista */}
-      <div className="card-hard bg-white p-4">
+      {/* LA LISTA, PLEGADA.
+          Quince filas desplegadas, cada una con su etiqueta, su selector y su
+          botón de quitar, eran una pared: ocupaban la pantalla entera para algo
+          que se toca una vez y no se vuelve a mirar. Dentro de un `details` el
+          contenido es EXACTAMENTE el mismo —no se ha quitado ni una fila ni un
+          control—, solo deja de estar abierto de partida. El número del resumen
+          se cuenta, no se escribe. */}
+      <details className="card-hard bg-white p-4">
+        <summary className="font-stencil text-2xl leading-none cursor-pointer select-none marker:text-black">
+          Tu lista {cargando ? "· cargando…" : `· ${lista.length} ${lista.length === 1 ? "remitente" : "remitentes"}`}
+        </summary>
+        <div className="mt-3">
         <div className="flex items-baseline justify-between gap-2 flex-wrap mb-1">
-          <h2 className="font-stencil text-2xl leading-none">
-            Tu lista {cargando ? "· cargando…" : `· ${lista.length}`}
-          </h2>
           <button
             type="button" onClick={restaurar} disabled={guardando}
             className="text-[10px] font-mono uppercase tracking-widest border-2 border-black px-2 py-1 hover:bg-black hover:text-white disabled:opacity-60"
@@ -216,7 +223,8 @@ export default function RemitentesImportantes() {
             )}
           </div>
         ))}
-      </div>
+        </div>
+      </details>
     </div>
   );
 }

@@ -1,130 +1,114 @@
-// La vuelta de Instagram. Founder-only.
+// La vuelta de Instagram. NO ES FOUNDER-ONLY: aquí aterriza cualquier cliente
+// que acabe de autorizar su cuenta.
 //
-// Recibe el `code`, lo canjea por el token de 60 días y lo guarda. Devuelve una
-// página, no JSON, porque aquí aterriza un navegador y lo que hace falta es leer
-// si ha salido bien y qué hacer después.
+// Recibe el `code`, lo canjea por el token de 60 días y lo guarda A NOMBRE DEL
+// TENANT. Después DEVUELVE AL CLIENTE A SU PANEL, a /dashboard/marta/conectar.
+// Antes esta ruta pintaba una página HTML de diagnóstico con permisos, fbtrace y
+// enlaces a rutas de administración: útil para el fundador, pero un cliente que
+// acaba de conectar su Instagram tiene que aterrizar en su panel, no en una
+// pantalla de servicio.
 //
-// Nunca se enseña el token, ni el código, ni el App Secret. Tampoco dentro de un
-// error de Instagram, que los devuelve enteros.
+// DE QUIÉN ES ESTA CONEXIÓN LO DICE EL `state`, NO LA SESIÓN NI LA COOKIE.
+// El `state` viene firmado con el tenantId dentro (ver `crearState`), así que la
+// vuelta se atribuye bien aunque el navegador haya perdido la sesión por el
+// camino —que entre dominios pasa—. La cookie se comprueba además, como segundo
+// candado contra vueltas que no ha empezado el usuario. Sin firma válida no se
+// guarda nada: si no, cualquiera podría hacer que la cuenta que autoriza acabe
+// colgada del tenant de otro.
+//
+// LO QUE VIAJA EN LA URL DE VUELTA ES UN CÓDIGO CORTO, NO EL ERROR DE META.
+// El mensaje de Instagram puede traer el token dentro, y una URL se queda en el
+// historial del navegador, en los logs del proxy y en la barra de direcciones
+// mientras se graba un vídeo. El motivo entero, ya tapado, va al log del
+// servidor; al cliente se le enseña una frase en cristiano (ver ERRORES en la
+// pantalla).
 
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { requireFounder } from "@/lib/admin-auth";
-import { canjearCodigo, estadoToken, REDIRECT_URI, SCOPES, tapar, COOKIE_STATE } from "@/lib/instagram-login";
+import { canjearCodigo, leerState, tapar, COOKIE_STATE } from "@/lib/instagram-login";
+import { idiomaDe, COOKIE_IDIOMA } from "@/lib/idioma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-function pagina(titulo: string, cuerpo: string, bien: boolean) {
-  const color = bien ? "#1a7f37" : "#C8202A";
-  return new NextResponse(
-    `<!doctype html><html lang="es"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${titulo}</title>
-<style>
- body{font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#FDF8EF;color:#111;
-      margin:0;padding:2.5rem 1.25rem;display:flex;justify-content:center}
- main{max-width:44rem;width:100%;background:#fff;border:3px solid #111;box-shadow:6px 6px 0 #111;padding:1.75rem}
- h1{margin:0 0 1rem;font-size:1.5rem;color:${color}}
- code{background:#f3efe6;padding:.1rem .3rem;border:1px solid #ddd6c6}
- li{margin:.35rem 0} a{color:#C8202A}
- .dato{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85rem}
-</style></head><body><main><h1>${titulo}</h1>${cuerpo}</main></body></html>`,
-    { status: bien ? 200 : 400, headers: { "Content-Type": "text/html; charset=utf-8" } },
-  );
+const PANTALLA = "/dashboard/marta/conectar";
+
+async function volver(req: Request, params: Record<string, string>): Promise<NextResponse> {
+  const destino = new URL(PANTALLA, req.url);
+  for (const [k, v] of Object.entries(params)) destino.searchParams.set(k, v);
+
+  // El idioma con el que se empezó, recuperado de la galleta que puso el login.
+  // Sin esto, la grabación del App Review volvería en español justo al aterrizar
+  // de Instagram, que es el momento que hay que enseñar.
+  const idioma = idiomaDe((await cookies()).get(COOKIE_IDIOMA)?.value);
+  if (idioma === "en") destino.searchParams.set("lang", "en");
+
+  return NextResponse.redirect(destino, { status: 302 });
 }
 
 export async function GET(req: Request) {
-  const auth = await requireFounder();
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
-
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
 
   if (error) {
-    return pagina(
-      "Instagram no ha dado el permiso",
-      `<p>Instagram ha respondido: <code>${tapar(error)}</code> · <code>${tapar(url.searchParams.get("error_reason") ?? "")}</code></p>
-       <p>${tapar(url.searchParams.get("error_description") ?? "")}</p>
-       <p>Si has cancelado tú, vuelve a empezar en <a href="/api/instagram/login">/api/instagram/login</a>.</p>
-       <p>Si NO has cancelado tú, casi siempre es que la cuenta no tiene papel en la app: en el panel de Meta,
-          <em>App roles &gt; Roles</em>, la cuenta de Instagram tiene que estar añadida mientras la app no esté aprobada.</p>`,
-      false,
+    console.error(
+      `[instagram-login] callback RECHAZADO por Instagram tenant=${leerState(state)?.tenantId ?? "?"}: ` +
+        `${tapar(error)} · ${tapar(url.searchParams.get("error_reason") ?? "")} · ` +
+        `${tapar(url.searchParams.get("error_description") ?? "")}`,
     );
+    return await volver(req, { error: "cancelado" });
   }
 
   if (!code) {
-    return pagina(
-      "No ha llegado ningún código",
-      `<p>Esta dirección no se abre a mano: es a donde vuelve Instagram después de autorizar.</p>
-       <p>Empieza por <a href="/api/instagram/login">/api/instagram/login</a>.</p>`,
-      false,
-    );
+    // Alguien ha abierto esta dirección a mano. No es un fallo del cliente.
+    console.warn("[instagram-login] callback abierto sin código");
+    return await volver(req, { error: "vuelta" });
   }
 
-  // El `state` tiene que ser el mismo que se puso al salir.
+  // 1. La FIRMA del `state`: es quien dice de qué cliente es esta conexión.
+  const firmado = leerState(state);
+  if (!firmado) {
+    console.error("[instagram-login] callback con state sin firma válida — no se guarda nada");
+    return await volver(req, { error: "vuelta" });
+  }
+  const tenantId = firmado.tenantId;
+
+  // 2. La cookie, como segundo candado. Aunque la firma cuadre, esta vuelta
+  //    tiene que ser la misma que salió de este navegador hace menos de diez
+  //    minutos.
   const galletas = await cookies();
   const esperado = galletas.get(COOKIE_STATE)?.value;
   if (!esperado || esperado !== state) {
-    return pagina(
-      "La vuelta no cuadra",
-      `<p>El <code>state</code> no coincide con el que se guardó al empezar. O la vuelta ha tardado más de
-        diez minutos, o esta vuelta no la has empezado tú.</p>
-       <p>Vuelve a empezar en <a href="/api/instagram/login">/api/instagram/login</a> y hazlo del tirón.</p>`,
-      false,
-    );
+    console.error(`[instagram-login] callback FALLIDO tenant=${tenantId}: la cookie de state no cuadra`);
+    return await volver(req, { error: "vuelta" });
   }
   galletas.delete(COOKIE_STATE);
 
-  const r = await canjearCodigo(code);
+  const r = await canjearCodigo(tenantId, code);
 
   if (!r.ok) {
-    return pagina(
-      "No se ha podido canjear el código",
-      `<p class="dato">${tapar(r.error)}</p>
-       <p>Lo que más veces es:</p>
-       <ul>
-         <li>El <code>redirect_uri</code> dado de alta en Meta no es exactamente
-             <code>${REDIRECT_URI}</code>. Tiene que coincidir letra por letra, con la barra final igual.</li>
-         <li><code>INSTAGRAM_APP_ID</code> o <code>INSTAGRAM_APP_SECRET</code> traen los valores de Meta y no
-             los de Instagram. Son distintos.</li>
-         <li>El código ya se había usado. Solo vale una vez, y una hora.</li>
-       </ul>
-       <p>Vuelve a empezar en <a href="/api/instagram/login">/api/instagram/login</a>.</p>`,
-      false,
-    );
+    // El error de Meta, literal y con el tenant delante. `tapar` le quita el
+    // token, el código y los secretos: sin esto, un fallo de canje escribe el
+    // token entero en los logs de Vercel.
+    console.error(`[instagram-login] callback FALLIDO tenant=${tenantId}: ${tapar(r.error)}`);
+
+    // Tres causas que al cliente le pasan cosas distintas, así que se separan.
+    const motivo = /INSTAGRAM_APP_ID|INSTAGRAM_APP_SECRET/.test(r.error)
+      ? "credenciales"
+      : /no se puede guardar|NO se ha guardado|Supabase/.test(r.error)
+        ? "guardado"
+        : "canje";
+    return await volver(req, { error: motivo });
   }
 
-  const e = await estadoToken();
-  const faltan = e.faltanPermisos ?? [];
-
-  return pagina(
-    "Token de Instagram guardado",
-    `<ul>
-       <li>Cuenta: <strong>${r.valor.usuario ? `@${r.valor.usuario}` : "sin nombre"}</strong>
-           <span class="dato">(${r.valor.user_id || "sin id"})</span></li>
-       <li>Caduca: <span class="dato">${new Date(r.valor.caduca_en).toLocaleString("es-ES")}</span>
-           — ${e.diasQueQuedan} días</li>
-       <li>Permisos que trae: <span class="dato">${r.valor.permisos.length ? r.valor.permisos.join(", ") : "no los ha dicho"}</span></li>
-     </ul>
-     ${
-       faltan.length
-         ? `<p style="color:#C8202A"><strong>Ojo:</strong> faltan ${faltan.join(", ")}.
-            Las llamadas de esos permisos no contarán. Vuelve a autorizar marcando todas las casillas.</p>`
-         : `<p>Están los cuatro <code>instagram_business_*</code>.</p>`
-     }
-     <p><strong>Ahora:</strong> abre
-        <a href="/api/admin/instagram-app-review?llamar=1">/api/admin/instagram-app-review?llamar=1</a>
-        para hacer las cuatro llamadas. Publicará de verdad en la cuenta.</p>
-     <p>El estado del token se ve siempre en <a href="/admin">/admin</a> y en
-        <a href="/api/admin/instagram-token">/api/admin/instagram-token</a>.</p>
-     <p style="font-size:.85rem;color:#666">Este token caduca a los 60 días. Refréscalo antes con
-        <code>/api/admin/instagram-token?refrescar=1</code>; si caduca hay que repetir todo el login a mano.
-        Meta no deja refrescar un token con menos de 24 horas de vida, así que hoy dirá que no.</p>
-     <p style="font-size:.85rem;color:#666">Pedidos: <span class="dato">${SCOPES.join(", ")}</span></p>`,
-    true,
+  console.log(
+    `[instagram-login] callback OK tenant=${tenantId} cuenta=@${r.valor.usuario ?? "?"} ` +
+      `ig_user_id=${r.valor.user_id || "?"} caduca=${r.valor.caduca_en} ` +
+      `permisos=${r.valor.permisos.join("|") || "ninguno"}`,
   );
+
+  return await volver(req, { ok: "1", ...(r.valor.usuario ? { cuenta: r.valor.usuario } : {}) });
 }

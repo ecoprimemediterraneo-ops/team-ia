@@ -4,6 +4,7 @@
 import { getBusinessesForTenant } from "@/lib/booking";
 import { contextoPanelODefecto } from "@/lib/panel-contexto";
 import ReservasPanel from "@/components/booking/ReservasPanel";
+import BarraGestoria from "@/components/gestoria/BarraGestoria";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,10 @@ export default async function DashboardReservasPage({
   // salto. El ancho y el sitio del título los pone el layout, no la pantalla.
   return (
     <div className="space-y-4">
+      {/* Lo que aprieta y el cuadro de preguntar, en todas las pantallas.
+          Solo en gestoría: en el resto de sectores esta pantalla es el panel de
+          reservas de siempre y no tiene ni vencimientos ni chat. */}
+      {esGestoria && <BarraGestoria />}
       <div>
         <div className="text-xs font-mono uppercase tracking-widest text-black/50">{ctx.tenant?.name}</div>
         {/* El título tiene que decir LO MISMO que la pestaña del menú. En Hoy pone
@@ -66,6 +71,7 @@ export default async function DashboardReservasPage({
           negocioInicial={sp.negocio}
           tabInicial={sp.tab}
           mesInicial={sp.mes}
+          esGestoria={esGestoria}
           vocabulario={{
             clientePlural: v.clientePlural,
             servicioPlural: v.servicioPlural,

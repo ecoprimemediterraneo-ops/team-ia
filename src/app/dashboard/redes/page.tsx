@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionLocal } from "@/lib/auth";
+import { requireFounder } from "@/lib/admin-auth";
 
 type Plan = {
   red: "Instagram" | "LinkedIn" | "TikTok";
@@ -53,6 +54,20 @@ export default async function RedesDashboardPage() {
   const s = await getSessionLocal();
   if (!s) redirect("/login");
 
+  // FUERA DE LA VISTA DEL CLIENTE (agosto 2026).
+  //
+  // Esta pantalla es del sistema de publicación VIEJO, el que funciona en "modo
+  // asistido": copiar el contenido al portapapeles y pegarlo a mano en la red
+  // social. No pide tokens, pero enseña una parte del producto que publica a
+  // mano — justo lo contrario de lo que dice el vídeo del App Review, donde la
+  // aplicación publica y contesta sola con el permiso del cliente.
+  //
+  // No se borra: el almacén que hay debajo (`src/lib/redes.ts`) lo siguen usando
+  // `/api/cron/publicar`, `/api/redes` y el importador, y esos no se tocan. Lo
+  // que se cierra es la puerta: sin enlace en el panel y solo para el fundador.
+  if (!(await requireFounder()).ok) redirect("/dashboard");
+
+
   const totalPublicaciones = planes.reduce((acc, p) => acc + p.total, 0);
 
   return (
@@ -71,8 +86,10 @@ export default async function RedesDashboardPage() {
           <div className="flex gap-2 text-xs flex-wrap">
             <a href="/dashboard" className="border-2 border-black px-3 py-2 hover:bg-black hover:text-[color:var(--mustard)] font-bold uppercase tracking-widest">Dashboard</a>
             <a href="/dashboard/redes/aprobar" className="border-2 border-black bg-[color:var(--mustard)] px-3 py-2 hover:bg-black hover:text-[color:var(--mustard)] font-bold uppercase tracking-widest">✅ Aprobar pubs</a>
-            <a href="/dashboard/redes/conectar" className="border-2 border-black px-3 py-2 hover:bg-black hover:text-[color:var(--mustard)] font-bold uppercase tracking-widest">🔌 Conectar APIs</a>
-            <a href="/dashboard/marta" className="border-2 border-black px-3 py-2 hover:bg-black hover:text-[color:var(--mustard)] font-bold uppercase tracking-widest">Marta</a>
+            {/* "🔌 Conectar APIs" llevaba a una pantalla que enseñaba a pegar un
+                token a mano. Se ha quitado: conectar la cuenta se hace ahora en
+                Marta, y ese botón es el de al lado. */}
+            <a href="/dashboard/marta?tab=arranque" className="border-2 border-black px-3 py-2 hover:bg-black hover:text-[color:var(--mustard)] font-bold uppercase tracking-widest">Conectar en Marta</a>
           </div>
         </div>
 

@@ -27,8 +27,17 @@ type Cliente = {
   nif: string;
   telefonos: string[];
   emails: string[];
+  modelos: string[];
   aviso: string | null;
 };
+
+/** Los cuatro que se presentan cada trimestre. Casillas, no formulario. */
+const MODELOS = [
+  { id: "111", que: "Retenciones de trabajo" },
+  { id: "115", que: "Retenciones de alquiler" },
+  { id: "303", que: "IVA" },
+  { id: "130", que: "Pago fraccionado IRPF" },
+];
 
 /** Una lista de valores que se edita como texto, uno por línea. Es lo más simple
  *  que funciona: nada de añadir y quitar filas con botoncitos para meter dos
@@ -65,14 +74,19 @@ export default function IdentificacionClientes() {
   const [sinNif, setSinNif] = useState(0);
   const [cargando, setCargando] = useState(true);
   const [abierto, setAbierto] = useState<string | null>(null);
-  const [borrador, setBorrador] = useState<{ nif: string; telefonos: string; emails: string }>({
-    nif: "", telefonos: "", emails: "",
+  const [borrador, setBorrador] = useState<{ nif: string; telefonos: string; emails: string; modelos: string[] }>({
+    nif: "", telefonos: "", emails: "", modelos: [],
   });
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: "ok" | "aviso" | "error"; texto: string } | null>(null);
 
+  /**
+   * Trae la lista. El `setCargando(true)` va DESPUÉS del primer `await` a
+   * propósito: llamarlo antes hacía que el efecto de abajo tocara el estado de
+   * forma síncrona en el montaje, que es lo que React avisa como cascada de
+   * pintadas. La pantalla arranca ya en "cargando", así que no se ve nada raro.
+   */
   async function cargar() {
-    setCargando(true);
     try {
       const res = await fetch("/api/gestoria/clientes/identidad");
       const j = await res.json();
@@ -86,7 +100,21 @@ export default function IdentificacionClientes() {
     }
   }
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      const res = await fetch("/api/gestoria/clientes/identidad").catch(() => null);
+      const j = res ? await res.json().catch(() => null) : null;
+      if (!vivo) return;
+      if (j?.ok) {
+        setClientes(j.clientes);
+        setTotal(j.total);
+        setSinNif(j.sinNif);
+      }
+      setCargando(false);
+    })();
+    return () => { vivo = false; };
+  }, []);
 
   function abrir(c: Cliente) {
     setMensaje(null);
@@ -95,6 +123,7 @@ export default function IdentificacionClientes() {
       nif: c.nif,
       telefonos: c.telefonos.join("\n"),
       emails: c.emails.join("\n"),
+      modelos: c.modelos ?? [],
     });
   }
 
@@ -110,6 +139,7 @@ export default function IdentificacionClientes() {
           nif: borrador.nif,
           telefonos: borrador.telefonos.split(/[\n,;]/).map((x) => x.trim()).filter(Boolean),
           emails: borrador.emails.split(/[\n,;]/).map((x) => x.trim()).filter(Boolean),
+          modelos: borrador.modelos,
         }),
       });
       const j = await res.json();
@@ -192,6 +222,15 @@ export default function IdentificacionClientes() {
                   También manda desde: {[...c.telefonos, ...c.emails].join(" · ")}
                 </p>
               )}
+              {abierto !== c.id && (
+                <p className="text-[11px] font-mono mt-1">
+                  {c.modelos?.length ? (
+                    <span className="text-black/55">Presenta: {c.modelos.map((m) => `modelo ${m}`).join(" · ")}</span>
+                  ) : (
+                    <span className="text-black/40">Sin modelos marcados: no le salen vencimientos en la agenda.</span>
+                  )}
+                </p>
+              )}
 
               {abierto === c.id && (
                 <div className="mt-2 space-y-2 border-t-2 border-black/15 pt-2">
@@ -225,6 +264,40 @@ export default function IdentificacionClientes() {
                     valor={borrador.emails}
                     onChange={(v) => setBorrador((b) => ({ ...b, emails: v }))}
                   />
+
+                  {/* QUÉ PRESENTA ESTE CLIENTE. De aquí salen sus obligaciones
+                      del trimestre en la agenda: se marca una casilla y
+                      aparecen las cuatro fechas del año; se desmarca y
+                      desaparecen. Casillas y no un formulario porque esto se
+                      rellena cien veces, una por cliente. */}
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-black/60">
+                      Qué presenta cada trimestre
+                    </span>
+                    <div className="flex gap-3 flex-wrap mt-1">
+                      {MODELOS.map((m) => (
+                        <label key={m.id} className="flex items-center gap-1 text-xs cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={borrador.modelos.includes(m.id)}
+                            onChange={(e) =>
+                              setBorrador((b) => ({
+                                ...b,
+                                modelos: e.target.checked
+                                  ? [...b.modelos, m.id]
+                                  : b.modelos.filter((x) => x !== m.id),
+                              }))
+                            }
+                          />
+                          <span className="font-mono font-bold">{m.id}</span>
+                          <span className="text-black/50">{m.que}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <span className="text-[10px] text-black/45">
+                      Vencen el 20 de enero, abril, julio y octubre. Salen solas en la agenda.
+                    </span>
+                  </div>
 
                   <div className="flex gap-2 items-center flex-wrap">
                     <button

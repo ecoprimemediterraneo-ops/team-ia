@@ -30,6 +30,13 @@ export type IdentidadCliente = {
   telefonos: string[];
   /** Correos desde los que manda facturas. */
   emails: string[];
+  /**
+   * Qué modelos trimestrales presenta ("111", "303"…). De aquí salen sus
+   * obligaciones en la agenda: se marca una casilla y aparecen las cuatro
+   * fechas del año; se desmarca y desaparecen. No se guarda ninguna obligación
+   * de estas, se calculan — así no hay nada que se quede viejo.
+   */
+  modelos?: string[];
   actualizadoEn: string;
 };
 
@@ -188,6 +195,7 @@ export async function guardarIdentidad(opts: {
   nif?: string;
   telefonos?: string[];
   emails?: string[];
+  modelos?: string[];
 }): Promise<ResultadoGuardar> {
   const nifCrudo = (opts.nif || "").trim();
   const nif = normalizarNif(nifCrudo);
@@ -205,17 +213,24 @@ export async function guardarIdentidad(opts: {
   const limpiarLista = (xs: string[] | undefined, norm: (s: string) => string) =>
     [...new Set((xs || []).map(norm).filter(Boolean))];
 
-  const identidad: IdentidadCliente = {
-    clienteId: opts.clienteId,
-    nif: nif || undefined,
-    nifMostrado: nifCrudo || undefined,
-    telefonos: limpiarLista(opts.telefonos, soloDigitos),
-    emails: limpiarLista(opts.emails, normalizarEmail),
-    actualizadoEn: new Date().toISOString(),
-  };
-
   const todas = await listarIdentidades(opts.tenantId);
   const i = todas.findIndex((x) => x.clienteId === opts.clienteId);
+  const antes = i >= 0 ? todas[i] : null;
+
+  // SE FUSIONA, no se reemplaza. Lo que no venga en la llamada se queda como
+  // estaba. Guardar solo los modelos borraba el NIF y los teléfonos del cliente
+  // sin avisar a nadie — y un dato que desaparece solo es peor que uno que
+  // nunca se puso, porque nadie lo va a echar en falta hasta que haga falta.
+  // Para VACIAR un campo hay que mandarlo explícitamente vacío.
+  const identidad: IdentidadCliente = {
+    clienteId: opts.clienteId,
+    nif: opts.nif === undefined ? antes?.nif : nif || undefined,
+    nifMostrado: opts.nif === undefined ? antes?.nifMostrado : nifCrudo || undefined,
+    telefonos: opts.telefonos === undefined ? antes?.telefonos ?? [] : limpiarLista(opts.telefonos, soloDigitos),
+    emails: opts.emails === undefined ? antes?.emails ?? [] : limpiarLista(opts.emails, normalizarEmail),
+    modelos: opts.modelos === undefined ? antes?.modelos ?? [] : [...new Set(opts.modelos)],
+    actualizadoEn: new Date().toISOString(),
+  };
   if (i >= 0) todas[i] = identidad;
   else todas.push(identidad);
   await guardarTodas(opts.tenantId, todas);

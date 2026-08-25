@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import LecturaDocumento, { type Lectura as LecturaTipo } from "./LecturaDocumento";
 import EnviarDocumento from "./EnviarDocumento";
+import VisorDocumento from "./VisorDocumento";
 
 type Factura = {
   id: string;
@@ -29,9 +30,51 @@ type Factura = {
   lectura_estado?: "leyendo" | "hecha" | "error";
   clase?: string;
   contable?: boolean;
-  /** De quién PARECE, solo por NIF o por teléfono. La pone el servidor. */
-  sugerencia?: { clienteId: string; clienteNombre: string; motivo: "nif" | "telefono"; texto: string } | null;
+  duplicado_de?: string;
+  duplicado_certeza?: "seguro" | "probable";
+  duplicado_detalle?: string;
+  /** Cómo se colocó sola, si se colocó. */
+  asignado_por?: "nif" | "telefono" | "email" | "manual";
+  asignado_motivo?: string;
+  /** El mismo NIF o teléfono en dos fichas: no se asigna, se declara. */
+  conflicto?: {
+    motivo: "nif" | "telefono" | "email";
+    valor: string;
+    clientes: Array<{ id: string; nombre: string }>;
+    detalle: string;
+  };
 };
+
+/**
+ * El cartel de DUPLICADO. Negro, no rojo: no es un error del sistema, es un
+ * papel que ha llegado dos veces, y pasa todos los días.
+ *
+ * Lleva SIEMPRE el botón de "no es duplicado": la detección acierta casi
+ * siempre, pero un bar puede emitir dos tickets iguales el mismo día y eso son
+ * dos gastos de verdad. Quien decide es Jose; el sistema solo avisa.
+ */
+function AvisoDuplicado({ f, onNoEsDuplicado }: {
+  f: { duplicado_de?: string; duplicado_certeza?: "seguro" | "probable"; duplicado_detalle?: string };
+  onNoEsDuplicado: () => void;
+}) {
+  if (!f.duplicado_de) return null;
+  return (
+    <div className="text-[11px] bg-black text-white border-2 border-black px-2 py-1 mt-1">
+      <span className="font-mono font-bold uppercase tracking-widest mr-1">
+        {f.duplicado_certeza === "seguro" ? "DUPLICADO" : "¿DUPLICADO?"}
+      </span>
+      {f.duplicado_detalle}{" "}
+      <span className="opacity-70">No cuenta en los totales ni cruza con el banco.</span>{" "}
+      <button
+        type="button"
+        onClick={onNoEsDuplicado}
+        className="underline font-bold hover:opacity-70"
+      >
+        No es duplicado
+      </button>
+    </div>
+  );
+}
 
 // La clase del documento, con el MISMO código de color que la ficha de lectura:
 // verde solo lo que deduce IVA, mostaza lo que se guarda pero no deduce, rojo lo
@@ -39,19 +82,19 @@ type Factura = {
 // el gestor tendría que volver a mirarlo todo cada vez que abre una.
 const CLASE_ETIQUETA: Record<string, string> = {
   factura_completa: "FACTURA",
+  abono: "FACTURA",
   ticket: "TICKET",
   albaran: "ALBARÁN",
-  abono: "ABONO",
-  presupuesto: "PRESUPUESTO",
-  otro: "SIN CLASIFICAR",
+  presupuesto: "OTROS",
+  otro: "OTROS",
 };
 
 const CLASE_COLOR: Record<string, string> = {
   factura_completa: "bg-green-700 text-white",
+  abono: "bg-green-700 text-white",
   ticket: "bg-[color:var(--mustard)] text-black",
   albaran: "bg-[color:var(--red)] text-white",
-  abono: "bg-black text-white",
-  presupuesto: "bg-[color:var(--red)] text-white",
+  presupuesto: "bg-black/70 text-white",
   otro: "bg-black/70 text-white",
 };
 
@@ -244,6 +287,10 @@ export default function FacturasCliente({
     { clienteId: string; clienteNombre: string; nif: string; telefono: string } | null
   >(null);
   const [guardandoAprendido, setGuardandoAprendido] = useState(false);
+  /** El documento que se está mirando en el visor. null = ninguno. */
+  const [viendo, setViendo] = useState<Factura | null>(null);
+  /** Cuántas se han colocado solas y cuántas no. Lo calcula el servidor. */
+  const [recuento, setRecuento] = useState<{ asignadas: number; sinIdentificar: number; conflictos: number; duplicadosMes: number } | null>(null);
   const [destino, setDestino] = useState<Record<string, string>>({});
   const [cargando, setCargando] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
@@ -266,7 +313,10 @@ export default function FacturasCliente({
       try {
         const res = await fetch("/api/gestoria/facturas?sinAsignar=1");
         const json = await res.json();
-        if (vivo) setSinAsignar(porEntradaReciente(json.facturas ?? []));
+        if (vivo) {
+          setSinAsignar(porEntradaReciente(json.facturas ?? []));
+          if (json.recuento) setRecuento(json.recuento);
+        }
       } catch {
         // La bandeja no es crítica: si falla, el saco del cliente sigue igual.
       }
@@ -290,7 +340,9 @@ export default function FacturasCliente({
   }, [clienteId, recarga]);
 
   async function asignar(f: Factura) {
-    const destinoId = destino[f.id] || f.sugerencia?.clienteId || clientes[0]?.id;
+    // En conflicto, solo vale lo que haya elegido el gestor: nada de coger el
+    // primer candidato por defecto.
+    const destinoId = destino[f.id] || (f.conflicto ? "" : clientes[0]?.id);
     if (!destinoId) return;
     await fetch("/api/gestoria/facturas", {
       method: "PATCH",
@@ -309,8 +361,10 @@ export default function FacturasCliente({
     const cliente = clientes.find((c) => c.id === destinoId);
     const nifDelPapel = f.lectura?.nifDestinatario?.valor?.trim() || "";
     const telefonoDelEnvio = f.origen === "whatsapp" ? (f.remitente || "").replace(/\D/g, "") : "";
-    const yaSeSabiaPorNif = f.sugerencia?.motivo === "nif";
-    const yaSeSabiaPorTel = f.sugerencia?.motivo === "telefono";
+    // Si llegó aquí es que el dato duro NO resolvió: o no estaba en ninguna
+    // ficha, o estaba en dos. En los dos casos merece la pena ofrecer apuntarlo.
+    const yaSeSabiaPorNif = false;
+    const yaSeSabiaPorTel = false;
 
     if (cliente && ((nifDelPapel && !yaSeSabiaPorNif) || (telefonoDelEnvio && !yaSeSabiaPorTel))) {
       setAprender({
@@ -440,14 +494,53 @@ export default function FacturasCliente({
         // Se dice lo que ha fallado y lo que queda: un tope callado parece
         // "ya está todo leído" cuando no lo está.
         const partes = [`Leídos ${j.leidos}.`];
+        if (j.colocados) partes.push(`${j.colocados} colocados solos en su cliente.`);
+        if (j.conflictos) partes.push(`${j.conflictos} en conflicto: mira las fichas.`);
         if (j.fallos?.length) partes.push(`${j.fallos.length} no se han podido leer.`);
-        if (j.quedan > 0) partes.push(`Quedan ${j.quedan}: dale otra vez.`);
+        if (j.quedan > 0) partes.push(`Quedan ${j.quedan} por leer: dale otra vez.`);
         setAviso(partes.join(" "));
       }
       await recargar();
     } finally {
       setReleyendo(null);
     }
+  }
+
+  /**
+   * Mover un documento a otro cliente cuando la máquina se equivocó.
+   *
+   * Discreto a propósito: no es una decisión que haya que tomar por documento,
+   * es un arreglo para el caso raro. Y al mover a mano se marca `manual`, para
+   * que la asignación automática no vuelva a tocarlo nunca.
+   */
+  async function reasignar(f: Factura) {
+    const opciones = clientes.map((c, i) => `${i + 1}. ${c.nombre}`).join("\n");
+    const elegido = prompt(
+      `¿A qué cliente va "${f.nombre_original}"?\n\n${opciones}\n\nEscribe el número:`,
+      "",
+    );
+    if (!elegido) return;
+    const idx = Number(elegido.trim()) - 1;
+    const destinoCliente = clientes[idx];
+    if (!destinoCliente) { setAviso("Ese número no está en la lista."); return; }
+    await fetch("/api/gestoria/facturas", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: f.id, cliente_id: destinoCliente.id }),
+    });
+    setAviso(`Movido a ${destinoCliente.nombre}.`);
+    recargar();
+  }
+
+  /** "No es duplicado": lo devuelve a normal y no se le vuelve a marcar. */
+  async function noEsDuplicado(f: Factura) {
+    await fetch("/api/gestoria/facturas", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: f.id, no_es_duplicado: true }),
+    });
+    setAviso(`"${f.nombre_original}" vuelve a contar como documento normal.`);
+    recargar();
   }
 
   async function descartar(f: Factura) {
@@ -462,6 +555,17 @@ export default function FacturasCliente({
 
   return (
     <div className="space-y-4">
+      {/* El documento, encima del listado y no en otra pestaña. La página no se
+          recarga, así que al cerrar se vuelve justo a donde estabas. */}
+      {viendo?.verUrl && (
+        <VisorDocumento
+          url={viendo.verUrl}
+          nombre={viendo.nombre_original}
+          tipo={viendo.tipo}
+          onCerrar={() => setViendo(null)}
+        />
+      )}
+
       {/* BANDEJA SIN ASIGNAR — solo aparece si hay algo. Va la primera porque es
           trabajo parado: hasta que no tengan dueño no entran en ninguna
           conciliación y no le cuadran a nadie. */}
@@ -499,24 +603,53 @@ export default function FacturasCliente({
         </div>
       )}
 
+      {/* EL CONTADOR, siempre visible aunque la bandeja esté vacía. Es lo que
+          convierte "18 documentos pendientes" en "18 de 1.258": sin el número
+          grande al lado, dieciocho parece un problema y es el 1%. */}
+      {recuento && (recuento.asignadas > 0 || recuento.sinIdentificar > 0) && (
+        <div className="border-2 border-black bg-white px-3 py-2 text-sm flex items-center gap-2 flex-wrap">
+          <span className="font-bold">{recuento.asignadas.toLocaleString("es-ES")} asignadas solas</span>
+          <span className="text-black/40">·</span>
+          <span className={recuento.sinIdentificar > 0 ? "font-bold" : "text-black/60"}>
+            {recuento.sinIdentificar.toLocaleString("es-ES")} sin identificar
+          </span>
+          {recuento.conflictos > 0 && (
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest bg-[color:var(--red)] text-white border-2 border-black px-1.5 py-0.5">
+              {recuento.conflictos} en conflicto
+            </span>
+          )}
+          {/* Los duplicados, contados aparte: es el error que más caro sale
+              —deducir el mismo IVA dos veces— y el que menos se ve. */}
+          {recuento.duplicadosMes > 0 && (
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest bg-black text-white border-2 border-black px-1.5 py-0.5">
+              {recuento.duplicadosMes} duplicado{recuento.duplicadosMes === 1 ? "" : "s"} este mes
+            </span>
+          )}
+          <span className="text-[11px] text-black/50 ml-auto">
+            Se colocan solas por NIF o por teléfono. Aquí solo cae lo que no se ha podido resolver.
+          </span>
+        </div>
+      )}
+
       {sinAsignar.length > 0 && (
         <div className="card-hard bg-[color:var(--mustard)] p-4">
           <h2 className="font-stencil text-2xl leading-none mb-1">
-            Facturas sin asignar · {sinAsignar.length}
+            Sin identificar · {sinAsignar.length}
           </h2>
           <p className="text-xs text-black/70 mb-2">
-            Llegaron de un número o un correo que no está en ninguna ficha. Se leen solas al entrar; diles de quién son para que cuenten en su cuadre.
+            La excepción, no la norma: lo que no trae un NIF ni un teléfono que esté en ninguna ficha.
+            Si le pones el NIF al cliente, las siguientes se colocan solas.
           </p>
           {/* Ponerse al día: los documentos que entraron ANTES de que esto se
               leyera solo siguen en blanco, y no se arreglan con esperar. */}
-          {sinAsignar.some((f) => !f.lectura) && (
+          {sinAsignar.length > 0 && (
             <button
               type="button"
               onClick={releerPendientes}
               disabled={releyendo !== null}
               className="text-[10px] font-mono uppercase tracking-widest border-2 border-black bg-white px-2 py-1 mb-3 hover:bg-black hover:text-white disabled:opacity-50"
             >
-              {releyendo === "todos" ? "Leyendo…" : "Leer los que faltan"}
+              {releyendo === "todos" ? "Leyendo…" : "Leer y colocar los que faltan"}
             </button>
           )}
           <div className="space-y-2">
@@ -547,29 +680,46 @@ export default function FacturasCliente({
                       nombre del fichero, así que había que decidir de quién era
                       un documento sin ver ni el proveedor ni el importe. */}
                   <ResumenLeido f={f} onReintentar={() => releer(f.id)} reintentando={releyendo === f.id} />
-                  {/* De quién PARECE. Solo por NIF o por teléfono, nunca por el
-                      contenido: un proveedor sale en las facturas de veinte
-                      clientes distintos. Se propone, no se asigna. */}
-                  {f.sugerencia && (
-                    <div className="text-[11px] font-bold bg-white border-2 border-black px-2 py-1 mt-1 inline-block">
-                      👉 {f.sugerencia.texto}
+                  {/* CONFLICTO: el dato duro apunta a dos clientes a la vez, así
+                      que no se ha asignado. Elegir uno a cara o cruz dejaría un
+                      error escrito y silencioso; se dice y se arregla en las
+                      fichas, que es donde está el fallo de verdad. */}
+                  <AvisoDuplicado f={f} onNoEsDuplicado={() => noEsDuplicado(f)} />
+                  {f.conflicto && (
+                    <div className="text-[11px] font-bold bg-[color:var(--red)] text-white border-2 border-black px-2 py-1 mt-1">
+                      ⚠️ {f.conflicto.detalle}{" "}
+                      <a href="/dashboard/expedientes" className="underline">Arreglar las fichas</a>
                     </div>
                   )}
                 </div>
                 <div className="flex gap-1 items-center flex-wrap">
                   {f.verUrl && (
-                    <a href={f.verUrl} target="_blank" rel="noreferrer"
-                      className="text-[10px] font-mono uppercase border-2 border-black px-2 py-1 hover:bg-black hover:text-white">ver</a>
+                    <button type="button" onClick={() => setViendo(f)}
+                      className="text-[10px] font-mono uppercase border-2 border-black px-2 py-1 hover:bg-black hover:text-white">ver</button>
                   )}
+                  {/* En un CONFLICTO no viene nada elegido, y el botón no deja
+                      asignar hasta que el gestor elige. Preseleccionar a uno de
+                      los dos candidatos sería ofrecerle que acepte una moneda al
+                      aire de un clic — justo lo que la máquina se ha negado a
+                      hacer dos pasos antes. Sin conflicto sí se preselecciona:
+                      ahí no hay ambigüedad, solo falta el dato. */}
                   <select
-                    value={destino[f.id] ?? f.sugerencia?.clienteId ?? clientes[0]?.id ?? ""}
+                    value={destino[f.id] ?? (f.conflicto ? "" : clientes[0]?.id ?? "")}
                     onChange={(e) => setDestino((d) => ({ ...d, [f.id]: e.target.value }))}
                     className="border-2 border-black px-2 py-1 text-xs bg-white"
                   >
+                    {f.conflicto && <option value="">— elige tú —</option>}
                     {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
-                  <button type="button" onClick={() => asignar(f)} disabled={!clientes.length}
-                    className="btn-mustard text-[10px] px-2 py-1 disabled:opacity-60">asignar</button>
+                  <button
+                    type="button"
+                    onClick={() => asignar(f)}
+                    disabled={!clientes.length || (!!f.conflicto && !destino[f.id])}
+                    title={f.conflicto && !destino[f.id] ? "Elige tú de quién es: el NIF está en dos fichas" : undefined}
+                    className="btn-mustard text-[10px] px-2 py-1 disabled:opacity-60"
+                  >
+                    asignar
+                  </button>
                   <button type="button" onClick={() => descartar(f)}
                     className="text-[10px] font-mono uppercase border-2 border-black px-2 py-1 hover:bg-black hover:text-white">descartar</button>
                 </div>
@@ -680,11 +830,30 @@ export default function FacturasCliente({
                   {!f.lectura && (
                     <ResumenLeido f={f} onReintentar={() => releer(f.id)} reintentando={releyendo === f.id} />
                   )}
+                  <AvisoDuplicado f={f} onNoEsDuplicado={() => noEsDuplicado(f)} />
+                  {/* POR QUÉ está en este cliente. En pequeño, porque el 99% de
+                      las veces está bien y no hay nada que hacer; pero cuando
+                      está mal, el gestor tiene que poder ver de dónde salió la
+                      decisión sin preguntarle a nadie. */}
+                  {f.asignado_motivo && (
+                    <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                      <span className="text-[10px] font-mono text-black/45">
+                        Se colocó solo · {f.asignado_motivo}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => reasignar(f)}
+                        className="text-[9px] font-mono uppercase border border-black/30 px-1 py-0.5 text-black/50 hover:border-black hover:text-black"
+                      >
+                        cambiar de cliente
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-1">
                   {f.verUrl && (
-                    <a href={f.verUrl} target="_blank" rel="noreferrer"
-                      className="text-[10px] font-mono uppercase border-2 border-black px-2 py-1 hover:bg-black hover:text-white">ver</a>
+                    <button type="button" onClick={() => setViendo(f)}
+                      className="text-[10px] font-mono uppercase border-2 border-black px-2 py-1 hover:bg-black hover:text-white">ver</button>
                   )}
                   <button type="button" onClick={() => editar(f)}
                     className="text-[10px] font-mono uppercase border-2 border-black px-2 py-1 hover:bg-black hover:text-white">editar</button>

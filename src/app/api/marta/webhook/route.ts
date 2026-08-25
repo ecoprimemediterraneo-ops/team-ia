@@ -32,6 +32,7 @@ import {
 import { logEvent, makeEventId } from "@/lib/event-log";
 import { resolveTenantFromMeta } from "@/lib/tenants";
 import { procesarComentario } from "@/lib/marta-comment-flow";
+import { apuntarMensaje } from "@/lib/marta-inbox";
 import { sendInstagramDM } from "@/lib/marta-graph";
 
 async function safeLogEvent(...args: Parameters<typeof logEvent>): Promise<void> {
@@ -168,6 +169,19 @@ export async function POST(req: Request) {
         // (solo IGSID), así que `name` queda sin actualizar.
         await appendTurn("marta", senderId, "user", text);
         await appendTurn("marta", senderId, "assistant", reply);
+
+        // Y en la BANDEJA, que es otra cosa: `appendTurn` alimenta la memoria de
+        // la IA —se recorta, caduca a las 24 h y no se puede listar— y esto es
+        // el historial que ve el cliente en pantalla. `apuntarMensaje` nunca
+        // lanza: un fallo aquí no puede tumbar el webhook, porque Meta lo
+        // reintentaría y el DM saldría dos veces.
+        await apuntarMensaje(tenantId, senderId, { de: "cliente", texto: text, ts: rxTs, id: mid });
+        await apuntarMensaje(tenantId, senderId, {
+          de: "nosotros",
+          texto: reply,
+          ts: new Date().toISOString(),
+          via: "automatico",
+        });
 
         await safeLogEvent(tenantId, {
           id: makeEventId("message_in", "marta", mid),

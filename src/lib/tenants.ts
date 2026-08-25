@@ -100,6 +100,15 @@ export type Tenant = {
   id: string;                              // "tenant_aiteam", "tenant_clinicasonrisa", ...
   name: string;                            // "AI-Team (cuenta fundadora)"
   email: string;                           // contacto del propietario
+  /**
+   * Nombre de PILA de la persona que usa el panel ("Jose"), no el de la empresa.
+   *
+   * Hasta ahora solo se guardaba `name`, que es el nombre del negocio, así que
+   * la portada saludaba con "Hola" a secas o con el prefijo del correo —y en la
+   * cuenta real salía "HOLA, ECOPRIMEMEDITERRANEO" en letras de cartel—. Se
+   * usa en el saludo de la portada y en los avisos que le llegan por WhatsApp.
+   */
+  ownerName?: string;
   whatsappPhoneNumberId?: string;          // mapea Meta → tenant (número EMISOR)
   ownerWhatsapp?: string;                  // WhatsApp del DUEÑO para recibir avisos (E.164, p.ej. 34656989373)
   instagramUserId?: string;                // mapea Meta → tenant
@@ -430,6 +439,17 @@ export async function getSectorNegocio(tenantId: string): Promise<SectorNegocio 
 }
 
 /** Cambia el sector de negocio del tenant. Devuelve el tenant actualizado o null. */
+/**
+ * El nombre de pila del gestor. Se guarda en el tenant, no en el usuario: el
+ * panel se mira por tenant y el mismo correo puede administrar varios.
+ */
+export async function setOwnerName(tenantId: string, nombre: string): Promise<Tenant | null> {
+  const t = await getTenant(tenantId);
+  if (!t) return null;
+  const limpio = nombre.trim().slice(0, 40);
+  return upsertTenant({ ...t, ownerName: limpio || undefined });
+}
+
 export async function setSectorNegocio(tenantId: string, sector: SectorNegocio): Promise<Tenant | null> {
   const t = await getTenant(tenantId);
   if (!t) return null;

@@ -79,6 +79,35 @@ export type FacturaRecibida = {
    * todavía" en los dos casos y el gestor no sabía si esperar o reintentar.
    */
   lectura_estado?: "leyendo" | "hecha" | "error";
+  /**
+   * Cómo llegó a tener dueño. Se guarda para poder enseñarlo y para poder
+   * distinguir lo que decidió la máquina de lo que decidió el gestor: si un día
+   * la asignación automática se equivoca, hay que poder ver cuáles tocó ella.
+   */
+  asignado_por?: "nif" | "telefono" | "email" | "manual";
+  /** La frase que se le enseña al gestor: "NIF B12345678 coincide con Bar El Puerto". */
+  asignado_motivo?: string;
+  /**
+   * Este documento ya estaba: apunta al que entró primero. Un duplicado NO
+   * cuenta en los totales ni cruza con el banco, pero no se borra jamás —
+   * borrar una factura buena creyéndola repetida es peor que contarla dos
+   * veces: la de verdad desaparece y nadie se entera hasta el cierre.
+   */
+  duplicado_de?: string;
+  duplicado_certeza?: "seguro" | "probable";
+  duplicado_detalle?: string;
+  /** El gestor ha dicho que NO lo es. No se vuelve a marcar. */
+  duplicado_descartado?: boolean;
+  /**
+   * El mismo NIF o teléfono está en dos fichas, así que NO se ha asignado.
+   * Elegir uno a cara o cruz deja un error escrito y silencioso.
+   */
+  conflicto?: {
+    motivo: "nif" | "telefono" | "email";
+    valor: string;
+    clientes: Array<{ id: string; nombre: string }>;
+    detalle: string;
+  };
   /** Copia plana de `lectura.clase` para poder filtrar sin abrir la lectura. */
   clase?: ClaseDocumento;
   /**
@@ -562,7 +591,13 @@ export async function releerDocumento(
     return null;
   });
   if (!leida) return { ok: false, error: "La lectura ha fallado. Puedes volver a intentarlo." };
-  return { ok: true, factura: leida };
+
+  // MISMO camino que la entrada nueva: releer sin volver a intentar la
+  // asignación dejaría los documentos viejos en la bandeja para siempre, que es
+  // justo lo que el botón "Leer los que faltan" viene a vaciar.
+  const colocada = await asignarPorDatoDuro(tenantId, facturaId).catch(() => null);
+  const revisada = await marcarSiEsDuplicado(tenantId, facturaId).catch(() => null);
+  return { ok: true, factura: revisada ?? colocada ?? leida };
 }
 
 /**
@@ -635,6 +670,13 @@ export async function asignarCliente(
     ...todas[i],
     cliente_id: clienteId,
     estado: "pendiente",
+    // Lo que decide el gestor se marca como suyo: la asignación automática ya
+    // no vuelve a tocarlo. Su palabra vale más que la de la máquina, y si le
+    // sobrescribiéramos la corrección tendría que hacerla otra vez cada vez que
+    // se reprocesa el documento.
+    asignado_por: "manual",
+    asignado_motivo: undefined,
+    conflicto: undefined,
   };
   todas[i] = actualizada;
   await guardarFacturas(tenantId, todas);
@@ -709,4 +751,132 @@ export async function aprenderConcepto(
   const lista = [...sinEse, { cliente_id: clienteId, concepto, destino, aprendido_en: new Date().toISOString() }];
   if (supabaseEnabled()) await kvSet(KEY_CONCEPTOS(tenantId), lista);
   else await escribirLocal(FILE_CONCEPTOS, tenantId, lista);
+}
+
+// -----------------------------------------------------------------------------
+// Asignación automática por dato duro
+// -----------------------------------------------------------------------------
+
+/**
+ * Intenta colocar un documento en su cliente, solo, y deja escrito por qué.
+ *
+ * Se llama SIEMPRE justo después de leer, venga de donde venga: de la entrada
+ * por WhatsApp, del correo, del botón "Leer los que faltan" o de un reproceso.
+ * Un solo sitio, o la asignación de la entrada nueva y la del reproceso acabarían
+ * comportándose distinto sin que nadie se diera cuenta.
+ *
+ * NO pisa lo que ya tiene dueño: si el gestor ya lo colocó a mano, su palabra
+ * vale más que la de la máquina.
+ */
+export async function asignarPorDatoDuro(
+  tenantId: string,
+  facturaId: string,
+): Promise<FacturaRecibida | null> {
+  const [{ resolverPorDatoDuro }, { listarClientes }] = await Promise.all([
+    import("./gestoria-asignacion"),
+    import("./gestoria-clientes"),
+  ]);
+
+  const todas = await listarFacturas(tenantId);
+  const i = todas.findIndex((f) => f.id === facturaId);
+  if (i < 0) return null;
+  const f = todas[i];
+
+  // Ya tiene dueño: no se toca. Solo se limpia un conflicto viejo que ya no aplica.
+  if (f.cliente_id) {
+    if (f.conflicto) {
+      todas[i] = { ...f, conflicto: undefined };
+      await guardarFacturas(tenantId, todas);
+      return todas[i];
+    }
+    return f;
+  }
+
+  const clientes = await listarClientes(tenantId);
+  const r = resolverPorDatoDuro(clientes, {
+    nifDestinatario: f.lectura?.nifDestinatario?.valor ?? null,
+    remitente: f.remitente ?? null,
+  });
+
+  if (r.tipo === "asignar") {
+    todas[i] = {
+      ...f,
+      cliente_id: r.clienteId,
+      estado: "pendiente",
+      asignado_por: r.motivo === "manual" ? "manual" : r.motivo,
+      asignado_motivo: r.detalle,
+      conflicto: undefined,
+    };
+    await guardarFacturas(tenantId, todas);
+    console.log(`[gestoria] ${facturaId} asignado solo a ${r.clienteNombre} (${r.motivo})`);
+    return todas[i];
+  }
+
+  if (r.tipo === "conflicto") {
+    todas[i] = {
+      ...f,
+      conflicto: { motivo: r.motivo === "manual" ? "nif" : r.motivo, valor: r.valor, clientes: r.clientes, detalle: r.detalle },
+    };
+    await guardarFacturas(tenantId, todas);
+    console.warn(`[gestoria] ${facturaId} en conflicto: ${r.detalle}`);
+    return todas[i];
+  }
+
+  // Sin dato duro que valga: se queda en Sin identificar, sin conflicto.
+  if (f.conflicto) {
+    todas[i] = { ...f, conflicto: undefined };
+    await guardarFacturas(tenantId, todas);
+    return todas[i];
+  }
+  return f;
+}
+
+/**
+ * Mira si este documento ya estaba y, si lo está, lo marca.
+ *
+ * Se llama después de leer y de asignar, en ese orden, porque la comparación es
+ * POR CLIENTE: hasta que no se sabe de quién es no se puede saber si repite algo
+ * suyo. Nunca borra: marca y decide el gestor.
+ */
+export async function marcarSiEsDuplicado(
+  tenantId: string,
+  facturaId: string,
+): Promise<FacturaRecibida | null> {
+  const { buscarDuplicado } = await import("./gestoria-duplicados");
+  const todas = await listarFacturas(tenantId);
+  const i = todas.findIndex((f) => f.id === facturaId);
+  if (i < 0) return null;
+  const f = todas[i];
+
+  // Si el gestor ya dijo que no lo es, no se le vuelve a discutir.
+  if (f.duplicado_descartado) return f;
+
+  const d = buscarDuplicado(f, todas);
+  if (!d) {
+    if (!f.duplicado_de) return f;
+    todas[i] = { ...f, duplicado_de: undefined, duplicado_certeza: undefined, duplicado_detalle: undefined };
+    await guardarFacturas(tenantId, todas);
+    return todas[i];
+  }
+
+  todas[i] = { ...f, duplicado_de: d.originalId, duplicado_certeza: d.certeza, duplicado_detalle: d.detalle };
+  await guardarFacturas(tenantId, todas);
+  console.log(`[gestoria] ${facturaId} marcado duplicado (${d.certeza}) de ${d.originalId}`);
+  return todas[i];
+}
+
+/** "No es duplicado": lo devuelve a normal y no se le vuelve a marcar. */
+export async function noEsDuplicado(tenantId: string, facturaId: string): Promise<FacturaRecibida | null> {
+  const todas = await listarFacturas(tenantId);
+  const i = todas.findIndex((f) => f.id === facturaId);
+  if (i < 0) return null;
+  todas[i] = {
+    ...todas[i],
+    duplicado_de: undefined,
+    duplicado_certeza: undefined,
+    duplicado_detalle: undefined,
+    duplicado_descartado: true,
+  };
+  await guardarFacturas(tenantId, todas);
+  return todas[i];
 }

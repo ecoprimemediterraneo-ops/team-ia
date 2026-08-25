@@ -8,6 +8,8 @@ import SelectorCuenta from "@/components/SelectorCuenta";
 import { tieneFuncion } from "@/lib/sectores";
 import EnlaceLateral from "@/components/EnlaceLateral";
 import EnlaceAgente from "@/components/EnlaceAgente";
+import MarcoPanel from "@/components/MarcoPanel";
+import LateralGestoria from "@/components/gestoria/LateralGestoria";
 
 // Las tarjetas de agente NO llevan insignia de estado. Había un "LIVE" verde en los
 // conectados y un "PRÓXIMAMENTE" en Carmen y Rocío: al cliente no le dice nada útil y
@@ -52,7 +54,33 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto grid md:grid-cols-[260px_1fr] gap-6 px-5 py-6">
+      <MarcoPanel lateral={<>
+        {/* EL LATERAL DE UNA GESTORÍA ES OTRO.
+            Trece bloques con emojis y tres colores compitiendo no le sirven a
+            quien lleva cien clientes: se le ha hecho uno en texto plano, con los
+            agentes y los ajustes plegados. El de peluquerías, clínicas y
+            restaurantes queda EXACTAMENTE como estaba — es el `else` de abajo. */}
+        {ctx.perfil.id === "gestoria" ? (
+          <aside>
+            <LateralGestoria
+              agentes={visibles.map((a) => ({
+                slug: a.slug,
+                nombre: a.name,
+                rol: a.role,
+                avatar: a.avatar,
+                emoji: a.emoji,
+                color: a.color,
+                proximamente: a.slug === "rocio",
+              }))}
+            />
+            {!user.business && (
+              <div className="mt-4 p-3 border-2 border-dashed border-black text-xs">
+                <div className="font-bold mb-1">Sin configurar</div>
+                <a href="/onboarding" className="underline">Completa el briefing →</a>
+              </div>
+            )}
+          </aside>
+        ) : (
         <aside className="space-y-2">
           <EnlaceLateral
             href="/dashboard/clientes"
@@ -65,7 +93,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
                informes— y la de abajo, que es la de verdad (estado, documentación,
                vencimientos). Cambia SOLO el rótulo: la ruta, el icono y quién la ve
                siguen igual. */
-            titulo={ctx.perfil.id === "gestoria" ? "CLIENTES" : "RESERVAS"}
+            /* Aquí ya no puede ser una gestoría: esta rama es el `else` del
+               lateral, y la gestoría tiene el suyo. Antes ponía
+               `id === "gestoria" ? "CLIENTES" : "RESERVAS"` y era código muerto. */
+            titulo="RESERVAS"
             /* Mismo orden que las pestañas de ReservasPanel: informes al final. */
             subtitulo={`Agenda · ${v.clientePlural} · compartir · informes mensuales`}
           />
@@ -174,13 +205,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <div className="font-bold mb-0.5">📚 Lecciones aprendidas</div>
             <div className="text-black/60">Cómo evolucionan tus agentes</div>
           </a>
-          <a
-            href="/dashboard/redes"
-            className="block mt-2 p-3 border-2 border-dashed border-black text-xs hover:bg-[color:var(--mustard)]/30"
-          >
-            <div className="font-bold mb-0.5">📱 Redes Sociales</div>
-            <div className="text-black/60">IG + LinkedIn + TikTok · 80 piezas</div>
-          </a>
           {!user.business && (
             <div className="mt-4 p-3 border-2 border-dashed border-black text-xs">
               <div className="font-bold mb-1">Sin configurar</div>
@@ -188,9 +212,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </div>
           )}
         </aside>
+        )}
+      </>}>
 
         <main>{children}</main>
-      </div>
+      </MarcoPanel>
     </div>
   );
 }

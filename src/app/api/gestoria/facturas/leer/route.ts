@@ -11,7 +11,7 @@ import { NextResponse } from "next/server";
 import { getSessionLocal } from "@/lib/auth";
 import { contextoPanelODefecto } from "@/lib/panel-contexto";
 import { tieneFuncion } from "@/lib/sectores";
-import { listarFacturas, releerDocumento } from "@/lib/gestoria-facturas";
+import { listarFacturas, releerDocumento, asignarPorDatoDuro } from "@/lib/gestoria-facturas";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,13 +64,33 @@ export async function POST(req: Request) {
       if (r.ok) leidos++;
       else fallos.push(`${f.nombre_original}: ${r.error}`);
     }
-    const todosLosPendientes = todas.filter((f) => !f.lectura && f.estado !== "descartada").length;
+    // Y AHORA, COLOCARLOS. Va aparte de la lectura y siempre, no solo sobre lo
+    // que se acaba de leer: hay documentos que ya estaban leídos desde antes y
+    // que se quedaron sin dueño porque entonces la asignación automática no
+    // existía, o porque su cliente no tenía NIF todavía y ahora sí. Esto no
+    // gasta IA —solo compara datos duros— así que se puede pasar por todos.
+    const sinDueno = (await listarFacturas(g.tenantId)).filter(
+      (f) => !f.cliente_id && f.estado !== "descartada",
+    );
+    let colocados = 0;
+    let conflictos = 0;
+    for (const f of sinDueno) {
+      const r = await asignarPorDatoDuro(g.tenantId, f.id).catch(() => null);
+      if (r?.cliente_id) colocados++;
+      else if (r?.conflicto) conflictos++;
+    }
+
+    const todosLosPendientes = (await listarFacturas(g.tenantId)).filter(
+      (f) => !f.lectura && f.estado !== "descartada",
+    ).length;
     return NextResponse.json({
       ok: true,
       leidos,
+      colocados,
+      conflictos,
       fallos,
       // Se dice cuántos quedan: un tope silencioso parece "ya está todo".
-      quedan: Math.max(0, todosLosPendientes - pendientes.length),
+      quedan: Math.max(0, todosLosPendientes),
     });
   }
 

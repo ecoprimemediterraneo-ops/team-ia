@@ -157,6 +157,8 @@ async function derivadas(tenantId: string): Promise<Tarea[]> {
   //    que no se asignan no cuadran con nada.
   for (const f of await listarFacturas(tenantId).catch(() => [])) {
     if (f.estado !== "sin_asignar") continue;
+    // Un duplicado no es trabajo: es el mismo papel otra vez.
+    if (f.duplicado_de) continue;
     out.push({
       id: `fac:${f.id}`,
       titulo: `Factura sin asignar: ${f.proveedor ?? f.nombre_original}`,
@@ -241,6 +243,17 @@ export async function listarTareas(tenantId: string): Promise<Tarea[]> {
 /** Lo que obliga a parar: vence hoy o mañana (o ya venció) y sigue sin hacer. */
 export async function loQueNoPuedeEsperar(tenantId: string): Promise<Tarea[]> {
   return (await listarTareas(tenantId)).filter(esRojo);
+}
+
+/**
+ * Las marcas de "hecho", tal cual. Las usa la AGENDA.
+ *
+ * Se expone a propósito en vez de dejar que la agenda se monte su propio
+ * almacén: si fueran dos, marcar hecho un modelo en la agenda lo dejaría vivo en
+ * HOY y el gestor lo haría dos veces. Un solo sitio donde vive "esto ya está".
+ */
+export async function hechosDe(tenantId: string): Promise<Record<string, string>> {
+  return (await leerEstado(tenantId)).hechos;
 }
 
 export async function apuntarTarea(

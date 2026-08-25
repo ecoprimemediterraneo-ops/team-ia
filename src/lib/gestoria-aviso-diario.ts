@@ -32,13 +32,22 @@ const cuando = (t: Tarea): string => {
 const linea = (t: Tarea): string =>
   `- ${t.titulo}${t.clienteNombre ? ` (${t.clienteNombre})` : ""}, ${cuando(t)}`;
 
-export function redactarAviso(tareas: Tarea[]): AvisoDiario {
+/**
+ * "buenos dias, jose." · "buenos dias." si no se sabe cómo se llama.
+ *
+ * En minúscula a propósito: todo el aviso de Pablo va en minúscula, escrito
+ * como escribe una persona por WhatsApp, no como escribe un sistema.
+ */
+const saludo = (nombre?: string): string =>
+  nombre && nombre.trim() ? `buenos dias, ${nombre.trim().toLowerCase()}.` : "buenos dias.";
+
+export function redactarAviso(tareas: Tarea[], nombreGestor?: string): AvisoDiario {
   const vivas = tareas.filter((t) => !t.hecho);
   const rojas = vivas.filter(esRojo);
   const resto = vivas.filter((t) => !esRojo(t));
 
   if (!vivas.length) {
-    return { resumen: "buenos dias. hoy no tienes nada pendiente.", urgente: null, tareas: [] };
+    return { resumen: `${saludo(nombreGestor)} hoy no tienes nada pendiente.`, urgente: null, tareas: [] };
   }
 
   // El resumen enseña como mucho seis: una lista de veinte en WhatsApp no se lee.
@@ -47,7 +56,7 @@ export function redactarAviso(tareas: Tarea[]): AvisoDiario {
   const sobran = resto.length - enResumen.length;
 
   const partes = [
-    `buenos dias. tienes ${vivas.length} cosa${vivas.length === 1 ? "" : "s"} pendiente${vivas.length === 1 ? "" : "s"}.`,
+    `${saludo(nombreGestor)} tienes ${vivas.length} cosa${vivas.length === 1 ? "" : "s"} pendiente${vivas.length === 1 ? "" : "s"}.`,
   ];
   if (enResumen.length) partes.push(enResumen.map(linea).join("\n"));
   if (sobran > 0) partes.push(`y ${sobran} mas en el panel.`);
@@ -65,7 +74,9 @@ export function redactarAviso(tareas: Tarea[]): AvisoDiario {
 }
 
 export async function avisoDelDia(tenantId: string): Promise<AvisoDiario> {
-  return redactarAviso(await listarTareas(tenantId));
+  const { getTenant } = await import("./tenants");
+  const t = await getTenant(tenantId).catch(() => null);
+  return redactarAviso(await listarTareas(tenantId), t?.ownerName);
 }
 
 /** Interruptor de envío. Fail-closed: sin la variable, no sale ningún mensaje. */

@@ -9,8 +9,7 @@
 // justo ese caso.
 
 import "server-only";
-import { crearFactura, leerYGuardar, marcarLeyendo, tipoDeFichero, type OrigenFactura } from "./gestoria-facturas";
-import { clienteIdDeTelefono, listarClientes } from "./gestoria-clientes";
+import { crearFactura, leerYGuardar, marcarLeyendo, asignarPorDatoDuro, marcarSiEsDuplicado, tipoDeFichero, type OrigenFactura } from "./gestoria-facturas";
 
 /**
  * Graph de Meta. `META_GRAPH_URL` permite apuntar a otro sitio para poder probar
@@ -106,8 +105,26 @@ async function leerEnSegundoPlano(opts: {
   // "Leyendo…" desde el primer refresco, no dentro de diez segundos.
   await marcarLeyendo(opts.tenantId, opts.facturaId).catch(() => {});
 
-  const trabajo = () =>
-    leerYGuardar(opts).catch((e) => console.error("[gestoria-adjuntos] lectura fallida:", e));
+  // Leer y, con lo leído, colocarlo en su cliente. Van juntas a propósito: leer
+  // sin asignar deja el documento en la bandeja igual que antes, y asignar es
+  // justo lo que le ahorra al gestor los diez mil clics al mes.
+  const trabajo = async () => {
+    try {
+      await leerYGuardar(opts);
+    } catch (e) {
+      console.error("[gestoria-adjuntos] lectura fallida:", e);
+    }
+    // Se intenta asignar AUNQUE la lectura falle: si no hay NIF porque no se
+    // pudo leer, todavía queda el teléfono desde el que llegó.
+    await asignarPorDatoDuro(opts.tenantId, opts.facturaId).catch((e) =>
+      console.error("[gestoria-adjuntos] asignación fallida:", e),
+    );
+    // Y DESPUÉS de saber de quién es, mirar si ya estaba: la comparación es por
+    // cliente, así que antes de asignarlo no se puede saber.
+    await marcarSiEsDuplicado(opts.tenantId, opts.facturaId).catch((e) =>
+      console.error("[gestoria-adjuntos] detección de duplicado fallida:", e),
+    );
+  };
 
   try {
     const { after } = await import("next/server");
@@ -123,13 +140,14 @@ export async function guardarAdjuntosWhatsApp(opts: {
   telefono: string;
   adjuntos: AdjuntoWa[];
 }): Promise<number> {
-  // El id de cliente es el teléfono normalizado, así que CUALQUIER número
-  // producía un id: un desconocido creaba un "cliente" que no sale en ninguna
-  // lista y su factura quedaba invisible en el panel. Ahora se comprueba contra
-  // las fichas reales; si no está, entra sin dueño y el gestor la coloca.
-  const posible = clienteIdDeTelefono(opts.telefono);
-  const conocidos = await listarClientes(opts.tenantId).catch(() => []);
-  const clienteId = conocidos.some((c) => c.id === posible) ? posible : null;
+  // Entra SIN dueño y lo coloca `asignarPorDatoDuro` en cuanto está leído.
+  //
+  // Antes se resolvía aquí a mano comparando el teléfono con el id del cliente.
+  // Se ha quitado por dos motivos: solo miraba el teléfono principal, así que
+  // una factura enviada desde el móvil de la encargada no se reconocía aunque
+  // ese número estuviera en la ficha; y no dejaba escrito por qué se había
+  // asignado. Ahora hay UNA sola regla de asignación y la aplica todo el mundo.
+  const clienteId = null;
 
   let creadas = 0;
   for (const adj of opts.adjuntos) {

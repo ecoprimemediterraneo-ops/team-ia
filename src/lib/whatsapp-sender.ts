@@ -48,7 +48,57 @@ function destinoGraph(phoneNumberId: string): { url: string; simulado: boolean }
   };
 }
 
-async function postGraph(payload: unknown): Promise<WhatsAppSendResult> {
+/** Lo que hace falta para poder buscar después un mensaje concreto. */
+export type Rastro = {
+  /** De quién es el envío. Sin esto el registro no sirve de nada. */
+  tenantId: string;
+  /** A qué número ha ido. */
+  a: string;
+  /** Qué era: un aviso diario, una reclamación, un documento… */
+  motivo: string;
+};
+
+/**
+ * Deja constancia de un envío, con el identificador que devuelve Meta.
+ *
+ * POR QUÉ AQUÍ Y NO EN CADA SITIO QUE MANDA: hay diez puntos del repo que
+ * mandan WhatsApps —el aviso diario, las reclamaciones, los documentos, la lista
+ * de espera, el recall—. Registrarlo en cada uno significa que el próximo que se
+ * añada se olvidará, y no se notará hasta que alguien pregunte "¿esto salió?" y
+ * no haya nada que mirar. Aquí pasa TODO por narices.
+ *
+ * El `wamid` es lo que importa: es el identificador con el que Meta conoce ese
+ * mensaje. Sin él, un "ok: true" en un log es una afirmación que nadie puede
+ * comprobar.
+ */
+async function registrar(rastro: Rastro | undefined, r: WhatsAppSendResult, tipo: string): Promise<void> {
+  if (!rastro?.tenantId) return;
+  try {
+    const { logEvent, makeEventId } = await import("./event-log");
+    const wamid = r.ok ? r.messageId ?? null : null;
+    await logEvent(rastro.tenantId, {
+      id: makeEventId("whatsapp_out", rastro.motivo, wamid ?? String(Date.now())),
+      type: "message_out",
+      channel: "pablo",
+      senderId: rastro.a,
+      meta: {
+        kind: rastro.motivo,
+        tipoMensaje: tipo,
+        wamid,
+        // Un envío simulado NO es un envío: se marca para no confundirlos al
+        // contar después.
+        simulado: r.ok ? !!r.simulado : false,
+        ok: r.ok,
+        error: r.ok ? undefined : r.detail,
+      },
+    });
+  } catch (e) {
+    // Que falle el registro no puede tumbar un envío que ya ha salido.
+    console.warn("[whatsapp-sender] no se ha podido registrar el envío:", e instanceof Error ? e.message : e);
+  }
+}
+
+async function postGraph(payload: unknown, rastro?: Rastro, tipo = "texto"): Promise<WhatsAppSendResult> {
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const token = process.env.WHATSAPP_ACCESS_TOKEN;
   if (!phoneNumberId || !token) {
@@ -64,7 +114,11 @@ async function postGraph(payload: unknown): Promise<WhatsAppSendResult> {
       "[whatsapp-sender] LOCAL sin META_GRAPH_URL: no se envía nada a Meta. Mensaje simulado:",
       JSON.stringify(payload),
     );
-    return { ok: true, messageId: `simulado-local-${Date.now()}`, raw: payload, simulado: true };
+    const simulado: WhatsAppSendResult = {
+      ok: true, messageId: `simulado-local-${Date.now()}`, raw: payload, simulado: true,
+    };
+    await registrar(rastro, simulado, tipo);
+    return simulado;
   }
   try {
     const res = await fetch(destino.url, {
@@ -81,15 +135,24 @@ async function postGraph(payload: unknown): Promise<WhatsAppSendResult> {
     };
     if (!res.ok) {
       const msg = json.error?.message || `HTTP ${res.status}`;
-      return { ok: false, reason: "graph_error", detail: msg };
+      const fallo: WhatsAppSendResult = { ok: false, reason: "graph_error", detail: msg };
+      await registrar(rastro, fallo, tipo);
+      return fallo;
     }
-    return { ok: true, messageId: json.messages?.[0]?.id, raw: json };
+    const bien: WhatsAppSendResult = { ok: true, messageId: json.messages?.[0]?.id, raw: json };
+    // El wamid, también en el log del servidor: es lo primero que se busca
+    // cuando alguien dice "no me ha llegado".
+    console.log(`[whatsapp-sender] ${tipo} → ${rastro?.a ?? "?"} · wamid=${bien.messageId ?? "(sin id)"}`);
+    await registrar(rastro, bien, tipo);
+    return bien;
   } catch (err) {
-    return {
+    const fallo: WhatsAppSendResult = {
       ok: false,
       reason: "network_error",
       detail: err instanceof Error ? err.message : String(err),
     };
+    await registrar(rastro, fallo, tipo);
+    return fallo;
   }
 }
 
@@ -97,6 +160,7 @@ async function postGraph(payload: unknown): Promise<WhatsAppSendResult> {
 export async function sendWhatsAppText(
   to: string,
   body: string,
+  rastro?: Rastro,
 ): Promise<WhatsAppSendResult> {
   return postGraph({
     messaging_product: "whatsapp",
@@ -104,7 +168,7 @@ export async function sendWhatsAppText(
     to,
     type: "text",
     text: { body, preview_url: false },
-  });
+  }, rastro ?? { tenantId: "", a: to, motivo: "texto" }, "texto");
 }
 
 /**
@@ -168,6 +232,7 @@ export async function sendWhatsAppDocument(
   documentUrl: string,
   filename: string,
   caption?: string,
+  rastro?: Rastro,
 ): Promise<WhatsAppSendResult> {
   return postGraph({
     messaging_product: "whatsapp",
@@ -179,7 +244,7 @@ export async function sendWhatsAppDocument(
       filename: filename.slice(0, 240),
       ...(caption ? { caption: caption.slice(0, 1024) } : {}),
     },
-  });
+  }, rastro ?? { tenantId: "", a: to, motivo: "documento" }, "documento");
 }
 
 export async function sendWhatsAppTemplate(
@@ -187,6 +252,7 @@ export async function sendWhatsAppTemplate(
   templateName: string,
   languageCode: string,
   bodyParams: string[] = [],
+  rastro?: Rastro,
 ): Promise<WhatsAppSendResult> {
   return postGraph({
     messaging_product: "whatsapp",
@@ -207,5 +273,5 @@ export async function sendWhatsAppTemplate(
           }
         : {}),
     },
-  });
+  }, rastro ?? { tenantId: "", a: to, motivo: `plantilla:${templateName}` }, "plantilla");
 }
