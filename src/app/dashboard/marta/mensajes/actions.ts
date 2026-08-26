@@ -24,5 +24,7 @@ export async function enviarDmAction(_previo: EstadoEnvio, formData: FormData): 
   const r = await enviarDmManual(ctx.tenantId, igsid, texto);
   revalidatePath("/dashboard/marta");
 
-  return r.ok ? { estado: "ok" } : { estado: "error", codigo: r.codigo, motivo: r.motivo };
+  return r.ok
+    ? { estado: "ok" }
+    : { estado: "error", codigo: r.codigo, motivo: r.motivo, detalle: r.detalle };
 }

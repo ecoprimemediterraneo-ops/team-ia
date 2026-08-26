@@ -132,20 +132,71 @@ export async function sendInstagramMessage(
       simulado("marta/graph", { manda: "DM (cuenta del cliente)", igUserId: cred.igUserId, recipient, text });
       return { simulado: true };
     }
+
+    // EL ID DE LA CUENTA VA EN LA RUTA. NO vale `me`.
+    //
+    // Estaba puesto `me/messages` y Meta contestaba, con un 500 que parece un
+    // error suyo y no lo es:
+    //
+    //   {"error":{"message":"Unknown path components: /messages",
+    //             "type":"IGApiException","code":2500,...}}
+    //
+    // Eran DOS cosas mal en la misma línea, y las dos en la ruta:
+    //
+    //   1. LA VERSIÓN, DUPLICADA. `hostInstagram()` ya devuelve
+    //      "https://graph.instagram.com/v21.0", así que escribir
+    //      `${baseIg}/v21.0/...` mandaba a .../v21.0/v21.0/... El resto del
+    //      fichero no cae en esto: `replyToComment` hace `${base}/${id}/replies`
+    //      sin versión, y por eso la respuesta pública sí funciona.
+    //   2. `me`. Resuelve para leer el perfil (`GET /me`), pero la arista de
+    //      mensajes no cuelga de ahí: la API de Instagram con Instagram Login
+    //      manda por `POST /{ig-id}/messages`, con el id de la cuenta
+    //      profesional escrito en la ruta.
+    //
+    // Y ojo con el diagnóstico: `code 2500` habla de la RUTA, no del
+    // destinatario — Meta ni llegó a mirar a quién íbamos a escribir.
+    if (!cred.igUserId) {
+      console.error("[marta/envio] sin id de cuenta: no se puede construir la ruta de envío");
+      return { error: "sin_ig_user_id" };
+    }
+
+    const endpoint = `${baseIg}/${cred.igUserId}/messages`;
     try {
-      const res = await fetch(`${baseIg}/v21.0/me/messages`, {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { Authorization: `Bearer ${cred.token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ recipient, message: { text } }),
       });
       const bodyText = await res.text();
-      if (!res.ok) {
-        console.error(`[marta/graph] DM del cliente rechazado status=${res.status} body=${bodyText.slice(0, 400)}`);
-        return { error: "graph_error", status: res.status, body: bodyText.slice(0, 400) };
+      let parsed: { error?: { code?: number; error_subcode?: number; message?: string; fbtrace_id?: string } } = {};
+      try {
+        parsed = JSON.parse(bodyText || "{}");
+      } catch {
+        /* Meta ha contestado algo que no es JSON: se queda el cuerpo crudo. */
       }
-      return JSON.parse(bodyText || "{}");
+
+      // La traza lleva el endpoint entero (sin token: va en la cabecera) para
+      // que se vea la ruta que se ha usado, que es justo lo que falló aquí.
+      console.log(
+        `[marta/envio] POST ${endpoint} destino=${JSON.stringify(recipient)} ` +
+          `status=${res.status} code=${parsed.error?.code ?? "-"} ` +
+          `subcode=${parsed.error?.error_subcode ?? "-"} fbtrace=${parsed.error?.fbtrace_id ?? "-"}` +
+          (parsed.error?.message ? ` msg=${parsed.error.message}` : ""),
+      );
+
+      if (!res.ok || parsed.error) {
+        return {
+          error: "graph_error",
+          status: res.status,
+          code: parsed.error?.code,
+          subcode: parsed.error?.error_subcode,
+          fbtraceId: parsed.error?.fbtrace_id,
+          body: bodyText.slice(0, 400),
+        };
+      }
+      return parsed;
     } catch (err) {
-      console.error("[marta/graph] fetch del DM del cliente falló:", err);
+      console.error(`[marta/envio] la llamada a ${endpoint} no ha salido:`, err);
       return { error: err instanceof Error ? err.message : "fetch failed" };
     }
   }

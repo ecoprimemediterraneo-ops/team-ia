@@ -158,9 +158,21 @@ export type CodigoFallo =
   | "fuera_ventana"
   | "token"
   | "config"
+  | "destinatario"
+  | "bloqueado"
+  | "demasiados"
+  | "nuestro_fallo"
   | "generico";
 
-export type ResultadoEnvio = { ok: true } | { ok: false; codigo: CodigoFallo; motivo: string };
+export type ResultadoEnvio =
+  | { ok: true }
+  | {
+      ok: false;
+      codigo: CodigoFallo;
+      motivo: string;
+      /** "Meta 2500 · fbtrace AKoU…". Se enseña en pequeño bajo el mensaje. */
+      detalle?: string;
+    };
 
 /**
  * Manda un DM escrito por el cliente desde la bandeja.
@@ -206,11 +218,18 @@ export async function enviarDmManual(
   const fallo = traducirError(res);
 
   if (fallo) {
-    console.error(`[marta/bandeja] envío manual FALLIDO tenant=${tenantId} a=${igsid}: ${fallo.crudo}`);
-    return { ok: false, codigo: fallo.codigo, motivo: fallo.enCristiano };
+    console.error(
+      `[marta/envio] FALLIDO tenant=${tenantId} conversacion=${igsid} ` +
+        `cuenta=@${conexion.usuario ?? "?"} ig_user_id=${conexion.userId} ` +
+        `motivo=${fallo.codigo} ${fallo.detalle ?? ""} crudo=${fallo.crudo}`,
+    );
+    return { ok: false, codigo: fallo.codigo, motivo: fallo.enCristiano, detalle: fallo.detalle };
   }
 
-  console.log(`[marta/bandeja] envío manual OK tenant=${tenantId} a=${igsid}`);
+  console.log(
+    `[marta/envio] OK tenant=${tenantId} conversacion=${igsid} ` +
+      `cuenta=@${conexion.usuario ?? "?"} ig_user_id=${conexion.userId}`,
+  );
   await apuntarMensaje(tenantId, igsid, {
     de: "nosotros",
     texto: limpio,
@@ -221,44 +240,82 @@ export async function enviarDmManual(
 }
 
 /** Lo que devuelve Meta → una frase que se pueda leer. `null` si salió bien. */
-function traducirError(res: unknown): { codigo: CodigoFallo; enCristiano: string; crudo: string } | null {
+/**
+ * Lo que devuelve Meta → una frase que se pueda leer, y el código a la vista.
+ *
+ * Se mira el CÓDIGO, no la cadena. La versión anterior hacía `/190|token/` sobre
+ * el JSON entero, y eso casa con la palabra "token" en cualquier sitio: un
+ * mensaje que la mencionara de pasada se habría contado como permiso caducado.
+ * `null` si salió bien.
+ */
+function traducirError(
+  res: unknown,
+): { codigo: CodigoFallo; enCristiano: string; detalle?: string; crudo: string } | null {
   if (!res || typeof res !== "object") return null;
   const r = res as Record<string, unknown>;
   if (r.simulado === true) return null;
   if (!("error" in r) && !("skipped" in r)) return null;
 
   const crudo = JSON.stringify(res).slice(0, 400);
+  const code = typeof r.code === "number" ? r.code : undefined;
+  const subcode = typeof r.subcode === "number" ? r.subcode : undefined;
+  const fbtrace = typeof r.fbtraceId === "string" ? r.fbtraceId : undefined;
 
-  // 131047 y 10/2534022: los dos códigos con los que Meta dice "fuera de plazo".
-  if (/131047|"code":\s*10\b|2534022|outside of allowed window|24 ?h/i.test(crudo)) {
-    return {
-      codigo: "fuera_ventana",
-      enCristiano:
-        "Instagram no ha dejado enviarlo: han pasado más de 24 horas desde el último mensaje de " +
-        "esta persona. Hay que esperar a que te escriba.",
-      crudo,
-    };
+  // Lo que se enseña en pequeño: sirve para pegarlo en un correo a Meta.
+  const detalle =
+    code || fbtrace
+      ? `Meta ${code ?? "?"}${subcode ? `/${subcode}` : ""}${fbtrace ? ` · fbtrace ${fbtrace}` : ""}`
+      : undefined;
+
+  const con = (codigo: CodigoFallo, enCristiano: string) => ({ codigo, enCristiano, detalle, crudo });
+
+  // 2500 = la RUTA no existe. Es un fallo nuestro, no del cliente ni de Meta.
+  if (code === 2500 || /Unknown path components/i.test(crudo)) {
+    return con(
+      "nuestro_fallo",
+      "No hemos podido enviarlo por un fallo nuestro al hablar con Instagram, no por nada de tu " +
+        "cuenta. Ya lo estamos mirando.",
+    );
   }
-  if (/190|token/i.test(crudo)) {
-    return {
-      codigo: "token",
-      enCristiano:
-        "El permiso de Instagram ha dejado de valer. Vuelve a conectar la cuenta en «Empezar cuenta».",
-      crudo,
-    };
+  // Fuera de la ventana de 24 h. Meta lo dice de tres formas distintas.
+  if (code === 131047 || subcode === 2534022 || /outside of allowed window/i.test(crudo)) {
+    return con(
+      "fuera_ventana",
+      "Instagram no ha dejado enviarlo: han pasado más de 24 horas desde el último mensaje de esta " +
+        "persona. Hay que esperar a que te escriba.",
+    );
   }
-  if (/missing FACEBOOK_PAGE_ID|missing token/i.test(crudo)) {
-    return {
-      codigo: "config",
-      enCristiano:
-        "Esta instalación todavía no puede enviar mensajes: falta configuración en el servidor. " +
-        "No es cosa tuya, avísanos.",
-      crudo,
-    };
+  if (code === 190 || r.error === "page_token_error" || r.error === "page_token_error_retry") {
+    return con(
+      "token",
+      "El permiso de Instagram ha dejado de valer. Vuelve a conectar la cuenta en «Empezar cuenta».",
+    );
   }
-  return {
-    codigo: "generico",
-    enCristiano: "Instagram no ha aceptado el mensaje. Inténtalo otra vez en un momento.",
-    crudo,
-  };
+  // 100 = parámetro que no vale. Casi siempre, el destinatario.
+  if (code === 100) {
+    return con(
+      "destinatario",
+      "Instagram no reconoce a esta persona como destinataria. Suele pasar si borró el mensaje o " +
+        "cerró la cuenta.",
+    );
+  }
+  // 551 y 1545041: no se puede escribir a ese usuario ahora mismo.
+  if (code === 551 || subcode === 1545041) {
+    return con(
+      "bloqueado",
+      "Instagram no permite escribir a esta persona ahora mismo. Puede haber bloqueado la cuenta o " +
+        "desactivado los mensajes.",
+    );
+  }
+  if (code === 613 || code === 4 || code === 17 || code === 32) {
+    return con("demasiados", "Se han mandado demasiados mensajes seguidos. Espera un momento y vuelve a intentarlo.");
+  }
+  if (r.error === "sin_ig_user_id" || /missing FACEBOOK_PAGE_ID|missing token/i.test(crudo)) {
+    return con(
+      "config",
+      "Esta instalación todavía no puede enviar mensajes: falta configuración en el servidor. No es " +
+        "cosa tuya, avísanos.",
+    );
+  }
+  return con("generico", "Instagram no ha aceptado el mensaje. Inténtalo otra vez en un momento.");
 }

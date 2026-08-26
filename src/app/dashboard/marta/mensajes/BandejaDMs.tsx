@@ -40,6 +40,10 @@ const MOTIVO: Record<string, ClaveTexto> = {
   fuera_ventana: "envio_fuera_ventana",
   token: "envio_token",
   config: "envio_config",
+  destinatario: "envio_destinatario",
+  bloqueado: "envio_bloqueado",
+  demasiados: "envio_demasiados",
+  nuestro_fallo: "envio_nuestro_fallo",
   generico: "envio_generico",
   sesion: "envio_sesion",
   sin_destino: "envio_sin_destino",
@@ -214,9 +218,15 @@ function Conversacion({ c, t, idioma }: { c: ConversacionVista; t: T; idioma: Id
             </span>
           </div>
           {estado.estado === "error" && (
-            <p className="text-sm bg-[color:var(--red)] text-white border-2 border-black px-3 py-2">
-              {motivoDe(estado, t)}
-            </p>
+            <div className="bg-[color:var(--red)] text-white border-2 border-black px-3 py-2">
+              <p className="text-sm">{motivoDe(estado, t)}</p>
+              {/* El código de Meta, en pequeño. No le dice nada al peluquero,
+                  pero es lo primero que se pide para diagnosticar y lo único que
+                  sirve para escribirle al soporte de Meta. */}
+              {estado.detalle && (
+                <p className="text-[10px] font-mono opacity-75 mt-1">{estado.detalle}</p>
+              )}
+            </div>
           )}
           {estado.estado === "ok" && (
             <p className="text-sm bg-[#14B8A6] text-white border-2 border-black px-3 py-2">

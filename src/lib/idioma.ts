@@ -307,6 +307,22 @@ const DIC = {
     es: "Esta instalación todavía no puede enviar mensajes: falta configuración en el servidor. No es cosa tuya, avísanos.",
     en: "This installation can't send messages yet: something is missing on the server. Not your fault — let us know.",
   },
+  envio_destinatario: {
+    es: "Instagram no reconoce a esta persona como destinataria. Suele pasar si borró el mensaje o cerró la cuenta.",
+    en: "Instagram doesn't recognise this person as a recipient. This usually happens if they deleted the message or closed their account.",
+  },
+  envio_bloqueado: {
+    es: "Instagram no permite escribir a esta persona ahora mismo. Puede haber bloqueado la cuenta o desactivado los mensajes.",
+    en: "Instagram won't let you message this person right now. They may have blocked the account or turned messages off.",
+  },
+  envio_demasiados: {
+    es: "Se han mandado demasiados mensajes seguidos. Espera un momento y vuelve a intentarlo.",
+    en: "Too many messages sent in a row. Wait a moment and try again.",
+  },
+  envio_nuestro_fallo: {
+    es: "No hemos podido enviarlo por un fallo nuestro al hablar con Instagram, no por nada de tu cuenta. Ya lo estamos mirando.",
+    en: "We couldn't send it because of a problem on our side talking to Instagram, not anything to do with your account. We're on it.",
+  },
   envio_generico: {
     es: "Instagram no ha aceptado el mensaje. Inténtalo otra vez en un momento.",
     en: "Instagram didn't accept the message. Please try again in a moment.",

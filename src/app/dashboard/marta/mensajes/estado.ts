@@ -28,6 +28,8 @@ export type EstadoEnvio = {
   estado: "quieto" | "ok" | "error";
   motivo?: string;
   codigo?: CodigoFallo | "sesion" | "sin_destino";
+  /** "Meta 2500 · fbtrace AKoU…", para enseñarlo en pequeño y poder diagnosticar. */
+  detalle?: string;
 };
 
 export const ENVIO_QUIETO: EstadoEnvio = { estado: "quieto" };
