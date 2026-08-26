@@ -749,50 +749,90 @@ export async function conexionPendienteDeTenant(tenantId: string): Promise<Conex
  * confirmó la vieja, se estaría dando por buena una cuenta que ya no es la del
  * token guardado.
  */
+/** Por qué no se ha podido confirmar. La pantalla lo traduce a una frase. */
+export type FalloConfirmar = "sin_almacen" | "sin_token" | "otra_cuenta" | "no_guarda";
+
 export async function confirmarCuenta(
   tenantId: string,
   userId: string,
-): Promise<Resultado<TokenInstagram>> {
+): Promise<{ ok: true; valor: TokenInstagram } | { ok: false; fallo: FalloConfirmar; error: string }> {
   if (!supabaseEnabled()) {
     console.error(`[instagram-confirmar] sin Supabase tenant=${tenantId}`);
-    return { ok: false, error: "sin Supabase no se puede guardar la confirmación" };
+    return { ok: false, fallo: "sin_almacen", error: "sin Supabase no se puede guardar la confirmación" };
   }
 
   const t = await kvGet<TokenInstagram>(claveDeTenant(tenantId));
   if (!t) {
     console.error(`[instagram-confirmar] NO HAY TOKEN tenant=${tenantId} pedido=${userId}`);
-    return {
-      ok: false,
-      error: "no hay ninguna conexión pendiente que confirmar",
-    };
+    return { ok: false, fallo: "sin_token", error: "no hay ninguna conexión pendiente que confirmar" };
   }
 
-  // SE ACEPTAN LOS DOS IDENTIFICADORES. Instagram da dos números para la misma
-  // cuenta (ver `auth_user_id`), y además hay tokens guardados por la versión
-  // anterior que traen el de la app en `user_id`. Exigir uno solo dejaría esas
-  // conexiones sin poder confirmarse nunca, obligando a volver a autorizar sin
-  // que nada estuviera roto.
-  const suyos = [t.user_id, t.auth_user_id].filter(Boolean);
-  const cuadra = !userId || suyos.length === 0 || suyos.includes(userId);
+  // SE LE PREGUNTA A META DE QUIÉN ES EL TOKEN. NO se comparan los ids guardados.
+  //
+  // Comparar cadenas guardadas no puede funcionar y esto ya costó un intento:
+  // Instagram da DOS números para la misma cuenta —el del canje del código y el
+  // de la cuenta de empresa que devuelve `/me`— y los tokens guardados por la
+  // versión anterior traen el del canje metido en `user_id`, sin rastro del
+  // otro. Para uno de esos no existe ninguna cadena guardada igual al id que
+  // enseña la pantalla, así que "acepta cualquiera de los dos" seguía diciendo
+  // que no.
+  //
+  // Lo único que sabe de verdad a quién pertenece un token es Meta, y el token
+  // es la prueba: la misma llamada que usó la pantalla para pintar la cuenta
+  // sirve para comprobarla. Y de paso se ARREGLA el registro viejo, poniendo el
+  // id bueno donde toca. Así la conexión que ya existe se cura sola en vez de
+  // obligar a volver a autorizar.
+  const quien = await pedir(
+    `${GRAPH_IG}/v21.0/me?${new URLSearchParams({
+      fields: CAMPOS_ME,
+      access_token: t.access_token,
+    }).toString()}`,
+  );
+
+  let deMeta: string | undefined;
+  if (quien.ok) {
+    deMeta = String((quien.valor as PerfilCrudo).user_id ?? "");
+  } else {
+    console.error(`[instagram-confirmar] /me no responde tenant=${tenantId}: ${tapar(quien.error)}`);
+  }
+
+  // Si Meta contesta, manda Meta. Si no contesta —un corte de red no puede
+  // dejar a un cliente sin poder terminar el alta—, se cae a los ids guardados.
+  const guardados = [t.user_id, t.auth_user_id].filter(Boolean) as string[];
+  const validos = deMeta ? [deMeta, ...guardados] : guardados;
+  const cuadra = !userId || validos.length === 0 || validos.includes(userId);
 
   console.log(
     `[instagram-confirmar] tenant=${tenantId} pedido=${userId || "?"} ` +
-      `token.user_id=${t.user_id || "?"} token.auth_user_id=${t.auth_user_id || "?"} ` +
-      `cuenta=@${t.usuario ?? "?"} cuadra=${cuadra}`,
+      `meta=${deMeta || "no responde"} token.user_id=${t.user_id || "?"} ` +
+      `token.auth_user_id=${t.auth_user_id || "?"} cuenta=@${t.usuario ?? "?"} cuadra=${cuadra}`,
   );
 
   if (!cuadra) {
     return {
       ok: false,
+      fallo: "otra_cuenta",
       error:
-        `la cuenta que se confirma (${userId}) no es la del permiso guardado ` +
-        `(${suyos.join(" / ")})`,
+        `el permiso guardado es de la cuenta ${deMeta || guardados.join(" / ")}, ` +
+        `y se está confirmando la ${userId}`,
     };
   }
 
-  const r = await guardar(tenantId, { ...t, confirmado_en: new Date().toISOString() });
+  // Se cura el registro: el id de empresa pasa a `user_id` y el del canje, que
+  // en los tokens viejos ocupaba su sitio, se queda en `auth_user_id`.
+  const arreglado: TokenInstagram = { ...t, confirmado_en: new Date().toISOString() };
+  if (deMeta && t.user_id !== deMeta) {
+    console.log(
+      `[instagram-confirmar] ARREGLANDO el id guardado tenant=${tenantId}: ` +
+        `user_id ${t.user_id || "?"} -> ${deMeta} (el viejo pasa a auth_user_id)`,
+    );
+    arreglado.auth_user_id = t.auth_user_id || t.user_id;
+    arreglado.user_id = deMeta;
+  }
+
+  const r = await guardar(tenantId, arreglado);
   console.log(
     `[instagram-confirmar] tenant=${tenantId} resultado=${r.ok ? "CONFIRMADA" : `FALLIDA: ${r.error}`}`,
   );
-  return r;
+  return r.ok ? r : { ok: false, fallo: "no_guarda", error: r.error };
 }

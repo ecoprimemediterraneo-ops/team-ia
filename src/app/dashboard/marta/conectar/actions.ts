@@ -38,16 +38,26 @@ export async function confirmarCuentaAction(
   const r = await confirmarCuenta(ctx.tenantId, userId);
 
   if (!r.ok) {
-    // El fallo SE ENSEÑA. Antes esta acción devolvía `void`: si algo iba mal, el
-    // usuario se quedaba mirando la misma pantalla sin saber por qué, o —como
-    // pasó en producción— con una página en blanco.
-    console.error(`[instagram-confirmar] FALLIDA tenant=${ctx.tenantId}: ${r.error}`);
-    return {
-      estado: "error",
-      motivo:
-        "No se ha podido guardar la confirmación. Vuelve a conectar la cuenta desde el botón de " +
-        "arriba; si sigue fallando, dínoslo y lo miramos con el detalle que queda en el servidor.",
+    // El fallo SE ENSEÑA, Y DICE CUÁL ES. Antes esta acción devolvía `void` y la
+    // pantalla se quedaba muda; luego decía siempre lo mismo, que tampoco
+    // ayudaba: "vuelve a conectar" es un mal consejo cuando el problema es que
+    // el servidor no puede guardar, y es el consejo correcto cuando el permiso
+    // es de otra cuenta.
+    console.error(`[instagram-confirmar] FALLIDA tenant=${ctx.tenantId} fallo=${r.fallo}: ${r.error}`);
+    const MOTIVOS: Record<typeof r.fallo, string> = {
+      otra_cuenta:
+        "El permiso que tenemos guardado es de otra cuenta de Instagram, no de la que aparece aquí. " +
+        "Vuelve a conectar desde el botón de arriba y elige la cuenta de tu negocio.",
+      sin_token:
+        "La conexión con Instagram se ha perdido. Vuelve a conectar la cuenta desde el botón de arriba.",
+      sin_almacen:
+        "No hemos podido guardar la confirmación: es un problema de nuestro servidor, no de tu cuenta. " +
+        "Avísanos y lo dejamos listo.",
+      no_guarda:
+        "Instagram nos ha dado el permiso, pero no hemos podido guardarlo. Vuelve a intentarlo en un " +
+        "momento; si sigue igual, avísanos.",
     };
+    return { estado: "error", motivo: MOTIVOS[r.fallo] };
   }
 
   console.log(`[instagram-confirmar] CONFIRMADA tenant=${ctx.tenantId} ig_user_id=${userId}`);
