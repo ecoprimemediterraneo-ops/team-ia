@@ -7,19 +7,11 @@
 
 import { revalidatePath } from "next/cache";
 import { resolverContextoPanel } from "@/lib/panel-contexto";
-import { enviarDmManual, type CodigoFallo } from "@/lib/marta-inbox";
-
-/**
- * El resultado que ve la pantalla. Lleva `codigo` además de `motivo` para que la
- * bandeja pueda decir lo mismo en inglés sin comparar cadenas.
- */
-export type EstadoEnvio = {
-  estado: "quieto" | "ok" | "error";
-  motivo?: string;
-  codigo?: CodigoFallo | "sesion" | "sin_destino";
-};
-
-export const ENVIO_QUIETO: EstadoEnvio = { estado: "quieto" };
+import { enviarDmManual } from "@/lib/marta-inbox";
+// El tipo y la constante viven en `estado.ts`: un fichero "use server" SOLO
+// puede exportar funciones async, y exportar un objeto desde aquí tumbaba todas
+// las server actions de /dashboard/marta. Ver el comentario de `estado.ts`.
+import type { EstadoEnvio } from "./estado";
 
 export async function enviarDmAction(_previo: EstadoEnvio, formData: FormData): Promise<EstadoEnvio> {
   const ctx = await resolverContextoPanel();

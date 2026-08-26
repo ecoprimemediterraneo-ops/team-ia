@@ -127,6 +127,21 @@ export type TokenInstagram = {
   foto?: string;
   tipo_cuenta?: string;
   /**
+   * EL OTRO IDENTIFICADOR. Instagram devuelve DOS números distintos para la
+   * misma cuenta y no lo dice en ninguna parte:
+   *
+   *   - el canje del código devuelve el id de la cuenta DENTRO DE LA APP
+   *     (28188911044032356 en la cuenta propia);
+   *   - `GET /me` devuelve el id de la cuenta de EMPRESA de Instagram
+   *     (17841410811816797), que es el que trae el webhook en `entry.id` y el
+   *     que usa la Graph API para publicar y mandar DMs.
+   *
+   * `user_id` guarda SIEMPRE el de empresa, que es el que sirve para trabajar.
+   * Este campo guarda el otro, porque es el que identifica la autorización y
+   * porque hay tokens ya guardados que lo tienen puesto como `user_id`.
+   */
+  auth_user_id?: string;
+  /**
    * CUÁNDO CONFIRMÓ EL CLIENTE QUE ESA ES SU CUENTA.
    *
    * Sin este campo la conexión está a medias: el token existe y funciona, pero
@@ -339,6 +354,7 @@ export async function canjearCodigo(
     permisos,
     obtenido_en: new Date(ahora).toISOString(),
     caduca_en: new Date(ahora + (l.expires_in ?? 5_184_000) * 1000).toISOString(),
+    auth_user_id: String(bueno.user_id ?? ""),
     tenantId,
     conectado_en: previo?.conectado_en || new Date(ahora).toISOString(),
     // OJO: `confirmado_en` NO se hereda del token anterior. Al volver a
@@ -360,7 +376,15 @@ export async function canjearCodigo(
     token.usuario = u.username;
     token.foto = u.profile_picture_url;
     token.tipo_cuenta = u.account_type;
-    if (!token.user_id && u.user_id) token.user_id = String(u.user_id);
+
+    // EL DE `/me` GANA. Antes solo se usaba `if (!token.user_id)`, o sea nunca,
+    // porque el canje siempre trae uno. Resultado: se guardaba el id de la app y
+    // la pantalla enseñaba el de empresa —que es el que devuelve esta misma
+    // llamada—, así que al confirmar los dos números no cuadraban y la
+    // confirmación se rechazaba a sí misma.
+    if (u.user_id) token.user_id = String(u.user_id);
+  } else {
+    console.error(`[instagram-login] no se ha podido leer /me tenant=${tenantId}: ${tapar(quien.error)}`);
   }
 
   const guardado = await guardar(tenantId, token);
@@ -729,13 +753,46 @@ export async function confirmarCuenta(
   tenantId: string,
   userId: string,
 ): Promise<Resultado<TokenInstagram>> {
-  if (!supabaseEnabled()) return { ok: false, error: "sin Supabase no se puede guardar la confirmación" };
-
-  const t = await kvGet<TokenInstagram>(claveDeTenant(tenantId));
-  if (!t) return { ok: false, error: "no hay ninguna conexión pendiente que confirmar" };
-  if (t.user_id && userId && t.user_id !== userId) {
-    return { ok: false, error: "la cuenta que se confirma no es la del token guardado" };
+  if (!supabaseEnabled()) {
+    console.error(`[instagram-confirmar] sin Supabase tenant=${tenantId}`);
+    return { ok: false, error: "sin Supabase no se puede guardar la confirmación" };
   }
 
-  return guardar(tenantId, { ...t, confirmado_en: new Date().toISOString() });
+  const t = await kvGet<TokenInstagram>(claveDeTenant(tenantId));
+  if (!t) {
+    console.error(`[instagram-confirmar] NO HAY TOKEN tenant=${tenantId} pedido=${userId}`);
+    return {
+      ok: false,
+      error: "no hay ninguna conexión pendiente que confirmar",
+    };
+  }
+
+  // SE ACEPTAN LOS DOS IDENTIFICADORES. Instagram da dos números para la misma
+  // cuenta (ver `auth_user_id`), y además hay tokens guardados por la versión
+  // anterior que traen el de la app en `user_id`. Exigir uno solo dejaría esas
+  // conexiones sin poder confirmarse nunca, obligando a volver a autorizar sin
+  // que nada estuviera roto.
+  const suyos = [t.user_id, t.auth_user_id].filter(Boolean);
+  const cuadra = !userId || suyos.length === 0 || suyos.includes(userId);
+
+  console.log(
+    `[instagram-confirmar] tenant=${tenantId} pedido=${userId || "?"} ` +
+      `token.user_id=${t.user_id || "?"} token.auth_user_id=${t.auth_user_id || "?"} ` +
+      `cuenta=@${t.usuario ?? "?"} cuadra=${cuadra}`,
+  );
+
+  if (!cuadra) {
+    return {
+      ok: false,
+      error:
+        `la cuenta que se confirma (${userId}) no es la del permiso guardado ` +
+        `(${suyos.join(" / ")})`,
+    };
+  }
+
+  const r = await guardar(tenantId, { ...t, confirmado_en: new Date().toISOString() });
+  console.log(
+    `[instagram-confirmar] tenant=${tenantId} resultado=${r.ok ? "CONFIRMADA" : `FALLIDA: ${r.error}`}`,
+  );
+  return r;
 }

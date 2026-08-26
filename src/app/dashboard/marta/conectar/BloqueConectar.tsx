@@ -29,11 +29,8 @@ import {
   SCOPES,
   type CuentaCandidata,
 } from "@/lib/instagram-login";
-import {
-  desconectarInstagramAction,
-  confirmarCuentaAction,
-  cancelarSeleccionAction,
-} from "./actions";
+import { desconectarInstagramAction, cancelarSeleccionAction } from "./actions";
+import BotonConfirmar from "./BotonConfirmar";
 import { traductor, conIdioma, localeDe, type Idioma, type T } from "@/lib/idioma";
 
 /**
@@ -365,16 +362,11 @@ async function PasoElegirCuenta({
                   </p>
                 )}
 
-                <form action={confirmarCuentaAction} className="mt-4">
-                  <input type="hidden" name="userId" value={c.userId} />
-                  <button
-                    type="submit"
-                    title={t("elegir_boton_tip")}
-                    className="btn-mustard text-base px-8 py-3.5 font-bold"
-                  >
-                    {t("elegir_boton")}
-                  </button>
-                </form>
+                <BotonConfirmar
+                  userId={c.userId}
+                  texto={t("elegir_boton")}
+                  tip={t("elegir_boton_tip")}
+                />
               </li>
             ))}
           </ul>

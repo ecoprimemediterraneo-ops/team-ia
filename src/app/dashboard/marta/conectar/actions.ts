@@ -10,6 +10,7 @@
 import { revalidatePath } from "next/cache";
 import { resolverContextoPanel } from "@/lib/panel-contexto";
 import { borrarToken, confirmarCuenta } from "@/lib/instagram-login";
+import type { EstadoConfirmar } from "./estado";
 
 function refrescarPantallas() {
   revalidatePath("/dashboard/marta");
@@ -23,19 +24,35 @@ function refrescarPantallas() {
  * comprobar que se confirma la misma cuenta que se enseñó, y no otra que haya
  * entrado por medio desde otra pestaña.
  */
-export async function confirmarCuentaAction(formData: FormData): Promise<void> {
+export async function confirmarCuentaAction(
+  _previo: EstadoConfirmar,
+  formData: FormData,
+): Promise<EstadoConfirmar> {
   const ctx = await resolverContextoPanel();
-  if (!ctx) return;
+  if (!ctx) {
+    console.error("[instagram-confirmar] sin sesión al confirmar");
+    return { estado: "error", motivo: "Tu sesión ha caducado. Vuelve a entrar y repite la conexión." };
+  }
 
   const userId = String(formData.get("userId") ?? "");
   const r = await confirmarCuenta(ctx.tenantId, userId);
 
-  if (r.ok) {
-    console.log(`[instagram-login] cuenta CONFIRMADA tenant=${ctx.tenantId} ig_user_id=${userId}`);
-  } else {
-    console.error(`[instagram-login] confirmación FALLIDA tenant=${ctx.tenantId}: ${r.error}`);
+  if (!r.ok) {
+    // El fallo SE ENSEÑA. Antes esta acción devolvía `void`: si algo iba mal, el
+    // usuario se quedaba mirando la misma pantalla sin saber por qué, o —como
+    // pasó en producción— con una página en blanco.
+    console.error(`[instagram-confirmar] FALLIDA tenant=${ctx.tenantId}: ${r.error}`);
+    return {
+      estado: "error",
+      motivo:
+        "No se ha podido guardar la confirmación. Vuelve a conectar la cuenta desde el botón de " +
+        "arriba; si sigue fallando, dínoslo y lo miramos con el detalle que queda en el servidor.",
+    };
   }
+
+  console.log(`[instagram-confirmar] CONFIRMADA tenant=${ctx.tenantId} ig_user_id=${userId}`);
   refrescarPantallas();
+  return { estado: "quieto" };
 }
 
 /**

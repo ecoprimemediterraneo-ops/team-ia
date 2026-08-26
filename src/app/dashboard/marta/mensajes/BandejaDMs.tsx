@@ -13,7 +13,8 @@
 // conversación y no se queda solo en la pestaña de conectar.
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { enviarDmAction, ENVIO_QUIETO, type EstadoEnvio } from "./actions";
+import { enviarDmAction } from "./actions";
+import { ENVIO_QUIETO, type EstadoEnvio } from "./estado";
 import type { ConversacionDm } from "@/lib/marta-inbox";
 import { traductor, localeDe, type Idioma, type T, type ClaveTexto } from "@/lib/idioma";
 
