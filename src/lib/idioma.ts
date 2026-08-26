@@ -56,6 +56,55 @@ export function localeDe(idioma: Idioma): string {
 type Par = { es: string; en: string };
 
 const DIC = {
+  // ------------------------------------------------- BARRA LATERAL DEL PANEL
+  // Sale en camara todo el rato durante la grabacion del App Review, asi que va
+  // entera. Los NOMBRES de los agentes (Pablo, Carmen, Marta, Eva, Rocio) no
+  // estan aqui a proposito: son nombres propios y no se traducen.
+  lat_salir: { es: "Salir", en: "Log out" },
+  lat_tu_equipo: { es: "Tu equipo", en: "Your team" },
+  lat_agente: { es: "agente", en: "agent" },
+  lat_agentes: { es: "agentes", en: "agents" },
+  lat_proximamente: { es: "PRÓXIMAMENTE", en: "COMING SOON" },
+  lat_sin_configurar: { es: "Sin configurar", en: "Not set up" },
+  lat_completa_briefing: { es: "Completa el briefing →", en: "Complete the briefing →" },
+
+  // Roles de los agentes, tal y como estan escritos en `agents.ts`.
+  rol_whatsapp: { es: "WhatsApp", en: "WhatsApp" },
+  rol_resenas: { es: "Reseñas Google", en: "Google Reviews" },
+  rol_email_mkt: { es: "Email Marketing", en: "Email Marketing" },
+  rol_correo: { es: "Correo y gestión", en: "Email & admin" },
+  rol_instagram: { es: "Instagram y redes", en: "Instagram & Social" },
+  rol_llamadas: { es: "Llamadas de voz", en: "Voice Calls" },
+  rol_competencia: { es: "Inteligencia Competitiva", en: "Competitive Intelligence" },
+
+  // Secciones del lateral.
+  lat_reservas_t: { es: "RESERVAS", en: "BOOKINGS" },
+  // El castellano compone este subtitulo con el vocabulario del sector
+  // ("clientes", "pacientes", "comensales"...). En ingles va fijo: traducir el
+  // vocabulario entero de los cinco sectores por una linea que solo sale en el
+  // video no compensa, y "clients" vale para el caso que se graba.
+  lat_reservas_s: { es: "Agenda · compartir · informes mensuales", en: "Calendar · clients · sharing · monthly reports" },
+  lat_servicio_t: { es: "SERVICIO DE HOY", en: "TODAY'S SERVICE" },
+  lat_servicio_s: { es: "Reservas · comensales · no-shows", en: "Bookings · covers · no-shows" },
+  lat_hoy_t: { es: "HOY", en: "TODAY" },
+  lat_hoy_s: { es: "Lo que toca · por fecha límite", en: "What's due · by deadline" },
+  lat_expedientes_t: { es: "EXPEDIENTES", en: "CASE FILES" },
+  lat_expedientes_s: { es: "Estado · documentación · vencimientos", en: "Status · documents · deadlines" },
+  lat_facturas_t: { es: "FACTURAS", en: "INVOICES" },
+  lat_facturas_s: { es: "Saco · banco · conciliación", en: "Inbox · bank · reconciliation" },
+  lat_correo_t: { es: "CORREO IMPORTANTE", en: "IMPORTANT MAIL" },
+  lat_correo_s: { es: "Hacienda · Seguridad Social · juzgados", en: "Tax office · Social Security · courts" },
+  lat_seguimiento_t: { es: "SEGUIMIENTO", en: "FOLLOW-UP" },
+  lat_seguimiento_s: { es: "Revisiones · presupuestos", en: "Check-ups · quotes" },
+
+  // Las tres tarjetas del pie.
+  lat_perfil_t: { es: "⚙️ Perfil del negocio", en: "⚙️ Business profile" },
+  lat_perfil_s: { es: "Edita tono, servicios, público", en: "Edit tone, services, audience" },
+  lat_valor_t: { es: "💰 Valor generado", en: "💰 Value generated" },
+  lat_valor_s: { es: "Tiempo y € que te ahorra", en: "Time and € it saves you" },
+  lat_lecciones_t: { es: "📚 Lecciones aprendidas", en: "📚 Lessons learned" },
+  lat_lecciones_s: { es: "Cómo evolucionan tus agentes", en: "How your agents evolve" },
+
   // ---------------------------------------------------------------- pestañas
   tab_arranque: { es: "Empezar cuenta", en: "Get started" },
   tab_mensajes: { es: "Mensajes", en: "Messages" },

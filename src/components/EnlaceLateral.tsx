@@ -11,6 +11,8 @@
 // esta pieza es de cliente: es lo único que necesita saberlo.
 
 import { usePathname } from "next/navigation";
+import { traductor, type ClaveTexto } from "@/lib/idioma";
+import { useIdiomaPanel, useHrefIdioma } from "./TextoIdioma";
 
 /**
  * ¿Es esta la pantalla que se está mirando?
@@ -31,6 +33,8 @@ export default function EnlaceLateral({
   titulo,
   subtitulo,
   fondo,
+  claveTitulo,
+  claveSubtitulo,
 }: {
   href: string;
   emoji: string;
@@ -38,13 +42,27 @@ export default function EnlaceLateral({
   subtitulo: string;
   /** Color propio de la tarjeta cuando NO está activa. */
   fondo?: string;
+  /**
+   * Cómo se dice esto en el otro idioma, para grabar el App Review.
+   *
+   * Van como claves APARTE y no sustituyendo a `titulo`/`subtitulo`: así el
+   * castellano sigue saliendo del mismo sitio de siempre y una entrada sin
+   * traducir no se queda en blanco, se queda en español.
+   */
+  claveTitulo?: ClaveTexto;
+  claveSubtitulo?: ClaveTexto;
 }) {
   const pathname = usePathname() || "";
   const activa = esRutaActiva(pathname, href);
+  const idioma = useIdiomaPanel();
+  const conIdi = useHrefIdioma();
+  const t = traductor(idioma);
+  const rotulo = idioma === "en" && claveTitulo ? t(claveTitulo) : titulo;
+  const bajo = idioma === "en" && claveSubtitulo ? t(claveSubtitulo) : subtitulo;
 
   return (
     <a
-      href={href}
+      href={conIdi(href)}
       aria-current={activa ? "page" : undefined}
       className={[
         "card-hard flex items-center gap-3 p-3 mb-3 transition relative",
@@ -59,9 +77,9 @@ export default function EnlaceLateral({
     >
       <span className="text-2xl">{emoji}</span>
       <span className="flex-1 min-w-0">
-        <span className="block font-stencil text-xl leading-none">{titulo}</span>
+        <span className="block font-stencil text-xl leading-none">{rotulo}</span>
         <span className={`block text-[10px] uppercase tracking-widest ${activa ? "text-white/70" : "text-black/70"}`}>
-          {subtitulo}
+          {bajo}
         </span>
       </span>
     </a>

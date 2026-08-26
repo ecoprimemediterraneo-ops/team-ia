@@ -7,6 +7,26 @@
 
 import { usePathname } from "next/navigation";
 import { esRutaActiva } from "./EnlaceLateral";
+import { traductor, type ClaveTexto } from "@/lib/idioma";
+import { useIdiomaPanel, useHrefIdioma } from "./TextoIdioma";
+
+/**
+ * El rol de cada agente en el otro idioma, buscado por lo que pone en
+ * `agents.ts`. Se busca por el texto y no por el slug porque el rol es lo que
+ * se pinta: si alguien lo cambia ahí y se olvida de aquí, sale en castellano
+ * —que es feo pero se entiende— en vez de salir vacío.
+ *
+ * Los NOMBRES no están: Pablo, Carmen, Marta, Eva y Rocío son nombres propios.
+ */
+const ROL: Record<string, ClaveTexto> = {
+  "WhatsApp": "rol_whatsapp",
+  "Reseñas Google": "rol_resenas",
+  "Email Marketing": "rol_email_mkt",
+  "Correo y gestión": "rol_correo",
+  "Instagram y redes": "rol_instagram",
+  "Llamadas de voz": "rol_llamadas",
+  "Inteligencia Competitiva": "rol_competencia",
+};
 
 export default function EnlaceAgente({
   slug,
@@ -28,10 +48,15 @@ export default function EnlaceAgente({
   const pathname = usePathname() || "";
   const href = `/dashboard/${slug}`;
   const activa = esRutaActiva(pathname, href);
+  const idioma = useIdiomaPanel();
+  const conIdi = useHrefIdioma();
+  const t = traductor(idioma);
+  const clave = ROL[rol];
+  const rolMostrado = idioma === "en" && clave ? t(clave) : rol;
 
   return (
     <a
-      href={href}
+      href={conIdi(href)}
       aria-current={activa ? "page" : undefined}
       className={[
         "card-hard flex items-center gap-3 p-2.5 transition relative overflow-hidden",
@@ -51,7 +76,7 @@ export default function EnlaceAgente({
       <span className="flex-1 min-w-0">
         <span className="block font-stencil text-lg leading-none truncate">{nombre}</span>
         <span className={`block text-[10px] uppercase tracking-widest truncate ${activa ? "text-white/70" : "text-black/70"}`}>
-          {rol}
+          {rolMostrado}
         </span>
       </span>
       {/* Los carteles de estado se quitaron de todas las tarjetas el 6 de
@@ -60,7 +85,7 @@ export default function EnlaceAgente({
           las reseñas de Google desde el primer día. */}
       {proximamente && (
         <span className="absolute top-1 right-1 text-[8px] bg-black/70 text-white px-1 py-0.5 font-bold tracking-widest">
-          PRÓXIMAMENTE
+          {t("lat_proximamente")}
         </span>
       )}
     </a>

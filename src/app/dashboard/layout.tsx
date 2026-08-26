@@ -10,6 +10,7 @@ import EnlaceLateral from "@/components/EnlaceLateral";
 import EnlaceAgente from "@/components/EnlaceAgente";
 import MarcoPanel from "@/components/MarcoPanel";
 import LateralGestoria from "@/components/gestoria/LateralGestoria";
+import T, { EnlaceIdioma } from "@/components/TextoIdioma";
 
 // Las tarjetas de agente NO llevan insignia de estado. Había un "LIVE" verde en los
 // conectados y un "PRÓXIMAMENTE" en Carmen y Rocío: al cliente no le dice nada útil y
@@ -36,7 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="min-h-screen bg-[color:var(--cream)]">
       <header className="border-b-[3px] border-black bg-white">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-5 py-3">
-          <a href="/dashboard"><Logo size="sm" /></a>
+          <EnlaceIdioma href="/dashboard"><Logo size="sm" /></EnlaceIdioma>
           <div className="flex items-center gap-4 text-sm">
             {session.dev && (
               <span className="text-[9px] uppercase tracking-widest font-bold bg-[color:var(--mustard)] border-2 border-black px-1.5 py-0.5" title="Sesión de desarrollo local (sin login). En producción exige magic link.">DEV</span>
@@ -48,7 +49,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             )}
             <span className="hidden sm:inline font-mono text-black/60">{session.email}</span>
             <form action="/api/auth/logout" method="post">
-              <button className="text-xs uppercase tracking-widest font-bold border-2 border-black px-2 py-1 hover:bg-black hover:text-white">Salir</button>
+              <button className="text-xs uppercase tracking-widest font-bold border-2 border-black px-2 py-1 hover:bg-black hover:text-white"><T k="lat_salir" /></button>
             </form>
           </div>
         </div>
@@ -75,8 +76,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
             />
             {!user.business && (
               <div className="mt-4 p-3 border-2 border-dashed border-black text-xs">
-                <div className="font-bold mb-1">Sin configurar</div>
-                <a href="/onboarding" className="underline">Completa el briefing →</a>
+                <div className="font-bold mb-1"><T k="lat_sin_configurar" /></div>
+                <a href="/onboarding" className="underline"><T k="lat_completa_briefing" /></a>
               </div>
             )}
           </aside>
@@ -97,6 +98,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
                lateral, y la gestoría tiene el suyo. Antes ponía
                `id === "gestoria" ? "CLIENTES" : "RESERVAS"` y era código muerto. */
             titulo="RESERVAS"
+            claveTitulo="lat_reservas_t"
+            claveSubtitulo="lat_reservas_s"
             /* Mismo orden que las pestañas de ReservasPanel: informes al final. */
             subtitulo={`Agenda · ${v.clientePlural} · compartir · informes mensuales`}
           />
@@ -107,6 +110,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
               href="/dashboard/servicio"
               emoji="🍽️"
               titulo="SERVICIO DE HOY"
+              claveTitulo="lat_servicio_t"
+              claveSubtitulo="lat_servicio_s"
               subtitulo="Reservas · comensales · no-shows"
               fondo="#ffffff"
             />
@@ -119,6 +124,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
               href="/dashboard/hoy"
               emoji="☑️"
               titulo="HOY"
+              claveTitulo="lat_hoy_t"
+              claveSubtitulo="lat_hoy_s"
               subtitulo="Lo que toca · por fecha límite"
               fondo="var(--mustard)"
             />
@@ -130,6 +137,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
               href="/dashboard/expedientes"
               emoji="📁"
               titulo="EXPEDIENTES"
+              claveTitulo="lat_expedientes_t"
+              claveSubtitulo="lat_expedientes_s"
               subtitulo="Estado · documentación · vencimientos"
               fondo="#ffffff"
             />
@@ -141,6 +150,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
               href="/dashboard/facturas"
               emoji="🧾"
               titulo="FACTURAS"
+              claveTitulo="lat_facturas_t"
+              claveSubtitulo="lat_facturas_s"
               subtitulo="Saco · banco · conciliación"
               fondo="#ffffff"
             />
@@ -153,6 +164,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
               href="/dashboard/correo-importante"
               emoji="🔴"
               titulo="CORREO IMPORTANTE"
+              claveTitulo="lat_correo_t"
+              claveSubtitulo="lat_correo_s"
               subtitulo="Hacienda · Seguridad Social · juzgados"
               fondo="#ffffff"
             />
@@ -165,12 +178,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
               href="/dashboard/seguimiento"
               emoji="🔁"
               titulo="SEGUIMIENTO"
+              claveTitulo="lat_seguimiento_t"
+              claveSubtitulo="lat_seguimiento_s"
               subtitulo="Revisiones · presupuestos"
               fondo="#ffffff"
             />
           )}
           <div className="text-xs font-mono uppercase tracking-widest text-black/50 px-1 mb-2">
-            Tu equipo · {visibles.length} {visibles.length === 1 ? "agente" : "agentes"}
+            <T k="lat_tu_equipo" /> · {visibles.length}{" "}
+            <T k={visibles.length === 1 ? "lat_agente" : "lat_agentes"} />
           </div>
           {visibles.map((a) => (
             <EnlaceAgente
@@ -184,31 +200,31 @@ export default async function DashboardLayout({ children }: { children: React.Re
               proximamente={a.slug === "rocio"}
             />
           ))}
-          <a
+          <EnlaceIdioma
             href="/dashboard/perfil"
             className="block mt-4 p-3 border-2 border-dashed border-black text-xs hover:bg-[color:var(--mustard)]/30"
           >
-            <div className="font-bold mb-0.5">⚙️ Perfil del negocio</div>
-            <div className="text-black/60">Edita tono, servicios, público</div>
-          </a>
-          <a
+            <div className="font-bold mb-0.5"><T k="lat_perfil_t" /></div>
+            <div className="text-black/60"><T k="lat_perfil_s" /></div>
+          </EnlaceIdioma>
+          <EnlaceIdioma
             href="/dashboard/valor"
             className="block mt-2 p-3 border-2 border-dashed border-black text-xs hover:bg-[color:var(--mustard)]/30"
           >
-            <div className="font-bold mb-0.5">💰 Valor generado</div>
-            <div className="text-black/60">Tiempo y € que te ahorra</div>
-          </a>
-          <a
+            <div className="font-bold mb-0.5"><T k="lat_valor_t" /></div>
+            <div className="text-black/60"><T k="lat_valor_s" /></div>
+          </EnlaceIdioma>
+          <EnlaceIdioma
             href="/dashboard/lecciones"
             className="block mt-2 p-3 border-2 border-dashed border-black text-xs hover:bg-[color:var(--mustard)]/30"
           >
-            <div className="font-bold mb-0.5">📚 Lecciones aprendidas</div>
-            <div className="text-black/60">Cómo evolucionan tus agentes</div>
-          </a>
+            <div className="font-bold mb-0.5"><T k="lat_lecciones_t" /></div>
+            <div className="text-black/60"><T k="lat_lecciones_s" /></div>
+          </EnlaceIdioma>
           {!user.business && (
             <div className="mt-4 p-3 border-2 border-dashed border-black text-xs">
-              <div className="font-bold mb-1">Sin configurar</div>
-              <a href="/onboarding" className="underline">Completa el briefing →</a>
+              <div className="font-bold mb-1"><T k="lat_sin_configurar" /></div>
+              <a href="/onboarding" className="underline"><T k="lat_completa_briefing" /></a>
             </div>
           )}
         </aside>
