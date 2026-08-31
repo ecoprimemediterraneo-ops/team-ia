@@ -250,6 +250,15 @@ const DIC = {
     es: "Quita el acceso de AI-Team a esta cuenta. Marta dejará de publicar y de contestar.",
     en: "Revokes AI-Team's access to this account. Marta will stop posting and replying.",
   },
+  desc_desconectando: { es: "Desconectando…", en: "Disconnecting…" },
+  desc_error_sesion: {
+    es: "Tu sesión ha caducado. Vuelve a entrar y prueba otra vez.",
+    en: "Your session has expired. Sign in again and try once more.",
+  },
+  desc_error_no_borra: {
+    es: "No hemos podido desconectar la cuenta. Es un problema de nuestro servidor, no de tu cuenta de Instagram. Inténtalo otra vez en un momento; si sigue igual, avísanos.",
+    en: "We couldn't disconnect the account. This is a problem on our side, not with your Instagram account. Try again in a moment; if it keeps happening, let us know.",
+  },
   ficha_nota_desconectar: {
     es: "Al desconectar, Marta deja de publicar y de contestar en esta cuenta. Tus publicaciones y tus mensajes de Instagram no se tocan.",
     en: "Disconnecting stops Marta posting and replying on this account. Your existing Instagram posts and messages are left untouched.",

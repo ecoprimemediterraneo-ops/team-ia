@@ -29,8 +29,9 @@ import {
   SCOPES,
   type CuentaCandidata,
 } from "@/lib/instagram-login";
-import { desconectarInstagramAction, cancelarSeleccionAction } from "./actions";
+import { cancelarSeleccionAction } from "./actions";
 import BotonConfirmar from "./BotonConfirmar";
+import BotonDesconectar from "./BotonDesconectar";
 import { traductor, conIdioma, localeDe, type Idioma, type T } from "@/lib/idioma";
 
 /**
@@ -226,15 +227,11 @@ export default async function BloqueConectar({
             >
               {t("ficha_reconectar")}
             </a>
-            <form action={desconectarInstagramAction}>
-              <button
-                type="submit"
-                title={t("ficha_desconectar_tip")}
-                className="text-xs uppercase tracking-widest font-bold border-2 border-black px-4 py-2.5 hover:bg-[color:var(--red)] hover:text-white hover:border-[color:var(--red)]"
-              >
-                {t("ficha_desconectar")}
-              </button>
-            </form>
+            <BotonDesconectar
+              texto={t("ficha_desconectar")}
+              tip={t("ficha_desconectar_tip")}
+              idioma={idioma}
+            />
           </div>
           <p className="text-xs text-black/50">{t("ficha_nota_desconectar")}</p>
         </>

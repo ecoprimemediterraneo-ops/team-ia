@@ -6,3 +6,8 @@
 export type EstadoConfirmar = { estado: "quieto" | "error"; motivo?: string };
 
 export const CONFIRMAR_QUIETO: EstadoConfirmar = { estado: "quieto" };
+
+/** Lo que devuelve el boton de Desconectar. */
+export type EstadoDesconectar = { estado: "quieto" | "error"; motivo?: string };
+
+export const DESCONECTAR_QUIETO: EstadoDesconectar = { estado: "quieto" };

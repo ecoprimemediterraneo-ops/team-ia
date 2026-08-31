@@ -10,7 +10,7 @@
 import { revalidatePath } from "next/cache";
 import { resolverContextoPanel } from "@/lib/panel-contexto";
 import { borrarToken, confirmarCuenta } from "@/lib/instagram-login";
-import type { EstadoConfirmar } from "./estado";
+import type { EstadoConfirmar, EstadoDesconectar } from "./estado";
 
 function refrescarPantallas() {
   revalidatePath("/dashboard/marta");
@@ -76,8 +76,16 @@ export async function cancelarSeleccionAction(): Promise<void> {
   const ctx = await resolverContextoPanel();
   if (!ctx) return;
 
-  await borrarToken(ctx.tenantId);
-  console.log(`[instagram-login] selección cancelada tenant=${ctx.tenantId}`);
+  // Mismo camino que Desconectar, así que mismo riesgo: si el borrado falla en
+  // silencio, "Elegir otra cuenta" tampoco haría nada visible.
+  const r = await borrarToken(ctx.tenantId);
+  if (r.ok) {
+    console.log(`[marta/desconectar] seleccion cancelada tenant=${ctx.tenantId} clave=${r.clave}`);
+  } else {
+    console.error(
+      `[marta/desconectar] cancelar seleccion FALLIDO tenant=${ctx.tenantId} clave=${r.clave}: ${r.error}`,
+    );
+  }
   refrescarPantallas();
 }
 
@@ -87,12 +95,34 @@ export async function cancelarSeleccionAction(): Promise<void> {
  * Borra SOLO la clave del tenant (`borrarToken` nunca toca la global), así que
  * un cliente que se equivoque de cuenta no puede llevarse por delante la
  * conexión de la casa.
+ *
+ * DEVUELVE ESTADO, NO `void`. Antes devolvía `void`: si algo salía mal, el
+ * usuario se quedaba mirando la misma pantalla sin una palabra. Un botón que no
+ * dice nada es indistinguible de un botón roto.
  */
-export async function desconectarInstagramAction(): Promise<void> {
+export async function desconectarInstagramAction(
+  // Lo exige la firma de `useActionState`: el primer argumento es el estado
+  // anterior. Aquí no hace falta —desconectar no depende de lo que pasara
+  // antes— pero tiene que estar para que React pueda llamarla.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _previo: EstadoDesconectar,
+): Promise<EstadoDesconectar> {
   const ctx = await resolverContextoPanel();
-  if (!ctx) return;
+  if (!ctx) {
+    console.error("[marta/desconectar] sin sesión: no se sabe a quién desconectar");
+    return { estado: "error", motivo: "sesion" };
+  }
 
-  await borrarToken(ctx.tenantId);
-  console.log(`[instagram-login] cuenta desconectada tenant=${ctx.tenantId}`);
+  const r = await borrarToken(ctx.tenantId);
+
+  if (!r.ok) {
+    console.error(
+      `[marta/desconectar] FALLIDA tenant=${ctx.tenantId} clave=${r.clave}: ${r.error}`,
+    );
+    return { estado: "error", motivo: "no_borra" };
+  }
+
+  console.log(`[marta/desconectar] OK tenant=${ctx.tenantId} clave=${r.clave} resultado=desconectada`);
   refrescarPantallas();
+  return { estado: "quieto" };
 }

@@ -82,6 +82,25 @@ export const CLAVE_KV_GLOBAL = "instagram_login_token";
 /** Prefijo de las claves por cliente. Sirve también para recorrerlas todas. */
 export const PREFIJO_KV = "instagram_login_token:";
 
+/**
+ * LA LÁPIDA: "este cliente se desconectó a propósito".
+ *
+ * Hace falta porque `leerToken` cae al token global antiguo cuando el cliente no
+ * tiene el suyo, y ese respaldo —que en su día evitó que se apagara nada al
+ * desplegar— convertía el botón de Desconectar en un botón que no hacía nada:
+ * se borraba el token del cliente, la lectura caía al global, y la pantalla
+ * seguía diciendo CONECTADA. Sin error y sin cambio.
+ *
+ * Sin marcar la desconexión no hay forma de distinguir "todavía no ha conectado"
+ * —donde el respaldo tiene sentido— de "ha desconectado" —donde resucitar el
+ * token viejo es justo lo que no se quiere—.
+ */
+export const PREFIJO_DESCONECTADO = "instagram_login_desconectado:";
+
+function claveDesconectado(tenantId: string): string {
+  return `${PREFIJO_DESCONECTADO}${tenantId}`;
+}
+
 /** Dónde vive el token de un cliente concreto. */
 export function claveDeTenant(tenantId: string): string {
   return `${PREFIJO_KV}${tenantId}`;
@@ -403,6 +422,10 @@ async function guardar(tenantId: string, token: TokenInstagram): Promise<Resulta
   }
   const clave = claveDeTenant(tenantId);
   await kvSet(clave, token);
+  // Vuelve a conectar: la lápida ya no pinta nada. Si se quedara, un cliente que
+  // desconecta y vuelve seguiría sin poder heredar el global el día que hiciera
+  // falta.
+  await kvDelete(claveDesconectado(tenantId));
   // kvSet no lanza si falla —a propósito, para no tumbar un webhook—, así que
   // se vuelve a leer. Un token que se cree guardado y no lo esté es peor que no
   // tenerlo: el flujo entero parece haber salido bien.
@@ -426,18 +449,54 @@ export async function leerToken(tenantId?: string): Promise<TokenInstagram | nul
   if (tenantId) {
     const propio = await kvGet<TokenInstagram>(claveDeTenant(tenantId));
     if (propio) return propio;
+
+    // Se desconectó a propósito: NO se cae al token global. Si se cayera, el
+    // botón de Desconectar no serviría para nada — es literalmente el fallo que
+    // arregla esta línea.
+    const lapida = await kvGet<{ ts: string }>(claveDesconectado(tenantId));
+    if (lapida) return null;
   }
   return kvGet<TokenInstagram>(CLAVE_KV_GLOBAL);
 }
 
+export type ResultadoDesconectar = {
+  ok: boolean;
+  /** La clave que se ha borrado, para que se vea en el log. */
+  clave: string;
+  /** Qué ha fallado, si ha fallado. */
+  error?: string;
+};
+
 /**
- * Borra SOLO lo del cliente. Nunca la clave global: si un cliente se equivoca de
- * cuenta y le da a empezar de cero, no puede llevarse por delante la conexión
- * de la casa.
+ * Desconecta a un cliente.
+ *
+ * Borra SOLO lo suyo. Nunca la clave global: si se equivoca de cuenta y le da a
+ * empezar de cero, no puede llevarse por delante la conexión de la casa.
+ *
+ * Y DEJA LA LÁPIDA, que es lo que hace que la desconexión se note. Antes solo
+ * borraba, y como `leerToken` cae al token global cuando no hay del cliente, la
+ * pantalla seguía enseñando la cuenta conectada: parecía que el botón estaba
+ * roto cuando el borrado había funcionado.
+ *
+ * Se comprueba releyendo: `kvDelete` no lanza si falla, y una desconexión que se
+ * cree hecha y no lo esté es peor que un error, porque nadie se entera.
  */
-export async function borrarToken(tenantId?: string): Promise<void> {
-  if (!supabaseEnabled()) return;
-  await kvDelete(tenantId ? claveDeTenant(tenantId) : CLAVE_KV_GLOBAL);
+export async function borrarToken(tenantId?: string): Promise<ResultadoDesconectar> {
+  const clave = tenantId ? claveDeTenant(tenantId) : CLAVE_KV_GLOBAL;
+  if (!supabaseEnabled()) {
+    return { ok: false, clave, error: "sin Supabase no se puede borrar nada" };
+  }
+
+  await kvDelete(clave);
+  if (tenantId) {
+    await kvSet(claveDesconectado(tenantId), { ts: new Date().toISOString() });
+  }
+
+  const sigue = await kvGet<TokenInstagram>(clave);
+  if (sigue) {
+    return { ok: false, clave, error: "el token sigue guardado despues de borrarlo" };
+  }
+  return { ok: true, clave };
 }
 
 /** Todos los clientes que tienen token propio guardado. */
