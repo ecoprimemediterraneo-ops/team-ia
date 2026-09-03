@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { VozDisponible } from "@/lib/carmen-voz";
 
 type Scenario = "saludo" | "agendar" | "cancelar" | "informacion" | "queja" | "ausencia" | "personalizado";
 
@@ -21,9 +22,64 @@ export default function CarmenTools() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [flash, setFlash] = useState<{ ok: boolean; msg: string } | null>(null);
-  const [voice, setVoice] = useState<"nova" | "shimmer" | "alloy" | "echo" | "fable" | "onyx">("nova");
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [voiceLoading, setVoiceLoading] = useState(false);
+
+  // LA VOZ, PEDIDA AL SERVIDOR EN VEZ DE ESCRITA AQUÍ.
+  //
+  // Antes eran seis `<option>` a mano y un `useState("nova")`: la lista se
+  // quedaba vieja el día que aparecía una voz nueva, y la elección se perdía al
+  // recargar. Ahora la lista viene de `/api/carmen/voces` —que suma las de
+  // OpenAI y, si hay clave, las de la cuenta de ElevenLabs preguntándoselas a
+  // ellos— y la elección se guarda por cliente.
+  const [voces, setVoces] = useState<VozDisponible[]>([]);
+  const [voice, setVoice] = useState("");
+  const [vozGuardada, setVozGuardada] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [avisoVoces, setAvisoVoces] = useState<string | null>(null);
+
+  /** "openai:nova" — un solo valor para el <select>, que solo maneja cadenas. */
+  const clave = (v: { proveedor: string; id: string }) => `${v.proveedor}:${v.id}`;
+  const partes = (k: string) => {
+    const i = k.indexOf(":");
+    return { proveedor: k.slice(0, i), id: k.slice(i + 1) };
+  };
+
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      const r = await fetch("/api/carmen/voces").catch(() => null);
+      const j = r ? await r.json().catch(() => null) : null;
+      if (!vivo || !j?.ok) return;
+      setVoces(j.voces ?? []);
+      const k = j.elegida ? clave(j.elegida) : "";
+      setVoice(k);
+      setVozGuardada(k);
+      if (j.avisoElevenLabs) setAvisoVoces(j.avisoElevenLabs);
+    })();
+    return () => { vivo = false; };
+  }, []);
+
+  /** Deja apuntada la voz de este cliente. Lo que se oye al pulsar "escuchar". */
+  async function guardarVoz() {
+    if (!voice || voice === vozGuardada) return;
+    setGuardando(true);
+    try {
+      const res = await fetch("/api/carmen/voces", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(partes(voice)),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || "No se ha podido guardar");
+      setVozGuardada(voice);
+      setFlash({ ok: true, msg: `Carmen hablará con la voz de ${j.nombre}.` });
+    } catch (e) {
+      setFlash({ ok: false, msg: e instanceof Error ? e.message : "Error" });
+    } finally {
+      setGuardando(false);
+    }
+  }
 
   async function generate() {
     if (scenario === "personalizado" && !customNote.trim()) {
@@ -66,7 +122,7 @@ export default function CarmenTools() {
       const res = await fetch("/api/carmen/voice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: script, voice }),
+        body: JSON.stringify({ text: script, voice: partes(voice).id, proveedor: partes(voice).proveedor }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Error" }));
@@ -183,19 +239,71 @@ export default function CarmenTools() {
               <h4 className="font-stencil text-xl">🎤 Escucha cómo sonaría Carmen</h4>
               <p className="text-xs text-black/60 mt-1">Carmen lee el guion en voz alta. Útil para ensayar o como buzón de voz real.</p>
             </div>
-            <select
-              value={voice}
-              onChange={(e) => setVoice(e.target.value as typeof voice)}
-              className="border-2 border-black px-2 py-1 text-xs font-bold bg-white"
-            >
-              <option value="nova">Nova (mujer · cálida)</option>
-              <option value="shimmer">Shimmer (mujer · suave)</option>
-              <option value="alloy">Alloy (neutra)</option>
-              <option value="fable">Fable (mujer · UK)</option>
-              <option value="echo">Echo (hombre · grave)</option>
-              <option value="onyx">Onyx (hombre · profundo)</option>
-            </select>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                value={voice}
+                onChange={(e) => setVoice(e.target.value)}
+                className="border-2 border-black px-2 py-1 text-xs font-bold bg-white max-w-[15rem]"
+              >
+                {!voces.length && <option value="">Cargando voces…</option>}
+                {/* Agrupadas por proveedor: "Nova" y una voz de ElevenLabs en la
+                    misma lista sin decir de dónde sale cada una no se entiende. */}
+                {["openai", "elevenlabs"].map((prov) => {
+                  const suyas = voces.filter((v) => v.proveedor === prov);
+                  if (!suyas.length) return null;
+                  return (
+                    <optgroup key={prov} label={prov === "openai" ? "OpenAI" : "ElevenLabs"}>
+                      {suyas.map((v) => (
+                        <option key={clave(v)} value={clave(v)}>
+                          {v.nombre}
+                          {v.descripcion ? ` (${v.descripcion})` : ""}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
+              </select>
+              {/* El botón solo aparece cuando hay algo que guardar: un "Guardar"
+                  siempre encendido no dice si lo que ves ya está guardado. */}
+              {voice && voice !== vozGuardada && (
+                <button
+                  type="button"
+                  onClick={guardarVoz}
+                  disabled={guardando}
+                  className="border-2 border-black bg-black text-[color:var(--mustard)] px-2 py-1 text-[10px] font-mono uppercase tracking-widest disabled:opacity-50"
+                >
+                  {guardando ? "Guardando…" : "Usar esta voz"}
+                </button>
+              )}
+              {voice && voice === vozGuardada && (
+                <span className="text-[10px] font-mono uppercase tracking-widest text-black/45">
+                  voz guardada
+                </span>
+              )}
+            </div>
           </div>
+
+          {avisoVoces && (
+            <p className="text-[11px] font-mono text-black/50 border-2 border-black/15 px-2 py-1 mb-2">
+              Las voces de ElevenLabs no se han podido pedir: {avisoVoces}
+            </p>
+          )}
+
+          {/* LA MUESTRA. ElevenLabs da un audio de ejemplo de cada voz, así que
+              se puede oír ANTES de generar nada: escuchar una voz no tiene por
+              qué costar una llamada de pago ni obligar a escribir un guion. */}
+          {(() => {
+            const v = voces.find((x) => clave(x) === voice);
+            if (!v?.muestra) return null;
+            return (
+              <div className="mb-3">
+                <div className="text-[10px] font-mono uppercase tracking-widest text-black/50 mb-1">
+                  Cómo suena {v.nombre}
+                </div>
+                <audio src={v.muestra} controls className="w-full max-w-sm" />
+              </div>
+            );
+          })()}
 
           <div className="flex items-center gap-2 mb-3 flex-wrap">
             <button onClick={speak} disabled={voiceLoading || !script.trim()} className="btn-mustard text-sm">
