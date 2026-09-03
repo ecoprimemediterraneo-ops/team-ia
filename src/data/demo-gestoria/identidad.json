@@ -1,0 +1,62 @@
+[
+ {
+  "clienteId": "600550055",
+  "nif": "B93765204",
+  "nifMostrado": "B-93.765.204",
+  "telefonos": [
+   "600550055",
+   "34655443322",
+   "34677555444"
+  ],
+  "emails": [
+   "compras@vega.example"
+  ],
+  "modelos": [
+   "303"
+  ],
+  "actualizadoEn": "2026-08-20T16:54:20.349Z"
+ },
+ {
+  "clienteId": "600660066",
+  "telefonos": [
+   "600660066"
+  ],
+  "emails": [],
+  "modelos": [],
+  "actualizadoEn": "2026-08-20T16:54:20.250Z"
+ },
+ {
+  "clienteId": "600330033",
+  "telefonos": [
+   "600330033"
+  ],
+  "emails": [],
+  "modelos": [
+   "111",
+   "303",
+   "130"
+  ],
+  "actualizadoEn": "2026-08-20T16:52:39.797Z"
+ },
+ {
+  "clienteId": "600110011",
+  "telefonos": [
+   "600110011"
+  ],
+  "emails": [],
+  "modelos": [
+   "303",
+   "115"
+  ],
+  "actualizadoEn": "2026-08-20T16:52:39.886Z"
+ },
+ {
+  "clienteId": "600440044",
+  "nif": "12345678Z",
+  "nifMostrado": "12345678Z",
+  "telefonos": [],
+  "emails": [],
+  "modelos": [],
+  "actualizadoEn": "2026-08-20T16:53:51.805Z"
+ }
+]

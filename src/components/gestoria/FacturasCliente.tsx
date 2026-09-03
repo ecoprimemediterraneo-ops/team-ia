@@ -268,13 +268,28 @@ function Nuevo() {
 type ExtractoPrevio = { total: number; desde: string; hasta: string; ultimaImportacion: string; lotes: number };
 
 export default function FacturasCliente({
-  clientes, yaSubido = {},
+  clientes, yaSubido = {}, clienteId: clienteDeFuera,
 }: {
   clientes: { id: string; nombre: string }[];
   /** Extracto ya importado de cada cliente, para el bloque de la segunda fase. */
   yaSubido?: Record<string, ExtractoPrevio>;
+  /**
+   * El cliente elegido ARRIBA, en el selector que manda sobre toda la pantalla.
+   *
+   * Cuando viene, este componente deja de decidir por su cuenta y esconde su
+   * propio desplegable: dos selectores de cliente en la misma pantalla, cada uno
+   * con su idea de a quién estás mirando, es justo el lío que se quiso quitar.
+   * Sin él, sigue funcionando solo como siempre (la pantalla suelta lo usa así).
+   */
+  clienteId?: string;
 }) {
-  const [clienteId, setClienteId] = useState(clientes[0]?.id ?? "");
+  const mandaDeFuera = clienteDeFuera !== undefined;
+  const [clienteId, setClienteId] = useState(clienteDeFuera || clientes[0]?.id || "");
+
+  // Si el de arriba cambia, este lo sigue. Es el que manda.
+  useEffect(() => {
+    if (mandaDeFuera) setClienteId(clienteDeFuera || clientes[0]?.id || "");
+  }, [clienteDeFuera, mandaDeFuera, clientes]);
   const [facturas, setFacturas] = useState<Factura[]>([]);
   // Bandeja de las que entraron sin dueño. Va aparte de `facturas` porque no son
   // de ningún cliente: mezclarlas en el saco de quien esté seleccionado sería
@@ -737,16 +752,21 @@ export default function FacturasCliente({
       {/* Solo el cliente. Los botones del banco estaban aquí y hacían creer que
           la pantalla empezaba por ahí: se han bajado al final, que es cuando
           toca usarlos. */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <label className="text-xs font-mono uppercase tracking-widest text-black/60">Cliente</label>
-        <select
-          value={clienteId}
-          onChange={(e) => setClienteId(e.target.value)}
-          className="card-hard px-3 py-2 bg-white text-sm"
-        >
-          {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-        </select>
-      </div>
+      {/* El selector propio SOLO cuando nadie manda desde fuera. Dentro de la
+          portada el cliente se elige arriba, encima del chat: repetirlo aquí
+          serían dos desplegables discrepando sobre a quién estás mirando. */}
+      {!mandaDeFuera && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="text-xs font-mono uppercase tracking-widest text-black/60">Cliente</label>
+          <select
+            value={clienteId}
+            onChange={(e) => setClienteId(e.target.value)}
+            className="card-hard px-3 py-2 bg-white text-sm"
+          >
+            {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        </div>
+      )}
 
       {/* La vuelta: del gestor al cliente. Va aquí, en la ficha del cliente,
           porque es donde el gestor ya está cuando le escriben "mandame el 303". */}

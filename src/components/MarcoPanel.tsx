@@ -38,8 +38,13 @@ export default function MarcoPanel({
   const pathname = usePathname() || "";
   const desnuda = SIN_LATERAL.some((r) => pathname === r || pathname.startsWith(`${r}/`));
 
-  if (desnuda) {
-    return <div className="max-w-7xl mx-auto px-5 py-10">{children}</div>;
+  // SIN LATERAL, A LO ANCHO. En gestoría ya no se pasa ninguno: el menú de la
+  // izquierda se ha quitado y su sitio lo ocupan el selector de cliente encima
+  // del chat y los tres accesos de debajo. Si aquí se dejara la rejilla, el
+  // contenido seguiría empezando a 260 px de la izquierda con un hueco vacío al
+  // lado, que es peor que el menú.
+  if (desnuda || !lateral) {
+    return <div className="max-w-7xl mx-auto px-5 py-6">{children}</div>;
   }
 
   return (

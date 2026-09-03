@@ -27,7 +27,10 @@
 // grande es enorme, y es exactamente lo que convierte una secretaria en un ERP.
 
 import { useEffect, useRef, useState } from "react";
-import BarraChat from "./BarraChat";
+import { useSearchParams } from "next/navigation";
+import { BarraUrgente, CuadroPreguntar } from "./BarraChat";
+import SelectorCliente, { type ClienteBreve } from "./SelectorCliente";
+import AccesosGestoria, { type Seccion } from "./AccesosGestoria";
 
 type Urgente = { texto: string; href: string } | null;
 type Resumen = { puntos: string[]; restantes: number; hechoEn: string; conIA: boolean };
@@ -52,19 +55,23 @@ type Turno = {
 const CLAVE_HILO = (tenantId: string) => `aiteam:portada:hilo:${tenantId}`;
 
 /**
- * Las tres pantallas que quedan, al pie y en pequeño.
+ * Lo de ayer se archiva, no se borra.
  *
- * Eran cinco. Se han caído Expedientes y Clientes: lo que se hacía en ellas
- * —poner un NIF, apuntar un teléfono, decir de quién es un documento— ya se
- * puede pedir escribiendo, y dejarlas ahí abajo invita a volver al ERP. Las tres
- * que quedan son las que hay que ver CON LOS OJOS: una lista de fechas, un PDF,
- * un correo oficial.
+ * La conversación visible arranca vacía cada día —una libreta que crece sin fin
+ * deja de ser una libreta— pero lo escrito NO desaparece: se mueve a su propia
+ * clave con la fecha dentro. Si un día hace falta recuperar algo, está.
  */
-const SECCIONES = [
-  { texto: "Vencimientos", href: "/dashboard/clientes" },
-  { texto: "El saco de facturas", href: "/dashboard/facturas" },
-  { texto: "Correo importante", href: "/dashboard/correo-importante" },
-];
+const CLAVE_DIA = (tenantId: string, dia: string) =>
+  `aiteam:portada:hilo:${tenantId}:${dia}`;
+
+/** Hoy en España, "AAAA-MM-DD". `en-CA` da justo ese formato sin montarlo a mano. */
+function hoyMadrid(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+}
+
+/** Lo guardado: los turnos y el día en que se escribieron. */
+type HiloGuardado = { dia: string; turnos: Turno[] };
+
 
 /** "miércoles, 20 de agosto de 2026". En pequeño y en gris, como una cabecera. */
 function fechaLarga(iso: string): string {
@@ -74,15 +81,50 @@ function fechaLarga(iso: string): string {
   return t[0].toUpperCase() + t.slice(1);
 }
 
-/** Sugerencias de arranque. Un cuadro de texto vacío no dice qué se le puede pedir. */
+/**
+ * Sugerencias de arranque. Un cuadro de texto vacío no dice qué se le puede pedir.
+ *
+ * LOS TRES SON GENÉRICOS, y eso es el cambio importante. Antes nombraban a un
+ * cliente concreto ("¿Qué le falta a Bar El Puerto?"), que en la demo de seis
+ * clientes se leía bien y con los cien de verdad no: o se pintan cien cartelitos
+ * o se elige uno a dedo y a los otros noventa y nueve no les sirve de nada.
+ *
+ * El cliente ya se elige arriba, en el selector. Estos tres preguntan por lo que
+ * haya elegido: es el mismo filtro para toda la pantalla, no uno por botón.
+ */
 const EJEMPLOS = [
   "¿Qué vence esta semana?",
-  "¿Qué le falta a Bar El Puerto?",
-  "Márcame hecho el 303 de Bar El Puerto",
-  "¿Hay duplicados?",
+  "¿Qué facturas faltan por leer?",
+  "¿Qué pagos no tienen factura?",
 ];
 
-export default function Portada({ nombreGestor, tenantId }: { nombreGestor: string; tenantId: string }) {
+export default function Portada({
+  nombreGestor,
+  tenantId,
+  clientes = [],
+  seccion = null,
+  pagadosSinFactura = 0,
+  contenidoSeccion = null,
+}: {
+  nombreGestor: string;
+  tenantId: string;
+  /** Los clientes del gestor, para el selector que va encima del chat. */
+  clientes?: ClienteBreve[];
+  /** Qué sección hay desplegada debajo, si hay alguna. */
+  seccion?: Seccion | null;
+  pagadosSinFactura?: number;
+  /** El contenido de esa sección, montado como slot desde el servidor. */
+  contenidoSeccion?: React.ReactNode;
+}) {
+  // EL CLIENTE ELEGIDO ARRIBA. Se lee de la URL —la misma verdad que usan el
+  // selector, el aviso rojo y el servidor— para que los atajos pregunten por lo
+  // que se está mirando y no por toda la gestoría.
+  const sp = useSearchParams();
+  const clienteId = sp?.get("cliente") ?? "";
+  const clienteNombre = clienteId
+    ? clientes.find((c) => c.id === clienteId)?.nombre ?? ""
+    : "";
+
   const [urgente, setUrgente] = useState<Urgente>(null);
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [hoy, setHoy] = useState("");
@@ -119,8 +161,23 @@ export default function Portada({ nombreGestor, tenantId }: { nombreGestor: stri
     queueMicrotask(() => {
       if (!vivo) return;
       try {
-        const guardado = localStorage.getItem(CLAVE_HILO(tenantId));
-        if (guardado) setHilo(JSON.parse(guardado) as Turno[]);
+        const crudo = localStorage.getItem(CLAVE_HILO(tenantId));
+        if (crudo) {
+          const leido = JSON.parse(crudo) as HiloGuardado | Turno[];
+          // El formato viejo era un array pelado, sin fecha. No se sabe de qué
+          // día es, así que se archiva igual y se empieza limpio: es justo lo
+          // que va a pasar mañana de todas formas.
+          const esViejo = Array.isArray(leido);
+          const dia = esViejo ? "antiguo" : leido.dia;
+          const turnos = esViejo ? leido : leido.turnos;
+          if (dia === hoyMadrid()) {
+            setHilo(turnos);
+          } else if (turnos.length) {
+            // ARCHIVAR, NO BORRAR. Se guarda con su fecha y se deja de pintar.
+            try { localStorage.setItem(CLAVE_DIA(tenantId, dia), JSON.stringify(turnos)); }
+            catch { /* cuota llena: se prefiere no pintarlo a no arrancar */ }
+          }
+        }
       } catch { /* si está corrupto, se empieza de cero y ya */ }
       cargado.current = true;
       setHiloCargado(true);
@@ -139,7 +196,8 @@ export default function Portada({ nombreGestor, tenantId }: { nombreGestor: stri
     try {
       // Se guardan los últimos 40: la libreta no tiene por qué ser infinita y
       // un localStorage lleno deja de escribir sin avisar.
-      localStorage.setItem(CLAVE_HILO(tenantId), JSON.stringify(hilo.slice(-40)));
+      const guardar: HiloGuardado = { dia: hoyMadrid(), turnos: hilo.slice(-40) };
+      localStorage.setItem(CLAVE_HILO(tenantId), JSON.stringify(guardar));
     } catch { /* cuota llena: se sigue funcionando, solo que sin guardar */ }
   }, [hilo, tenantId]);
 
@@ -228,6 +286,19 @@ export default function Portada({ nombreGestor, tenantId }: { nombreGestor: stri
     if (caja) caja.scrollTop = caja.scrollHeight;
   }, [hilo, pensando]);
 
+  /**
+   * Le pega el cliente elegido a la pregunta del atajo.
+   *
+   * Se hace con palabras y no con un parámetro nuevo en la ruta a propósito: el
+   * chat ya entiende "de Bar El Puerto" —es lo que se escribe a mano todo el
+   * día— y meter un filtro por debajo obligaría a que el modelo y el código se
+   * pusieran de acuerdo sobre a qué cliente se refiere cada frase.
+   */
+  function conCliente(pregunta: string): string {
+    if (!clienteNombre) return pregunta;
+    return `${pregunta} (solo de ${clienteNombre})`;
+  }
+
   async function enviar(pregunta: string) {
     const q = pregunta.trim();
     if (!q || pensando) return;
@@ -300,36 +371,52 @@ export default function Portada({ nombreGestor, tenantId }: { nombreGestor: stri
 
   return (
     <div>
+      {/* 0. EL CLIENTE, ENCIMA DE TODO. Es el filtro que manda sobre lo que hay
+          debajo: el saco, el aviso rojo y lo que conteste el chat. Va aquí y no
+          dentro de la pantalla de Facturas porque no es de esa pantalla, es de
+          toda la sesión de trabajo. */}
+      {clientes.length > 0 && <SelectorCliente clientes={clientes} className="mb-3" />}
+
       {/* 1. LA BARRA Y EL CUADRO, PEGADOS Y LOS PRIMEROS.
 
           Es el MISMO componente que llevan las otras tres pantallas, con el
           mismo orden y el mismo ancho: las cuatro empiezan igual. Antes el
           saludo se metía entre la barra y el cuadro y partía el bloque en dos,
           y al cambiar de pantalla se notaba el salto. */}
-      <BarraChat
-        urgente={urgente}
+      <BarraUrgente urgente={urgente} />
+
+      {/* LOS TRES ATAJOS, PEGADOS ENCIMA DEL CAMPO.
+          Estaban debajo, y debajo se leen como el resultado de algo en vez de
+          como lo que se puede pedir. Aquí son el renglón anterior a escribir.
+          Se ven siempre, con hilo o sin él: un botón que desaparece en cuanto lo
+          usas obliga a acordarse de que existía. */}
+      <div className={`flex gap-1.5 flex-wrap ${urgente ? "mt-3" : ""}`}>
+        {EJEMPLOS.map((e) => (
+          <button
+            key={e}
+            type="button"
+            onClick={() => enviar(conCliente(e))}
+            title={clienteNombre ? `Solo de ${clienteNombre}` : "De todos los clientes"}
+            className="text-[11px] border-2 border-black/20 px-2 py-1 text-black/50 hover:border-black hover:text-black"
+          >
+            {e}
+          </button>
+        ))}
+      </div>
+
+      <CuadroPreguntar
         texto={texto}
         onTexto={setTexto}
         onEnviar={enviar}
         pensando={pensando}
+        className="mt-1.5"
       />
 
-      {/* Ejemplos, solo mientras el hilo esté vacío: un cuadro en blanco no dice
-          qué se le puede pedir, y con el hilo lleno sobran. */}
-      {hilo.length === 0 && (
-        <div className="flex gap-1.5 flex-wrap mt-2">
-          {EJEMPLOS.map((e) => (
-            <button
-              key={e}
-              type="button"
-              onClick={() => enviar(e)}
-              className="text-[11px] border-2 border-black/20 px-2 py-1 text-black/50 hover:border-black hover:text-black"
-            >
-              {e}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* LAS TRES SECCIONES, JUSTO DEBAJO DEL CAMPO.
+          Estaban al final de la página: con el hilo lleno había que bajar a
+          buscarlas y en la práctica no existían. En una fila repartida de
+          izquierda a derecha, se ven siempre y no compiten con el chat. */}
+      <AccesosGestoria abierta={seccion} pagadosSinFactura={pagadosSinFactura} />
 
 
 
@@ -478,22 +565,11 @@ export default function Portada({ nombreGestor, tenantId }: { nombreGestor: stri
         )}
       </div>
 
-      {/* 4. LAS TRES PANTALLAS, justo debajo del cuadro.
-          Estaban al pie con un `mt-14`, y con el hilo lleno quedaban tan abajo
-          que había que buscarlas a scroll: en la práctica habían desaparecido.
-          Aquí se ven siempre, y siguen siendo lo que eran — texto en gris, sin
-          tarjeta ni color: no compiten con nada, están por si hace falta. */}
-      <div className="mt-3 pt-3 border-t-2 border-black/10 flex gap-x-4 gap-y-1 flex-wrap">
-        {SECCIONES.map((s) => (
-          <a
-            key={s.texto + s.href}
-            href={s.href}
-            className="text-[11px] font-mono uppercase tracking-widest text-black/40 hover:text-black hover:underline"
-          >
-            {s.texto}
-          </a>
-        ))}
-      </div>
+      {/* LA SECCIÓN, DESPLEGADA DEBAJO. El chat se queda arriba: mirar una
+          factura no puede costarte la conversación que llevas escrita. */}
+      {contenidoSeccion && (
+        <div className="mt-4 pt-4 border-t-[3px] border-black">{contenidoSeccion}</div>
+      )}
 
     </div>
   );

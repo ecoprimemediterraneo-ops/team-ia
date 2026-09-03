@@ -9,7 +9,6 @@ import { tieneFuncion } from "@/lib/sectores";
 import EnlaceLateral from "@/components/EnlaceLateral";
 import EnlaceAgente from "@/components/EnlaceAgente";
 import MarcoPanel from "@/components/MarcoPanel";
-import LateralGestoria from "@/components/gestoria/LateralGestoria";
 import T, { EnlaceIdioma } from "@/components/TextoIdioma";
 
 // Las tarjetas de agente NO llevan insignia de estado. Había un "LIVE" verde en los
@@ -62,25 +61,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
             agentes y los ajustes plegados. El de peluquerías, clínicas y
             restaurantes queda EXACTAMENTE como estaba — es el `else` de abajo. */}
         {ctx.perfil.id === "gestoria" ? (
-          <aside>
-            <LateralGestoria
-              agentes={visibles.map((a) => ({
-                slug: a.slug,
-                nombre: a.name,
-                rol: a.role,
-                avatar: a.avatar,
-                emoji: a.emoji,
-                color: a.color,
-                proximamente: a.slug === "rocio",
-              }))}
-            />
-            {!user.business && (
-              <div className="mt-4 p-3 border-2 border-dashed border-black text-xs">
-                <div className="font-bold mb-1"><T k="lat_sin_configurar" /></div>
-                <a href="/onboarding" className="underline"><T k="lat_completa_briefing" /></a>
-              </div>
-            )}
-          </aside>
+          // EL LATERAL DE GESTORÍA SE HA QUITADO.
+          //
+          // Tenía Chat IA, Vencimientos, Facturas y Correo importante, y esos
+          // mismos tres destinos volvían a estar al pie de la portada: dos
+          // formas de navegar a lo mismo, y el chat compitiendo consigo mismo
+          // desde el menú. Ahora hay un solo sitio — el chat en el centro, el
+          // cliente encima y las tres secciones debajo, que se despliegan sin
+          // moverte de página.
+          //
+          // `LateralGestoria` NO se borra: las pantallas sueltas siguen
+          // existiendo por su URL y el componente queda por si hiciera falta.
+          null
         ) : (
         <aside className="space-y-2">
           <EnlaceLateral

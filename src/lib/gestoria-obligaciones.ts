@@ -191,6 +191,17 @@ async function guardarTodas(tenantId: string, lista: Obligacion[]): Promise<void
   await fs.writeFile(FICHERO, JSON.stringify(todo, null, 2));
 }
 
+/**
+ * Reemplaza la lista entera de un tenant. Solo la usa la siembra de la gestoría
+ * de demostración: el resto del módulo añade y quita de una en una, que es como
+ * se trabaja de verdad. Se exporta para no tener que duplicar `guardarTodas`
+ * fuera —una segunda forma de escribir en el mismo sitio es una segunda forma
+ * de que se queden distintas—.
+ */
+export async function reemplazarObligaciones(tenantId: string, lista: Obligacion[]): Promise<void> {
+  await guardarTodas(tenantId, lista);
+}
+
 export async function apuntarObligacion(o: Omit<Obligacion, "id" | "creadoEn">): Promise<Obligacion> {
   const nueva: Obligacion = {
     ...o,

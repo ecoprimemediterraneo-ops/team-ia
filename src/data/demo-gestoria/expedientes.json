@@ -1,0 +1,136 @@
+[
+ {
+  "id": "gx1",
+  "tenantId": "tenant_demo_gestoria",
+  "telefono": "600110011",
+  "clienteNombre": "Talleres Ruiz SL",
+  "tramite": "trimestrales",
+  "estado": "esperando_documentacion",
+  "periodo": "1T 2026",
+  "documentos": [
+   {
+    "id": "gx1_d0",
+    "nombre": "facturas de gastos del trimestre",
+    "recibido": false
+   },
+   {
+    "id": "gx1_d1",
+    "nombre": "extracto bancario",
+    "recibido": false
+   }
+  ],
+  "vence": "2026-08-16",
+  "nota": null,
+  "creadoEn": "2026-07-11T16:30:40",
+  "actualizadoEn": "2026-08-09T16:30:40",
+  "nif": "B29111222"
+ },
+ {
+  "id": "gx2",
+  "tenantId": "tenant_demo_gestoria",
+  "telefono": "600220022",
+  "clienteNombre": "María Ferrer",
+  "tramite": "renta",
+  "estado": "esperando_documentacion",
+  "periodo": "2025",
+  "documentos": [
+   {
+    "id": "gx2_d0",
+    "nombre": "certificado de retenciones",
+    "reclamadoEn": "2026-08-06T16:30:40",
+    "recibido": false
+   }
+  ],
+  "vence": "2026-09-19",
+  "nota": null,
+  "creadoEn": "2026-07-11T16:30:40",
+  "actualizadoEn": "2026-08-06T16:30:40",
+  "nif": "B29333444"
+ },
+ {
+  "id": "gx3",
+  "tenantId": "tenant_demo_gestoria",
+  "telefono": "600330033",
+  "clienteNombre": "Bar El Puerto",
+  "tramite": "nominas",
+  "estado": "esperando_documentacion",
+  "periodo": "Marzo 2026",
+  "documentos": [
+   {
+    "id": "gx3_d0",
+    "nombre": "partes de horas de dos empleados",
+    "reclamadoEn": "2026-08-09T16:30:40",
+    "recibido": false
+   }
+  ],
+  "vence": null,
+  "nota": null,
+  "creadoEn": "2026-07-11T16:30:40",
+  "actualizadoEn": "2026-08-09T16:30:40",
+  "nif": "B29876543"
+ },
+ {
+  "id": "gx4",
+  "tenantId": "tenant_demo_gestoria",
+  "telefono": "600440044",
+  "clienteNombre": "Carmen Lozano",
+  "tramite": "autonomos",
+  "estado": "en_curso",
+  "periodo": null,
+  "documentos": [],
+  "vence": null,
+  "nota": "Alta en el RETA, pendiente de firma",
+  "creadoEn": "2026-07-11T16:30:40",
+  "actualizadoEn": "2026-08-08T16:30:40"
+ },
+ {
+  "id": "gx5",
+  "tenantId": "tenant_demo_gestoria",
+  "telefono": "600550055",
+  "clienteNombre": "Distribuciones Vega",
+  "tramite": "trimestrales",
+  "estado": "presentado",
+  "periodo": "4T 2025",
+  "documentos": [
+   {
+    "id": "gx5_d0",
+    "nombre": "facturas",
+    "reclamadoEn": "2026-07-21T16:30:40",
+    "recibido": true
+   }
+  ],
+  "vence": null,
+  "nota": null,
+  "creadoEn": "2026-07-11T16:30:40",
+  "actualizadoEn": "2026-08-04T16:30:40"
+ },
+ {
+  "id": "gx6",
+  "tenantId": "tenant_demo_gestoria",
+  "telefono": "600660066",
+  "clienteNombre": "Nuevo Rumbo SL",
+  "tramite": "sociedades",
+  "estado": "recibido",
+  "periodo": null,
+  "documentos": [],
+  "vence": null,
+  "nota": "Constitución: pendiente de cita en notaría",
+  "creadoEn": "2026-07-11T16:30:40",
+  "actualizadoEn": "2026-08-10T16:30:40"
+ },
+ {
+  "id": "gx7",
+  "tenantId": "tenant_demo_gestoria",
+  "telefono": "600110011",
+  "clienteNombre": "Talleres Ruiz SL",
+  "tramite": "nominas",
+  "estado": "en_curso",
+  "periodo": "Marzo 2026",
+  "documentos": [],
+  "vence": null,
+  "nota": "Nóminas del mes en preparación",
+  "creadoEn": "2026-08-10T17:34:48",
+  "actualizadoEn": "2026-08-10T17:34:48",
+  "nif": "B29111222"
+ }
+]

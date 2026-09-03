@@ -8,6 +8,14 @@ import { calcularKpis } from "@/lib/kpis-sector";
 import PorQueEstePanel from "@/components/PorQueEstePanel";
 import AvisoCriticos from "@/components/gestoria/AvisoCriticos";
 import Portada from "@/components/gestoria/Portada";
+import { listarClientes } from "@/lib/gestoria-clientes";
+import { extractoDeCliente, listarMovimientos, listarFacturas } from "@/lib/gestoria-facturas";
+import { pagosSinFacturaPorCliente } from "@/lib/gestoria-conciliacion";
+import FacturasCliente from "@/components/gestoria/FacturasCliente";
+import PagadoSinFactura from "@/components/gestoria/PagadoSinFactura";
+import RemitentesImportantes from "@/components/gestoria/RemitentesImportantes";
+import AgendaObligaciones from "@/components/gestoria/AgendaObligaciones";
+import type { Seccion } from "@/components/gestoria/AccesosGestoria";
 import { tieneFuncion } from "@/lib/sectores";
 
 const cap = (t: string) => (t ? t[0].toUpperCase() + t.slice(1) : t);
@@ -443,7 +451,11 @@ export async function PanelClasico() {
  *
  * Los demás sectores entran exactamente a lo de siempre.
  */
-export default async function DashboardHome() {
+export default async function DashboardHome({
+  searchParams,
+}: {
+  searchParams: Promise<{ seccion?: string; cliente?: string }>;
+}) {
   const session = await getSessionLocal();
   if (!session) redirect("/login");
   const user = await getUser(session.email);
@@ -452,7 +464,79 @@ export default async function DashboardHome() {
   const ctx = await contextoPanelODefecto();
   if (ctx.perfil.id !== "gestoria") return <PanelClasico />;
 
+  const sp = await searchParams;
+  const seccion: Seccion | null =
+    sp?.seccion === "vencimientos" || sp?.seccion === "facturas" || sp?.seccion === "correo"
+      ? sp.seccion
+      : null;
+  const clienteId = sp?.cliente || undefined;
+
+  const clientes = await listarClientes(ctx.tenantId);
+
+  // Los pagos que cuadran con un albarán o un ticket. Se calcula SIEMPRE, no
+  // solo cuando la sección está abierta: el número va en el botón, y un botón
+  // que solo enseña su número después de pulsarlo no sirve de aviso.
+  const [movimientos, facturas] = await Promise.all([
+    listarMovimientos(ctx.tenantId),
+    listarFacturas(ctx.tenantId),
+  ]);
+  const nombrePorId = new Map(clientes.map((c) => [c.id, c.nombre]));
+  const gruposSinFactura = pagosSinFacturaPorCliente(movimientos, facturas).map((g) => ({
+    clienteId: g.clienteId,
+    clienteNombre: nombrePorId.get(g.clienteId) ?? g.clienteId,
+    cuantos: g.cuantos,
+    total: g.total,
+    albaranes: g.albaranes,
+    tickets: g.tickets,
+    documentos: g.pagos.map((p) => ({
+      movimientoId: p.movimiento.id,
+      fecha: p.movimiento.fecha,
+      concepto: p.movimiento.concepto,
+      importe: p.movimiento.importe,
+      tipo: p.tipo,
+      documentoNombre: p.documento.nombre_original,
+      proveedor: p.documento.proveedor,
+      fechaDocumento: p.documento.fecha_factura,
+    })),
+  }));
+  // El contador cuenta lo del cliente elegido, si hay uno: es lo mismo que
+  // enseña el aviso, y dos números distintos para lo mismo confunden.
+  const visibles = clienteId
+    ? gruposSinFactura.filter((g) => g.clienteId === clienteId)
+    : gruposSinFactura;
+  const pagadosSinFactura = visibles.reduce((n, g) => n + g.cuantos, 0);
+
+  // EL CONTENIDO DE LA SECCIÓN, montado como slot. Son los MISMOS componentes
+  // que usan las pantallas sueltas: no hay una segunda versión que mantener.
+  let contenido: React.ReactNode = null;
+  if (seccion === "vencimientos") {
+    contenido = <AgendaObligaciones />;
+  } else if (seccion === "correo") {
+    contenido = <RemitentesImportantes />;
+  } else if (seccion === "facturas") {
+    const yaSubido: Record<string, { total: number; desde: string; hasta: string; ultimaImportacion: string; lotes: number }> = {};
+    for (const c of clientes) {
+      const e = await extractoDeCliente(ctx.tenantId, c.id);
+      if (e) yaSubido[c.id] = e;
+    }
+    contenido = (
+      <div className="space-y-4">
+        <PagadoSinFactura grupos={gruposSinFactura} clienteId={clienteId} />
+        <FacturasCliente clientes={clientes} yaSubido={yaSubido} clienteId={clienteId} />
+      </div>
+    );
+  }
+
   // Con qué nombre se saluda. Igual que en /dashboard/portada.
   const nombre = (ctx.tenant?.ownerName || "").trim();
-  return <Portada nombreGestor={nombre} tenantId={ctx.tenantId} />;
+  return (
+    <Portada
+      nombreGestor={nombre}
+      tenantId={ctx.tenantId}
+      clientes={clientes.map((c) => ({ id: c.id, nombre: c.nombre }))}
+      seccion={seccion}
+      pagadosSinFactura={pagadosSinFactura}
+      contenidoSeccion={contenido}
+    />
+  );
 }

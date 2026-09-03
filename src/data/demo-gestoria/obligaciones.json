@@ -1,0 +1,79 @@
+[
+ {
+  "tenantId": "tenant_demo_gestoria",
+  "tipo": "requerimiento",
+  "titulo": "Requerimiento de aportación de libros registro de facturas recibidas del ejercicio 2025",
+  "detalle": "El correo dice 'diez días hábiles contados a partir del día siguiente al de la notificación' (2026-08-20)",
+  "clienteId": "600330033",
+  "clienteNombre": "Bar El Puerto",
+  "vence": "2026-09-04",
+  "motivo": "Detectado en correo de notificaciones@aeat.es del 20/8/2026 · cliente: el NIF B29876543 es suyo · plazo de 10 días hábiles desde el 2026-08-21",
+  "critico": true,
+  "id": "obl:mt1rgs7h_d2ou",
+  "creadoEn": "2026-08-20T16:54:56.717Z"
+ },
+ {
+  "tenantId": "tenant_demo_gestoria",
+  "tipo": "otra",
+  "titulo": "Reclamación de deuda a CONSTRUCCIONES LEJANAS S.L. - ingreso en 3 días hábiles",
+  "detalle": "El correo indica un plazo relativo de 3 días hábiles desde la notificación, sin dar una fecha límite exacta",
+  "clienteId": null,
+  "clienteNombre": null,
+  "vence": "2026-08-24",
+  "motivo": "Detectado en correo de notificaciones@seg-social.es del 20/8/2026 · sin cliente: dime tú de quién es · plazo de 3 días hábiles desde el 2026-08-19",
+  "critico": false,
+  "id": "obl:mt1rh5kv_65wz",
+  "creadoEn": "2026-08-20T16:55:14.047Z"
+ },
+ {
+  "tenantId": "tenant_demo_gestoria",
+  "tipo": "requerimiento",
+  "titulo": "Requerimiento de justificación de cuotas soportadas del modelo 303",
+  "detalle": "Plazo relativo de diez días hábiles desde el día siguiente a la notificación (2026-08-14)",
+  "clienteId": "600110011",
+  "clienteNombre": "Talleres Ruiz SL",
+  "vence": "2026-08-28",
+  "motivo": "Detectado en correo de notificaciones@aeat.es del 20/8/2026 · cliente: el NIF B29111222 es suyo · plazo de 10 días hábiles desde el 2026-08-15",
+  "critico": true,
+  "id": "obl:mt1riqwj_5ybi",
+  "creadoEn": "2026-08-20T16:56:28.339Z"
+ },
+ {
+  "id": "obl:demo_aplaz1",
+  "tenantId": "tenant_demo_gestoria",
+  "tipo": "aplazamiento",
+  "titulo": "Aplazamiento AEAT · vencimiento 4 de 12",
+  "detalle": "Cuota mensual del aplazamiento de la deuda de IVA 2025. 1.180,44 €",
+  "clienteId": "600330033",
+  "clienteNombre": "Bar El Puerto",
+  "vence": "2026-08-22",
+  "motivo": "Calendario de pago del aplazamiento con Hacienda",
+  "critico": true,
+  "creadoEn": "2026-08-20T16:56:53.419Z"
+ },
+ {
+  "id": "obl:demo_contrato1",
+  "tenantId": "tenant_demo_gestoria",
+  "tipo": "contrato",
+  "titulo": "Fin de contrato temporal · Marta Sanz",
+  "detalle": "Hay que comunicar la baja o prorrogar antes del vencimiento.",
+  "clienteId": "600110011",
+  "clienteNombre": "Talleres Ruiz SL",
+  "vence": "2026-08-26",
+  "motivo": "Vencimiento apuntado en el expediente de nóminas",
+  "creadoEn": "2026-08-20T16:56:53.419Z"
+ },
+ {
+  "id": "obl:demo_ss1",
+  "tenantId": "tenant_demo_gestoria",
+  "tipo": "seg_social",
+  "titulo": "Alta en Seguridad Social · nuevo empleado",
+  "detalle": "El alta tiene que estar antes del primer día trabajado.",
+  "clienteId": "600550055",
+  "clienteNombre": "Distribuciones Vega",
+  "vence": "2026-08-19",
+  "motivo": "Comunicado por el cliente por WhatsApp",
+  "critico": true,
+  "creadoEn": "2026-08-20T16:56:53.419Z"
+ }
+]

@@ -3,7 +3,9 @@
 //
 //   GET             mira y dice qué falta. No toca nada.
 //   GET ?preparar=1 deja lista la gestoría de demostración: la crea si no está,
-//                   le da clientes si no tiene y se asegura del bucket.
+//                   le da clientes si no tiene, SIEMBRA SUS DATOS (los 22
+//                   documentos, el extracto del banco y los vencimientos) y se
+//                   asegura del bucket.
 //
 // POR QUÉ EXISTE: la carpeta `data/` no viaja al despliegue. Todo lo que se
 // sembró en local —los tenants de ejemplo, sus expedientes, sus facturas— existe
@@ -22,6 +24,9 @@ import { sembrarDemos } from "@/lib/sectores-demo";
 import { listarExpedientes, guardarExpedientes, type Expediente } from "@/lib/gestoria";
 import { listarClientes } from "@/lib/gestoria-clientes";
 import { leerDesvio } from "@/lib/gestoria-desvio";
+import { sembrarDatosDemoGestoria } from "@/lib/gestoria-demo-datos";
+import { listarFacturas, listarMovimientos } from "@/lib/gestoria-facturas";
+import { pagosSinFactura } from "@/lib/gestoria-conciliacion";
 import { supabaseEnabled } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -124,11 +129,34 @@ export async function GET(req: Request) {
     gestorias = (await listTenants()).filter((t) => resolverSector(t) === "gestoria");
   }
 
-  // --- 2. ¿Tiene clientes? --------------------------------------------------
+  // --- 2. LOS DATOS DE DENTRO ----------------------------------------------
+  //
+  // Tener la gestoría no es tener nada que enseñar: las pantallas salen vacías
+  // igual. Aquí entran los expedientes —de los que salen los clientes—, los
+  // documentos, el extracto del banco y los vencimientos, desde el JSON
+  // versionado de `src/data/demo-gestoria`. Es idempotente: lo que ya está no se
+  // vuelve a meter ni se pisa.
+  //
+  // VA ANTES QUE EL PASO 3 A PROPÓSITO. Estaba después, y el paso 3 —que es
+  // anterior a todo esto— daba de alta tres expedientes de muestra con OTRO
+  // reparto de teléfonos: dejaba a Bar El Puerto en el 600220022 cuando los
+  // documentos de la demo son del 600330033. El desplegable salía con seis
+  // clientes y el aviso de "pagado sin factura" colgando del cliente
+  // equivocado. Sembrando primero, el paso 3 ya encuentra clientes y no llega a
+  // inventarse ninguno.
+  let siembra: string[] | null = null;
+  const demo = await getTenant(TENANT_DEMO);
+  if (demo && preparar) {
+    const r = await sembrarDatosDemoGestoria();
+    siembra = r.detalle;
+    if (!r.ok) hecho.push(`NO se han podido sembrar los datos de demostración: ${r.error}`);
+    else hecho.push(`Datos de demostración de ${TENANT_DEMO}: ${r.detalle.join(" ")}`);
+  }
+
+  // --- 3. ¿Tiene clientes? --------------------------------------------------
   // Los clientes de una gestoría SALEN de sus expedientes. Sin expedientes no
   // hay a quién asignarle una factura, y la bandeja de sin asignar no sirve de
   // nada porque el desplegable de asignar sale vacío.
-  const demo = await getTenant(TENANT_DEMO);
   let clientes = demo ? await listarClientes(TENANT_DEMO) : [];
   if (demo && !clientes.length && preparar) {
     const previos = await listarExpedientes(TENANT_DEMO);
@@ -137,7 +165,24 @@ export async function GET(req: Request) {
     hecho.push(`Dados de alta ${clientes.length} clientes de muestra en ${TENANT_DEMO}.`);
   }
 
-  // --- 3. ¿Hay dónde guardar los ficheros? ---------------------------------
+  // Lo que se va a ver en pantalla, contado desde los mismos datos que lo
+  // pintan. Un "ya está sembrado" que no comprueba el resultado no vale de nada.
+  const contenido = await (async () => {
+    if (!demo) return null;
+    const [docs, movs] = await Promise.all([
+      listarFacturas(TENANT_DEMO),
+      listarMovimientos(TENANT_DEMO),
+    ]);
+    const pagos = pagosSinFactura(movs, docs);
+    const total = pagos.reduce((s, p) => s + Math.abs(p.movimiento.importe), 0);
+    return {
+      documentos: docs.length,
+      movimientosDelBanco: movs.length,
+      pagadoSinFactura: `${pagos.length} documentos · ${total.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`,
+    };
+  })();
+
+  // --- 4. ¿Hay dónde guardar los ficheros? ---------------------------------
   let bucket: string;
   const b = await buckets();
   if (!supabaseEnabled()) {
@@ -151,7 +196,7 @@ export async function GET(req: Request) {
     else bucket = `NO EXISTE. Subir una factura fallará. Lánzalo con ?preparar=1`;
   }
 
-  // --- 4. ¿Está puesto el desvío? ------------------------------------------
+  // --- 5. ¿Está puesto el desvío? ------------------------------------------
   const d = await leerDesvio();
   const desvio = d?.activo
     ? `activo: los adjuntos de ${d.phoneNumberId} van a ${d.tenantId}`
@@ -167,6 +212,7 @@ export async function GET(req: Request) {
   const problemas: string[] = [];
   if (!gestorias.length) problemas.push("no hay ninguna gestoría");
   if (!clientes.length) problemas.push("la gestoría de demostración no tiene clientes");
+  if (contenido && !contenido.documentos) problemas.push("la gestoría de demostración no tiene ni un documento: las pantallas salen vacías");
   if (!bucket.includes("privado") && !bucket.includes("creado")) problemas.push(`el bucket de ficheros: ${bucket}`);
   if (!d?.activo) problemas.push("falta poner el desvío");
 
@@ -177,6 +223,8 @@ export async function GET(req: Request) {
     ...(hecho.length ? { seHaHecho: hecho } : {}),
     gestorias: listaGestorias,
     clientesDeLaDemo: clientes.map((c) => `${c.nombre} (${c.telefono})`),
+    ...(contenido ? { contenidoDeLaDemo: contenido } : {}),
+    ...(siembra ? { siembraDeDatos: siembra } : {}),
     bucketDeFicheros: bucket,
     desvio,
     siguiente: problemas.length

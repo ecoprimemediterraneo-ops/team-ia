@@ -69,6 +69,11 @@ async function guardarTodas(tenantId: string, lista: IdentidadCliente[]): Promis
   await fs.writeFile(FILE, JSON.stringify(all, null, 2));
 }
 
+/** Reemplaza la lista entera de un tenant. Solo para la siembra de la demo. */
+export async function reemplazarIdentidades(tenantId: string, lista: IdentidadCliente[]): Promise<void> {
+  await guardarTodas(tenantId, lista);
+}
+
 // -----------------------------------------------------------------------------
 // NIF y DNI
 // -----------------------------------------------------------------------------

@@ -90,8 +90,18 @@ export function CuadroPreguntar({
     onEnviar?.(q);
   }
 
+  // LOS BOTONES VAN DENTRO DEL CAMPO.
+  //
+  // Estaban fuera, a la derecha: un botón mostaza enorme que ponía "Preguntar"
+  // separado del cuadro por un hueco. Así no se lee como "el botón de este
+  // cuadro", se lee como otra cosa que hay al lado. Dentro, pegado al texto que
+  // acabas de escribir, no hay que explicar para qué sirve.
+  //
+  // El truco es el `relative` del contenedor y el `pr-24` del `textarea`: el
+  // hueco de la derecha lo reserva el propio campo, así el texto nunca pasa por
+  // debajo de los botones por largo que sea.
   return (
-    <form onSubmit={enviar} className={`flex gap-2 items-end ${className}`}>
+    <form onSubmit={enviar} className={`relative ${className}`}>
       <textarea
         value={valor}
         onChange={(e) => ponValor(e.target.value)}
@@ -104,16 +114,19 @@ export function CuadroPreguntar({
         }}
         rows={2}
         placeholder="Pregúntame lo que necesites saber…"
-        className="flex-1 card-hard bg-white px-3 py-2 text-sm resize-none"
+        className="w-full card-hard bg-white pl-3 pr-24 py-2 text-sm resize-none"
       />
-      <BotonMicro onTexto={ponValor} className="py-2" />
-      <button
-        type="submit"
-        disabled={pensando || !valor.trim()}
-        className="btn-mustard text-xs px-4 py-3 disabled:opacity-40"
-      >
-        {pensando ? "…" : "Preguntar"}
-      </button>
+      <div className="absolute right-2 bottom-3 flex items-center gap-1">
+        <BotonMicro onTexto={ponValor} className="py-1 px-2" />
+        <button
+          type="submit"
+          disabled={pensando || !valor.trim()}
+          title="Enviar la pregunta"
+          className="btn-mustard text-xs px-3 py-1.5 disabled:opacity-40"
+        >
+          {pensando ? "…" : "Enviar"}
+        </button>
+      </div>
     </form>
   );
 }

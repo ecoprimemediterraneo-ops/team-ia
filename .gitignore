@@ -39,5 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-data/
+# Solo el `data/` de la raíz: ahí caen los JSON de desarrollo, que no viajan.
+# Sin la barra de delante también se tragaba `src/data/`, donde viven los datos
+# semilla de la gestoría de demostración — que SÍ tienen que viajar, porque en
+# producción no existe ninguna otra forma de que lleguen.
+/data/
 .env*.local

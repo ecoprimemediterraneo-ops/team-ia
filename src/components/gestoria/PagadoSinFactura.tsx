@@ -51,15 +51,36 @@ function queSon(g: Grupo): string {
   return partes.join(" y ");
 }
 
-export default function PagadoSinFactura({ grupos }: { grupos: Grupo[] }) {
+export default function PagadoSinFactura({
+  grupos,
+  clienteId,
+}: {
+  grupos: Grupo[];
+  /**
+   * El cliente que hay elegido arriba, si hay alguno.
+   *
+   * MANDA SOBRE EL AVISO, y no es un detalle: el extracto del banco es de UN
+   * cliente: el de Bar El Puerto no tiene nada que ver con el de Distribuciones
+   * Vega. Enseñar los dos a la vez mientras estás mirando a uno solo es juntar
+   * dos cuentas distintas en el mismo titular, y el total de arriba deja de
+   * significar nada.
+   *
+   * El cálculo NO se toca: `pagosSinFactura` sigue devolviendo todo y aquí solo
+   * se enseña lo que toca. Sin cliente elegido, se ven todos agrupados, que es
+   * lo que hacía siempre.
+   */
+  clienteId?: string;
+}) {
   const [abierto, setAbierto] = useState<string | null>(null);
+
+  const visibles = clienteId ? grupos.filter((g) => g.clienteId === clienteId) : grupos;
 
   // Sin nada que reclamar no se enseña una tarjeta vacía diciendo que todo va
   // bien: ocupa sitio arriba del todo y no cambia nada de lo que Jose hace.
-  if (!grupos.length) return null;
+  if (!visibles.length) return null;
 
-  const totalDocs = grupos.reduce((s, g) => s + g.cuantos, 0);
-  const totalEuros = grupos.reduce((s, g) => s + g.total, 0);
+  const totalDocs = visibles.reduce((s, g) => s + g.cuantos, 0);
+  const totalEuros = visibles.reduce((s, g) => s + g.total, 0);
 
   return (
     <div className="card-hard bg-[color:var(--red)] text-white p-4">
@@ -72,7 +93,7 @@ export default function PagadoSinFactura({ grupos }: { grupos: Grupo[] }) {
       </p>
 
       <div className="space-y-2">
-        {grupos.map((g) => (
+        {visibles.map((g) => (
           <div key={g.clienteId} className="bg-white text-black border-2 border-black">
             <button
               type="button"

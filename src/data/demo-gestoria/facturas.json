@@ -1,0 +1,1423 @@
+[
+ {
+  "id": "fac_mt1rkk1l_7bfmkt",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600550055",
+  "origen": "whatsapp",
+  "fecha_recepcion": "2026-08-20T16:57:52.761Z",
+  "fichero_url": "tenant_demo_gestoria/_sin-asignar/2026-08/mt1rkk1j_factura-duplicada.pdf",
+  "tipo": "pdf",
+  "nombre_original": "factura-duplicada.pdf",
+  "importe": 508.2,
+  "fecha_factura": "2026-08-19",
+  "proveedor": "DISTRIBUCIONES COSTA DEL SOL S.L.",
+  "estado": "pendiente",
+  "movimiento_id": null,
+  "notas": "Entró por WhatsApp desde 34655443322",
+  "remitente": "34655443322",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "factura_completa",
+   "confianza": "alta",
+   "porQue": "Contiene NIF del emisor (B92345678) y NIF del destinatario (B-93.765.204), número de factura (F-2026/1188), fecha (19/08/2026), base imponible, IVA desglosado al 21% y total. Cumple todos los requisitos.",
+   "emisor": {
+    "valor": "DISTRIBUCIONES COSTA DEL SOL S.L.",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": "B92345678",
+    "seguro": true
+   },
+   "nifDestinatario": {
+    "valor": "B93765204",
+    "seguro": true
+   },
+   "numero": {
+    "valor": "F-2026/1188",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-08-19",
+    "seguro": true
+   },
+   "lineas": [
+    {
+     "tipo": 21,
+     "base": 420,
+     "cuota": 88.2
+    }
+   ],
+   "total": {
+    "valor": 508.2,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [],
+   "leidoEn": "2026-08-20T16:57:57.639Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2814,
+    "salida": 382
+   }
+  },
+  "clase": "factura_completa",
+  "contable": true,
+  "asignado_por": "nif",
+  "asignado_motivo": "NIF B93765204 coincide con Distribuciones Vega",
+  "duplicado_de": "fac_mt1iyidy_qy0tcj",
+  "duplicado_certeza": "seguro",
+  "duplicado_detalle": "Mismo número de factura (F-2026/1188) y mismo importe que la del 19 de agosto."
+ },
+ {
+  "id": "fac_mt1rjy9e_qo9ow0",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600550055",
+  "origen": "whatsapp",
+  "fecha_recepcion": "2026-08-20T16:57:24.530Z",
+  "fichero_url": "tenant_demo_gestoria/_sin-asignar/2026-08/mt1rjy9d_factura-duplicada.pdf",
+  "tipo": "pdf",
+  "nombre_original": "factura-duplicada.pdf",
+  "importe": 508.2,
+  "fecha_factura": "2026-08-19",
+  "proveedor": "DISTRIBUCIONES COSTA DEL SOL S.L.",
+  "estado": "pendiente",
+  "movimiento_id": null,
+  "notas": "Entró por WhatsApp desde 34655443322",
+  "remitente": "34655443322",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "factura_completa",
+   "confianza": "alta",
+   "porQue": "Lleva NIF del emisor (B92345678) y del destinatario (B-93.765.204), número de factura (F-2026/1188), fecha, e IVA desglosado (base 420.00, cuota 88.20, total 508.20). Cumple todos los requisitos.",
+   "emisor": {
+    "valor": "DISTRIBUCIONES COSTA DEL SOL S.L.",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": "B92345678",
+    "seguro": true
+   },
+   "nifDestinatario": {
+    "valor": "B93765204",
+    "seguro": true
+   },
+   "numero": {
+    "valor": "F-2026/1188",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-08-19",
+    "seguro": true
+   },
+   "lineas": [
+    {
+     "tipo": 21,
+     "base": 420,
+     "cuota": 88.2
+    }
+   ],
+   "total": {
+    "valor": 508.2,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [],
+   "leidoEn": "2026-08-20T16:57:29.196Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2814,
+    "salida": 320
+   }
+  },
+  "clase": "factura_completa",
+  "contable": true,
+  "asignado_por": "nif",
+  "asignado_motivo": "NIF B93765204 coincide con Distribuciones Vega",
+  "duplicado_de": "fac_mt1iyidy_qy0tcj",
+  "duplicado_certeza": "seguro",
+  "duplicado_detalle": "Mismo número de factura (F-2026/1188) y mismo importe que la del 19 de agosto."
+ },
+ {
+  "id": "fac_mt1om40z_sg40h7",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": null,
+  "origen": "whatsapp",
+  "fecha_recepcion": "2026-08-20T15:35:06.467Z",
+  "fichero_url": "tenant_demo_gestoria/_sin-asignar/2026-08/mt1om40z_factura-conflicto.pdf",
+  "tipo": "pdf",
+  "nombre_original": "factura-conflicto.pdf",
+  "importe": 508.2,
+  "fecha_factura": "2026-08-19",
+  "proveedor": "DISTRIBUCIONES COSTA DEL SOL S.L.",
+  "estado": "sin_asignar",
+  "movimiento_id": null,
+  "notas": "Entró por WhatsApp desde 34688111000",
+  "remitente": "34688111000",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "factura_completa",
+   "confianza": "alta",
+   "porQue": "Lleva NIF del emisor (B92345678) y del destinatario (B-93.765.204), número de factura (F-2026/1188), fecha (19/08/2026) e IVA desglosado (base 420.00, cuota 88.20 al 21%). Cumple todos los requisitos.",
+   "emisor": {
+    "valor": "DISTRIBUCIONES COSTA DEL SOL S.L.",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": "B92345678",
+    "seguro": true
+   },
+   "nifDestinatario": {
+    "valor": "B93765204",
+    "seguro": true
+   },
+   "numero": {
+    "valor": "F-2026/1188",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-08-19",
+    "seguro": true
+   },
+   "lineas": [
+    {
+     "tipo": 21,
+     "base": 420,
+     "cuota": 88.2
+    }
+   ],
+   "total": {
+    "valor": 508.2,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [],
+   "leidoEn": "2026-08-20T15:35:11.281Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2814,
+    "salida": 325
+   }
+  },
+  "clase": "factura_completa",
+  "contable": true,
+  "conflicto": {
+   "motivo": "nif",
+   "valor": "B93765204",
+   "clientes": [
+    {
+     "id": "600550055",
+     "nombre": "Distribuciones Vega"
+    },
+    {
+     "id": "600660066",
+     "nombre": "Nuevo Rumbo SL"
+    }
+   ],
+   "detalle": "El NIF B93765204 está en 2 fichas: Distribuciones Vega, Nuevo Rumbo SL. Corrige una y se resuelve solo."
+  }
+ },
+ {
+  "id": "fac_mt1iyidy_qy0tcj",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600550055",
+  "origen": "whatsapp",
+  "fecha_recepcion": "2026-08-20T12:56:47.254Z",
+  "fichero_url": "tenant_demo_gestoria/_sin-asignar/2026-08/mt1iyidx_factura-vega-agosto.pdf",
+  "tipo": "pdf",
+  "nombre_original": "factura-vega-agosto.pdf",
+  "importe": 508.2,
+  "fecha_factura": "2026-08-19",
+  "proveedor": "DISTRIBUCIONES COSTA DEL SOL S.L.",
+  "estado": "pendiente",
+  "movimiento_id": null,
+  "notas": "Entró por WhatsApp desde 34677555444",
+  "remitente": "34677555444",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "factura_completa",
+   "confianza": "alta",
+   "porQue": "Lleva NIF del emisor (B92345678) Y NIF del destinatario (B-93.765.204), número de factura (F-2026/1188), fecha (19/08/2026) e IVA desglosado en base imponible, cuota y total. Cumple los cuatro requisitos.",
+   "emisor": {
+    "valor": "DISTRIBUCIONES COSTA DEL SOL S.L.",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": "B92345678",
+    "seguro": true
+   },
+   "nifDestinatario": {
+    "valor": "B93765204",
+    "seguro": true
+   },
+   "numero": {
+    "valor": "F-2026/1188",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-08-19",
+    "seguro": true
+   },
+   "lineas": [
+    {
+     "tipo": 21,
+     "base": 420,
+     "cuota": 88.2
+    }
+   ],
+   "total": {
+    "valor": 508.2,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [],
+   "leidoEn": "2026-08-20T12:56:52.855Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2814,
+    "salida": 383
+   }
+  },
+  "clase": "factura_completa",
+  "contable": true,
+  "asignado_por": "nif",
+  "asignado_motivo": "NIF B93765204 coincide con Distribuciones Vega"
+ },
+ {
+  "id": "fac_mt1hlqp2_1rwyq7",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600330033",
+  "origen": "whatsapp",
+  "fecha_recepcion": "2026-08-20T12:18:51.878Z",
+  "fichero_url": "tenant_demo_gestoria/_sin-asignar/2026-08/mt1hlqp1_factura-agosto.pdf",
+  "tipo": "pdf",
+  "nombre_original": "factura-agosto.pdf",
+  "importe": 508.2,
+  "fecha_factura": "2026-08-19",
+  "proveedor": "DISTRIBUCIONES COSTA DEL SOL S.L.",
+  "estado": "pendiente",
+  "movimiento_id": null,
+  "notas": "Entró por WhatsApp desde 34611999888",
+  "remitente": "34611999888",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "factura_completa",
+   "confianza": "alta",
+   "porQue": "Lleva NIF del emisor (B92345678) y del destinatario (B-29.876.543), número de factura (F-2026/1188), fecha, e IVA desglosado (base 420.00, IVA 21% de 88.20, total 508.20). Cumple los cuatro requisitos.",
+   "emisor": {
+    "valor": "DISTRIBUCIONES COSTA DEL SOL S.L.",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": "B92345678",
+    "seguro": true
+   },
+   "nifDestinatario": {
+    "valor": "B-29.876.543",
+    "seguro": true
+   },
+   "numero": {
+    "valor": "F-2026/1188",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-08-19",
+    "seguro": true
+   },
+   "lineas": [
+    {
+     "tipo": 21,
+     "base": 420,
+     "cuota": 88.2
+    }
+   ],
+   "total": {
+    "valor": 508.2,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [],
+   "leidoEn": "2026-08-20T12:18:56.202Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2813,
+    "salida": 329
+   }
+  },
+  "clase": "factura_completa",
+  "contable": true,
+  "asignado_por": "nif",
+  "asignado_motivo": "NIF B-29.876.543 coincide con Bar El Puerto"
+ },
+ {
+  "id": "fac_mt1hknbu_hm3wu6",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": null,
+  "origen": "whatsapp",
+  "fecha_recepcion": "2026-08-20T12:18:00.858Z",
+  "fichero_url": "tenant_demo_gestoria/_sin-asignar/2026-08/mt1hknbm_whatsapp-PRUEBA-1787228273950",
+  "tipo": "imagen",
+  "nombre_original": "whatsapp-PRUEBA-1787228273950",
+  "importe": null,
+  "fecha_factura": null,
+  "proveedor": null,
+  "estado": "sin_asignar",
+  "movimiento_id": null,
+  "notas": "Entró por WhatsApp desde 34600111222",
+  "remitente": "34600111222",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "otro",
+   "confianza": "baja",
+   "porQue": "La imagen es demasiado borrosa y pequeña para leer cualquier contenido con seguridad. No se distinguen datos, números, ni estructura del documento.",
+   "emisor": {
+    "valor": null,
+    "seguro": false
+   },
+   "nifEmisor": {
+    "valor": null,
+    "seguro": false
+   },
+   "nifDestinatario": {
+    "valor": null,
+    "seguro": false
+   },
+   "numero": {
+    "valor": null,
+    "seguro": false
+   },
+   "fecha": {
+    "valor": null,
+    "seguro": false
+   },
+   "lineas": [],
+   "total": {
+    "valor": null,
+    "seguro": false
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [
+    "No se ha podido clasificar. Míralo y dile tú qué es.",
+    "La lectura no está clara. Comprueba la clase antes de contar con este documento.",
+    "Documento ilegible. Solicita una fotografía o escaneo de mejor calidad para poder clasificar y extraer datos."
+   ],
+   "leidoEn": "2026-08-20T12:20:12.590Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 1077,
+    "salida": 250
+   }
+  },
+  "clase": "otro",
+  "contable": false
+ },
+ {
+  "id": "fac_mt1ct6s1_hydw7o",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600330033",
+  "origen": "manual",
+  "fecha_recepcion": "2026-08-20T10:04:41.233Z",
+  "fichero_url": "tenant_demo_gestoria/600330033/2026-08/mt1ct6s0_abono-suministros.pdf",
+  "tipo": "pdf",
+  "nombre_original": "abono-suministros.pdf",
+  "importe": -314.6,
+  "fecha_factura": "2026-08-18",
+  "proveedor": "SUMINISTROS HOSTELEROS DEL SUR S.L.",
+  "estado": "pendiente",
+  "movimiento_id": null,
+  "notas": "",
+  "lectura": {
+   "clase": "abono",
+   "confianza": "alta",
+   "porQue": "Factura rectificativa (abono) con importes negativos, NIF del emisor y destinatario, número y fecha. Rectifica explícitamente la factura SUM-2026-0803. Es un abono de devolución de mercancía.",
+   "emisor": {
+    "valor": "SUMINISTROS HOSTELEROS DEL SUR S.L.",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": "B-92114477",
+    "seguro": true
+   },
+   "nifDestinatario": {
+    "valor": "B-29554433",
+    "seguro": true
+   },
+   "numero": {
+    "valor": "R-2026/018",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-08-18",
+    "seguro": true
+   },
+   "lineas": [
+    {
+     "tipo": 21,
+     "base": -260,
+     "cuota": -54.6
+    }
+   ],
+   "total": {
+    "valor": -314.6,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": "SUM-2026-0803",
+    "seguro": true
+   },
+   "avisos": [
+    "Es un abono: RESTA en vez de sumar.",
+    "Abono por devolución de mercancía en mal estado"
+   ],
+   "leidoEn": "2026-08-20T10:04:45.263Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2612,
+    "salida": 326
+   }
+  },
+  "clase": "abono",
+  "contable": true
+ },
+ {
+  "id": "fac_mt1ct3px_zbsxjl",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600330033",
+  "origen": "manual",
+  "fecha_recepcion": "2026-08-20T10:04:37.269Z",
+  "fichero_url": "tenant_demo_gestoria/600330033/2026-08/mt1ct3pw_albaran-hosteleria.pdf",
+  "tipo": "pdf",
+  "nombre_original": "albaran-hosteleria.pdf",
+  "importe": 1284.6,
+  "fecha_factura": "2026-08-12",
+  "proveedor": "DISTRIBUCIONES COSTA DEL SOL S.L.",
+  "estado": "pendiente",
+  "movimiento_id": null,
+  "notas": "",
+  "lectura": {
+   "clase": "albaran",
+   "confianza": "alta",
+   "porQue": "Documento explícitamente titulado 'ALBARAN DE ENTREGA', sin importes ni IVA desglosado, contiene solo cantidades y artículos. El pie dice 'ESTE DOCUMENTO NO ES FACTURA'.",
+   "emisor": {
+    "valor": "DISTRIBUCIONES COSTA DEL SOL S.L.",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": "B-29887654",
+    "seguro": true
+   },
+   "nifDestinatario": {
+    "valor": null,
+    "seguro": false
+   },
+   "numero": {
+    "valor": "2026/4471",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-08-12",
+    "seguro": true
+   },
+   "lineas": [],
+   "total": {
+    "valor": null,
+    "seguro": false
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "avisos": [
+    "Un albarán no es documento contable. No cuenta como factura ni entra en el cruce con el banco.",
+    "Documento de entrega sin valoración económica ni IVA. No permite deducción de IVA."
+   ],
+   "leidoEn": "2026-08-20T10:04:41.212Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2609,
+    "salida": 289
+   }
+  },
+  "clase": "albaran",
+  "contable": false
+ },
+ {
+  "id": "fac_mt1ct0n2_pxcmx6",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600330033",
+  "origen": "manual",
+  "fecha_recepcion": "2026-08-20T10:04:33.279Z",
+  "fichero_url": "tenant_demo_gestoria/600330033/2026-08/mt1ct0n2_cafe-de-ronda.pdf",
+  "tipo": "pdf",
+  "nombre_original": "cafe-de-ronda.pdf",
+  "importe": 16.7,
+  "fecha_factura": "2026-08-14",
+  "proveedor": "CAFE DE RONDA / PROYECTO COSTABELLA 2009 S.L.",
+  "estado": "conciliada",
+  "movimiento_id": "mov_mtjw7vrj_4644e0",
+  "notas": "",
+  "lectura": {
+   "clase": "ticket",
+   "confianza": "alta",
+   "porQue": "Lleva NIF del emisor (B-93035848), número, fecha e IVA desglosado, pero NO lleva NIF del destinatario. Aunque dice 'FACTURA SIMPLIFICADA', es un ticket de bar sin identificación del cliente.",
+   "emisor": {
+    "valor": "CAFE DE RONDA / PROYECTO COSTABELLA 2009 S.L.",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": "B-93035848",
+    "seguro": true
+   },
+   "nifDestinatario": {
+    "valor": null,
+    "seguro": false
+   },
+   "numero": {
+    "valor": "004521",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-08-14",
+    "seguro": true
+   },
+   "lineas": [
+    {
+     "tipo": 10,
+     "base": 15.18,
+     "cuota": 1.52
+    }
+   ],
+   "total": {
+    "valor": 16.7,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "avisos": [
+    "Esto NO sirve para deducir el IVA: es un ticket, no lleva el NIF del destinatario. Pídele al proveedor la factura completa."
+   ],
+   "leidoEn": "2026-08-20T10:04:37.263Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2641,
+    "salida": 302
+   }
+  },
+  "clase": "ticket",
+  "contable": true
+ },
+ {
+  "id": "fac_demo_tkt_5500",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600550055",
+  "origen": "whatsapp",
+  "fecha_recepcion": "2026-08-18T09:15:00.000Z",
+  "fichero_url": "tenant_demo_gestoria/600550055/2026-08/fac_demo_tkt_5500_ticket-combustible.pdf",
+  "tipo": "pdf",
+  "nombre_original": "ticket-combustible.pdf",
+  "importe": 128.9,
+  "fecha_factura": "2026-08-18",
+  "proveedor": "GASOLINERA REPSOL RONDA",
+  "estado": "pendiente",
+  "movimiento_id": null,
+  "notas": "",
+  "clase": "ticket",
+  "contable": false,
+  "lectura": {
+   "clase": "ticket",
+   "confianza": "alta",
+   "importe_total": 128.9,
+   "fecha": "2026-08-18",
+   "emisor_nombre": "GASOLINERA REPSOL RONDA",
+   "motivo": "Documento de demostracion"
+  }
+ },
+ {
+  "id": "fac_msric013_fpfgf8",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600330033",
+  "origen": "manual",
+  "fecha_recepcion": "2026-08-13T12:41:35.271Z",
+  "fichero_url": "tenant_demo_gestoria/600330033/2026-08/msric012_SUM-2026-0803.pdf",
+  "tipo": "pdf",
+  "nombre_original": "SUM-2026-0803.pdf",
+  "importe": 15907.48,
+  "fecha_factura": "2026-08-03",
+  "proveedor": "Suministros Hosteleros del Sur SL",
+  "estado": "pendiente",
+  "movimiento_id": null,
+  "notas": "[DEMO] adeudo agrupado 2 de 2",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "otro",
+   "confianza": "alta",
+   "porQue": "Documento marcado como '[demo] datos ficticios' sin IVA desglosado, sin NIF del emisor ni del destinatario. No contiene la información fiscal necesaria para ser una factura válida, aunque lleve ese título.",
+   "emisor": {
+    "valor": "Suministros Hosteleros del Sur SL",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": null,
+    "seguro": false
+   },
+   "nifDestinatario": {
+    "valor": null,
+    "seguro": false
+   },
+   "numero": {
+    "valor": "2026/0803",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-08-03",
+    "seguro": true
+   },
+   "lineas": [],
+   "total": {
+    "valor": 15907.48,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [
+    "No se ha podido clasificar. Míralo y dile tú qué es.",
+    "Documento de prueba/demo con datos ficticios, no válido fiscalmente",
+    "Falta NIF del emisor y del destinatario",
+    "No hay desglose de IVA",
+    "No contiene detalle de líneas de factura"
+   ],
+   "leidoEn": "2026-08-20T12:20:17.006Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2759,
+    "salida": 329
+   }
+  },
+  "clase": "otro",
+  "contable": false
+ },
+ {
+  "id": "fac_msribzzt_knmkn3",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600330033",
+  "origen": "manual",
+  "fecha_recepcion": "2026-08-13T12:41:35.225Z",
+  "fichero_url": "tenant_demo_gestoria/600330033/2026-08/msribzzs_SUM-2026-0801.pdf",
+  "tipo": "pdf",
+  "nombre_original": "SUM-2026-0801.pdf",
+  "importe": 25000,
+  "fecha_factura": "2026-08-01",
+  "proveedor": "Suministros Hosteleros del Sur SL",
+  "estado": "pendiente",
+  "movimiento_id": null,
+  "notas": "[DEMO] adeudo agrupado 1 de 2",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "otro",
+   "confianza": "alta",
+   "porQue": "Documento de prueba con datos ficticios. Aunque pone 'factura', carece de IVA desglosado, NIFs, y es explícitamente marcado como demo. No es un documento contable válido.",
+   "emisor": {
+    "valor": "Suministros Hosteleros del Sur SL",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": null,
+    "seguro": false
+   },
+   "nifDestinatario": {
+    "valor": null,
+    "seguro": false
+   },
+   "numero": {
+    "valor": "2026/0801",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-08-01",
+    "seguro": true
+   },
+   "lineas": [],
+   "total": {
+    "valor": 25000,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [
+    "No se ha podido clasificar. Míralo y dile tú qué es.",
+    "Documento explícitamente marcado como '[demo] datos ficticios'",
+    "Sin IVA desglosado",
+    "Sin NIFs de emisor ni destinatario",
+    "Sin detalle de líneas de factura",
+    "No es un documento contable válido para uso real"
+   ],
+   "leidoEn": "2026-08-20T12:20:21.078Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2759,
+    "salida": 384
+   }
+  },
+  "clase": "otro",
+  "contable": false
+ },
+ {
+  "id": "fac_msribzyk_e7nys5",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600330033",
+  "origen": "manual",
+  "fecha_recepcion": "2026-08-13T12:41:35.180Z",
+  "fichero_url": "tenant_demo_gestoria/600330033/2026-08/msribzyj_FRU-2026-0712.pdf",
+  "tipo": "pdf",
+  "nombre_original": "FRU-2026-0712.pdf",
+  "importe": 162.24,
+  "fecha_factura": "2026-06-17",
+  "proveedor": "Frutas La Charca SL",
+  "estado": "pendiente",
+  "movimiento_id": null,
+  "notas": "[DEMO] 1 centimo menos que el cargo",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "otro",
+   "confianza": "alta",
+   "porQue": "Documento de prueba con datos ficticios que carece de IVA desglosado, NIF del emisor y NIF del destinatario. Aunque ponga 'FACTURA' en el título, no cumple los requisitos mínimos de un documento fiscal válido.",
+   "emisor": {
+    "valor": "Frutas La Charca SL",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": null,
+    "seguro": false
+   },
+   "nifDestinatario": {
+    "valor": null,
+    "seguro": false
+   },
+   "numero": {
+    "valor": "2026/0712",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-06-17",
+    "seguro": true
+   },
+   "lineas": [],
+   "total": {
+    "valor": 162.24,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [
+    "No se ha podido clasificar. Míralo y dile tú qué es.",
+    "Documento marcado explícitamente como 'FACTURA DE PRUEBA - AI-Team datos ficticios'. No es un documento real.",
+    "Falta NIF del proveedor (emisor).",
+    "Falta NIF del cliente (destinatario).",
+    "Falta desglose de IVA (base imponible y cuota). Solo aparece importe total.",
+    "Nota '[demo] 1 centimo de diferencia' sugiere documento de demostración, no válido para gestión contable real."
+   ],
+   "leidoEn": "2026-08-20T12:20:26.036Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2751,
+    "salida": 400
+   }
+  },
+  "clase": "otro",
+  "contable": false
+ },
+ {
+  "id": "fac_msribzxd_q7rei5",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600330033",
+  "origen": "manual",
+  "fecha_recepcion": "2026-08-13T12:41:35.137Z",
+  "fichero_url": "tenant_demo_gestoria/600330033/2026-08/msribzxd_FAC-5238-R6.pdf",
+  "tipo": "pdf",
+  "nombre_original": "FAC-5238-R6.pdf",
+  "importe": 38675.28,
+  "fecha_factura": "2026-07-05",
+  "proveedor": "Construcciones Ruiz Hermanos SL",
+  "estado": "pendiente",
+  "movimiento_id": null,
+  "notas": "[DEMO] fecha 3 dias antes del cargo",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "otro",
+   "confianza": "alta",
+   "porQue": "Documento de prueba/demostración con datos ficticios. Falta IVA desglosado (no hay base, cuota ni tipo de IVA separados), falta NIF del emisor y del destinatario. No cumple requisitos de factura_completa ni ticket.",
+   "emisor": {
+    "valor": "Construcciones Ruiz Hermanos SL",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": null,
+    "seguro": false
+   },
+   "nifDestinatario": {
+    "valor": null,
+    "seguro": false
+   },
+   "numero": {
+    "valor": "5238/R6",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-07-05",
+    "seguro": true
+   },
+   "lineas": [],
+   "total": {
+    "valor": 38675.28,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [
+    "No se ha podido clasificar. Míralo y dile tú qué es.",
+    "Documento marcado como 'FACTURA DE PRUEBA - AI-Team datos ficticios'. No es documento real.",
+    "No hay IVA desglosado (falta base, tipo y cuota por separado).",
+    "Faltan NIFs tanto del emisor como del destinatario.",
+    "La anotación '[demo] fecha 3 dias antes' indica que es un documento de demostración."
+   ],
+   "leidoEn": "2026-08-20T12:20:31.365Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2752,
+    "salida": 424
+   }
+  },
+  "clase": "otro",
+  "contable": false
+ },
+ {
+  "id": "fac_msribzw2_jreyw6",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600330033",
+  "origen": "manual",
+  "fecha_recepcion": "2026-08-13T12:41:35.090Z",
+  "fichero_url": "tenant_demo_gestoria/600330033/2026-08/msribzw1_FAC-4280-R6.pdf",
+  "tipo": "pdf",
+  "nombre_original": "FAC-4280-R6.pdf",
+  "importe": 40722.12,
+  "fecha_factura": "2026-06-07",
+  "proveedor": "Construcciones Ruiz Hermanos SL",
+  "estado": "pendiente",
+  "movimiento_id": null,
+  "notas": "[DEMO] fecha 2 dias antes del cargo",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "otro",
+   "confianza": "alta",
+   "porQue": "Documento de prueba con datos ficticios. Aunque pone 'FACTURA', carece de IVA desglosado (elemento obligatorio para factura_completa), no tiene NIF del emisor ni del destinatario, y contiene advertencias explícitas de ser demo/prueba. No es un documento contable real.",
+   "emisor": {
+    "valor": "Construcciones Ruiz Hermanos SL",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": null,
+    "seguro": false
+   },
+   "nifDestinatario": {
+    "valor": null,
+    "seguro": false
+   },
+   "numero": {
+    "valor": "4280/R6",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-06-07",
+    "seguro": true
+   },
+   "lineas": [],
+   "total": {
+    "valor": 40722.12,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [
+    "No se ha podido clasificar. Míralo y dile tú qué es.",
+    "Documento etiquetado como 'FACTURA DE PRUEBA' con 'datos ficticios'",
+    "Sin IVA desglosado",
+    "Sin NIF del emisor ni del destinatario",
+    "Contiene marca [demo] explícita",
+    "No es un documento contable válido para uso real"
+   ],
+   "leidoEn": "2026-08-20T12:20:36.113Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2752,
+    "salida": 368
+   }
+  },
+  "clase": "otro",
+  "contable": false
+ },
+ {
+  "id": "fac_msribzuq_vhx5eh",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600330033",
+  "origen": "manual",
+  "fecha_recepcion": "2026-08-13T12:41:35.042Z",
+  "fichero_url": "tenant_demo_gestoria/600330033/2026-08/msribzue_MA26-1454.pdf",
+  "tipo": "pdf",
+  "nombre_original": "MA26-1454.pdf",
+  "importe": 10163.81,
+  "fecha_factura": "2026-04-11",
+  "proveedor": "Mayorista del Sur SL",
+  "estado": "conciliada",
+  "movimiento_id": "mov_msri0jvw_2wj66s",
+  "notas": "[DEMO] cuadra sola",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "otro",
+   "confianza": "alta",
+   "porQue": "Aunque dice 'FACTURA', no tiene IVA desglosado (solo un total), no tiene NIFs de emisor ni destinatario, y la nota '[demo] cuadra sola' indica que es un documento de prueba/demostración, no un documento contable real.",
+   "emisor": {
+    "valor": "Mayorista del Sur SL",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": null,
+    "seguro": false
+   },
+   "nifDestinatario": {
+    "valor": null,
+    "seguro": false
+   },
+   "numero": {
+    "valor": "MA26/1454",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-04-11",
+    "seguro": true
+   },
+   "lineas": [],
+   "total": {
+    "valor": 10163.81,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [
+    "No se ha podido clasificar. Míralo y dile tú qué es.",
+    "Documento de prueba sin datos fiscales reales",
+    "Sin IVA desglosado",
+    "Sin NIFs",
+    "Sin detalles de líneas de producto/servicio"
+   ],
+   "leidoEn": "2026-08-20T12:20:40.580Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2746,
+    "salida": 306
+   }
+  },
+  "clase": "otro",
+  "contable": false
+ },
+ {
+  "id": "fac_msribzsk_on2ck8",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600330033",
+  "origen": "manual",
+  "fecha_recepcion": "2026-08-13T12:41:34.964Z",
+  "fichero_url": "tenant_demo_gestoria/600330033/2026-08/msribzsj_C02867.pdf",
+  "tipo": "pdf",
+  "nombre_original": "C02867.pdf",
+  "importe": 13486.93,
+  "fecha_factura": "2026-04-07",
+  "proveedor": "Distribuciones Costa del Sol SL",
+  "estado": "conciliada",
+  "movimiento_id": "mov_msri0jvw_67d2z2",
+  "notas": "[DEMO] cuadra sola",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "ticket",
+   "confianza": "media",
+   "porQue": "Pone 'FACTURA' pero no hay IVA desglosado (solo importe total), no hay NIF del emisor ni del destinatario visible, y falta información crítica. Aunque tiene número y fecha, sin NIFs y sin desglose de IVA no es factura_completa.",
+   "emisor": {
+    "valor": "Distribuciones Costa del Sol SL",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": null,
+    "seguro": false
+   },
+   "nifDestinatario": {
+    "valor": null,
+    "seguro": false
+   },
+   "numero": {
+    "valor": "C02867",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-04-07",
+    "seguro": true
+   },
+   "lineas": [],
+   "total": {
+    "valor": 13486.93,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [
+    "Esto NO sirve para deducir el IVA: es un ticket, no lleva el NIF del destinatario. Pídele al proveedor la factura completa.",
+    "Documento marcado como 'FACTURA DE PRUEBA - AI-Team datos ficticios': datos de ejemplo, no válido para gestoría real",
+    "No hay NIFs del emisor ni del destinatario",
+    "No hay IVA desglosado (base, tipo, cuota)",
+    "Línea '[demo] cuadra sola' sin detalle de conceptos ni importes unitarios"
+   ],
+   "leidoEn": "2026-08-20T12:20:45.700Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2746,
+    "salida": 425
+   }
+  },
+  "clase": "ticket",
+  "contable": true
+ },
+ {
+  "id": "fac_msribzqw_wl15go",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600330033",
+  "origen": "manual",
+  "fecha_recepcion": "2026-08-13T12:41:34.904Z",
+  "fichero_url": "tenant_demo_gestoria/600330033/2026-08/msribzqv_C02757.pdf",
+  "tipo": "pdf",
+  "nombre_original": "C02757.pdf",
+  "importe": 10819.64,
+  "fecha_factura": "2026-03-05",
+  "proveedor": "Distribuciones Costa del Sol SL",
+  "estado": "conciliada",
+  "movimiento_id": "mov_msri0jvw_x1gz1n",
+  "notas": "[DEMO] cuadra sola",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "otro",
+   "confianza": "alta",
+   "porQue": "Aunque dice 'FACTURA' y tiene número, fecha, emisor y cliente, le falta completamente el IVA desglosado (base, tipo y cuota). Solo hay un importe total. Sin IVA desglosado no es factura_completa. Además, falta el NIF del emisor y del destinatario. El documento es incompleto y no permite deducir IVA.",
+   "emisor": {
+    "valor": "Distribuciones Costa del Sol SL",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": null,
+    "seguro": false
+   },
+   "nifDestinatario": {
+    "valor": null,
+    "seguro": false
+   },
+   "numero": {
+    "valor": "C02757",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-03-05",
+    "seguro": true
+   },
+   "lineas": [],
+   "total": {
+    "valor": 10819.64,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [
+    "No se ha podido clasificar. Míralo y dile tú qué es.",
+    "Documento incompleto: falta IVA desglosado (base imponible, tipo y cuota)",
+    "Falta NIF del proveedor (emisor)",
+    "Falta NIF del cliente (destinatario)",
+    "No es un documento fiscal válido para deducción de IVA"
+   ],
+   "leidoEn": "2026-08-20T12:20:50.770Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2746,
+    "salida": 377
+   }
+  },
+  "clase": "otro",
+  "contable": false
+ },
+ {
+  "id": "fac_msribzp6_uki3wr",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600330033",
+  "origen": "manual",
+  "fecha_recepcion": "2026-08-13T12:41:34.842Z",
+  "fichero_url": "tenant_demo_gestoria/600330033/2026-08/msribzp6_C02653.pdf",
+  "tipo": "pdf",
+  "nombre_original": "C02653.pdf",
+  "importe": 9756.24,
+  "fecha_factura": "2026-02-04",
+  "proveedor": "Distribuciones Costa del Sol SL",
+  "estado": "conciliada",
+  "movimiento_id": "mov_msri0jvw_a8drrp",
+  "notas": "[DEMO] cuadra sola",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "otro",
+   "confianza": "alta",
+   "porQue": "Documento incompleto sin IVA desglosado (solo importe total), sin NIF del emisor ni del destinatario, marcado como '[demo] cuadra sola' y datos ficticios. No cumple requisitos mínimos de factura, ticket ni albaran válidos.",
+   "emisor": {
+    "valor": "Distribuciones Costa del Sol SL",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": null,
+    "seguro": false
+   },
+   "nifDestinatario": {
+    "valor": null,
+    "seguro": false
+   },
+   "numero": {
+    "valor": "C02653",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-02-04",
+    "seguro": true
+   },
+   "lineas": [],
+   "total": {
+    "valor": 9756.24,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [
+    "No se ha podido clasificar. Míralo y dile tú qué es.",
+    "Documento de demostración con datos ficticios",
+    "Falta IVA desglosado (base y cuota por separado)",
+    "No aparecen NIFs del emisor ni del destinatario",
+    "Anotación '[demo] cuadra sola' indica documento incompleto o de prueba"
+   ],
+   "leidoEn": "2026-08-20T12:20:56.040Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2746,
+    "salida": 399
+   }
+  },
+  "clase": "otro",
+  "contable": false
+ },
+ {
+  "id": "fac_msribzny_7hftwm",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600330033",
+  "origen": "manual",
+  "fecha_recepcion": "2026-08-13T12:41:34.798Z",
+  "fichero_url": "tenant_demo_gestoria/600330033/2026-08/msribznx_C02557.pdf",
+  "tipo": "pdf",
+  "nombre_original": "C02557.pdf",
+  "importe": 10907.88,
+  "fecha_factura": "2026-01-12",
+  "proveedor": "Distribuciones Costa del Sol SL",
+  "estado": "conciliada",
+  "movimiento_id": "mov_msri0jvw_lczl6z",
+  "notas": "[DEMO] cuadra sola",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "otro",
+   "confianza": "alta",
+   "porQue": "Aunque dice 'FACTURA' y tiene número, fecha, emisor y cliente, falta completamente el IVA desglosado (base, tipo y cuota). Sin desglose de IVA no es factura_completa. Además faltan los NIFs de emisor y destinatario, y el documento marca '[demo] cuadra sola' sugiriendo que es incompleto o de prueba.",
+   "emisor": {
+    "valor": "Distribuciones Costa del Sol SL",
+    "seguro": true
+   },
+   "nifEmisor": {
+    "valor": null,
+    "seguro": false
+   },
+   "nifDestinatario": {
+    "valor": null,
+    "seguro": false
+   },
+   "numero": {
+    "valor": "C02557",
+    "seguro": true
+   },
+   "fecha": {
+    "valor": "2026-01-12",
+    "seguro": true
+   },
+   "lineas": [],
+   "total": {
+    "valor": 10907.88,
+    "seguro": true
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [
+    "No se ha podido clasificar. Míralo y dile tú qué es.",
+    "Documento marcado como '[demo] datos ficticios' - es de prueba",
+    "Falta NIF del emisor y del destinatario",
+    "No hay desglose de IVA (base imponible, tipo, cuota)",
+    "Sin información de líneas de producto/servicio"
+   ],
+   "leidoEn": "2026-08-20T12:21:14.103Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 2746,
+    "salida": 374
+   }
+  },
+  "clase": "otro",
+  "contable": false
+ },
+ {
+  "id": "fac_msq2n7vl_5hj8n6",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600110011",
+  "origen": "manual",
+  "fecha_recepcion": "2026-08-12T12:34:38.625Z",
+  "fichero_url": "tenant_demo_gestoria/600110011/2026-08/msq2n7vk_factura-prueba.png",
+  "tipo": "imagen",
+  "nombre_original": "factura-prueba.png",
+  "importe": 459.8,
+  "fecha_factura": "2026-01-02",
+  "proveedor": "Suministros Ruiz",
+  "estado": "conciliada",
+  "movimiento_id": "mov_msq2ms8j_z7l9o0",
+  "notas": "",
+  "lectura_estado": "hecha",
+  "lectura": {
+   "clase": "otro",
+   "confianza": "alta",
+   "porQue": "Imagen no legible o vacía. No se pueden extraer datos del documento.",
+   "emisor": {
+    "valor": null,
+    "seguro": false
+   },
+   "nifEmisor": {
+    "valor": null,
+    "seguro": false
+   },
+   "nifDestinatario": {
+    "valor": null,
+    "seguro": false
+   },
+   "numero": {
+    "valor": null,
+    "seguro": false
+   },
+   "fecha": {
+    "valor": null,
+    "seguro": false
+   },
+   "lineas": [],
+   "total": {
+    "valor": null,
+    "seguro": false
+   },
+   "rectificaA": {
+    "valor": null,
+    "seguro": false
+   },
+   "degradadaSinIva": false,
+   "avisos": [
+    "No se ha podido clasificar. Míralo y dile tú qué es.",
+    "Imagen no legible o demasiado pequeña para clasificar."
+   ],
+   "leidoEn": "2026-08-20T12:21:17.650Z",
+   "modelo": "claude-haiku-4-5-20251001",
+   "tokens": {
+    "entrada": 1077,
+    "salida": 242
+   }
+  },
+  "clase": "otro",
+  "contable": false
+ },
+ {
+  "id": "fac_demo_alb_5500",
+  "tenant_id": "tenant_demo_gestoria",
+  "cliente_id": "600550055",
+  "origen": "whatsapp",
+  "fecha_recepcion": "2026-08-11T09:15:00.000Z",
+  "fichero_url": "tenant_demo_gestoria/600550055/2026-08/fac_demo_alb_5500_albaran-frutas-agosto.pdf",
+  "tipo": "pdf",
+  "nombre_original": "albaran-frutas-agosto.pdf",
+  "importe": 742.35,
+  "fecha_factura": "2026-08-11",
+  "proveedor": "FRUTAS LA CHARCA S.L.",
+  "estado": "pendiente",
+  "movimiento_id": null,
+  "notas": "",
+  "clase": "albaran",
+  "contable": false,
+  "lectura": {
+   "clase": "albaran",
+   "confianza": "alta",
+   "importe_total": 742.35,
+   "fecha": "2026-08-11",
+   "emisor_nombre": "FRUTAS LA CHARCA S.L.",
+   "motivo": "Documento de demostracion"
+  }
+ }
+]
