@@ -37,6 +37,7 @@ import {
 } from "@/lib/whatsapp-sender";
 import type { ProposalMediaType, MartaProposal } from "@/lib/marta-proposals";
 import type { ArranqueState, ProposalState } from "./types";
+import { traductor, idiomaDe } from "@/lib/idioma";
 
 async function gateTenantId(): Promise<string | null> {
   const s = await getSessionLocal();
@@ -53,8 +54,14 @@ export async function arranqueClientAction(
   _prev: ArranqueState,
   formData: FormData,
 ): Promise<ArranqueState> {
+  // EL IDIOMA LLEGA EN EL FORMULARIO, no de la URL: esto corre en el servidor y
+  // no ve la barra de direcciones del navegador. Sin esto, un fallo al generar
+  // sacaba un cartel rojo en castellano sobre un panel en inglés, y eso es
+  // exactamente lo que Meta rechaza.
+  const t = traductor(idiomaDe(String(formData.get("lang") || "")));
+
   const tenantId = await gateTenantId();
-  if (!tenantId) return { ts: Date.now(), variant: "error", title: "Inicia sesión" };
+  if (!tenantId) return { ts: Date.now(), variant: "error", title: t("arr_err_sesion") };
 
   const countRaw = parseInt(String(formData.get("count") || "6"), 10);
   const count = Math.min(Math.max(Number.isFinite(countRaw) ? countRaw : 6, 1), 9);
@@ -64,15 +71,19 @@ export async function arranqueClientAction(
     return {
       ts: Date.now(),
       variant: "error",
-      title: "No se pudo generar el arranque",
+      title: t("arr_err_generar"),
+      // El detalle lo escribe el generador y va tal cual: es diagnóstico, y
+      // traducir a medias un mensaje técnico lo hace menos útil, no más.
       detail: "ok" in result ? "" : (result as { detail?: string }).detail || "",
     };
   }
   return {
     ts: Date.now(),
     variant: "ok",
-    title: `Generado: BIO + ${result.drafts.length} posts`,
-    detail: result.errors.length ? `${result.errors.length} aviso(s).` : "Todo listo para revisar.",
+    title: t("arr_ok_titulo").replace("{n}", String(result.drafts.length)),
+    detail: result.errors.length
+      ? t("arr_ok_avisos").replace("{n}", String(result.errors.length))
+      : t("arr_ok_listo"),
     bio: result.bio.ok ? result.bio.bio : `(bio no generada: ${result.bio.detail})`,
     drafts: result.drafts,
     warnings: result.errors,

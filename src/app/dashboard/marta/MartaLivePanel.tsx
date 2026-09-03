@@ -25,7 +25,7 @@ import {
 import type { MartaProposal } from "@/lib/marta-proposals";
 import type { MartaSchedule } from "@/lib/marta-schedule";
 import { traductor, type Idioma } from "@/lib/idioma";
-import { useHrefIdioma } from "@/components/TextoIdioma";
+import { useHrefIdioma, useIdiomaPanel } from "@/components/TextoIdioma";
 import type { CommentRule, MatchMode } from "@/lib/marta-comment-rules";
 import { MARTA_TOPICS } from "@/lib/marta-topics";
 
@@ -364,13 +364,22 @@ function ArranqueBlock() {
     arranqueClientAction,
     IDLE_ARRANQUE,
   );
+  // Esta pestaña es la que se graba para el App Review de Meta, así que va
+  // entera en el idioma de la URL. El idioma se lee aquí y no se recibe como
+  // prop porque el bloque se monta sin ninguna.
+  const idioma = useIdiomaPanel();
+  const t = traductor(idioma);
 
   return (
     <div className="space-y-5">
       <form action={formAction} className="card-hard bg-white p-5 flex items-end gap-3 flex-wrap">
+        {/* El idioma viaja con el formulario: la server action corre en el
+            servidor y no ve la URL del navegador, así que sin esto sus mensajes
+            de error saldrían en castellano sobre un panel en inglés. */}
+        <input type="hidden" name="lang" value={idioma} />
         <div>
           <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
-            Nº de posts
+            {t("arr_num_posts")}
           </label>
           <input
             type="number"
@@ -382,12 +391,9 @@ function ArranqueBlock() {
           />
         </div>
         <button type="submit" disabled={pending} className="btn-mustard text-sm px-5 py-2 disabled:opacity-50">
-          {pending ? "Generando…" : "Generar BIO + posts"}
+          {pending ? t("arr_generando") : t("arr_generar")}
         </button>
-        <p className="text-[11px] text-black/55 max-w-md">
-          Marta crea de golpe la bio de Instagram y N posts coherentes con tu estilo,
-          listos para que tu cuenta parezca real desde el día 1. Tarda 10-60 s.
-        </p>
+        <p className="text-[11px] text-black/55 max-w-md">{t("arr_explica")}</p>
       </form>
 
       {state.variant === "error" && (
@@ -401,7 +407,7 @@ function ArranqueBlock() {
         <>
           <div className="card-hard bg-white p-5">
             <div className="text-[10px] font-mono uppercase tracking-widest text-black/55 mb-2">
-              Bio propuesta para Instagram
+              {t("arr_bio")}
             </div>
             <pre className="whitespace-pre-wrap text-sm font-sans leading-snug bg-[color:var(--cream)] p-4 border-2 border-black/15">
               {state.bio}
@@ -410,7 +416,7 @@ function ArranqueBlock() {
 
           {state.warnings && state.warnings.length > 0 && (
             <div className="card-hard bg-white p-4 border-[3px] border-[color:var(--mustard)] text-xs">
-              <div className="font-mono uppercase tracking-widest text-[10px] mb-1">Avisos</div>
+              <div className="font-mono uppercase tracking-widest text-[10px] mb-1">{t("arr_avisos")}</div>
               <ul className="space-y-1">
                 {state.warnings.map((w, i) => (<li key={i} className="text-black/70">• {w}</li>))}
               </ul>
@@ -427,7 +433,7 @@ function ArranqueBlock() {
                 <div className="p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-mono uppercase tracking-widest bg-[color:var(--mustard)] text-black px-2 py-0.5">
-                      {d.styleApplied.preset}{d.aiUsed ? " + IA" : ""}
+                      {d.styleApplied.preset}{d.aiUsed ? t("arr_ia") : ""}
                     </span>
                     <span className="text-[10px] font-mono text-black/40 truncate">{d.tema}</span>
                   </div>

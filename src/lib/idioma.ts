@@ -67,6 +67,58 @@ const DIC = {
   cuenta_cambiar: { es: "Cambiar de cuenta", en: "Switch account" },
   cuenta_volver: { es: "\u2190 Volver a mi cuenta", en: "\u2190 Back to my account" },
   cuenta_fundadora: { es: " \u00b7 fundadora", en: " \u00b7 owner" },
+  /**
+   * El sufijo del NOMBRE del tenant, no una etiqueta del codigo.
+   *
+   * En la base de datos la cuenta propia se llama literalmente "AI-Team (cuenta
+   * fundadora)", asi que en la cabecera salia "AI-TEAM (CUENTA FUNDADORA)" en
+   * castellano con el panel en ingles. El nombre no se toca —cambiarlo en el
+   * almacen lo cambiaria en los correos, en los prompts y en media docena de
+   * pantallas mas—: se separa al pintarlo y solo se traduce el parentesis.
+   */
+  cuenta_fundadora_sufijo: { es: "cuenta fundadora", en: "founder account" },
+
+  // LA PESTANA DE ARRANQUE DE MARTA. Es la que se graba para el App Review, asi
+  // que va entera. El contenido que genera la IA (la bio, los pies de foto, los
+  // temas) NO se traduce: es el contenido real del negocio, no la interfaz.
+  arr_num_posts: { es: "N\u00ba de posts", en: "Number of posts" },
+  arr_generando: { es: "Generando\u2026", en: "Generating\u2026" },
+  arr_generar: { es: "Generar BIO + posts", en: "Generate bio + posts" },
+  arr_explica: {
+    es: "Marta crea de golpe la bio de Instagram y N posts coherentes con tu estilo, listos para que tu cuenta parezca real desde el d\u00eda 1. Tarda 10-60 s.",
+    en: "Marta writes your Instagram bio and N posts in your style in one go, so your account looks real from day one. Takes 10-60 s.",
+  },
+  arr_bio: { es: "Bio propuesta para Instagram", en: "Suggested Instagram bio" },
+  arr_avisos: { es: "Avisos", en: "Warnings" },
+  arr_ia: { es: " + IA", en: " + AI" },
+  arr_err_sesion: { es: "Inicia sesi\u00f3n", en: "Please sign in" },
+  arr_err_generar: { es: "No se pudo generar el arranque", en: "Could not generate the starter pack" },
+  arr_ok_titulo: { es: "Generado: BIO + {n} posts", en: "Done: bio + {n} posts" },
+  arr_ok_avisos: { es: "{n} aviso(s).", en: "{n} warning(s)." },
+  arr_ok_listo: { es: "Todo listo para revisar.", en: "All set for you to review." },
+
+  // EL BANNER DE COOKIES. Es de la web publica, pero se pinta ENCIMA del panel
+  // mientras no se acepte, asi que con `?lang=en` era un recuadro en castellano
+  // tapando una esquina de la grabacion. En la web publica, sin parametro, sigue
+  // saliendo en castellano igual que siempre.
+  cookies_texto: {
+    es: "Usamos cookies esenciales para que la web funcione y, si nos lo permites, anal\u00edtica para mejorar.",
+    en: "We use essential cookies to make the site work and, if you let us, analytics to improve it.",
+  },
+  cookies_mas: { es: "M\u00e1s info", en: "More info" },
+  cookies_todo: { es: "ACEPTAR TODO", en: "ACCEPT ALL" },
+  cookies_esenciales: { es: "SOLO ESENCIALES", en: "ESSENTIAL ONLY" },
+
+  // LOS SECTORES, tal como los pinta el selector de cuenta debajo de cada
+  // nombre. Se traducen AQUI y no en `sectores.ts`: ese fichero es el corazon
+  // del producto —vocabulario, KPIs, prompts de los agentes— y cambiarle los
+  // rotulos para arreglar un desplegable seria mover todo eso de sitio. Aqui es
+  // presentacion, y solo afecta a lo que se lee en la cabecera.
+  sector_salon: { es: "Sal\u00f3n de belleza", en: "Beauty salon" },
+  sector_estetica: { es: "Cl\u00ednica est\u00e9tica", en: "Aesthetics clinic" },
+  sector_dental: { es: "Cl\u00ednica dental", en: "Dental clinic" },
+  sector_gestoria: { es: "Gestor\u00eda", en: "Accounting firm" },
+  sector_restaurante: { es: "Restaurante", en: "Restaurant" },
   lat_tu_equipo: { es: "Tu equipo", en: "Your team" },
   lat_agente: { es: "agente", en: "agent" },
   lat_agentes: { es: "agentes", en: "agents" },
