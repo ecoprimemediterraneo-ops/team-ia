@@ -61,6 +61,12 @@ const DIC = {
   // entera. Los NOMBRES de los agentes (Pablo, Carmen, Marta, Eva, Rocio) no
   // estan aqui a proposito: son nombres propios y no se traducen.
   lat_salir: { es: "Salir", en: "Log out" },
+  // EL SELECTOR DE CUENTA de la cabecera. Los NOMBRES de los tenants (AI-Team,
+  // Gestoria Marquez) NO se traducen: son nombres propios, igual que los de los
+  // agentes.
+  cuenta_cambiar: { es: "Cambiar de cuenta", en: "Switch account" },
+  cuenta_volver: { es: "\u2190 Volver a mi cuenta", en: "\u2190 Back to my account" },
+  cuenta_fundadora: { es: " \u00b7 fundadora", en: " \u00b7 owner" },
   lat_tu_equipo: { es: "Tu equipo", en: "Your team" },
   lat_agente: { es: "agente", en: "agent" },
   lat_agentes: { es: "agentes", en: "agents" },

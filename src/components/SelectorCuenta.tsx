@@ -8,7 +8,14 @@
 // Sin JavaScript a propósito: es un <details> con enlaces normales. El destino es un
 // route handler que pone una cookie y redirige, así que necesita navegación completa
 // del navegador —no la del router de Next—, y con <a href> nativo eso sale gratis.
+//
+// Los enlaces sí son de cliente (`EnlaceCuenta`), y solo para una cosa: leer en qué
+// pantalla estás y llevársela puesta. Apuntaban a `/admin/ver-panel/<id>` a secas y
+// el route handler devolvía siempre a `/dashboard`, así que cambiar de cuenta te
+// borraba el idioma y la pestaña. Ver el porqué largo en `EnlaceCuenta.tsx`.
 
+import EnlaceCuenta from "./EnlaceCuenta";
+import T from "./TextoIdioma";
 import { listTenants, DEFAULT_TENANT_ID } from "@/lib/tenants";
 import { resolverSector, getPerfilSector } from "@/lib/sectores";
 
@@ -43,44 +50,46 @@ export default async function SelectorCuenta({
     <details className="relative">
       <summary
         className="list-none cursor-pointer select-none text-xs font-mono uppercase tracking-widest border-2 border-black px-2 py-1 hover:bg-black hover:text-white max-w-[9.5rem] sm:max-w-none truncate"
-        title="Cambiar de cuenta"
       >
         {mirandoOtro && <span aria-hidden="true">👁 </span>}
         {actual ? nombre(actual) : "Cuenta"} ▾
       </summary>
 
+      {/* Aquí había un `title="Cambiar de cuenta"`. Fuera: un atributo no puede
+          llevar dentro una pieza de cliente, así que era la única cosa de la
+          cabecera que se quedaba en castellano con `?lang=en` — y en un vídeo
+          para Meta un tooltip en español es exactamente lo que no puede salir.
+          No se pierde nada: el desplegable ya lo dice en su primera línea. */}
+
       {/* `right-0` para que no se salga por la derecha en móvil, que es donde vive. */}
       <div className="absolute right-0 z-50 mt-1 w-64 max-h-[70vh] overflow-y-auto card-hard bg-white p-1">
         <div className="px-2 py-1 text-[10px] font-mono uppercase tracking-widest text-black/50">
-          Cambiar de cuenta
+          <T k="cuenta_cambiar" />
         </div>
         {ordenados.map((t) => {
           const esActual = t.id === tenantIdActual;
           return (
-            // <a> nativo y no <Link>: ver-panel es un route handler que pone una cookie
-            // y redirige, así que hace falta navegación completa del navegador.
-            <a
+            <EnlaceCuenta
               key={t.id}
-              href={`/admin/ver-panel/${t.id}`}
-              aria-current={esActual ? "true" : undefined}
+              tenantId={t.id}
+              ariaActual={esActual}
               className={`block px-2 py-1.5 text-xs leading-tight hover:bg-[color:var(--mustard)] ${esActual ? "bg-black text-white" : ""}`}
             >
               <span className="block font-bold truncate">{nombre(t)}</span>
               <span className={`block text-[10px] font-mono truncate ${esActual ? "text-white/70" : "text-black/50"}`}>
                 {etiquetaSector(t)}
-                {t.id === DEFAULT_TENANT_ID ? " · fundadora" : ""}
+                {t.id === DEFAULT_TENANT_ID ? <T k="cuenta_fundadora" /> : ""}
               </span>
-            </a>
+            </EnlaceCuenta>
           );
         })}
         {mirandoOtro && (
-          /* eslint-disable-next-line @next/next/no-html-link-for-pages -- igual que arriba. */
-          <a
-            href="/admin/ver-panel/propio"
+          <EnlaceCuenta
+            tenantId="propio"
             className="block mt-1 border-t-2 border-black px-2 py-1.5 text-xs font-bold hover:bg-[color:var(--mustard)]"
           >
-            ← Volver a mi cuenta
-          </a>
+            <T k="cuenta_volver" />
+          </EnlaceCuenta>
         )}
       </div>
     </details>

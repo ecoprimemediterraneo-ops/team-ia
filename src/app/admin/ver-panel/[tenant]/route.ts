@@ -8,6 +8,18 @@
 //
 //   /admin/ver-panel/tenant_demo_salon    → panel de salón de belleza
 //   /admin/ver-panel/propio               → vuelve a tu propio panel
+//
+// ?volver=<ruta> — A DÓNDE SE VUELVE DESPUÉS.
+//
+// Antes se volvía SIEMPRE a `/dashboard` pelado, y eso borraba la pantalla en la
+// que estabas y todos sus parámetros. Los dos que duelen: `?lang=en`, que dejaba
+// el panel en castellano a mitad de grabar el vídeo del App Review de Meta, y
+// `?tab=…`, que te devolvía a la portada en vez de a la pestaña que estabas
+// enseñando. Lo pone el selector de cuenta (`EnlaceCuenta.tsx`).
+//
+// Se valida: solo rutas de este mismo sitio y solo dentro de `/dashboard`. Un
+// parámetro que dice a dónde redirigir y no se comprueba es un sitio desde el
+// que mandar a la gente a cualquier parte con nuestro dominio delante.
 
 import { NextResponse } from "next/server";
 import { getSessionLocal } from "@/lib/auth";
@@ -18,6 +30,24 @@ import { COOKIE_VER_PANEL, esFundadorEmail as esFundador, esLocal } from "@/lib/
 
 export const dynamic = "force-dynamic";
 
+/** A qué pantalla se vuelve. `/dashboard` ante cualquier cosa que no convenza. */
+function aDondeVolver(req: Request): string {
+  const pedido = new URL(req.url).searchParams.get("volver");
+  if (!pedido) return "/dashboard";
+  try {
+    // Se resuelve contra la petición: así una dirección absoluta a otro dominio
+    // se detecta comparando el origen, y `//otrositio.com` —que el navegador
+    // lee como absoluta— tampoco cuela.
+    const u = new URL(pedido, req.url);
+    const propio = new URL(req.url);
+    if (u.origin !== propio.origin) return "/dashboard";
+    if (u.pathname !== "/dashboard" && !u.pathname.startsWith("/dashboard/")) return "/dashboard";
+    return `${u.pathname}${u.search}`;
+  } catch {
+    return "/dashboard";
+  }
+}
+
 export async function GET(req: Request, { params }: { params: Promise<{ tenant: string }> }) {
   const s = await getSessionLocal();
   if (!s) return NextResponse.redirect(new URL("/login", req.url));
@@ -26,7 +56,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ tenant: 
   }
 
   const { tenant } = await params;
-  const destino = NextResponse.redirect(new URL("/dashboard", req.url));
+  const destino = NextResponse.redirect(new URL(aDondeVolver(req), req.url));
 
   if (tenant === "propio") {
     destino.cookies.delete(COOKIE_VER_PANEL);

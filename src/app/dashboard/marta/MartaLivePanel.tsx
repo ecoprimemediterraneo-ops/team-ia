@@ -25,6 +25,7 @@ import {
 import type { MartaProposal } from "@/lib/marta-proposals";
 import type { MartaSchedule } from "@/lib/marta-schedule";
 import { traductor, type Idioma } from "@/lib/idioma";
+import { useHrefIdioma } from "@/components/TextoIdioma";
 import type { CommentRule, MatchMode } from "@/lib/marta-comment-rules";
 import { MARTA_TOPICS } from "@/lib/marta-topics";
 
@@ -73,7 +74,29 @@ export default function MartaLivePanel({
   // Por defecto abre por "Empezar cuenta": es el paso cero —sin cuenta conectada
   // el resto del panel no puede hacer nada— y hasta ahora se entraba por el
   // calendario, que es justo lo que no sirve si aún no has conectado.
-  const [tab, setTab] = useState<Tab>(initialTab ?? "arranque");
+  const [tab, setTabEstado] = useState<Tab>(initialTab ?? "arranque");
+
+  /**
+   * Cambiar de pestaña APUNTA LA PESTAÑA EN LA URL.
+   *
+   * Antes era estado de React y nada más, así que la dirección seguía diciendo
+   * `tab=arranque` estuvieras donde estuvieras. Eso no se notaba... hasta que se
+   * cambiaba de cuenta: el selector se lleva puesta la dirección actual, y la
+   * dirección mentía. Enseñando "History" y cambiando de cuenta aterrizabas en
+   * "Get started", en mitad de la grabación.
+   *
+   * Es `replaceState` y no `router.push`: solo hay que dejar la URL diciendo la
+   * verdad, no navegar. Navegar volvería a pedir la página entera al servidor
+   * por pulsar una pestaña, y llenaría el botón Atrás de pasos falsos.
+   */
+  function setTab(id: Tab) {
+    setTabEstado(id);
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.set("tab", id);
+      window.history.replaceState(null, "", `${u.pathname}${u.search}`);
+    } catch { /* sin URL utilizable se cambia de pestaña igual */ }
+  }
 
   return (
     <div className="space-y-5">
@@ -93,9 +116,10 @@ export default function MartaLivePanel({
             programa lo que se publica, monta el comentario→DM y, al final, mira
             lo que ya pasó. El historial es lo único que no sirve para hacer
             nada, así que va el último. */}
-        {/* Las pestañas NO tocan la URL: son estado de React. Por eso `?lang=en`
-            sobrevive solo al cambiar de pestaña, que es justo lo que hace falta
-            para que la grabación no se quede a medias en español. */}
+        {/* Las pestañas no navegan —son estado de React, así que `?lang=en`
+            sobrevive solo—, pero sí dejan escrito en la URL en cuál estás. Ver
+            `setTab` arriba: el selector de cuenta se lleva puesta la dirección
+            actual y necesita que diga la verdad. */}
         <TabBtn id="arranque" active={tab} setTab={setTab}>{t("tab_arranque")}</TabBtn>
         <TabBtn id="mensajes" active={tab} setTab={setTab}>{t("tab_mensajes")}</TabBtn>
         <TabBtn id="calendario" active={tab} setTab={setTab}>{t("tab_calendario")}</TabBtn>
@@ -617,6 +641,10 @@ export function ProgramacionBlock({
   onGenerated?: () => void;
 }) {
   const router = useRouter();
+  // El idioma se lee de la URL en vez de recibirse como prop: este bloque es el
+  // sistema de programación viejo y hoy no lo monta nadie, así que añadirle una
+  // prop obligaría a tocar a quien lo resucite. El hook no pide nada a cambio.
+  const hrefIdioma = useHrefIdioma();
   const [pending, startTransition] = useTransition();
   const [running, startRun] = useTransition();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -683,7 +711,7 @@ export function ProgramacionBlock({
             ejecutar</strong> (queda solo como referencia).
           </p>
           <a
-            href="/dashboard/marta/calendario"
+            href={hrefIdioma("/dashboard/marta/calendario")}
             className="inline-block mt-3 text-sm font-bold uppercase tracking-widest border-2 border-black bg-black text-[color:var(--mustard)] px-4 py-2 hover:bg-black/80"
           >
             Ir al calendario nuevo →
