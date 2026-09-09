@@ -27,26 +27,12 @@ import { getTenant } from "@/lib/tenants";
 // La lista de emails con permiso vive en panel-contexto y se importa: aquí había una
 // copia y en el selector de cuenta habría hecho falta una tercera.
 import { COOKIE_VER_PANEL, esFundadorEmail as esFundador, esLocal } from "@/lib/panel-contexto";
+// La comprobación del `?volver=` vive en `@/lib/volver`: la usa también el login,
+// y una comprobación copiada es una comprobación que un día se arregla a medias.
+import { destinoSeguroDePeticion } from "@/lib/volver";
 
 export const dynamic = "force-dynamic";
 
-/** A qué pantalla se vuelve. `/dashboard` ante cualquier cosa que no convenza. */
-function aDondeVolver(req: Request): string {
-  const pedido = new URL(req.url).searchParams.get("volver");
-  if (!pedido) return "/dashboard";
-  try {
-    // Se resuelve contra la petición: así una dirección absoluta a otro dominio
-    // se detecta comparando el origen, y `//otrositio.com` —que el navegador
-    // lee como absoluta— tampoco cuela.
-    const u = new URL(pedido, req.url);
-    const propio = new URL(req.url);
-    if (u.origin !== propio.origin) return "/dashboard";
-    if (u.pathname !== "/dashboard" && !u.pathname.startsWith("/dashboard/")) return "/dashboard";
-    return `${u.pathname}${u.search}`;
-  } catch {
-    return "/dashboard";
-  }
-}
 
 export async function GET(req: Request, { params }: { params: Promise<{ tenant: string }> }) {
   const s = await getSessionLocal();
@@ -56,7 +42,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ tenant: 
   }
 
   const { tenant } = await params;
-  const destino = NextResponse.redirect(new URL(aDondeVolver(req), req.url));
+  const destino = NextResponse.redirect(new URL(destinoSeguroDePeticion(req), req.url));
 
   if (tenant === "propio") {
     destino.cookies.delete(COOKIE_VER_PANEL);

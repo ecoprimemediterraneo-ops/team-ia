@@ -61,6 +61,31 @@ const DIC = {
   // entera. Los NOMBRES de los agentes (Pablo, Carmen, Marta, Eva, Rocio) no
   // estan aqui a proposito: son nombres propios y no se traducen.
   lat_salir: { es: "Salir", en: "Log out" },
+
+  // LA PANTALLA DE LOGIN. Entra en el video del App Review de Meta: la grabacion
+  // empieza identificandose, asi que si el login sale en castellano da igual que
+  // el panel de despues este en ingles.
+  login_titulo: { es: "Accede a tu cuenta", en: "Sign in to your account" },
+  login_sub: { es: "Introduce tu usuario y contrase\u00f1a.", en: "Enter your username and password." },
+  login_usuario: { es: "Usuario", en: "Username" },
+  login_password: { es: "Contrase\u00f1a", en: "Password" },
+  login_entrar: { es: "ENTRAR \u2192", en: "SIGN IN \u2192" },
+  login_err_bad: { es: "Usuario o contrase\u00f1a incorrectos.", en: "Wrong username or password." },
+  login_err_faltan: { es: "Rellena usuario y contrase\u00f1a.", en: "Fill in username and password." },
+  login_legal_1: { es: "Al continuar aceptas nuestros", en: "By continuing you accept our" },
+  login_legal_terminos: { es: "T\u00e9rminos", en: "Terms" },
+  login_legal_y: { es: "y nuestra", en: "and our" },
+  login_legal_privacidad: { es: "Pol\u00edtica de Privacidad", en: "Privacy Policy" },
+  login_sectores: {
+    es: "Cl\u00ednicas dentales \u00b7 est\u00e9ticas \u00b7 peluquer\u00edas \u00b7 restaurantes",
+    en: "Dental clinics \u00b7 aesthetics \u00b7 salons \u00b7 restaurants",
+  },
+  login_volver_inicio: { es: "\u2190 Volver al inicio", en: "\u2190 Back to home" },
+  /** Solo sale cuando se venia de una pantalla del panel y la sesion no valia. */
+  login_sesion_caducada: {
+    es: "Tu sesi\u00f3n ha caducado. Vuelve a entrar y te devolvemos donde estabas.",
+    en: "Your session has expired. Sign in again and we'll take you back where you were.",
+  },
   // EL SELECTOR DE CUENTA de la cabecera. Los NOMBRES de los tenants (AI-Team,
   // Gestoria Marquez) NO se traducen: son nombres propios, igual que los de los
   // agentes.

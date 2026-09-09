@@ -10,6 +10,7 @@ import EnlaceLateral from "@/components/EnlaceLateral";
 import EnlaceAgente from "@/components/EnlaceAgente";
 import MarcoPanel from "@/components/MarcoPanel";
 import T, { EnlaceIdioma } from "@/components/TextoIdioma";
+import BotonSalir from "@/components/BotonSalir";
 
 // Las tarjetas de agente NO llevan insignia de estado. Había un "LIVE" verde en los
 // conectados y un "PRÓXIMAMENTE" en Carmen y Rocío: al cliente no le dice nada útil y
@@ -47,9 +48,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <SelectorCuenta tenantIdActual={ctx.tenantId} mirandoOtro={ctx.mirandoOtro} />
             )}
             <span className="hidden sm:inline font-mono text-black/60">{session.email}</span>
-            <form action="/api/auth/logout" method="post">
-              <button className="text-xs uppercase tracking-widest font-bold border-2 border-black px-2 py-1 hover:bg-black hover:text-white"><T k="lat_salir" /></button>
-            </form>
+            {/* El botón se lleva la pantalla actual para poder volver a ella
+                tras identificarse otra vez. Ver `BotonSalir.tsx`. */}
+            <BotonSalir />
           </div>
         </div>
       </header>

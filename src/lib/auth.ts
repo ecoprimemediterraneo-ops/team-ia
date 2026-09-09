@@ -1,44 +1,17 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { COOKIE_SESION, getSecretSesion, isLocalDev } from "./sesion-jwt";
 
-const COOKIE = "team_ia_session";
-
-// Clave de firma de los JWT de sesión. En producción DEBE venir de AUTH_SECRET;
-// si falta, abortamos (fail-safe) en vez de firmar con un secreto público conocido
-// —eso permitiría a cualquiera forjar sesiones—. En desarrollo local se admite un
-// valor por defecto para poder arrancar sin configurar nada.
-//
-// LAZY a propósito: se resuelve al firmar/verificar (runtime), NO al importar el
-// módulo. Así el `next build` (que importa este módulo para recopilar metadatos, en
-// un entorno donde AUTH_SECRET puede no estar) no rompe; solo una petición real en
-// producción sin AUTH_SECRET fallará.
-let _secret: Uint8Array | null = null;
-function getSecret(): Uint8Array {
-  if (_secret) return _secret;
-  const raw = process.env.AUTH_SECRET || (isLocalDev() ? "team-ia-dev-secret-change-in-prod" : null);
-  if (!raw) {
-    throw new Error(
-      "AUTH_SECRET no está configurada en producción. Abortando: no firmamos JWT con un secreto por defecto público.",
-    );
-  }
-  _secret = new TextEncoder().encode(raw);
-  return _secret;
-}
+// El nombre de la cookie, el secreto y `isLocalDev` viven en `sesion-jwt.ts`,
+// que no importa `next/headers`: el middleware necesita esos tres y no puede
+// cargar este módulo. Se reexportan para no romper a quien ya los importaba de
+// aquí.
+const COOKIE = COOKIE_SESION;
+const getSecret = getSecretSesion;
+export { isLocalDev };
 
 // Dueño por defecto para desarrollo local (coincide con el fallback de tenants.ts).
 const DEV_OWNER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
-
-/**
- * True SOLO en desarrollo local (nunca en Vercel/producción).
- * Doble candado por seguridad:
- *   - NODE_ENV !== "production": `next dev` es "development"; cualquier build
- *     desplegado (Vercel prod o preview) es "production".
- *   - !process.env.VERCEL: en Vercel esta variable está siempre presente.
- * Si CUALQUIERA de las dos falla, no hay bypass. Fail-safe: en la duda, protege.
- */
-export function isLocalDev(): boolean {
-  return process.env.NODE_ENV !== "production" && !process.env.VERCEL;
-}
 
 export async function createSession(email: string) {
   const token = await new SignJWT({ email })
