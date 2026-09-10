@@ -62,6 +62,35 @@ const DIC = {
   // estan aqui a proposito: son nombres propios y no se traducen.
   lat_salir: { es: "Salir", en: "Log out" },
 
+  // EL HISTORIAL de la pestana "Comentarios -> DM". Se graba para el App Review
+  // de Meta, asi que el ingles tiene que leerse solo.
+  hist_titulo: { es: "Actividad reciente", en: "Recent activity" },
+  hist_sub: {
+    es: "Los \u00faltimos comentarios que dispararon una regla y qu\u00e9 se hizo con cada uno.",
+    en: "The latest comments that triggered a rule, and what was done with each one.",
+  },
+  hist_vacio: {
+    es: "Todav\u00eda no ha entrado ning\u00fan comentario con tus palabras clave. Cuando entre uno, aparecer\u00e1 aqu\u00ed.",
+    en: "No comments with your keywords have come in yet. When one does, it will show up here.",
+  },
+  hist_col_hora: { es: "Hora", en: "Time" },
+  hist_col_usuario: { es: "Usuario", en: "User" },
+  hist_col_comentario: { es: "Comentario", en: "Comment" },
+  hist_col_keyword: { es: "Palabra clave", en: "Keyword" },
+  hist_col_respuesta: { es: "Respuesta enviada", en: "Reply sent" },
+  hist_col_estado: { es: "Estado", en: "Status" },
+  hist_estado_enviado: { es: "Enviado", en: "Sent" },
+  hist_estado_error: { es: "Error", en: "Failed" },
+  hist_estado_pausa: { es: "En pausa", en: "Paused" },
+  hist_estado_detectado: { es: "Detectado", en: "Detected" },
+  hist_dm: { es: "DM", en: "DM" },
+  hist_publica: { es: "En el hilo", en: "In thread" },
+  hist_sin_texto: { es: "\u2014", en: "\u2014" },
+  hist_pausa_ayuda: {
+    es: "La regla ha saltado y el mensaje estaba listo, pero el env\u00edo autom\u00e1tico sigue en pausa.",
+    en: "The rule matched and the message was ready, but automatic sending is still paused.",
+  },
+
   // LA PANTALLA DE LOGIN. Entra en el video del App Review de Meta: la grabacion
   // empieza identificandose, asi que si el login sale en castellano da igual que
   // el panel de despues este en ingles.

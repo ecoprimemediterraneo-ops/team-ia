@@ -1,0 +1,154 @@
+// El historial de "Comentario → DM": qué entró, qué disparó y qué salió.
+//
+// POR QUÉ EXISTE
+// --------------
+// La pestaña "Comentarios → DM" del panel solo enseñaba CONFIGURACIÓN: las
+// reglas, el aviso de si el envío está encendido y un probador. Nada de lo que
+// había pasado de verdad. Desde el panel no se podía responder a la única
+// pregunta que se hace quien acaba de activar esto: «¿ha funcionado?».
+//
+// Y para el App Review de Meta importa el doble: hay que enseñar en vídeo que la
+// aplicación recibe comentarios y contesta por DM. Sin una pantalla que lo
+// muestre, lo único que se puede grabar es un formulario de configuración.
+//
+// DE DÓNDE SALEN LOS DATOS: NO SE INVENTA UN ALMACÉN NUEVO
+// --------------------------------------------------------
+// `marta-comment-flow.ts` ya escribía tres eventos por comentario en el
+// event-log (`comment_in`, `comment_reply`, `comment_dm`). Lo que faltaba no era
+// el almacén: era que esos eventos guardaran el nombre de usuario, el texto del
+// comentario, la palabra clave y el texto enviado — solo tenían identificadores.
+// Se han ampliado ahí, y este fichero solo LEE y junta.
+//
+// Montar una tabla aparte habría dejado dos registros de lo mismo, y el informe
+// mensual seguiría leyendo el otro.
+//
+// CÓMO SE JUNTAN: los tres eventos de un mismo comentario comparten `commentId`.
+// Se agrupan por ahí y cada grupo es una fila de la pantalla.
+
+import "server-only";
+import { getMonthEvents, type AnalyticsEvent } from "./event-log";
+
+export type EstadoEnvio = "enviado" | "error" | "en_pausa" | "solo_detectado";
+
+export type FilaHistorial = {
+  /** El id del comentario en Instagram. Sirve de clave de la fila. */
+  commentId: string;
+  /** ISO. La hora del comentario entrante, o la del primer evento que haya. */
+  ts: string;
+  /** El @ de quien comentó. Puede faltar: Meta no siempre lo manda. */
+  username?: string;
+  /** El identificador interno de Instagram, por si no hay username. */
+  senderId?: string;
+  /** Lo que escribió. */
+  comentario?: string;
+  /** La palabra clave que hizo saltar la regla. */
+  keyword?: string;
+  /** La regla que ganó. */
+  ruleId?: string;
+  /** El DM que se envió (o que se habría enviado, si está en pausa). */
+  dm?: string;
+  /** La respuesta pública en el hilo del post, si la regla la pedía. */
+  respuestaPublica?: string;
+  estado: EstadoEnvio;
+  /** El motivo, cuando algo falló. Texto de Meta, sin traducir. */
+  error?: string;
+};
+
+/** "YYYY-MM" de una fecha, en UTC — el mismo criterio que usa el event-log. */
+function mesDe(d: Date): string {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+type MetaComentario = {
+  kind?: string;
+  commentId?: string;
+  ruleId?: string;
+  username?: string;
+  texto?: string;
+  keyword?: string;
+  ok?: boolean;
+  gated?: boolean;
+  error?: string;
+};
+
+/**
+ * Las últimas N interacciones de comentario→DM, de más reciente a más antigua.
+ *
+ * Lee el mes en curso y el anterior. Dos y no uno porque el día 1 de mes el
+ * historial se quedaría en blanco, y una pantalla vacía se lee como "esto no
+ * funciona" en vez de como "aún no ha pasado nada este mes". Dos y no doce
+ * porque cada mes es una lectura del almacén y esto se pinta en cada carga.
+ */
+export async function historialComentarios(
+  tenantId: string,
+  limite = 20,
+): Promise<FilaHistorial[]> {
+  const ahora = new Date();
+  const anterior = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth() - 1, 1));
+
+  let eventos: AnalyticsEvent[] = [];
+  try {
+    const [a, b] = await Promise.all([
+      getMonthEvents(tenantId, mesDe(ahora)),
+      getMonthEvents(tenantId, mesDe(anterior)),
+    ]);
+    eventos = [...a, ...b];
+  } catch {
+    // Un almacén que no responde no puede tumbar la pestaña entera: se enseña
+    // vacía, que es exactamente lo que se ve cuando no ha pasado nada.
+    return [];
+  }
+
+  // Solo lo de comentario→DM. El bucket lleva de todo: posts publicados,
+  // citas, recalls… y esta pantalla es de una cosa concreta.
+  const suyos = eventos.filter((e) => {
+    const m = (e.meta ?? {}) as MetaComentario;
+    return (
+      e.channel === "marta" &&
+      typeof m.commentId === "string" &&
+      (m.kind === "comment" || m.kind === "comment_reply" || m.kind === "comment_dm")
+    );
+  });
+
+  const porComentario = new Map<string, FilaHistorial>();
+  // De más antiguo a más nuevo: así el evento de salida, que llega después,
+  // escribe el estado final encima del provisional.
+  for (const e of [...suyos].sort((x, y) => x.ts.localeCompare(y.ts))) {
+    const m = (e.meta ?? {}) as MetaComentario;
+    const id = m.commentId!;
+    const fila: FilaHistorial = porComentario.get(id) ?? {
+      commentId: id,
+      ts: e.ts,
+      estado: "solo_detectado",
+    };
+
+    // El username llega en los tres eventos; se queda el primero que venga.
+    if (!fila.username && m.username) fila.username = m.username;
+    if (!fila.senderId && e.senderId) fila.senderId = e.senderId;
+    if (!fila.ruleId && m.ruleId) fila.ruleId = m.ruleId;
+
+    if (m.kind === "comment") {
+      // La hora que se enseña es la de ENTRADA del comentario, no la del envío:
+      // es la que el gestor puede cruzar con lo que ve en Instagram.
+      fila.ts = e.ts;
+      fila.comentario = m.texto;
+      fila.keyword = m.keyword;
+    } else if (m.kind === "comment_reply") {
+      fila.respuestaPublica = m.texto;
+      if (m.ok === false && !fila.error) fila.error = m.error;
+    } else if (m.kind === "comment_dm") {
+      fila.dm = m.texto;
+      // `gated` no es un fallo: es que el envío está en pausa a propósito
+      // mientras Meta no apruebe los permisos. Mezclarlo con los errores haría
+      // que el panel gritara "error" por algo que está bien configurado.
+      fila.estado = m.gated ? "en_pausa" : m.ok ? "enviado" : "error";
+      if (m.error) fila.error = m.error;
+    }
+
+    porComentario.set(id, fila);
+  }
+
+  return [...porComentario.values()]
+    .sort((a, b) => b.ts.localeCompare(a.ts))
+    .slice(0, limite);
+}

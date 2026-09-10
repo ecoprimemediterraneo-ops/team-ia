@@ -105,6 +105,30 @@ export type ResultadoComentario = {
  * Devuelve el detalle de lo que ha pasado en cada paso en vez de `void`: el
  * webhook lo usa para loguear y la ruta de prueba para enseñarlo tal cual.
  */
+/**
+ * Los textos que se guardan en el historial van recortados.
+ *
+ * El bucket de eventos es una sola clave por mes: si se guardan comentarios y
+ * DMs enteros sin tope, una cuenta con tráfico la infla hasta que deja de caber.
+ * 300 caracteres sobran para reconocer de qué iba un comentario en una lista.
+ */
+const recorte = (t: string | undefined, max = 300): string | undefined =>
+  t === undefined ? undefined : t.length > max ? `${t.slice(0, max)}…` : t;
+
+/**
+ * Cuál de las palabras clave de la regla ha disparado, no todas las que tiene.
+ *
+ * En el historial hay que poder decir "saltó por 'precio'", y una regla puede
+ * tener seis palabras. Se busca la primera que aparezca en el comentario; si
+ * ninguna cuadra (la regla puede haber casado por `scope` o por otra vía), se
+ * devuelven las de la regla para no dejar la columna vacía.
+ */
+function keywordQueDisparo(rule: CommentRule, texto: string): string | undefined {
+  const t = texto.toLowerCase();
+  const k = (rule.keywords || []).find((w) => w && t.includes(w.toLowerCase()));
+  return k ?? (rule.keywords || [])[0];
+}
+
 export async function procesarComentario(
   tenantId: string,
   entryId: string | undefined,
@@ -187,7 +211,22 @@ export async function procesarComentario(
       type: "message_in",
       channel: "marta",
       senderId: fromId,
-      meta: { kind: "comment", commentId, mediaId, ruleId: rule.id },
+      // AMPLIADO para el historial de la pestaña "Comentarios → DM".
+      //
+      // Antes solo se guardaban ids: `commentId`, `mediaId` y `ruleId`. Eso vale
+      // para contar cuántos comentarios entraron, que es lo que necesita el
+      // informe mensual, pero no para que el gestor RECONOZCA un comentario en
+      // una lista. Con solo el id no se sabe quién escribió, qué escribió ni por
+      // qué saltó la regla — y eso es justo lo que hay que enseñar en pantalla.
+      meta: {
+        kind: "comment",
+        commentId,
+        mediaId,
+        ruleId: rule.id,
+        username,
+        texto: recorte(text),
+        keyword: keywordQueDisparo(rule, text),
+      },
     });
   }
 
@@ -197,6 +236,30 @@ export async function procesarComentario(
       `Envío APAGADO para tenant=${tenantId} (no está en MARTA_COMMENT_DM_TENANTS ` +
       `ni hay MARTA_COMMENT_DM_ENABLED=true).`;
     console.log(`[marta/comment] comment-to-DM GATED. ${detalle} DM que habría salido: "${dmTexto.slice(0, 200)}"`);
+
+    // TAMBIÉN SE REGISTRA CUANDO NO SE ENVÍA, y esto no es un detalle.
+    //
+    // Con el envío en pausa —que es el estado de hoy, hasta que Meta apruebe el
+    // App Review— aquí se salía sin escribir nada de salida. En el historial se
+    // vería el comentario entrando y después nada, como si el sistema se hubiera
+    // tragado el caso. Y "detectado pero no enviado, porque está en pausa" es
+    // información: dice que la regla funciona y que solo falta el permiso.
+    await safeLogEvent(tenantId, {
+      id: makeEventId("comment_dm_gated", "marta", commentId),
+      type: "message_out",
+      channel: "marta",
+      senderId: fromId,
+      meta: {
+        kind: "comment_dm",
+        commentId,
+        ruleId: rule.id,
+        username,
+        texto: recorte(dmTexto),
+        ok: false,
+        gated: true,
+      },
+    });
+
     return {
       ...base,
       parado: "envio_apagado",
@@ -238,6 +301,8 @@ export async function procesarComentario(
         kind: "comment_reply",
         commentId,
         ruleId: rule.id,
+        username,
+        texto: recorte(publicText),
         ok: res.ok,
         replyId: res.replyId,
         via: res.gano,
@@ -274,7 +339,17 @@ export async function procesarComentario(
     type: "message_out",
     channel: "marta",
     senderId: fromId,
-    meta: { kind: "comment_dm", commentId, ruleId: rule.id, ok: dmOk },
+    meta: {
+      kind: "comment_dm",
+      commentId,
+      ruleId: rule.id,
+      username,
+      texto: recorte(dmTexto),
+      ok: dmOk,
+      // El motivo del fallo, tal como lo devuelve Meta. Sin esto, en el
+      // historial un DM fallido y uno enviado se ven igual salvo por el color.
+      error: dmOk ? undefined : JSON.stringify(sendResult).slice(0, 300),
+    },
   });
 
   return {

@@ -24,9 +24,10 @@ import {
 } from "./types";
 import type { MartaProposal } from "@/lib/marta-proposals";
 import type { MartaSchedule } from "@/lib/marta-schedule";
-import { traductor, type Idioma } from "@/lib/idioma";
+import { traductor, type Idioma, type ClaveTexto } from "@/lib/idioma";
 import { useHrefIdioma, useIdiomaPanel } from "@/components/TextoIdioma";
 import type { CommentRule, MatchMode } from "@/lib/marta-comment-rules";
+import type { FilaHistorial } from "@/lib/marta-comment-historial";
 import { MARTA_TOPICS } from "@/lib/marta-topics";
 
 type Tab = "nuevo" | "arranque" | "mensajes" | "historial" | "calendario" | "comentarios";
@@ -35,6 +36,7 @@ export default function MartaLivePanel({
   initialProposals,
   enabled,
   initialCommentRules,
+  historialComentarios = [],
   commentDmEnabled,
   calendario,
   conectar,
@@ -53,6 +55,8 @@ export default function MartaLivePanel({
   directPublishEnabled?: boolean;
   cronDaily?: boolean;
   initialCommentRules: CommentRule[];
+  /** Lo que YA ha pasado: se calcula en el servidor y baja pintado. */
+  historialComentarios?: FilaHistorial[];
   commentDmEnabled: boolean;
   /** Calendario del mes (server component) montado como slot en la pestaña "Calendario". */
   calendario: React.ReactNode;
@@ -135,6 +139,7 @@ export default function MartaLivePanel({
         <ComentariosBlock
           initialRules={initialCommentRules}
           commentDmEnabled={commentDmEnabled}
+          historial={historialComentarios}
         />
       )}
       {tab === "arranque" && (
@@ -896,9 +901,11 @@ export function ProgramacionBlock({
 function ComentariosBlock({
   initialRules,
   commentDmEnabled,
+  historial,
 }: {
   initialRules: CommentRule[];
   commentDmEnabled: boolean;
+  historial: FilaHistorial[];
 }) {
   const [editing, setEditing] = useState<CommentRule | null>(null);
   const [creating, setCreating] = useState(initialRules.length === 0);
@@ -982,8 +989,164 @@ function ComentariosBlock({
         </button>
       )}
 
+      {/* LO QUE YA HA PASADO. Va antes del probador a propósito: al abrir la
+          pestaña, lo primero que se quiere saber es si esto ha funcionado con
+          gente de verdad, no cómo se prueba. */}
+      <HistorialComentarios filas={historial} />
+
       {/* Probador */}
       <ProbadorComentario commentDmEnabled={commentDmEnabled} />
+    </div>
+  );
+}
+
+/**
+ * ACTIVIDAD RECIENTE: los últimos comentarios que dispararon una regla.
+ *
+ * Sale de eventos REALES del registro (`marta-comment-historial.ts`), no de
+ * datos de ejemplo: si está vacío es que no ha entrado ningún comentario con
+ * las palabras clave, y eso se dice con esas palabras en vez de dejar un hueco.
+ *
+ * En móvil no es una tabla sino una tarjeta por fila: seis columnas en 375 px
+ * no se leen, y esto se mira desde el teléfono tanto como desde el escritorio.
+ */
+function HistorialComentarios({ filas }: { filas: FilaHistorial[] }) {
+  const idioma = useIdiomaPanel();
+  const t = traductor(idioma);
+
+  const hora = (iso: string) => {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    // Fecha corta + hora: el día importa —un comentario de hace una semana no
+    // es el de esta mañana— y la hora sola no lo dice.
+    return d.toLocaleString(idioma === "en" ? "en-GB" : "es-ES", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const ESTADOS: Record<FilaHistorial["estado"], { k: ClaveTexto; clase: string }> = {
+    enviado: { k: "hist_estado_enviado", clase: "bg-[#14B8A6] text-white border-black" },
+    error: { k: "hist_estado_error", clase: "bg-[color:var(--red)] text-white border-black" },
+    en_pausa: { k: "hist_estado_pausa", clase: "bg-[color:var(--mustard)] text-black border-black" },
+    solo_detectado: { k: "hist_estado_detectado", clase: "bg-white text-black/60 border-black/30" },
+  };
+
+  const Estado = ({ f }: { f: FilaHistorial }) => {
+    const e = ESTADOS[f.estado];
+    return (
+      <span
+        title={f.estado === "en_pausa" ? t("hist_pausa_ayuda") : f.error || undefined}
+        className={`inline-block text-[10px] font-mono uppercase tracking-widest border-2 px-1.5 py-0.5 whitespace-nowrap ${e.clase}`}
+      >
+        {t(e.k)}
+      </span>
+    );
+  };
+
+  /** El @ de quien comentó; si Meta no lo mandó, su identificador. */
+  const quien = (f: FilaHistorial) =>
+    f.username ? `@${f.username}` : f.senderId ? f.senderId.slice(0, 12) : t("hist_sin_texto");
+
+  return (
+    <div className="card-hard bg-white p-5">
+      <div className="font-stencil text-2xl leading-none">{t("hist_titulo")}</div>
+      <p className="text-sm text-black/60 leading-snug mt-1 mb-4">{t("hist_sub")}</p>
+
+      {filas.length === 0 ? (
+        <p className="text-sm text-black/45 border-2 border-black/10 px-3 py-4 text-center leading-snug">
+          {t("hist_vacio")}
+        </p>
+      ) : (
+        <>
+          {/* ESCRITORIO */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="text-[10px] font-mono uppercase tracking-widest text-black/45">
+                  <th className="pb-2 pr-3 font-normal whitespace-nowrap">{t("hist_col_hora")}</th>
+                  <th className="pb-2 pr-3 font-normal">{t("hist_col_usuario")}</th>
+                  <th className="pb-2 pr-3 font-normal">{t("hist_col_comentario")}</th>
+                  <th className="pb-2 pr-3 font-normal">{t("hist_col_keyword")}</th>
+                  <th className="pb-2 pr-3 font-normal">{t("hist_col_respuesta")}</th>
+                  <th className="pb-2 font-normal">{t("hist_col_estado")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filas.map((f) => (
+                  <tr key={f.commentId} className="border-t-2 border-black/10 align-top">
+                    <td className="py-2 pr-3 text-[11px] font-mono text-black/55 whitespace-nowrap">{hora(f.ts)}</td>
+                    <td className="py-2 pr-3 text-xs font-bold">{quien(f)}</td>
+                    <td className="py-2 pr-3 text-xs text-black/80 max-w-[16rem]">
+                      {f.comentario || t("hist_sin_texto")}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {f.keyword ? (
+                        <span className="text-[10px] font-mono bg-black/5 border border-black/15 px-1.5 py-0.5">
+                          {f.keyword}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-black/30">{t("hist_sin_texto")}</span>
+                      )}
+                    </td>
+                    <td className="py-2 pr-3 text-xs text-black/80 max-w-[18rem] space-y-1">
+                      {f.dm && (
+                        <div>
+                          <span className="text-[9px] font-mono uppercase tracking-widest text-black/40 mr-1">
+                            {t("hist_dm")}
+                          </span>
+                          {f.dm}
+                        </div>
+                      )}
+                      {f.respuestaPublica && (
+                        <div className="text-black/55">
+                          <span className="text-[9px] font-mono uppercase tracking-widest text-black/40 mr-1">
+                            {t("hist_publica")}
+                          </span>
+                          {f.respuestaPublica}
+                        </div>
+                      )}
+                      {!f.dm && !f.respuestaPublica && (
+                        <span className="text-black/30">{t("hist_sin_texto")}</span>
+                      )}
+                    </td>
+                    <td className="py-2"><Estado f={f} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* MÓVIL */}
+          <ul className="md:hidden space-y-3">
+            {filas.map((f) => (
+              <li key={f.commentId} className="border-2 border-black/10 p-3 space-y-1.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-xs font-bold">{quien(f)}</span>
+                  <Estado f={f} />
+                </div>
+                <div className="text-[11px] font-mono text-black/45">{hora(f.ts)}</div>
+                {f.comentario && <p className="text-xs text-black/80 leading-snug">{f.comentario}</p>}
+                {f.keyword && (
+                  <span className="inline-block text-[10px] font-mono bg-black/5 border border-black/15 px-1.5 py-0.5">
+                    {f.keyword}
+                  </span>
+                )}
+                {f.dm && (
+                  <p className="text-xs text-black/70 leading-snug">
+                    <span className="text-[9px] font-mono uppercase tracking-widest text-black/40 mr-1">
+                      {t("hist_dm")}
+                    </span>
+                    {f.dm}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }

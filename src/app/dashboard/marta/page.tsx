@@ -10,6 +10,7 @@ import { listProposalsByTenant } from "@/lib/marta-proposals";
 import { isPublishEnabled } from "@/lib/marta-publish";
 import { getSchedule, DIRECT_PUBLISH_ENABLED, CRON_GRANULARITY } from "@/lib/marta-schedule";
 import { getCommentRules, isCommentDmEnabled } from "@/lib/marta-comment-rules";
+import { historialComentarios } from "@/lib/marta-comment-historial";
 import { tokenInstagramDeTenant, conexionPendienteDeTenant } from "@/lib/instagram-login";
 import BloqueConectar from "./conectar/BloqueConectar";
 import BloqueMensajes from "./mensajes/BloqueMensajes";
@@ -63,6 +64,10 @@ export default async function MartaPage({
   // Por TENANT: el envío está encendido en la cuenta propia (hace falta para
   // grabar el vídeo del App Review) y apagado en la de cualquier cliente.
   const commentDmEnabled = isCommentDmEnabled(tenantId);
+  // Los últimos 20 comentarios que dispararon una regla. Se lee en el servidor,
+  // como las reglas: son dos lecturas del mismo almacén y así la pestaña llega
+  // pintada en vez de parpadear mientras pide los datos.
+  const historial = await historialComentarios(tenantId, 20);
   // ¿Tiene este cliente su cuenta de Instagram conectada? De aquí sale tanto el
   // rótulo de la cabecera como el aviso de abajo.
   const instagram = await tokenInstagramDeTenant(tenantId);
@@ -141,6 +146,7 @@ export default async function MartaPage({
         cronDaily={CRON_GRANULARITY === "daily"}
         initialCommentRules={commentRules}
         commentDmEnabled={commentDmEnabled}
+        historialComentarios={historial}
         initialTab={initialTab}
         calendario={<CalendarioMes tenantId={tenantId} heading={false} />}
         idioma={idioma}
