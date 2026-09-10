@@ -19,16 +19,22 @@
 // comentario, la palabra clave y el texto enviado — solo tenían identificadores.
 // Se han ampliado ahí, y este fichero solo LEE y junta.
 //
-// Montar una tabla aparte habría dejado dos registros de lo mismo, y el informe
-// mensual seguiría leyendo el otro.
+// LOS DESCARTES TAMBIÉN SALEN. Un comentario que llega y no sigue adelante —no
+// casa con ninguna regla, o se escribió desde la propia cuenta— se registra como
+// `comment_descartado` con su motivo. Antes se perdía en un log que dura una
+// hora, y desde el panel un comentario descartado y uno que nunca llegó se veían
+// exactamente igual: no se veían.
 //
-// CÓMO SE JUNTAN: los tres eventos de un mismo comentario comparten `commentId`.
-// Se agrupan por ahí y cada grupo es una fila de la pantalla.
+// CÓMO SE JUNTAN: los eventos de un mismo comentario comparten `commentId`. Se
+// agrupan por ahí y cada grupo es una fila de la pantalla.
 
 import "server-only";
 import { getMonthEvents, type AnalyticsEvent } from "./event-log";
 
-export type EstadoEnvio = "enviado" | "error" | "en_pausa" | "solo_detectado";
+export type EstadoEnvio = "enviado" | "error" | "en_pausa" | "solo_detectado" | "ignorado";
+
+/** Por qué se descartó. Solo cuando `estado` es "ignorado". */
+export type MotivoIgnorado = "sin_regla" | "comentario_propio" | "sin_id_o_texto";
 
 export type FilaHistorial = {
   /** El id del comentario en Instagram. Sirve de clave de la fila. */
@@ -52,6 +58,8 @@ export type FilaHistorial = {
   estado: EstadoEnvio;
   /** El motivo, cuando algo falló. Texto de Meta, sin traducir. */
   error?: string;
+  /** Por qué se ignoró, cuando se ignoró. */
+  motivo?: MotivoIgnorado;
 };
 
 /** "YYYY-MM" de una fecha, en UTC — el mismo criterio que usa el event-log. */
@@ -69,7 +77,10 @@ type MetaComentario = {
   ok?: boolean;
   gated?: boolean;
   error?: string;
+  motivo?: MotivoIgnorado;
 };
+
+const KINDS = new Set(["comment", "comment_reply", "comment_dm", "comment_descartado"]);
 
 /**
  * Las últimas N interacciones de comentario→DM, de más reciente a más antigua.
@@ -103,11 +114,7 @@ export async function historialComentarios(
   // citas, recalls… y esta pantalla es de una cosa concreta.
   const suyos = eventos.filter((e) => {
     const m = (e.meta ?? {}) as MetaComentario;
-    return (
-      e.channel === "marta" &&
-      typeof m.commentId === "string" &&
-      (m.kind === "comment" || m.kind === "comment_reply" || m.kind === "comment_dm")
-    );
+    return e.channel === "marta" && typeof m.kind === "string" && KINDS.has(m.kind);
   });
 
   const porComentario = new Map<string, FilaHistorial>();
@@ -115,14 +122,16 @@ export async function historialComentarios(
   // escribe el estado final encima del provisional.
   for (const e of [...suyos].sort((x, y) => x.ts.localeCompare(y.ts))) {
     const m = (e.meta ?? {}) as MetaComentario;
-    const id = m.commentId!;
+    // Un descarte "sin id" no tiene commentId: se agrupa por el id del evento
+    // para que no se junten todos en una sola fila.
+    const id = m.commentId || `evento:${e.id}`;
     const fila: FilaHistorial = porComentario.get(id) ?? {
       commentId: id,
       ts: e.ts,
       estado: "solo_detectado",
     };
 
-    // El username llega en los tres eventos; se queda el primero que venga.
+    // El username llega en todos los eventos; se queda el primero que venga.
     if (!fila.username && m.username) fila.username = m.username;
     if (!fila.senderId && e.senderId) fila.senderId = e.senderId;
     if (!fila.ruleId && m.ruleId) fila.ruleId = m.ruleId;
@@ -133,6 +142,11 @@ export async function historialComentarios(
       fila.ts = e.ts;
       fila.comentario = m.texto;
       fila.keyword = m.keyword;
+    } else if (m.kind === "comment_descartado") {
+      fila.ts = e.ts;
+      fila.comentario = m.texto;
+      fila.estado = "ignorado";
+      fila.motivo = m.motivo;
     } else if (m.kind === "comment_reply") {
       fila.respuestaPublica = m.texto;
       if (m.ok === false && !fila.error) fila.error = m.error;

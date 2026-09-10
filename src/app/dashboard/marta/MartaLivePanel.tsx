@@ -909,45 +909,46 @@ function ComentariosBlock({
 }) {
   const [editing, setEditing] = useState<CommentRule | null>(null);
   const [creating, setCreating] = useState(initialRules.length === 0);
+  // TODA la pestaña habla el idioma de la URL. Hasta ahora solo lo hacía el
+  // historial: el resto era castellano escrito a mano, y esta pestaña se graba
+  // para el App Review de Meta, que exige la interfaz en inglés.
+  const t = traductor(useIdiomaPanel());
 
   return (
     <div className="space-y-5">
       {commentDmEnabled ? (
         <div className="card-hard bg-white p-4 border-[3px] border-[#14B8A6] text-sm">
-          <div className="font-bold mb-1">Envío de DM ACTIVO en esta cuenta</div>
+          <div className="font-bold mb-1">{t("cdm_on_titulo")}</div>
           <p className="text-xs text-black/70 leading-snug">
-            Un comentario con la palabra clave dispara la respuesta pública y el DM de
-            verdad. Sigue haciendo falta que la Página esté suscrita al campo{" "}
-            <code className="text-[10px]">comments</code> del webhook: sin eso el comentario
-            no llega hasta aquí y no se dispara nada.
+            {t("cdm_on_1")} <code className="text-[10px]">comments</code> {t("cdm_on_2")}
           </p>
         </div>
       ) : (
         <div className="card-hard bg-white p-4 border-[3px] border-[color:var(--mustard)] text-sm">
-          <div className="font-bold mb-1">Envío de DM en pausa (App Review pendiente)</div>
+          <div className="font-bold mb-1">{t("cdm_off_titulo")}</div>
           <p className="text-xs text-black/70 leading-snug">
-            Puedes crear y <strong>probar</strong> tus reglas ya mismo. El envío automático
-            del DM se activará cuando Meta apruebe los permisos{" "}
-            <code className="text-[10px]">instagram_manage_comments</code> y{" "}
-            <code className="text-[10px]">instagram_business_manage_messages</code>. Hasta
-            entonces, Marta detecta la palabra clave y la registra, pero no manda nada.
+            {t("cdm_off_1")} <strong>{t("cdm_off_probar")}</strong> {t("cdm_off_2")}{" "}
+            <code className="text-[10px]">instagram_manage_comments</code> {t("cdm_y")}{" "}
+            <code className="text-[10px]">instagram_business_manage_messages</code>
+            {/* Sin punto ni espacio aquí: los pone la frase, porque en inglés
+                antes del punto va "permissions" y en castellano no. */}
+            {t("cdm_off_3")}
           </p>
         </div>
       )}
 
       <div className="card-hard bg-white p-5 space-y-2">
         <div className="text-[10px] font-mono uppercase tracking-widest text-black/45">
-          Interacción · independiente de la publicación de posts
+          {t("cdm_intro_etiqueta")}
         </div>
-        <div className="font-stencil text-2xl leading-none">Comentario → DM automático</div>
+        <div className="font-stencil text-2xl leading-none">{t("cdm_intro_titulo")}</div>
         <p className="text-sm text-black/60 leading-snug">
-          Cuando alguien comenta una <strong>palabra clave</strong> en uno de tus posts,
-          Marta le manda al instante un <strong>DM privado</strong> con tu mensaje. Si
-          contesta, sigue la conversación con IA. Es la función estrella de ManyChat.
+          {t("cdm_intro_1")} <strong>{t("cdm_intro_palabra")}</strong> {t("cdm_intro_2")}{" "}
+          <strong>{t("cdm_intro_dm")}</strong> {t("cdm_intro_3")}
         </p>
         <p className="text-[11px] text-black/45">
-          El primer DM es una plantilla fija que tú escribes (control total). Usa{" "}
-          <code className="text-[10px] bg-black/5 px-1">{"{usuario}"}</code> para citar a quien comenta.
+          {t("cdm_intro_plantilla_1")}{" "}
+          <code className="text-[10px] bg-black/5 px-1">{"{usuario}"}</code> {t("cdm_intro_plantilla_2")}
         </p>
       </div>
 
@@ -985,7 +986,7 @@ function ComentariosBlock({
           onClick={() => setCreating(true)}
           className="btn-mustard text-sm px-6 py-3"
         >
-          + Nueva regla
+          {t("cdm_nueva_regla")}
         </button>
       )}
 
@@ -1032,6 +1033,14 @@ function HistorialComentarios({ filas }: { filas: FilaHistorial[] }) {
     error: { k: "hist_estado_error", clase: "bg-[color:var(--red)] text-white border-black" },
     en_pausa: { k: "hist_estado_pausa", clase: "bg-[color:var(--mustard)] text-black border-black" },
     solo_detectado: { k: "hist_estado_detectado", clase: "bg-white text-black/60 border-black/30" },
+    // Gris y no rojo: un comentario que no casa con ninguna regla no es un fallo.
+    ignorado: { k: "hist_estado_ignorado", clase: "bg-black/5 text-black/55 border-black/25" },
+  };
+
+  const MOTIVOS: Record<NonNullable<FilaHistorial["motivo"]>, ClaveTexto> = {
+    sin_regla: "hist_motivo_sin_regla",
+    comentario_propio: "hist_motivo_propio",
+    sin_id_o_texto: "hist_motivo_vacio",
   };
 
   const Estado = ({ f }: { f: FilaHistorial }) => {
@@ -1109,7 +1118,12 @@ function HistorialComentarios({ filas }: { filas: FilaHistorial[] }) {
                         </div>
                       )}
                       {!f.dm && !f.respuestaPublica && (
-                        <span className="text-black/30">{t("hist_sin_texto")}</span>
+                        f.motivo ? (
+                          // Ignorado: en vez de un guion, por qué no salió nada.
+                          <span className="text-black/55 italic">{t(MOTIVOS[f.motivo])}</span>
+                        ) : (
+                          <span className="text-black/30">{t("hist_sin_texto")}</span>
+                        )
                       )}
                     </td>
                     <td className="py-2"><Estado f={f} /></td>
@@ -1134,6 +1148,9 @@ function HistorialComentarios({ filas }: { filas: FilaHistorial[] }) {
                     {f.keyword}
                   </span>
                 )}
+                {f.motivo && (
+                  <p className="text-xs text-black/55 italic leading-snug">{t(MOTIVOS[f.motivo])}</p>
+                )}
                 {f.dm && (
                   <p className="text-xs text-black/70 leading-snug">
                     <span className="text-[9px] font-mono uppercase tracking-widest text-black/40 mr-1">
@@ -1155,11 +1172,13 @@ function ReglaCard({ rule, onEdit }: { rule: CommentRule; onEdit: () => void }) 
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
+  const idioma = useIdiomaPanel();
+  const t = traductor(idioma);
 
   function toggle() {
     setMsg(null);
     startTransition(async () => {
-      const r = await toggleReglaComentarioAction(rule.id, !rule.enabled);
+      const r = await toggleReglaComentarioAction(rule.id, !rule.enabled, idioma);
       if (r.ok) router.refresh();
       else setMsg(r.message);
     });
@@ -1168,7 +1187,7 @@ function ReglaCard({ rule, onEdit }: { rule: CommentRule; onEdit: () => void }) 
   function eliminar() {
     setMsg(null);
     startTransition(async () => {
-      const r = await eliminarReglaComentarioAction(rule.id);
+      const r = await eliminarReglaComentarioAction(rule.id, idioma);
       if (r.ok) router.refresh();
       else setMsg(r.message);
     });
@@ -1182,14 +1201,14 @@ function ReglaCard({ rule, onEdit }: { rule: CommentRule; onEdit: () => void }) 
             rule.enabled ? "bg-[#14B8A6] text-white" : "bg-black/30 text-white"
           }`}
         >
-          {rule.enabled ? "ACTIVA" : "PAUSADA"}
+          {rule.enabled ? t("cdm_activa") : t("cdm_pausada")}
         </span>
         <span className="text-[10px] font-mono text-black/50">
-          {rule.matchMode === "exacto" ? "coincidencia exacta" : "contiene la palabra"}
+          {rule.matchMode === "exacto" ? t("cdm_exacto") : t("cdm_contiene")}
         </span>
         <span className="text-black/40">·</span>
         <span className="text-[10px] font-mono text-black/50">
-          {rule.scope === "all" ? "todos los posts" : `post ${rule.scope.slice(0, 12)}…`}
+          {rule.scope === "all" ? t("cdm_todos") : `${t("cdm_post")} ${rule.scope.slice(0, 12)}…`}
         </span>
       </div>
 
@@ -1206,14 +1225,16 @@ function ReglaCard({ rule, onEdit }: { rule: CommentRule; onEdit: () => void }) 
 
       <div className="bg-black/[0.03] border-2 border-black/10 p-3">
         <div className="text-[10px] font-mono uppercase tracking-widest text-black/45 mb-1">
-          Primer DM
+          {t("cdm_primer_dm")}
         </div>
         <p className="text-xs text-black/80 whitespace-pre-wrap leading-relaxed">{rule.dmMessage}</p>
       </div>
 
       {rule.replyPublic && (
         <p className="text-[11px] text-black/55 mt-2">
-          💬 Respuesta pública al comentario:{" "}
+          {t("cdm_resp_publica")}{" "}
+          {/* El texto entrecomillado NO se traduce: es lo que Marta publica de
+              verdad en Instagram, y la pantalla tiene que enseñar eso mismo. */}
           <span className="italic">
             &ldquo;{rule.publicReplyText || "¡Te acabo de escribir por privado! 📩"}&rdquo;
           </span>
@@ -1227,7 +1248,7 @@ function ReglaCard({ rule, onEdit }: { rule: CommentRule; onEdit: () => void }) 
           onClick={onEdit}
           className="text-xs uppercase tracking-widest font-bold border-2 border-black px-3 py-1.5 bg-white hover:bg-black/5 disabled:opacity-50"
         >
-          ✏️ Editar
+          {t("cdm_editar")}
         </button>
         <button
           type="button"
@@ -1235,7 +1256,7 @@ function ReglaCard({ rule, onEdit }: { rule: CommentRule; onEdit: () => void }) 
           onClick={toggle}
           className="text-xs uppercase tracking-widest font-bold border-2 border-black px-3 py-1.5 bg-[color:var(--mustard)] disabled:opacity-50"
         >
-          {rule.enabled ? "⏸ Pausar" : "▶ Activar"}
+          {rule.enabled ? t("cdm_pausar") : t("cdm_activar")}
         </button>
         <button
           type="button"
@@ -1243,7 +1264,7 @@ function ReglaCard({ rule, onEdit }: { rule: CommentRule; onEdit: () => void }) 
           onClick={eliminar}
           className="text-xs uppercase tracking-widest font-bold border-2 border-black px-3 py-1.5 bg-white hover:bg-black/5 disabled:opacity-50"
         >
-          🗑 Eliminar
+          {t("cdm_eliminar")}
         </button>
       </div>
       {msg && <p className="text-[11px] text-[color:var(--red)] mt-2">{msg}</p>}
@@ -1255,14 +1276,15 @@ function ReglaEditor({ rule, onDone }: { rule: CommentRule | null; onDone: () =>
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const idioma = useIdiomaPanel();
+  const t = traductor(idioma);
 
   const [enabled, setEnabled] = useState(rule?.enabled ?? true);
   const [keywordsRaw, setKeywordsRaw] = useState((rule?.keywords ?? []).join(", "));
   const [matchMode, setMatchMode] = useState<MatchMode>(rule?.matchMode ?? "contiene");
-  const [dmMessage, setDmMessage] = useState(
-    rule?.dmMessage ??
-      "¡Hola {usuario}! 🙌 Gracias por tu interés. Te paso toda la info por aquí: …",
-  );
+  // Solo la plantilla de una regla NUEVA sale en el idioma del panel. Una regla
+  // que ya existe conserva su texto: es lo que se envía, y no se reescribe solo.
+  const [dmMessage, setDmMessage] = useState(rule?.dmMessage ?? t("cdm_ed_dm_defecto"));
   const [scope, setScope] = useState(rule?.scope ?? "all");
   const [replyPublic, setReplyPublic] = useState(rule?.replyPublic ?? false);
   const [publicReplyText, setPublicReplyText] = useState(rule?.publicReplyText ?? "");
@@ -1279,7 +1301,7 @@ function ReglaEditor({ rule, onDone }: { rule: CommentRule | null; onDone: () =>
         scope: scope.trim() || "all",
         replyPublic,
         publicReplyText,
-      });
+      }, idioma);
       setMsg({ ok: r.ok, text: r.message });
       if (r.ok) {
         router.refresh();
@@ -1291,45 +1313,45 @@ function ReglaEditor({ rule, onDone }: { rule: CommentRule | null; onDone: () =>
   return (
     <div className="card-hard bg-white p-5 space-y-4 border-[3px] border-black">
       <div className="font-stencil text-xl leading-none">
-        {rule ? "Editar regla" : "Nueva regla Comentario → DM"}
+        {rule ? t("cdm_ed_editar") : t("cdm_ed_nueva")}
       </div>
 
       {/* Palabras clave */}
       <div>
         <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
-          Palabras clave (separadas por coma)
+          {t("cdm_ed_keywords")}
         </label>
         <input
           type="text"
           value={keywordsRaw}
           onChange={(e) => setKeywordsRaw(e.target.value)}
-          placeholder="QUIERO, INFO, PRECIO"
+          placeholder={t("cdm_ed_keywords_ph")}
           className="border-2 border-black px-3 py-2 text-sm w-full font-mono"
         />
         <p className="text-[11px] text-black/50 mt-1">
-          Si el comentario casa con cualquiera de ellas, salta el DM. No distingue mayúsculas ni tildes.
+          {t("cdm_ed_keywords_ayuda")}
         </p>
       </div>
 
       {/* Modo */}
       <div>
         <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
-          Cómo casar
+          {t("cdm_ed_modo")}
         </label>
         <select
           value={matchMode}
           onChange={(e) => setMatchMode(e.target.value as MatchMode)}
           className="border-2 border-black px-3 py-2 text-sm w-full font-mono"
         >
-          <option value="contiene">El comentario CONTIENE la palabra</option>
-          <option value="exacto">El comentario es EXACTAMENTE la palabra</option>
+          <option value="contiene">{t("cdm_ed_modo_contiene")}</option>
+          <option value="exacto">{t("cdm_ed_modo_exacto")}</option>
         </select>
       </div>
 
       {/* DM */}
       <div>
         <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
-          Primer DM (plantilla fija) *
+          {t("cdm_ed_dm")}
         </label>
         <textarea
           value={dmMessage}
@@ -1338,30 +1360,30 @@ function ReglaEditor({ rule, onDone }: { rule: CommentRule | null; onDone: () =>
           className="border-2 border-black px-3 py-2 text-sm w-full font-mono leading-relaxed"
         />
         <p className="text-[11px] text-black/50 mt-1">
-          Usa <code className="text-[10px] bg-black/5 px-1">{"{usuario}"}</code> para citar a quien comenta.
-          La conversación posterior la lleva la IA.
+          {t("cdm_ed_dm_ayuda_1")} <code className="text-[10px] bg-black/5 px-1">{"{usuario}"}</code>{" "}
+          {t("cdm_ed_dm_ayuda_2")}
         </p>
       </div>
 
       {/* Scope */}
       <div>
         <label className="block text-[10px] font-mono uppercase tracking-widest text-black/55 mb-1">
-          ¿En qué posts aplica?
+          {t("cdm_ed_scope")}
         </label>
         <select
           value={scope === "all" ? "all" : "media"}
           onChange={(e) => setScope(e.target.value === "all" ? "all" : "")}
           className="border-2 border-black px-3 py-2 text-sm w-full font-mono"
         >
-          <option value="all">Todos los posts</option>
-          <option value="media">Un post concreto (por media id)</option>
+          <option value="all">{t("cdm_ed_scope_todos")}</option>
+          <option value="media">{t("cdm_ed_scope_uno")}</option>
         </select>
         {scope !== "all" && (
           <input
             type="text"
             value={scope}
             onChange={(e) => setScope(e.target.value)}
-            placeholder="media id de Instagram (ej. 17912345678901234)"
+            placeholder={t("cdm_ed_scope_ph")}
             className="border-2 border-black px-3 py-2 text-sm w-full font-mono mt-2"
           />
         )}
@@ -1376,14 +1398,14 @@ function ReglaEditor({ rule, onDone }: { rule: CommentRule | null; onDone: () =>
             onChange={(e) => setReplyPublic(e.target.checked)}
             className="w-5 h-5 accent-black"
           />
-          <span className="text-sm font-bold">También responder públicamente al comentario</span>
+          <span className="text-sm font-bold">{t("cdm_ed_publica")}</span>
         </label>
         {replyPublic && (
           <input
             type="text"
             value={publicReplyText}
             onChange={(e) => setPublicReplyText(e.target.value)}
-            placeholder="¡Te acabo de escribir por privado! 📩"
+            placeholder={t("cdm_ed_publica_ph")}
             className="border-2 border-black px-3 py-2 text-sm w-full font-mono mt-2"
           />
         )}
@@ -1398,7 +1420,7 @@ function ReglaEditor({ rule, onDone }: { rule: CommentRule | null; onDone: () =>
           className="w-5 h-5 accent-black"
         />
         <span className="text-sm font-bold">
-          {enabled ? "Regla ACTIVADA" : "Regla desactivada"}
+          {enabled ? t("cdm_ed_activada") : t("cdm_ed_desactivada")}
         </span>
       </label>
 
@@ -1409,7 +1431,7 @@ function ReglaEditor({ rule, onDone }: { rule: CommentRule | null; onDone: () =>
           onClick={guardar}
           className="btn-mustard text-sm px-6 py-3 disabled:opacity-50"
         >
-          {pending ? "Guardando…" : "Guardar regla"}
+          {pending ? t("cdm_guardando") : t("cdm_guardar")}
         </button>
         <button
           type="button"
@@ -1417,7 +1439,7 @@ function ReglaEditor({ rule, onDone }: { rule: CommentRule | null; onDone: () =>
           onClick={onDone}
           className="text-sm font-bold border-2 border-black px-5 py-3 bg-white hover:bg-black/5 disabled:opacity-50"
         >
-          Cancelar
+          {t("cdm_cancelar")}
         </button>
       </div>
       {msg && (
@@ -1434,34 +1456,35 @@ function ProbadorComentario({ commentDmEnabled }: { commentDmEnabled: boolean })
   const [text, setText] = useState("");
   const [mediaId, setMediaId] = useState("");
   const [res, setRes] = useState<ProbarComentarioResult | null>(null);
+  const idioma = useIdiomaPanel();
+  const t = traductor(idioma);
 
   function probar() {
     setRes(null);
     startTransition(async () => {
-      const r = await probarComentarioAction({ text, mediaId: mediaId.trim() || undefined });
+      const r = await probarComentarioAction({ text, mediaId: mediaId.trim() || undefined, lang: idioma });
       setRes(r);
     });
   }
 
   return (
     <div className="card-hard bg-white p-5 space-y-3">
-      <div className="font-stencil text-xl leading-none">Probar una regla</div>
+      <div className="font-stencil text-xl leading-none">{t("cdm_pr_titulo")}</div>
       <p className="text-[12px] text-black/55 leading-snug">
-        Escribe un comentario de ejemplo y comprueba qué regla saltaría y qué DM mandaría Marta.
-        Es una simulación: <strong>no envía nada</strong>.
+        {t("cdm_pr_desc_1")} <strong>{t("cdm_pr_desc_2")}</strong>.
       </p>
       <input
         type="text"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder='Ej. "Quiero info del precio"'
+        placeholder={t("cdm_pr_ph")}
         className="border-2 border-black px-3 py-2 text-sm w-full font-mono"
       />
       <input
         type="text"
         value={mediaId}
         onChange={(e) => setMediaId(e.target.value)}
-        placeholder="(opcional) media id del post — vacío = simula un post cualquiera"
+        placeholder={t("cdm_pr_media_ph")}
         className="border-2 border-black px-3 py-2 text-sm w-full font-mono"
       />
       <button
@@ -1470,7 +1493,7 @@ function ProbadorComentario({ commentDmEnabled }: { commentDmEnabled: boolean })
         onClick={probar}
         className="text-sm font-bold border-2 border-black px-5 py-2.5 bg-white hover:bg-black/5 disabled:opacity-50"
       >
-        {pending ? "Probando…" : "▶ Probar coincidencia"}
+        {pending ? t("cdm_pr_probando") : t("cdm_pr_boton")}
       </button>
 
       {res && (
@@ -1487,12 +1510,12 @@ function ProbadorComentario({ commentDmEnabled }: { commentDmEnabled: boolean })
           )}
           {res.matched && res.replyPublic && (
             <p className="text-[11px] mt-2 opacity-90">
-              + respuesta pública: &ldquo;{res.publicReplyText || "¡Te acabo de escribir por privado! 📩"}&rdquo;
+              {t("cdm_pr_publica")} &ldquo;{res.publicReplyText || "¡Te acabo de escribir por privado! 📩"}&rdquo;
             </p>
           )}
           {res.matched && !commentDmEnabled && (
             <p className="text-[11px] mt-2 opacity-90">
-              (El envío real está en pausa hasta el App Review de Meta.)
+              {t("cdm_pr_pausa")}
             </p>
           )}
         </div>

@@ -129,6 +129,44 @@ function keywordQueDisparo(rule: CommentRule, texto: string): string | undefined
   return k ?? (rule.keywords || [])[0];
 }
 
+/** Por qué un comentario que llegó no ha seguido adelante. */
+export type MotivoDescarte = "sin_id_o_texto" | "comentario_propio" | "sin_regla";
+
+/**
+ * Deja escrito en el registro un comentario que se ha descartado, y por qué.
+ *
+ * ANTES SE DESCARTABA EN SILENCIO. Las salidas tempranas de aquí abajo solo
+ * escribían una línea de `console.log`, y en el plan Hobby de Vercel los logs
+ * duran una hora. Un comentario que llegaba sin casar con ninguna regla, o que
+ * se escribía desde la propia cuenta para probar, desaparecía: en el panel no
+ * salía nada y parecía que el webhook no recibía comentarios. Con el motivo
+ * guardado, la fila sale en "Actividad reciente" como "Ignorado" y dice por qué.
+ *
+ * El `duplicado` NO se registra: es Meta reentregando un comentario que ya se
+ * procesó, y apuntarlo llenaría la lista de copias sin decir nada nuevo.
+ */
+async function registrarDescarte(
+  tenantId: string,
+  motivo: MotivoDescarte,
+  c: ComentarioEntrante,
+): Promise<void> {
+  await safeLogEvent(tenantId, {
+    // Idempotente por comentario y motivo: si Meta reentrega, no se duplica.
+    id: makeEventId("comment_descartado", "marta", c.commentId || `sinid_${Date.now()}`, motivo),
+    type: "message_in",
+    channel: "marta",
+    senderId: c.fromId,
+    meta: {
+      kind: "comment_descartado",
+      commentId: c.commentId || undefined,
+      mediaId: c.mediaId,
+      username: c.username,
+      texto: recorte(c.text),
+      motivo,
+    },
+  });
+}
+
 export async function procesarComentario(
   tenantId: string,
   entryId: string | undefined,
@@ -139,14 +177,32 @@ export async function procesarComentario(
   const base = { ok: false, tenantId } as const;
 
   if (!commentId || !text.trim()) {
-    console.log("[marta/comment] comentario sin id/texto ignorado");
+    console.log("[marta/comment] DESCARTADO sin_id_o_texto: el comentario no trae id o viene vacío");
+    if (!opts.simular) await registrarDescarte(tenantId, "sin_id_o_texto", c);
     return { ...base, parado: "sin_id_o_texto", detalle: "El comentario no trae id o viene vacío." };
   }
 
   // 1a. Ignorar comentarios de la propia cuenta (no autorresponderse).
   const ownId = entryId || process.env.INSTAGRAM_USER_ID;
   if (fromId && ownId && fromId === ownId) {
-    console.log("[marta/comment] comentario propio ignorado");
+    // Dos casos con la misma pinta y distinto significado. Uno es la respuesta
+    // pública que acaba de dejar la propia Marta: Meta la reenvía como comentario
+    // nuevo y registrarla llenaría la lista con una fila por cada respuesta. El
+    // otro es alguien probando desde la cuenta de la marca — lo más natural del
+    // mundo, y justo lo que no funciona: ese SÍ se registra, para que se vea.
+    const propias = new Set(
+      [TEXTO_PUBLICO_POR_DEFECTO, ...(await getCommentRules(tenantId)).map((r) => r.publicReplyText || "")]
+        .map((t) => t.trim())
+        .filter(Boolean),
+    );
+    if (propias.has(text.trim())) {
+      console.log("[marta/comment] respuesta pública propia reenviada por Meta: se ignora sin registrar");
+    } else {
+      console.log(
+        `[marta/comment] DESCARTADO comentario_propio: escrito desde la propia cuenta (from=${fromId}) "${text.slice(0, 80)}"`,
+      );
+      if (!opts.simular) await registrarDescarte(tenantId, "comentario_propio", c);
+    }
     return { ...base, parado: "comentario_propio", detalle: "Es un comentario de la propia cuenta." };
   }
 
@@ -167,8 +223,10 @@ export async function procesarComentario(
 
   if (!rule) {
     console.log(
-      `[marta/comment] comentario sin regla que case: "${text.slice(0, 80)}" (media=${mediaId ?? "?"})`,
+      `[marta/comment] DESCARTADO sin_regla: "${text.slice(0, 80)}" (media=${mediaId ?? "?"}, ` +
+        `reglas=${rules.length}, activas=${rules.filter((r) => r.enabled).length})`,
     );
+    if (!opts.simular) await registrarDescarte(tenantId, "sin_regla", c);
     return {
       ...base,
       parado: "sin_regla",

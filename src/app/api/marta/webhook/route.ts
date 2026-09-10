@@ -136,6 +136,16 @@ export async function POST(req: Request) {
       // Resolver tenant a partir del id del entry (IG user id de la cuenta receptora).
       const tenantId = await resolveTenantFromMeta({ instagramUserId: entry.id });
 
+      // NI MENSAJES NI CAMBIOS: se dice. Un `entry` con otra forma —Meta ha
+      // cambiado algo, o llega un tipo de evento que aquí no se espera— salía
+      // del bucle sin una sola línea y el evento se perdía sin rastro.
+      if (!entry.messaging?.length && !entry.changes?.length) {
+        console.warn(
+          `[marta/webhook] DESCARTADO: entry sin messaging ni changes ` +
+            `(tenant=${tenantId} id=${entry.id} claves=${Object.keys(entry).join(",")})`,
+        );
+      }
+
       // --- DMs ---
       const messaging = entry.messaging ?? [];
       for (const ev of messaging) {
@@ -207,10 +217,19 @@ export async function POST(req: Request) {
       const changes = entry.changes ?? [];
       for (const change of changes) {
         if (change.field !== "comments") {
-          console.log(`[marta/webhook] change field no soportado: ${change.field}`);
+          // Con las claves del valor: "no soportado" a secas no dice si es un
+          // `mentions`, un `story_insights` o un comentario con otro nombre.
+          console.log(
+            `[marta/webhook] DESCARTADO change field no soportado: ${change.field} ` +
+              `(claves del valor: ${Object.keys(change.value ?? {}).join(",") || "ninguna"})`,
+          );
           continue;
         }
-        console.log(`[marta/webhook] COMMENT RX tenant=${tenantId} entry=${entry.id}`);
+        console.log(
+          `[marta/webhook] COMMENT RX tenant=${tenantId} entry=${entry.id} ` +
+            `comment=${change.value?.id ?? "?"} from=${change.value?.from?.username ?? change.value?.from?.id ?? "?"} ` +
+            `media=${change.value?.media?.id ?? "?"}`,
+        );
         const v = change.value ?? {};
         const res = await procesarComentario(tenantId, entry.id, {
           commentId: v.id ?? "",

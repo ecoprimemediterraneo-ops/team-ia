@@ -455,16 +455,21 @@ export type ReglaComentarioInput = {
 /** Crear / actualizar una regla de Comentario → DM. */
 export async function guardarReglaComentarioAction(
   input: ReglaComentarioInput,
+  // El idioma del panel. Viaja como argumento porque la acción corre en el
+  // servidor y no ve la URL: sin esto, "Regla creada" salía en castellano sobre
+  // una pestaña en inglés, en mitad de la grabación para Meta.
+  lang?: string,
 ): Promise<InAppResult & { rule?: CommentRule }> {
+  const t = traductor(idiomaDe(lang));
   const tenantId = await gateTenantId();
-  if (!tenantId) return { ok: false, message: "Inicia sesión." };
+  if (!tenantId) return { ok: false, message: t("cdm_act_sesion") };
 
   const keywords = parseKeywords(input.keywordsRaw);
   if (keywords.length === 0) {
-    return { ok: false, message: "Añade al menos una palabra clave que dispare el DM." };
+    return { ok: false, message: t("cdm_act_sin_kw") };
   }
   if (!input.dmMessage.trim()) {
-    return { ok: false, message: "Escribe el mensaje del primer DM." };
+    return { ok: false, message: t("cdm_act_sin_dm") };
   }
 
   const rule = await saveCommentRule(tenantId, {
@@ -479,31 +484,34 @@ export async function guardarReglaComentarioAction(
   });
 
   revalidatePath("/dashboard/marta");
-  return { ok: true, message: input.id ? "Regla actualizada ✅" : "Regla creada ✅", rule };
+  return { ok: true, message: input.id ? t("cdm_act_actualizada") : t("cdm_act_creada"), rule };
 }
 
 /** Activar / desactivar una regla. */
 export async function toggleReglaComentarioAction(
   id: string,
   enabled: boolean,
+  lang?: string,
 ): Promise<InAppResult> {
+  const t = traductor(idiomaDe(lang));
   const tenantId = await gateTenantId();
-  if (!tenantId) return { ok: false, message: "Inicia sesión." };
+  if (!tenantId) return { ok: false, message: t("cdm_act_sesion") };
   const r = await setCommentRuleEnabled(tenantId, id, enabled);
-  if (!r) return { ok: false, message: "No encuentro esa regla." };
+  if (!r) return { ok: false, message: t("cdm_act_no_encuentro") };
   revalidatePath("/dashboard/marta");
-  return { ok: true, message: enabled ? "Regla activada ✅" : "Regla desactivada." };
+  return { ok: true, message: enabled ? t("cdm_act_activada") : t("cdm_act_desactivada") };
 }
 
 /** Eliminar una regla. */
-export async function eliminarReglaComentarioAction(id: string): Promise<InAppResult> {
+export async function eliminarReglaComentarioAction(id: string, lang?: string): Promise<InAppResult> {
+  const t = traductor(idiomaDe(lang));
   const tenantId = await gateTenantId();
-  if (!tenantId) return { ok: false, message: "Inicia sesión." };
+  if (!tenantId) return { ok: false, message: t("cdm_act_sesion") };
   const ok = await deleteCommentRule(tenantId, id);
   revalidatePath("/dashboard/marta");
   return ok
-    ? { ok: true, message: "Regla eliminada." }
-    : { ok: false, message: "No encuentro esa regla." };
+    ? { ok: true, message: t("cdm_act_eliminada") }
+    : { ok: false, message: t("cdm_act_no_encuentro") };
 }
 
 export type ProbarComentarioResult = {
@@ -525,13 +533,15 @@ export type ProbarComentarioResult = {
 export async function probarComentarioAction(input: {
   text: string;
   mediaId?: string;
+  lang?: string;
 }): Promise<ProbarComentarioResult> {
+  const t = traductor(idiomaDe(input.lang));
   const tenantId = await gateTenantId();
-  if (!tenantId) return { ok: false, matched: false, message: "Inicia sesión." };
+  if (!tenantId) return { ok: false, matched: false, message: t("cdm_act_sesion") };
 
   const text = (input.text || "").trim();
   if (!text) {
-    return { ok: false, matched: false, message: "Escribe un comentario de prueba." };
+    return { ok: false, matched: false, message: t("cdm_act_pr_vacio") };
   }
 
   const rules = await getCommentRules(tenantId);
@@ -542,7 +552,7 @@ export async function probarComentarioAction(input: {
     return {
       ok: true,
       matched: false,
-      message: "Ninguna regla casa con ese comentario. Revisa palabras clave, modo y el post (scope).",
+      message: t("cdm_act_pr_no_casa"),
     };
   }
 
@@ -556,8 +566,6 @@ export async function probarComentarioAction(input: {
     willSend,
     replyPublic: rule.replyPublic,
     publicReplyText: rule.publicReplyText,
-    message: willSend
-      ? "✅ Coincide. En real, Marta enviaría este DM al instante:"
-      : "✅ Coincide. (Envío aún desactivado hasta el App Review de Meta — este es el DM que mandaría)",
+    message: willSend ? t("cdm_act_pr_si_real") : t("cdm_act_pr_si_pausa"),
   };
 }
