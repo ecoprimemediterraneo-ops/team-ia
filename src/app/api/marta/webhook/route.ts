@@ -33,7 +33,8 @@ import { logEvent, makeEventId } from "@/lib/event-log";
 import { resolveTenantFromMeta } from "@/lib/tenants";
 import { procesarComentario } from "@/lib/marta-comment-flow";
 import { apuntarMensaje } from "@/lib/marta-inbox";
-import { sendInstagramDM } from "@/lib/marta-graph";
+import { sendInstagramDM, usernameDeIgsid } from "@/lib/marta-graph";
+import { kvTryLock } from "@/lib/supabase";
 
 async function safeLogEvent(...args: Parameters<typeof logEvent>): Promise<void> {
   try {
@@ -107,6 +108,56 @@ type WebhookPayload = {
   }>;
 };
 
+/**
+ * ¿Este DM ya se ha procesado? Descarta la segunda copia del mismo mensaje.
+ *
+ * POR QUÉ HACE FALTA
+ * ------------------
+ * La cuenta está conectada a la app por DOS productos a la vez —inicio de sesión
+ * con Facebook e inicio de sesión con Instagram— y los dos entregan cada DM al
+ * mismo callback. Se veía en los logs de producción: dos POST con el mismo `mid`
+ * en el mismo milisegundo, uno con la firma de la app de Meta y otro con la de
+ * la app de Instagram. Marta contestaba DOS veces, con dos textos distintos,
+ * porque cada copia pedía su propia respuesta a la IA.
+ *
+ * Aunque se desconecte una de las dos vías, cualquier reentrega de Meta produce
+ * lo mismo, así que el descarte vive aquí y no depende de la configuración.
+ *
+ * POR QUÉ UN LOCK Y NO "LEER Y ESCRIBIR"
+ * --------------------------------------
+ * Las dos copias llegan a la vez, en dos invocaciones distintas. Leer "¿lo he
+ * visto?" y luego apuntarlo deja una ventana en la que las dos leen "no". El
+ * `kvTryLock` de Supabase hace un INSERT sobre la clave primaria: solo uno de
+ * los dos puede ganarlo. Se guarda 72 h, la misma ventana que el descarte de
+ * comentarios duplicados.
+ *
+ * Sin Supabase (local) el lock siempre concede, así que en local se descarta
+ * con un registro en memoria: vale para un único proceso, que es lo que hay.
+ */
+/** Los textos van recortados al registro: el bucket de eventos es una clave por mes. */
+const recorteLog = (t: string | undefined, max = 300): string | undefined =>
+  t === undefined ? undefined : t.length > max ? `${t.slice(0, max)}…` : t;
+
+const MID_TTL_MS = 72 * 60 * 60 * 1000;
+const midsVistosLocal = new Map<string, number>();
+
+async function dmYaProcesado(mid: string | undefined): Promise<boolean> {
+  // Sin `mid` no hay forma de reconocer la copia: se procesa, como antes.
+  if (!mid) return false;
+  const ahora = Date.now();
+  for (const [k, t] of midsVistosLocal) if (ahora - t > MID_TTL_MS) midsVistosLocal.delete(k);
+  if (midsVistosLocal.has(mid)) return true;
+  midsVistosLocal.set(mid, ahora);
+  try {
+    const concedido = await kvTryLock(`marta-dm-mid:${mid}`, MID_TTL_MS, "marta-webhook");
+    return !concedido;
+  } catch (err) {
+    // Si el almacén falla, se prefiere contestar dos veces a no contestar nunca.
+    console.error("[marta/webhook] no se ha podido comprobar el duplicado del DM:", err);
+    return false;
+  }
+}
+
 export async function POST(req: Request) {
   // El cuerpo se lee CRUDO porque la firma de Meta es el HMAC de estos bytes
   // exactos: parsear y volver a serializar cambia espacios y orden, y entonces
@@ -163,7 +214,14 @@ export async function POST(req: Request) {
         const rxTs = new Date().toISOString();
         const mid = ev.message?.mid;
 
-        console.log(`[marta/webhook] DM RX from=${senderId} text="${text}"`);
+        // ANTES de pedir respuesta a la IA: si esta es la segunda copia del mismo
+        // mensaje, se descarta aquí y no se contesta dos veces.
+        if (await dmYaProcesado(mid)) {
+          console.log(`[marta/webhook] DM DUPLICADO descartado mid=${(mid ?? "").slice(0, 24)}… from=${senderId}`);
+          continue;
+        }
+
+        console.log(`[marta/webhook] DM RX tenant=${tenantId} from=${senderId} text="${text}"`);
 
         // Memoria: si no hay turnos (o estaba stale → ya limpiado on-read),
         // se trata como primer mensaje.
@@ -174,6 +232,20 @@ export async function POST(req: Request) {
         console.log(`[marta/webhook] AI reply: "${reply}"`);
 
         const sendResult = await sendInstagramDM(senderId, reply);
+        // Enviado SOLO si Meta lo aceptó. Además de `error`, cuentan como no
+        // enviado `skipped` (falta configuración, p. ej. FACEBOOK_PAGE_ID) y
+        // `simulado` (local sin Graph): mirar solo `error` pintaba "Enviado" en la
+        // tabla para un mensaje que no había salido.
+        const dmOk = !(
+          sendResult &&
+          typeof sendResult === "object" &&
+          ("error" in sendResult || "skipped" in sendResult || "simulado" in sendResult)
+        );
+
+        // El @usuario. El payload del DM solo trae el IGSID —un número que no le
+        // dice nada a nadie en una tabla—, así que se le pregunta a Meta una vez y
+        // se recuerda. Si falla, la fila sale con el IGSID: no se inventa un nombre.
+        const username = await usernameDeIgsid(senderId).catch(() => undefined);
 
         // Persistir tras el envío. El payload de IG no trae nombre legible
         // (solo IGSID), así que `name` queda sin actualizar.
@@ -185,7 +257,7 @@ export async function POST(req: Request) {
         // el historial que ve el cliente en pantalla. `apuntarMensaje` nunca
         // lanza: un fallo aquí no puede tumbar el webhook, porque Meta lo
         // reintentaría y el DM saldría dos veces.
-        await apuntarMensaje(tenantId, senderId, { de: "cliente", texto: text, ts: rxTs, id: mid });
+        await apuntarMensaje(tenantId, senderId, { de: "cliente", texto: text, ts: rxTs, id: mid }, username);
         await apuntarMensaje(tenantId, senderId, {
           de: "nosotros",
           texto: reply,
@@ -193,19 +265,36 @@ export async function POST(req: Request) {
           via: "automatico",
         });
 
+        // LOS DM EN "ACTIVIDAD RECIENTE".
+        //
+        // Estos dos eventos ya se escribían, pero SIN `kind` y sin textos: solo el
+        // remitente y la latencia. Servían para el informe mensual, que solo
+        // cuenta, y el historial del panel —que filtra por `kind`— los dejaba
+        // fuera siempre. Por eso Marta contestaba un DM y en la tabla no salía
+        // nada. Se les pone tipo, @usuario, lo recibido, lo enviado y si Meta lo
+        // aceptó; los ids no cambian, así que el informe mensual sigue igual.
         await safeLogEvent(tenantId, {
           id: makeEventId("message_in", "marta", mid),
           ts: rxTs,
           type: "message_in",
           channel: "marta",
           senderId,
+          meta: { kind: "dm_in", mid, username, texto: recorteLog(text) },
         });
         await safeLogEvent(tenantId, {
           id: makeEventId("message_out", "marta", mid),
           type: "message_out",
           channel: "marta",
           senderId,
-          meta: { latencyMs: Date.now() - Date.parse(rxTs) },
+          meta: {
+            kind: "dm_out",
+            mid,
+            username,
+            texto: recorteLog(reply),
+            ok: dmOk,
+            error: dmOk ? undefined : JSON.stringify(sendResult).slice(0, 300),
+            latencyMs: Date.now() - Date.parse(rxTs),
+          },
         });
         console.log(
           `[marta/webhook] TX result:`,

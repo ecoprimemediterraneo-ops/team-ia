@@ -65,17 +65,11 @@ const DIC = {
   // EL HISTORIAL de la pestana "Comentarios -> DM". Se graba para el App Review
   // de Meta, asi que el ingles tiene que leerse solo.
   hist_titulo: { es: "Actividad reciente", en: "Recent activity" },
-  hist_sub: {
-    es: "Los \u00faltimos comentarios que dispararon una regla y qu\u00e9 se hizo con cada uno.",
-    en: "The latest comments that triggered a rule, and what was done with each one.",
-  },
-  hist_vacio: {
-    es: "Todav\u00eda no ha entrado ning\u00fan comentario con tus palabras clave. Cuando entre uno, aparecer\u00e1 aqu\u00ed.",
-    en: "No comments with your keywords have come in yet. When one does, it will show up here.",
-  },
+  hist_sub: { es: "Los \u00faltimos comentarios y mensajes directos, y qu\u00e9 se contest\u00f3 a cada uno.", en: "The latest comments and direct messages, and what was replied to each one." },
+  hist_vacio: { es: "Todav\u00eda no ha entrado ning\u00fan comentario ni mensaje directo. Cuando entre uno, aparecer\u00e1 aqu\u00ed.", en: "No comments or direct messages have come in yet. When one does, it will show up here." },
   hist_col_hora: { es: "Hora", en: "Time" },
   hist_col_usuario: { es: "Usuario", en: "User" },
-  hist_col_comentario: { es: "Comentario", en: "Comment" },
+  hist_col_comentario: { es: "Mensaje recibido", en: "Message received" },
   hist_col_keyword: { es: "Palabra clave", en: "Keyword" },
   hist_col_respuesta: { es: "Respuesta enviada", en: "Reply sent" },
   hist_col_estado: { es: "Estado", en: "Status" },
@@ -173,6 +167,7 @@ const DIC = {
   cdm_act_pr_no_casa: { es: "Ninguna regla casa con ese comentario. Revisa palabras clave, modo y el post (scope).", en: "No rule matches that comment. Check the keywords, match mode and post (scope)." },
   cdm_act_pr_si_real: { es: "\u2705 Coincide. En real, Marta enviar\u00eda este DM al instante:", en: "\u2705 Match. For real, Marta would send this DM instantly:" },
   cdm_act_pr_si_pausa: { es: "\u2705 Coincide. (Env\u00edo a\u00fan desactivado hasta el App Review de Meta \u2014 este es el DM que mandar\u00eda)", en: "\u2705 Match. (Sending still off until Meta's App Review \u2014 this is the DM it would send)" },
+  hist_origen_dm: { es: "Mensaje directo", en: "Direct message" },
   hist_estado_ignorado: { es: "Ignorado", en: "Ignored" },
   hist_motivo_sin_regla: { es: "Lleg\u00f3, pero no casa con ninguna regla activa.", en: "Received, but no active rule matches it." },
   hist_motivo_propio: { es: "Comentado desde la propia cuenta: Marta no se contesta a s\u00ed misma.", en: "Posted from the account itself: Marta doesn't reply to itself." },

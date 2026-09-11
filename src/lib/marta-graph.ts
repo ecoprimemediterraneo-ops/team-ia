@@ -118,6 +118,44 @@ export type IGRecipient = { id: string } | { comment_id: string };
  */
 export type CredencialTenant = { token: string; igUserId: string };
 
+/**
+ * El @usuario de Instagram detrás de un IGSID.
+ *
+ * El payload de un DM solo trae el IGSID, un número que no le dice nada a quien
+ * mira "Actividad reciente". Se le pregunta a Meta con el mismo token de Página
+ * que ya envía los DM (`GET /{igsid}?fields=username`) y se recuerda en memoria:
+ * un mismo cliente escribe varias veces seguidas y no hace falta preguntarlo en
+ * cada mensaje.
+ *
+ * NUNCA lanza. Si no hay token, no hay Página configurada, estamos en local sin
+ * Graph falso o Meta no contesta, devuelve `undefined` y la fila sale con el
+ * IGSID: un nombre que no se ha podido leer no se inventa.
+ */
+const usernamesPorIgsid = new Map<string, string>();
+
+export async function usernameDeIgsid(igsid: string): Promise<string | undefined> {
+  if (!igsid) return undefined;
+  const enCache = usernamesPorIgsid.get(igsid);
+  if (enCache) return enCache;
+  const base = hostFacebook();
+  const userToken = getSystemUserToken();
+  const pageId = process.env.FACEBOOK_PAGE_ID;
+  if (!base || !userToken || !pageId) return undefined;
+  try {
+    const pageToken = await getPageAccessToken(userToken, pageId);
+    const res = await fetch(`${base}/${encodeURIComponent(igsid)}?fields=username,name`, {
+      headers: { Authorization: `Bearer ${pageToken}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return undefined;
+    const j = (await res.json()) as { username?: string };
+    if (j.username) usernamesPorIgsid.set(igsid, j.username);
+    return j.username;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function sendInstagramMessage(
   recipient: IGRecipient,
   text: string,

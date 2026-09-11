@@ -37,15 +37,17 @@ export type EstadoEnvio = "enviado" | "error" | "en_pausa" | "solo_detectado" | 
 export type MotivoIgnorado = "sin_regla" | "comentario_propio" | "sin_id_o_texto";
 
 export type FilaHistorial = {
-  /** El id del comentario en Instagram. Sirve de clave de la fila. */
+  /** Clave de la fila: el id del comentario, o `dm:<mid>` para un mensaje directo. */
   commentId: string;
+  /** De dónde viene la fila: un comentario en un post o un mensaje directo. */
+  origen: "comentario" | "dm";
   /** ISO. La hora del comentario entrante, o la del primer evento que haya. */
   ts: string;
   /** El @ de quien comentó. Puede faltar: Meta no siempre lo manda. */
   username?: string;
   /** El identificador interno de Instagram, por si no hay username. */
   senderId?: string;
-  /** Lo que escribió. */
+  /** Lo que escribió: el comentario, o el texto del DM. */
   comentario?: string;
   /** La palabra clave que hizo saltar la regla. */
   keyword?: string;
@@ -70,6 +72,8 @@ function mesDe(d: Date): string {
 type MetaComentario = {
   kind?: string;
   commentId?: string;
+  /** Solo en DMs: el id del mensaje entrante, que empareja lo recibido con la respuesta. */
+  mid?: string;
   ruleId?: string;
   username?: string;
   texto?: string;
@@ -80,7 +84,10 @@ type MetaComentario = {
   motivo?: MotivoIgnorado;
 };
 
-const KINDS = new Set(["comment", "comment_reply", "comment_dm", "comment_descartado"]);
+// `dm_in` / `dm_out` son los mensajes directos. Antes no estaban en esta lista —
+// ni siquiera llevaban `kind`—, así que un DM contestado por Marta no salía nunca
+// en "Actividad reciente" aunque el webhook lo hubiera procesado bien.
+const KINDS = new Set(["comment", "comment_reply", "comment_dm", "comment_descartado", "dm_in", "dm_out"]);
 
 /**
  * Las últimas N interacciones de comentario→DM, de más reciente a más antigua.
@@ -122,11 +129,14 @@ export async function historialComentarios(
   // escribe el estado final encima del provisional.
   for (const e of [...suyos].sort((x, y) => x.ts.localeCompare(y.ts))) {
     const m = (e.meta ?? {}) as MetaComentario;
-    // Un descarte "sin id" no tiene commentId: se agrupa por el id del evento
-    // para que no se junten todos en una sola fila.
-    const id = m.commentId || `evento:${e.id}`;
+    const esDm = m.kind === "dm_in" || m.kind === "dm_out";
+    // Un DM se agrupa por su `mid` (lo recibido y la respuesta comparten el del
+    // mensaje entrante). Un descarte "sin id" no tiene commentId: se agrupa por
+    // el id del evento para que no se junten todos en una sola fila.
+    const id = esDm ? `dm:${m.mid || e.id}` : m.commentId || `evento:${e.id}`;
     const fila: FilaHistorial = porComentario.get(id) ?? {
       commentId: id,
+      origen: esDm ? "dm" : "comentario",
       ts: e.ts,
       estado: "solo_detectado",
     };
@@ -142,6 +152,13 @@ export async function historialComentarios(
       fila.ts = e.ts;
       fila.comentario = m.texto;
       fila.keyword = m.keyword;
+    } else if (m.kind === "dm_in") {
+      fila.ts = e.ts;
+      fila.comentario = m.texto;
+    } else if (m.kind === "dm_out") {
+      fila.dm = m.texto;
+      fila.estado = m.ok === false ? "error" : "enviado";
+      if (m.error) fila.error = m.error;
     } else if (m.kind === "comment_descartado") {
       fila.ts = e.ts;
       fila.comentario = m.texto;

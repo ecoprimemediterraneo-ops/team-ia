@@ -1092,7 +1092,13 @@ function HistorialComentarios({ filas }: { filas: FilaHistorial[] }) {
                       {f.comentario || t("hist_sin_texto")}
                     </td>
                     <td className="py-2 pr-3">
-                      {f.keyword ? (
+                      {f.origen === "dm" ? (
+                        // Un DM no tiene palabra clave: lo que se dice aquí es de
+                        // dónde viene, para no confundirlo con un comentario.
+                        <span className="text-[10px] font-mono uppercase tracking-widest bg-black text-[color:var(--mustard)] px-1.5 py-0.5 whitespace-nowrap">
+                          {t("hist_origen_dm")}
+                        </span>
+                      ) : f.keyword ? (
                         <span className="text-[10px] font-mono bg-black/5 border border-black/15 px-1.5 py-0.5">
                           {f.keyword}
                         </span>
@@ -1143,6 +1149,11 @@ function HistorialComentarios({ filas }: { filas: FilaHistorial[] }) {
                 </div>
                 <div className="text-[11px] font-mono text-black/45">{hora(f.ts)}</div>
                 {f.comentario && <p className="text-xs text-black/80 leading-snug">{f.comentario}</p>}
+                {f.origen === "dm" && (
+                  <span className="inline-block text-[10px] font-mono uppercase tracking-widest bg-black text-[color:var(--mustard)] px-1.5 py-0.5">
+                    {t("hist_origen_dm")}
+                  </span>
+                )}
                 {f.keyword && (
                   <span className="inline-block text-[10px] font-mono bg-black/5 border border-black/15 px-1.5 py-0.5">
                     {f.keyword}
