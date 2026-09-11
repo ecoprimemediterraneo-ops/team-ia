@@ -31,7 +31,7 @@ export async function confirmarCuentaAction(
   const ctx = await resolverContextoPanel();
   if (!ctx) {
     console.error("[instagram-confirmar] sin sesión al confirmar");
-    return { estado: "error", motivo: "Tu sesión ha caducado. Vuelve a entrar y repite la conexión." };
+    return { estado: "error", codigo: "sesion", motivo: "Tu sesión ha caducado. Vuelve a entrar y repite la conexión." };
   }
 
   const userId = String(formData.get("userId") ?? "");
@@ -57,7 +57,9 @@ export async function confirmarCuentaAction(
         "Instagram nos ha dado el permiso, pero no hemos podido guardarlo. Vuelve a intentarlo en un " +
         "momento; si sigue igual, avísanos.",
     };
-    return { estado: "error", motivo: MOTIVOS[r.fallo] };
+    // El código viaja para que el botón lo traduzca: esta pantalla se graba en
+    // inglés para el App Review de Meta, y el texto de aquí es castellano.
+    return { estado: "error", codigo: r.fallo, motivo: MOTIVOS[r.fallo] };
   }
 
   console.log(`[instagram-confirmar] CONFIRMADA tenant=${ctx.tenantId} ig_user_id=${userId}`);

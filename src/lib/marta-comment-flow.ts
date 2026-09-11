@@ -29,6 +29,7 @@
 import "server-only";
 import { appendTurn } from "./conversation-store";
 import { logEvent, makeEventId } from "./event-log";
+import { idiomaDeTexto } from "./idioma";
 import {
   getCommentRules,
   findMatchingRule,
@@ -45,6 +46,8 @@ import {
 } from "./marta-graph";
 
 export const TEXTO_PUBLICO_POR_DEFECTO = "¡Te acabo de escribir por privado! 📩";
+/** La misma respuesta pública por defecto, para quien comenta en inglés. */
+export const TEXTO_PUBLICO_POR_DEFECTO_EN = "I just sent you a DM! 📩";
 
 async function safeLogEvent(...args: Parameters<typeof logEvent>): Promise<void> {
   try {
@@ -191,7 +194,7 @@ export async function procesarComentario(
     // otro es alguien probando desde la cuenta de la marca — lo más natural del
     // mundo, y justo lo que no funciona: ese SÍ se registra, para que se vea.
     const propias = new Set(
-      [TEXTO_PUBLICO_POR_DEFECTO, ...(await getCommentRules(tenantId)).map((r) => r.publicReplyText || "")]
+      [TEXTO_PUBLICO_POR_DEFECTO, TEXTO_PUBLICO_POR_DEFECTO_EN, ...(await getCommentRules(tenantId)).map((r) => r.publicReplyText || "")]
         .map((t) => t.trim())
         .filter(Boolean),
     );
@@ -217,8 +220,15 @@ export async function procesarComentario(
 
   // 2. ¿Hay regla que case?
   const rules = await getCommentRules(tenantId);
-  const rule = findMatchingRule(rules, text, mediaId);
   const todas = findMatchingRules(rules, text, mediaId);
+  // EL IDIOMA DE QUIEN COMENTA. Una regla tiene una sola plantilla, así que la
+  // "plantilla en el idioma que corresponde" es la de la regla escrita en ese
+  // idioma: si el comentario casa con varias, gana la que está en su lengua. Si
+  // ninguna lo está, manda la primera, como siempre.
+  const idiomaComentario = idiomaDeTexto(text);
+  const rule =
+    todas.find((r) => idiomaDeTexto(r.dmMessage) === idiomaComentario) ??
+    findMatchingRule(rules, text, mediaId);
   const reglasQueCasan = todas.map((r) => ({ id: r.id, replyPublic: !!r.replyPublic, scope: r.scope }));
 
   if (!rule) {
@@ -254,7 +264,9 @@ export async function procesarComentario(
     publicReplyText: rule.publicReplyText,
   };
   const dmTexto = renderDmTemplate(rule.dmMessage, { usuario: username });
-  const publicText = (rule.publicReplyText || "").trim() || TEXTO_PUBLICO_POR_DEFECTO;
+  const publicText =
+    (rule.publicReplyText || "").trim() ||
+    (idiomaComentario === "en" ? TEXTO_PUBLICO_POR_DEFECTO_EN : TEXTO_PUBLICO_POR_DEFECTO);
   const rxTs = new Date().toISOString();
   console.log(
     `[marta/comment] COMMENT match rule=${rule.id} from=${fromId ?? "?"} "${text.slice(0, 80)}" ` +
@@ -380,7 +392,14 @@ export async function procesarComentario(
 
   // 5. El primer DM, por private reply (exento de la ventana de 24 h).
   const sendResult = await sendInstagramPrivateReply(commentId, dmTexto);
-  const dmOk = !(sendResult && typeof sendResult === "object" && "error" in sendResult);
+  // Enviado SOLO si Meta lo aceptó. `skipped` (falta configuración) y `simulado`
+  // (local sin Graph) tampoco han salido: mirar solo `error` los daba por
+  // enviados. Es el mismo fallo que ya se corrigió en el webhook de los DM.
+  const dmOk = !(
+    sendResult &&
+    typeof sendResult === "object" &&
+    ("error" in sendResult || "skipped" in sendResult || "simulado" in sendResult)
+  );
   console.log(`[marta/comment] private reply TX:`, JSON.stringify(sendResult).slice(0, 300));
 
   // 6. Sembrar la conversación para que la IA continúe el hilo por DM.

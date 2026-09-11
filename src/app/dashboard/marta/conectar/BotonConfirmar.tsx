@@ -10,6 +10,21 @@
 import { useActionState } from "react";
 import { confirmarCuentaAction } from "./actions";
 import { CONFIRMAR_QUIETO } from "./estado";
+import { traductor, type ClaveTexto } from "@/lib/idioma";
+import { useIdiomaPanel } from "@/components/TextoIdioma";
+
+/**
+ * El error se traduce por su código, igual que en la bandeja de mensajes. La
+ * acción devuelve el texto en castellano, y esta pantalla se graba en inglés
+ * para el App Review de Meta.
+ */
+const MOTIVO: Record<string, ClaveTexto> = {
+  sesion: "conf_err_sesion",
+  otra_cuenta: "conf_err_otra_cuenta",
+  sin_token: "conf_err_sin_token",
+  sin_almacen: "conf_err_sin_almacen",
+  no_guarda: "conf_err_no_guarda",
+};
 
 export default function BotonConfirmar({
   userId,
@@ -21,6 +36,8 @@ export default function BotonConfirmar({
   tip: string;
 }) {
   const [estado, formAction, pendiente] = useActionState(confirmarCuentaAction, CONFIRMAR_QUIETO);
+  const t = traductor(useIdiomaPanel());
+  const clave = estado.codigo ? MOTIVO[estado.codigo] : undefined;
 
   return (
     <form action={formAction} className="mt-4 space-y-2">
@@ -35,7 +52,7 @@ export default function BotonConfirmar({
       </button>
       {estado.estado === "error" && (
         <p className="text-sm bg-[color:var(--red)] text-white border-2 border-black px-3 py-2">
-          {estado.motivo}
+          {clave ? t(clave) : estado.motivo}
         </p>
       )}
     </form>

@@ -35,6 +35,7 @@ import { procesarComentario } from "@/lib/marta-comment-flow";
 import { apuntarMensaje } from "@/lib/marta-inbox";
 import { sendInstagramDM, usernameDeIgsid } from "@/lib/marta-graph";
 import { kvTryLock } from "@/lib/supabase";
+import { idiomaDeTexto, type Idioma } from "@/lib/idioma";
 
 async function safeLogEvent(...args: Parameters<typeof logEvent>): Promise<void> {
   try {
@@ -221,14 +222,17 @@ export async function POST(req: Request) {
           continue;
         }
 
-        console.log(`[marta/webhook] DM RX tenant=${tenantId} from=${senderId} text="${text}"`);
+        console.log(`[marta/webhook] DM RX tenant=${tenantId} from=${senderId} idioma=${idiomaDeTexto(text)} text="${text}"`);
 
         // Memoria: si no hay turnos (o estaba stale → ya limpiado on-read),
         // se trata como primer mensaje.
         const conv = await getConversation("marta", senderId);
         const isNew = !conv || conv.turns.length === 0;
 
-        const reply = await generateReply(text, isNew, conv);
+        // Marta contesta en el idioma en que le escriben. Ante la duda, castellano,
+        // que es lo de siempre.
+        const idiomaCliente = idiomaDeTexto(text);
+        const reply = await generateReply(text, isNew, conv, idiomaCliente);
         console.log(`[marta/webhook] AI reply: "${reply}"`);
 
         const sendResult = await sendInstagramDM(senderId, reply);
@@ -342,13 +346,34 @@ export async function POST(req: Request) {
 // -----------------------------------------------------------------------------
 // Generar respuesta con Claude
 // -----------------------------------------------------------------------------
+/**
+ * Lo que se le añade al prompt cuando el cliente escribe en inglés.
+ *
+ * El prompt de Marta está en castellano y le pide responder en castellano, así
+ * que a un "How much does it cost?" le contestaba en español. En castellano no
+ * se añade NADA: la llamada es exactamente la de siempre.
+ */
+const INSTRUCCION_INGLES =
+  "\n\nIDIOMA DE ESTA RESPUESTA: el cliente te ha escrito en INGLÉS. Responde en inglés natural " +
+  "y breve, aunque el resto de estas instrucciones y el historial estén en castellano. Mantén todo " +
+  "lo demás igual: los mismos precios, planes, enlaces y reglas de formato (sin markdown, lo " +
+  "importante en MAYÚSCULAS). Los nombres propios de los planes no se traducen.";
+
+/** Lo que se contesta si no hay IA o falla, en el idioma del cliente. */
+const RESPALDO = {
+  sinIA: { es: "¡Hola! Hemos recibido tu mensaje, te respondemos en breve.", en: "Hi! We've got your message and we'll reply shortly." },
+  vacio: { es: "¡Hola! Hemos recibido tu mensaje, te respondemos en breve.", en: "Hi! We've got your message and we'll reply shortly." },
+  error: { es: "¡Hola! Hemos recibido tu mensaje, te respondemos en cuanto podamos.", en: "Hi! We've got your message and we'll get back to you as soon as we can." },
+} as const;
+
 async function generateReply(
   message: string,
   firstMessage: boolean,
   conv: Conversation | null,
+  idioma: Idioma = "es",
 ): Promise<string> {
   if (!process.env.ANTHROPIC_API_KEY) {
-    return "¡Hola! Hemos recibido tu mensaje, te respondemos en breve.";
+    return RESPALDO.sinIA[idioma];
   }
 
   const history = (conv?.turns ?? []).map((t) => ({
@@ -363,7 +388,7 @@ async function generateReply(
     const ai = await anthropic.messages.create({
       model: MODELS.fast,
       max_tokens: 400,
-      system: martaPrompt,
+      system: idioma === "en" ? martaPrompt + INSTRUCCION_INGLES : martaPrompt,
       messages: [
         ...history,
         { role: "user", content: currentUserContent },
@@ -375,9 +400,9 @@ async function generateReply(
       .map((b) => (b as { type: "text"; text: string }).text)
       .join("\n")
       .trim();
-    return text || "¡Hola! Hemos recibido tu mensaje, te respondemos en breve.";
+    return text || RESPALDO.vacio[idioma];
   } catch (err) {
     console.error("[marta/webhook] error generando respuesta IA:", err);
-    return "¡Hola! Hemos recibido tu mensaje, te respondemos en cuanto podamos.";
+    return RESPALDO.error[idioma];
   }
 }

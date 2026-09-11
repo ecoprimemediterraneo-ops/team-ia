@@ -168,6 +168,12 @@ const DIC = {
   cdm_act_pr_si_real: { es: "\u2705 Coincide. En real, Marta enviar\u00eda este DM al instante:", en: "\u2705 Match. For real, Marta would send this DM instantly:" },
   cdm_act_pr_si_pausa: { es: "\u2705 Coincide. (Env\u00edo a\u00fan desactivado hasta el App Review de Meta \u2014 este es el DM que mandar\u00eda)", en: "\u2705 Match. (Sending still off until Meta's App Review \u2014 this is the DM it would send)" },
   hist_origen_dm: { es: "Mensaje directo", en: "Direct message" },
+  // Los errores al pulsar "Use this account" en la pantalla de conectar Instagram.
+  conf_err_sesion: { es: "Tu sesi\u00f3n ha caducado. Vuelve a entrar y repite la conexi\u00f3n.", en: "Your session has expired. Sign in again and repeat the connection." },
+  conf_err_otra_cuenta: { es: "El permiso que tenemos guardado es de otra cuenta de Instagram, no de la que aparece aqu\u00ed. Vuelve a conectar desde el bot\u00f3n de arriba y elige la cuenta de tu negocio.", en: "The permission we have saved belongs to a different Instagram account, not the one shown here. Connect again with the button above and pick your business account." },
+  conf_err_sin_token: { es: "La conexi\u00f3n con Instagram se ha perdido. Vuelve a conectar la cuenta desde el bot\u00f3n de arriba.", en: "The connection with Instagram was lost. Connect the account again with the button above." },
+  conf_err_sin_almacen: { es: "No hemos podido guardar la confirmaci\u00f3n: es un problema de nuestro servidor, no de tu cuenta. Av\u00edsanos y lo dejamos listo.", en: "We couldn't save the confirmation: it's a problem on our server, not with your account. Let us know and we'll fix it." },
+  conf_err_no_guarda: { es: "Instagram nos ha dado el permiso, pero no hemos podido guardarlo. Vuelve a intentarlo en un momento; si sigue igual, av\u00edsanos.", en: "Instagram granted the permission, but we couldn't save it. Try again in a moment; if it keeps happening, let us know." },
   hist_estado_ignorado: { es: "Ignorado", en: "Ignored" },
   hist_motivo_sin_regla: { es: "Lleg\u00f3, pero no casa con ninguna regla activa.", en: "Received, but no active rule matches it." },
   hist_motivo_propio: { es: "Comentado desde la propia cuenta: Marta no se contesta a s\u00ed misma.", en: "Posted from the account itself: Marta doesn't reply to itself." },
@@ -601,3 +607,55 @@ export function traductor(idioma: Idioma) {
 }
 
 export type T = ReturnType<typeof traductor>;
+
+// -----------------------------------------------------------------------------
+// ¿En qué idioma ESCRIBE el cliente?
+// -----------------------------------------------------------------------------
+//
+// Distinto de `idiomaDe`, que lee el `?lang=` del panel: esto mira el TEXTO que
+// manda una persona por Instagram, para que Marta le conteste en su idioma.
+// Hacía falta porque el prompt de Marta está escrito en castellano y le decía
+// que respondiera siempre en castellano: a un "How much does it cost?" le
+// llegaba la respuesta en español, y el vídeo del App Review de Meta lo graba
+// un revisor que no lo lee.
+//
+// Es a propósito sencillo —palabras frecuentes de cada lengua y las letras que
+// solo usa el castellano— y NO una llamada a un modelo: se ejecuta en cada DM y
+// en cada comentario, antes de responder, y un mensaje de Instagram suele ser
+// una frase corta.
+//
+// ANTE LA DUDA, CASTELLANO. Un mensaje ambiguo ("ok", un emoji, una palabra que
+// existe en las dos) devuelve "es", así el comportamiento de siempre no cambia:
+// solo cambia cuando hay señales claras de inglés.
+
+const PALABRAS_EN = new Set([
+  "the", "how", "much", "does", "do", "did", "what", "whats", "what's", "price", "prices", "pricing",
+  "cost", "costs", "hi", "hello", "hey", "you", "your", "is", "are", "can", "could", "would", "please",
+  "want", "need", "about", "for", "of", "and", "my", "with", "thanks", "thank", "i'm", "im", "have",
+  "get", "tell", "more", "details", "interested", "book", "free", "month", "service", "services",
+]);
+
+const PALABRAS_ES = new Set([
+  "el", "la", "los", "las", "de", "que", "cuanto", "cuánto", "precio", "precios", "hola", "quiero",
+  "es", "por", "para", "con", "una", "un", "cuesta", "vale", "tu", "tus", "mi", "necesito",
+  "informacion", "información", "gracias", "y", "como", "cómo", "servicio", "servicios", "buenas",
+  "tenéis", "teneis", "dime", "saber", "mas", "más", "mes", "gratis", "reservar", "estoy",
+]);
+
+export function idiomaDeTexto(texto: string | null | undefined): Idioma {
+  const t = (texto || "").toLowerCase();
+  if (!t.trim()) return "es";
+  // Letras y signos que solo usa el castellano: señal fuerte por sí sola.
+  if (/[ñ¿¡]/.test(t)) return "es";
+  const palabras = t.match(/[a-záéíóúüñ']+/g) || [];
+  let en = 0;
+  let es = 0;
+  for (const p of palabras) {
+    if (PALABRAS_EN.has(p)) en++;
+    if (PALABRAS_ES.has(p)) es++;
+  }
+  // Las tildes cuentan como castellano, pero no deciden solas: un nombre propio
+  // con tilde dentro de una frase en inglés no la convierte en española.
+  if (/[áéíóú]/.test(t)) es++;
+  return en > es ? "en" : "es";
+}

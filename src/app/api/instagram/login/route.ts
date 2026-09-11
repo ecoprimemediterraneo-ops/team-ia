@@ -27,6 +27,7 @@ import {
   COOKIE_STATE,
 } from "@/lib/instagram-login";
 import { idiomaDe, conIdioma, COOKIE_IDIOMA } from "@/lib/idioma";
+import { PARAM_VOLVER } from "@/lib/volver";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,7 +45,14 @@ export async function GET(req: Request) {
 
   const ctx = await resolverContextoPanel();
   if (!ctx) {
-    return NextResponse.redirect(new URL("/login", req.url), { status: 302 });
+    // Al login CON la vuelta y el idioma. Antes se mandaba a `/login` a secas: si
+    // la sesión había caducado a mitad de grabar el vídeo del App Review, la
+    // pantalla volvía en castellano y a la portada, en vez de a la de conectar
+    // Instagram en inglés. El destino lo valida `destinoSeguro` en el login.
+    const destino = new URL("/login", req.url);
+    destino.searchParams.set(PARAM_VOLVER, conIdioma("/dashboard/marta?tab=arranque", idioma));
+    if (idioma === "en") destino.searchParams.set("lang", "en");
+    return NextResponse.redirect(destino, { status: 302 });
   }
 
   if (!configurado()) {
