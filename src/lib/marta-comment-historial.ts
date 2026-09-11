@@ -97,6 +97,11 @@ const KINDS = new Set(["comment", "comment_reply", "comment_dm", "comment_descar
  * funciona" en vez de como "aún no ha pasado nada este mes". Dos y no doce
  * porque cada mes es una lectura del almacén y esto se pinta en cada carga.
  */
+/** ¿Hay algo que enseñar? Lo recibido, o lo que se contestó (por DM o en el hilo). */
+const conTexto = (t: string | undefined): boolean => !!t && t.trim().length > 0;
+const tieneContenido = (f: FilaHistorial): boolean =>
+  conTexto(f.comentario) || conTexto(f.dm) || conTexto(f.respuestaPublica);
+
 export async function historialComentarios(
   tenantId: string,
   limite = 20,
@@ -181,5 +186,16 @@ export async function historialComentarios(
 
   return [...porComentario.values()]
     .sort((a, b) => b.ts.localeCompare(a.ts))
+    // FILAS VACÍAS FUERA, y ANTES del límite.
+    //
+    // Los eventos anteriores al 10 de septiembre se guardaban solo con
+    // identificadores: sin usuario, sin lo recibido y sin lo enviado. En la
+    // tabla salían como una fila de guiones con un IGSID y estado "Detectado",
+    // que se lee como un fallo. No se borran del registro —el informe mensual
+    // los sigue contando—: solo no se pintan.
+    //
+    // Se filtra antes de recortar a `limite` para que esas filas viejas no le
+    // quiten el sitio a las buenas.
+    .filter(tieneContenido)
     .slice(0, limite);
 }
