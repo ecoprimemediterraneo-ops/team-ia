@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
+import { resolverTenantDeUsuario } from "@/lib/tenants";
+import { capaDeSector } from "@/lib/persona";
 import { anthropic } from "@/lib/claude";
 import { getUser } from "@/lib/store";
 
@@ -32,6 +34,13 @@ export async function POST(req: Request) {
       cercano: "Tono muy cercano y humano, como hablándole a un vecino.",
     };
 
+    // Capa de sector: identidad, vocabulario, tono y —sobre todo— lo que este
+    // negocio NO puede decir. El prompt de oficio de abajo sabe hacer su
+    // trabajo, pero no sabía dónde trabaja: sin esto, cada generador inventaba
+    // con el briefing suelto y sin ninguna prohibición.
+    const tenantId = await resolverTenantDeUsuario(email);
+    const { bloque: bloqueSector } = await capaDeSector(tenantId).catch(() => ({ bloque: "" }));
+
     const ai = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 600,
@@ -47,7 +56,7 @@ Reglas estrictas:
 - Cierra con el nombre del negocio o "El equipo de [negocio]".
 - ${toneInstr[tone]}
 
-Devuelve SOLO el texto de la respuesta. Sin comillas, sin explicaciones, sin asunto. Listo para pegar en Google.`,
+Devuelve SOLO el texto de la respuesta. Sin comillas, sin explicaciones, sin asunto. Listo para pegar en Google.${bloqueSector ? `\n\n${bloqueSector}` : ""}`,
       messages: [
         {
           role: "user",

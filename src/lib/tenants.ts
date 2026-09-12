@@ -495,7 +495,7 @@ export async function resolverTenantDeUsuario(email: string): Promise<string> {
 export async function resolveTenantFromMeta(input: {
   whatsappPhoneNumberId?: string;
   instagramUserId?: string;
-}): Promise<string> {
+}): Promise<string | null> {
   const all = await readAll();
   for (const t of Object.values(all)) {
     if (
@@ -514,11 +514,16 @@ export async function resolveTenantFromMeta(input: {
     }
   }
 
-  // Caer al tenant por defecto EN SILENCIO es lo que escondió durante semanas
-  // que el número guardado era el viejo: todo funcionaba porque el tenant por
-  // defecto resultaba ser el bueno. Con un segundo cliente con número propio,
-  // ese silencio habría metido sus mensajes en la cuenta de otro. Si llega un
-  // identificador que no conocemos, se dice en el log y se dice fuerte.
+  // NO SE ATIENDE A QUIEN NO CONOCEMOS.
+  //
+  // Antes esto devolvía el tenant por defecto. Eso escondió durante semanas que
+  // el número guardado era el viejo (todo funcionaba porque el de por defecto
+  // resultaba ser el bueno), y con un segundo cliente con número propio habría
+  // metido sus mensajes —y su historial— en la cuenta de otro.
+  //
+  // Atender por si acaso no es prudente: es contestar en nombre de un negocio
+  // que no sabemos cuál es, y dejar la conversación apuntada en la cuenta
+  // equivocada. Devolvemos null y que el webhook decida callarse.
   const quien =
     input.whatsappPhoneNumberId
       ? `phone_number_id "${input.whatsappPhoneNumberId}"`
@@ -530,8 +535,9 @@ export async function resolveTenantFromMeta(input: {
     .join(", ");
   console.warn(
     `[tenants] SIN DUEÑO: llegó ${quien} y no es de ningún tenant. ` +
-      `Se atiende como "${DEFAULT_TENANT_ID}" (el de por defecto), que puede NO ser el suyo. ` +
+      `NO se atiende (antes se atendía como "${DEFAULT_TENANT_ID}", que podía no ser el suyo). ` +
+      `Si es un alta nueva, dale de alta su identificador en el tenant. ` +
       `Conocidos: ${conocidos}`,
   );
-  return DEFAULT_TENANT_ID;
+  return null;
 }

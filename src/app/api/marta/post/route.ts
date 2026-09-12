@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
+import { resolverTenantDeUsuario } from "@/lib/tenants";
+import { capaDeSector } from "@/lib/persona";
 import { anthropic } from "@/lib/claude";
 import { getUser } from "@/lib/store";
 
@@ -44,6 +46,13 @@ export async function POST(req: Request) {
       inspirador: "Inspirador, motivacional, sin caer en clichés.",
     };
 
+    // Capa de sector: identidad, vocabulario, tono y —sobre todo— lo que este
+    // negocio NO puede decir. El prompt de oficio de abajo sabe hacer su
+    // trabajo, pero no sabía dónde trabaja: sin esto, cada generador inventaba
+    // con el briefing suelto y sin ninguna prohibición.
+    const tenantId = await resolverTenantDeUsuario(email);
+    const { bloque: bloqueSector } = await capaDeSector(tenantId).catch(() => ({ bloque: "" }));
+
     const ai = await anthropic.messages.create({
       model: "claude-sonnet-4-5",
       max_tokens: 1500,
@@ -61,7 +70,7 @@ Reglas generales:
 - Habla siempre en primera persona del negocio (nosotros/yo).
 - Conecta con el público objetivo, no genérico.
 - Hashtags relevantes y mezcla nicho + populares.
-- Devuelve SOLO el contenido listo para publicar, sin meta-explicaciones tipo "aquí tienes" ni "este post...".`,
+- Devuelve SOLO el contenido listo para publicar, sin meta-explicaciones tipo "aquí tienes" ni "este post...".${bloqueSector ? `\n\n${bloqueSector}` : ""}`,
       messages: [{ role: "user", content: `Crea ${format} sobre: ${topic}` }],
     });
 

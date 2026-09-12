@@ -37,6 +37,7 @@
 // =============================================================================
 
 import { NextResponse } from "next/server";
+import { resolverSalonDeLlamada, MENSAJE_SIN_SALON } from "@/lib/carmen-salon";
 import { headers } from "next/headers";
 import { timingSafeEqual } from "node:crypto";
 import * as chrono from "chrono-node";
@@ -47,7 +48,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 // Salón por defecto si Retell no envía `slug` (la cuenta piloto de Carmen).
-const DEFAULT_SLUG = "bendito-arte";
+// (el salón por defecto lo resuelve ahora `carmen-salon.ts`)
 
 
 function safeEqual(a: string, b: string): boolean {
@@ -267,9 +268,18 @@ export async function POST(req: Request) {
   const fromNumber = String(call.from_number ?? "").trim() || undefined;
   const telefono = get("telefono", "customer_phone", "phone", "telefono_cliente", "numero") || fromNumber;
   const durationMin = Number(get("duracion_min", "duration_min", "duracion", "minutos")) || 30;
-  // Salón (tenant) al que pertenece la cita. Retell lo manda en `slug`; si no viene,
-  // caemos al salón piloto por defecto.
-  const slug = get("slug", "salon", "negocio", "business", "tenant", "salon_slug") || DEFAULT_SLUG;
+  // Salón (tenant) al que pertenece la cita. Ver `carmen-salon.ts`: si no se
+  // puede saber de qué negocio es la llamada, NO se adivina (antes caía al
+  // salón piloto, o sea a la agenda de otro).
+  const salon = await resolverSalonDeLlamada(get("slug", "salon", "negocio", "business", "tenant", "salon_slug"));
+  if (!salon.ok) {
+    return NextResponse.json({
+      success: false,
+      reason: salon.motivo === "no_existe" ? "salon_desconocido" : "salon_ambiguo",
+      message: MENSAJE_SIN_SALON,
+    });
+  }
+  const slug = salon.slug;
 
   console.log("[carmen/agendar] parsed:", JSON.stringify({ nombre, motivo, fechaRaw, telefono, durationMin, slug, call: call.call_id }).slice(0, 800));
 

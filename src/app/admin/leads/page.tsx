@@ -8,24 +8,14 @@
 // caminos distintos.
 import { redirect } from "next/navigation";
 import { getSessionLocal } from "@/lib/auth";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { listarDiagnosticos, motivosDeSpam } from "@/lib/diagnostico";
+import { listar } from "@/lib/listas-captacion";
 import MarcarSpam from "@/components/MarcarSpam";
 
 const FOUNDER_EMAILS = [
   process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com",
   "crisasky@gmail.com",
 ];
-const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
-
-async function readJson<T>(file: string, fallback: T): Promise<T> {
-  try {
-    return JSON.parse(await fs.readFile(path.join(DATA_DIR, file), "utf-8"));
-  } catch {
-    return fallback;
-  }
-}
 
 type Newsletter = { email: string; date: string };
 
@@ -56,7 +46,8 @@ export default async function AdminLeadsPage() {
     spam: d.spam,
     motivos: motivosDeSpam(d),
   }));
-  const newsletter = await readJson<Newsletter[]>("newsletter.json", []);
+  // Igual que la lista beta: la newsletter vive en Supabase, no en un archivo.
+  const newsletter = (await listar<Newsletter & Record<string, unknown>>("newsletter", "date").catch(() => [])) as Newsletter[];
 
   const today = Date.now();
   const last7 = (ts: string) => new Date(ts).getTime() > today - 7 * 86400000;

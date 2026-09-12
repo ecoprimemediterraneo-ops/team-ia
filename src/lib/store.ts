@@ -93,6 +93,16 @@ export type ScheduledEmail = {
   sentAt?: string;
   error?: string;
   attempts?: number; // intentos de envío (para reintentos con tope)
+  /**
+   * A quién se le ha mandado YA, de esta campaña. Se apunta destinatario a
+   * destinatario, en cuanto Resend acepta cada uno.
+   *
+   * Sin esto, el estado era solo de la campaña entera: si el destinatario nº 40
+   * rebotaba, la campaña quedaba "failed" y el siguiente cron la reintentaba
+   * DESDE EL PRIMERO. Los 39 de antes recibían el mismo correo otra vez, hasta
+   * cinco veces con el tope de reintentos.
+   */
+  enviados?: string[];
 };
 
 export type WelcomeSend = {

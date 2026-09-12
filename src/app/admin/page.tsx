@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { getSessionLocal } from "@/lib/auth";
 import { estadoToken as estadoTokenInstagram } from "@/lib/instagram-login";
 import { listTenants } from "@/lib/tenants";
+import { listar } from "@/lib/listas-captacion";
 import { resolverSector } from "@/lib/sectores";
 import { resumenCoste, PRECIOS } from "@/lib/gestoria-coste";
 import { MODELO_LECTURA } from "@/lib/gestoria-lectura";
@@ -45,7 +46,10 @@ export default async function AdminPage() {
   type Booking = { uid: string; trigger: string; receivedAt: string; payload: Record<string, unknown> };
   type EvalResult = { ts: string; email: string; agent: string; score: number; reasoning: string; userMessage: string; agentResponse: string };
 
-  const waitlist = await readJson<WaitlistEntry[]>("waitlist.json", []);
+  // La lista beta ya NO se lee de un archivo: vive en Supabase (ver
+  // `listas-captacion.ts`). El archivo de /tmp que se leía aquí estaba casi
+  // siempre vacío, así que el panel enseñaba cero apuntados habiendo apuntados.
+  const waitlist = (await listar<WaitlistEntry & Record<string, unknown>>("waitlist", "createdAt").catch(() => [])) as WaitlistEntry[];
   const bookings = await readJson<Booking[]>("calendar-bookings.json", []);
   const evals = await readJson<EvalResult[]>("evals.json", []);
 

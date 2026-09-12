@@ -15,6 +15,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { cronAuthError } from "@/lib/cron-auth";
 import { Resend } from "resend";
 import { getAllUsers, updateScheduledEmail, updateWelcomeSend } from "@/lib/store";
 
@@ -29,11 +30,8 @@ function fillVars(text: string, vars: Record<string, string>): string {
 }
 
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization") || "";
-  const expected = process.env.CRON_SECRET;
-  if (expected && !auth.includes(expected)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authErr = cronAuthError(req);
+  if (authErr) return authErr;
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "No Resend key" }, { status: 200 });
@@ -69,8 +67,21 @@ export async function GET(req: Request) {
         continue;
       }
 
+      // A quién ya se le mandó en pasadas anteriores. Un reintento CONTINÚA por
+      // donde se quedó; no vuelve a empezar por el primero.
+      const yaEnviados = new Set(s.enviados ?? []);
+      const pendientes = recipients.filter((r) => !yaEnviados.has(r));
+
+      if (pendientes.length === 0) {
+        // Todos recibidos en pasadas anteriores: la campaña está hecha aunque
+        // en su día quedara marcada como fallida.
+        await updateScheduledEmail(userEmail, s.id, { status: "sent", sentAt: new Date().toISOString() });
+        scheduledSent++;
+        continue;
+      }
+
       try {
-        for (const r of recipients) {
+        for (const r of pendientes) {
           const cName = user.contacts?.find((c) => c.email === r)?.name || "";
           const res = await resend.emails.send({
             from,
@@ -81,16 +92,24 @@ export async function GET(req: Request) {
           });
           // Resend NO lanza excepción ante errores de API: los devuelve en res.error.
           if (res.error) throw new Error(res.error.message || "Resend rechazó el envío");
+          // Se apunta AQUÍ, uno a uno y guardando cada vez. Guardar solo al
+          // final del bucle dejaría la lista a medias si la función se corta
+          // (tiempo agotado, despliegue en medio), que es exactamente el caso
+          // en el que se producían los duplicados.
+          yaEnviados.add(r);
+          await updateScheduledEmail(userEmail, s.id, { enviados: [...yaEnviados] });
         }
         // Solo si TODOS los envíos fueron aceptados: marcar enviado.
         await updateScheduledEmail(userEmail, s.id, { status: "sent", sentAt: new Date().toISOString() });
         scheduledSent++;
       } catch (e) {
-        // Rechazo/error → failed + 1 intento. Se reintentará hasta MAX_ATTEMPTS.
+        // Rechazo/error → failed + 1 intento. Se reintentará hasta MAX_ATTEMPTS,
+        // pero solo con los que falten: los ya aceptados quedan apuntados.
         await updateScheduledEmail(userEmail, s.id, {
           status: "failed",
           error: e instanceof Error ? e.message : "Error",
           attempts: attempts + 1,
+          enviados: [...yaEnviados],
         });
         failed++;
       }

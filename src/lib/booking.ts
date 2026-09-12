@@ -633,6 +633,9 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
 
   const calendarEmail = await resolveCalendarEmail(business);
 
+  // Se rellena dentro del candado, en `persistir`.
+  let record: BookingRecord | null = null;
+
   // El evento en Google cubre el FOOTPRINT (padding antes + servicio + padding
   // después) para bloquear de verdad prep/limpieza. El cliente ve la hora del
   // servicio; el evento arranca en la hora de prep.
@@ -656,12 +659,44 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
     // Multi-empleado: aísla el lock por profesional y re-valida per-staff dentro del
     // lock (en vez del findFreeSlot global, que asume un único calendario).
     resourceId: empleado?.id,
-    revalidate: empleado
-      ? async () => {
-          const fl = await footprintLibre(business, startNorm, sel.paddingBeforeMin, sel.durationMin, sel.paddingAfterMin, input.redirectUri, undefined, empleado.id);
-          return fl.ok && fl.libre;
-        }
-      : undefined,
+    // La disponibilidad se vuelve a mirar SIEMPRE dentro del candado, haya
+    // profesional o no. Antes, sin profesional, se delegaba en `findFreeSlot`,
+    // que solo pregunta a Google y no ve las reservas ya guardadas aquí.
+    revalidate: async () => {
+      const fl = await footprintLibre(business, startNorm, sel.paddingBeforeMin, sel.durationMin, sel.paddingAfterMin, input.redirectUri, undefined, empleado?.id);
+      return fl.ok && fl.libre;
+    },
+    // Guardar dentro del candado: hasta que esto no termina, ninguna otra
+    // reserva del mismo profesional puede mirar la agenda.
+    persistir: async (cita) => {
+      record = {
+        id: nuevoId("bk"),
+        token: crypto.randomBytes(16).toString("hex"),
+        slug: business.slug,
+        tenantId: business.tenantId,
+        serviceId: service.id,
+        servicioNombre: service.nombre,
+        variantId: input.variantId,
+        varianteNombre: sel.varianteNombre,
+        addonIds: sel.addonsSel.map((a) => a.id),
+        addonsNombres: sel.addonsSel.map((a) => a.nombre),
+        durationMin: sel.durationMin,
+        paddingBeforeMin: sel.paddingBeforeMin,
+        paddingAfterMin: sel.paddingAfterMin,
+        precioEUR: sel.precioEUR,
+        startIso: startNorm,
+        cliente: input.cliente,
+        empleadoId: empleado?.id,
+        empleadoNombre: empleado?.nombre,
+        eventId: cita.eventId,
+        htmlLink: cita.htmlLink,
+        estado: "confirmada",
+        origen: "online",
+        tipo: "cita",
+        creadaEn: new Date().toISOString(),
+      };
+      await saveRecord(record);
+    },
   });
 
   if (!res.ok) {
@@ -671,33 +706,7 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
     return { ok: false, reason: noCal ? "no_calendar" : "error", detail: res.detail };
   }
 
-  const record: BookingRecord = {
-    id: nuevoId("bk"),
-    token: crypto.randomBytes(16).toString("hex"),
-    slug: business.slug,
-    tenantId: business.tenantId,
-    serviceId: service.id,
-    servicioNombre: service.nombre,
-    variantId: input.variantId,
-    varianteNombre: sel.varianteNombre,
-    addonIds: sel.addonsSel.map((a) => a.id),
-    addonsNombres: sel.addonsSel.map((a) => a.nombre),
-    durationMin: sel.durationMin,
-    paddingBeforeMin: sel.paddingBeforeMin,
-    paddingAfterMin: sel.paddingAfterMin,
-    precioEUR: sel.precioEUR,
-    startIso: startNorm,
-    cliente: input.cliente,
-    empleadoId: empleado?.id,
-    empleadoNombre: empleado?.nombre,
-    eventId: res.eventId,
-    htmlLink: res.htmlLink,
-    estado: "confirmada",
-    origen: "online",
-    tipo: "cita",
-    creadaEn: new Date().toISOString(),
-  };
-  await saveRecord(record);
+  if (!record) return { ok: false, reason: "error", detail: "la reserva no llegó a guardarse" };
   await notificarDueno(record, "nueva");
   return { ok: true, record };
 }
@@ -965,6 +974,7 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
   if (!libre.libre) return { ok: false, reason: "slot_taken" };
 
   const calendarEmail = await resolveCalendarEmail(business);
+  let record: BookingRecord | null = null; // se rellena dentro del candado, en `persistir`
   const eventStart = shiftLocal(startNorm, -pB);
   const eventDuration = pB + dur + pA;
   const motivo = [servicioNombre, varianteNombre].filter(Boolean).join(" · ") + (empleado ? ` · ${empleado.nombre}` : "") + (input.nota ? ` — ${input.nota}` : "");
@@ -982,12 +992,41 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
     attendees: input.cliente.email ? [input.cliente.email] : undefined,
     simulate: process.env.BOOKING_SIMULATE === "1" ? true : undefined,
     resourceId: empleado?.id,
-    revalidate: empleado
-      ? async () => {
-          const fl = await footprintLibre(business, startNorm, pB, dur, pA, input.redirectUri, undefined, empleado.id);
-          return fl.ok && fl.libre;
-        }
-      : undefined,
+    revalidate: async () => {
+      const fl = await footprintLibre(business, startNorm, pB, dur, pA, input.redirectUri, undefined, empleado?.id);
+      return fl.ok && fl.libre;
+    },
+    persistir: async (cita) => {
+      record = {
+        id: nuevoId("bk"),
+        token: crypto.randomBytes(16).toString("hex"),
+        slug: business.slug,
+        tenantId: business.tenantId,
+        serviceId,
+        servicioNombre,
+        varianteNombre,
+        addonIds,
+        addonsNombres,
+        durationMin: dur,
+        paddingBeforeMin: pB,
+        paddingAfterMin: pA,
+        precioEUR: precio,
+        startIso: startNorm,
+        cliente: input.cliente,
+        empleadoId: empleado?.id,
+        empleadoNombre: empleado?.nombre,
+        nota: input.nota,
+        comensales: input.comensales,
+        zona: input.zona,
+        eventId: cita.eventId,
+        htmlLink: cita.htmlLink,
+        estado: input.estadoInicial ?? "confirmada",
+        origen: "manual",
+        tipo: "cita",
+        creadaEn: new Date().toISOString(),
+      };
+      await saveRecord(record);
+    },
   });
   if (!res.ok) {
     if (res.reason === "slot_taken") return { ok: false, reason: "slot_taken", suggested: res.suggested };
@@ -996,35 +1035,7 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
     return { ok: false, reason: noCal ? "no_calendar" : "error", detail: res.detail };
   }
 
-  const record: BookingRecord = {
-    id: nuevoId("bk"),
-    token: crypto.randomBytes(16).toString("hex"),
-    slug: business.slug,
-    tenantId: business.tenantId,
-    serviceId,
-    servicioNombre,
-    varianteNombre,
-    addonIds,
-    addonsNombres,
-    durationMin: dur,
-    paddingBeforeMin: pB,
-    paddingAfterMin: pA,
-    precioEUR: precio,
-    startIso: startNorm,
-    cliente: input.cliente,
-    empleadoId: empleado?.id,
-    empleadoNombre: empleado?.nombre,
-    nota: input.nota,
-    comensales: input.comensales,
-    zona: input.zona,
-    eventId: res.eventId,
-    htmlLink: res.htmlLink,
-    estado: input.estadoInicial ?? "confirmada",
-    origen: "manual",
-    tipo: "cita",
-    creadaEn: new Date().toISOString(),
-  };
-  await saveRecord(record);
+  if (!record) return { ok: false, reason: "error", detail: "la reserva no llegó a guardarse" };
   await notificarDueno(record, "nueva");
   return { ok: true, record };
 }
@@ -1042,6 +1053,7 @@ export async function crearBloqueo(input: CrearBloqueoInput): Promise<CrearReser
   if (!libre.libre) return { ok: false, reason: "slot_taken" };
 
   const calendarEmail = await resolveCalendarEmail(business);
+  let record: BookingRecord | null = null; // se rellena dentro del candado, en `persistir`
   const res = await reservarSlotBooking({
     tenantId: business.tenantId,
     userEmail: calendarEmail,
@@ -1052,6 +1064,31 @@ export async function crearBloqueo(input: CrearBloqueoInput): Promise<CrearReser
     durationMin: dur,
     agenteOrigen: "booking",
     simulate: process.env.BOOKING_SIMULATE === "1" ? true : undefined,
+    revalidate: async () => {
+      const fl = await footprintLibre(business, startNorm, 0, dur, 0, input.redirectUri);
+      return fl.ok && fl.libre;
+    },
+    persistir: async (cita) => {
+      record = {
+        id: nuevoId("bloq"),
+        token: crypto.randomBytes(16).toString("hex"),
+        slug: business.slug,
+        tenantId: business.tenantId,
+        serviceId: "",
+        servicioNombre: "Bloqueo",
+        durationMin: dur,
+        startIso: startNorm,
+        cliente: { nombre: "", telefono: "" },
+        nota: input.nota,
+        eventId: cita.eventId,
+        htmlLink: cita.htmlLink,
+        estado: "confirmada",
+        origen: "manual",
+        tipo: "bloqueo",
+        creadaEn: new Date().toISOString(),
+      };
+      await saveRecord(record);
+    },
   });
   if (!res.ok) {
     if (res.reason === "slot_taken") return { ok: false, reason: "slot_taken", suggested: res.suggested };
@@ -1059,25 +1096,7 @@ export async function crearBloqueo(input: CrearBloqueoInput): Promise<CrearReser
     const noCal = pareceCalendarioDesconectado(res.detail);
     return { ok: false, reason: noCal ? "no_calendar" : "error", detail: res.detail };
   }
-  const record: BookingRecord = {
-    id: nuevoId("bloq"),
-    token: crypto.randomBytes(16).toString("hex"),
-    slug: business.slug,
-    tenantId: business.tenantId,
-    serviceId: "",
-    servicioNombre: "Bloqueo",
-    durationMin: dur,
-    startIso: startNorm,
-    cliente: { nombre: "", telefono: "" },
-    nota: input.nota,
-    eventId: res.eventId,
-    htmlLink: res.htmlLink,
-    estado: "confirmada",
-    origen: "manual",
-    tipo: "bloqueo",
-    creadaEn: new Date().toISOString(),
-  };
-  await saveRecord(record);
+  if (!record) return { ok: false, reason: "error", detail: "el bloqueo no llegó a guardarse" };
   return { ok: true, record };
 }
 
@@ -1129,6 +1148,8 @@ export async function reprogramarRecord(
   const del = await borrarEventoGoogle(record, redirectUri);
   if (!del.ok) return { ok: false, reason: "error", detail: del.detail };
 
+  let updated: BookingRecord | null = null; // se rellena dentro del candado, en `persistir`
+
   const res = await reservarSlotBooking({
     tenantId: business.tenantId, userEmail: calendarEmail, redirectUri, nombre, motivo,
     startIso: shiftLocal(startNorm, -pB),
@@ -1136,12 +1157,16 @@ export async function reprogramarRecord(
     agenteOrigen: "booking", customerPhone: telefono, attendees,
     simulate: process.env.BOOKING_SIMULATE === "1" ? true : undefined,
     resourceId: record.empleadoId,
-    revalidate: record.empleadoId
-      ? async () => {
-          const fl = await footprintLibre(business, startNorm, pB, dur, pA, redirectUri, record.id, record.empleadoId);
-          return fl.ok && fl.libre;
-        }
-      : undefined,
+    revalidate: async () => {
+      const fl = await footprintLibre(business, startNorm, pB, dur, pA, redirectUri, record.id, record.empleadoId);
+      return fl.ok && fl.libre;
+    },
+    // Mover la cita también se guarda dentro del candado: si no, entre el hueco
+    // concedido y el guardado otra reserva puede colarse en la hora nueva.
+    persistir: async (cita) => {
+      updated = { ...record, startIso: startNorm, durationMin: dur, eventId: cita.eventId, htmlLink: cita.htmlLink, reprogramadaEn: new Date().toISOString() };
+      await saveRecord(updated);
+    },
   });
   if (!res.ok) {
     if (oldEventId) {
@@ -1167,8 +1192,7 @@ export async function reprogramarRecord(
     return { ok: false, reason: noCal ? "no_calendar" : "error", detail: res.detail };
   }
 
-  const updated: BookingRecord = { ...record, startIso: startNorm, durationMin: dur, eventId: res.eventId, htmlLink: res.htmlLink, reprogramadaEn: new Date().toISOString() };
-  await saveRecord(updated);
+  if (!updated) return { ok: false, reason: "error", detail: "la cita movida no llegó a guardarse" };
   return { ok: true, record: updated };
 }
 

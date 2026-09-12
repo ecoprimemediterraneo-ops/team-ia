@@ -187,6 +187,15 @@ export async function POST(req: Request) {
     for (const entry of entries) {
       // Resolver tenant a partir del id del entry (IG user id de la cuenta receptora).
       const tenantId = await resolveTenantFromMeta({ instagramUserId: entry.id });
+      // Cuenta de Instagram que no es de ningún cliente: no se contesta ni se
+      // apunta. Antes caía en el tenant por defecto y el DM de un desconocido
+      // acababa en la bandeja de la cuenta propia, contestado por Marta.
+      if (!tenantId) {
+        console.warn(
+          `[marta/webhook] IGNORADO: instagram_user_id=${entry.id} no es de ningún tenant. Entry sin atender.`,
+        );
+        continue;
+      }
 
       // NI MENSAJES NI CAMBIOS: se dice. Un `entry` con otra forma —Meta ha
       // cambiado algo, o llega un tipo de evento que aquí no se espera— salía
@@ -226,7 +235,7 @@ export async function POST(req: Request) {
 
         // Memoria: si no hay turnos (o estaba stale → ya limpiado on-read),
         // se trata como primer mensaje.
-        const conv = await getConversation("marta", senderId);
+        const conv = await getConversation("marta", tenantId, senderId);
         const isNew = !conv || conv.turns.length === 0;
 
         // Marta contesta en el idioma en que le escriben. Ante la duda, castellano,
@@ -253,8 +262,8 @@ export async function POST(req: Request) {
 
         // Persistir tras el envío. El payload de IG no trae nombre legible
         // (solo IGSID), así que `name` queda sin actualizar.
-        await appendTurn("marta", senderId, "user", text);
-        await appendTurn("marta", senderId, "assistant", reply);
+        await appendTurn("marta", tenantId, senderId, "user", text);
+        await appendTurn("marta", tenantId, senderId, "assistant", reply);
 
         // Y en la BANDEJA, que es otra cosa: `appendTurn` alimenta la memoria de
         // la IA —se recorta, caduca a las 24 h y no se puede listar— y esto es

@@ -30,6 +30,7 @@
 //   ?preview=<slug>     → devuelve el HTML del informe de ese negocio (no envía, no marca).
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { cronAuthError } from "@/lib/cron-auth";
 import { getBusinessBySlug } from "@/lib/booking";
 import {
   periodoMes,
@@ -43,16 +44,14 @@ import {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+/**
+ * Una sola puerta: delega en `cronAuthError`. Antes esta función repetía aquí
+ * la lógica del secreto (y cada ruta la suya, con matices distintos). Se queda
+ * como envoltorio para no tocar las llamadas de abajo.
+ */
 function authorized(req: Request, h: Headers): boolean {
-  const expected = process.env.CRON_SECRET || "";
-  // Fail-CLOSED en producción: sin secreto configurado NO se abre el endpoint (evita
-  // disparos públicos que enviarían emails reales). En dev sin secreto, permitido.
-  if (!expected) return process.env.NODE_ENV !== "production";
-  const url = new URL(req.url);
-  const qp = url.searchParams.get("secret") || "";
-  const hdr = h.get("x-cron-secret") || "";
-  const bearer = (h.get("authorization") || "").replace(/^Bearer\s+/i, "");
-  return qp === expected || hdr === expected || bearer === expected;
+  void h; // el secreto por cabecera lo lee ya `cronAuthError` de la propia petición
+  return cronAuthError(req) === null;
 }
 
 async function run(req: Request) {

@@ -8,7 +8,7 @@
 
 import "server-only";
 import { logEvent, makeEventId } from "./event-log";
-import { resolveTenantFromMeta, DEFAULT_TENANT_ID, getTenant } from "./tenants";
+import { resolveTenantFromMeta, resolverTenantDeUsuario, DEFAULT_TENANT_ID, getTenant } from "./tenants";
 import { getGbpTokens } from "./store";
 import { listReviews, replyToReview, type GbpReview } from "./google-business";
 import { generateReviewReply, shouldAutoReply } from "./rocio-reviews";
@@ -183,10 +183,19 @@ export async function isRocioLive(userEmail: string): Promise<boolean> {
   return (process.env.ROCIO_USE_MOCK || "").toLowerCase() === "true";
 }
 
-export async function resolveTenantForRocio(): Promise<string> {
+/**
+ * Tenant al que pertenecen las reseñas que se están mirando.
+ *
+ * Antes devolvía SIEMPRE `tenant_aiteam`, con un comentario que decía "en
+ * multi-tenant: resolver por userEmail". Con un solo cliente no se notaba; con
+ * el segundo, sus reseñas y las respuestas publicadas en su nombre se habrían
+ * apuntado en la cuenta de otro. Ya se resuelve por el email de quien tiene la
+ * sesión abierta, que es justo lo que decía aquel comentario.
+ */
+export async function resolveTenantForRocio(userEmail?: string): Promise<string> {
   await getTenant(DEFAULT_TENANT_ID); // asegura seed
-  // En multi-tenant: resolver por userEmail. Single-tenant en beta.
-  return DEFAULT_TENANT_ID;
+  if (!userEmail) return DEFAULT_TENANT_ID;
+  return resolverTenantDeUsuario(userEmail);
 }
 
 void resolveTenantFromMeta;

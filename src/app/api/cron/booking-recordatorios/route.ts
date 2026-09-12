@@ -6,6 +6,7 @@
 // horas y aún sin recordatorio → efectivamente "el día antes" con un cron diario.
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { cronAuthError } from "@/lib/cron-auth";
 import { listRecords, getBusinessBySlug, saveRecord, localToEpoch } from "@/lib/booking";
 import { enviarRecordatorio } from "@/lib/booking-email";
 import { restauranteRecordatorioEnabled } from "@/lib/restaurante";
@@ -18,17 +19,14 @@ export const runtime = "nodejs";
 const WINDOW_MIN_H = 6;   // no recordar citas a menos de 6h (ya casi encima)
 const WINDOW_MAX_H = 30;  // hasta 30h antes (cubre "mañana" con un tick diario)
 
+/**
+ * Una sola puerta: delega en `cronAuthError`. Antes esta función repetía aquí
+ * la lógica del secreto (y cada ruta la suya, con matices distintos). Se queda
+ * como envoltorio para no tocar las llamadas de abajo.
+ */
 function authorized(req: Request, h: Headers): boolean {
-  const expected = process.env.CRON_SECRET || "";
-  // Fail-CLOSED en producción: si falta el secreto, NO abrimos el endpoint
-  // (evita disparos públicos que enviarían emails/WhatsApp reales a clientes).
-  // En dev sin secreto, seguimos permitiendo para no dar fricción.
-  if (!expected) return process.env.NODE_ENV !== "production";
-  const url = new URL(req.url);
-  const qp = url.searchParams.get("secret") || "";
-  const hdr = h.get("x-cron-secret") || "";
-  const bearer = (h.get("authorization") || "").replace(/^Bearer\s+/i, "");
-  return qp === expected || hdr === expected || bearer === expected;
+  void h; // el secreto por cabecera lo lee ya `cronAuthError` de la propia petición
+  return cronAuthError(req) === null;
 }
 
 async function run(req: Request) {

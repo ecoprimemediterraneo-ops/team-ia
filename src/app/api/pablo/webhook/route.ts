@@ -302,10 +302,20 @@ export async function POST(req: Request) {
         // Resolver tenant a partir del phone_number_id del receptor (nuestro número).
         const phoneNumberId = value.metadata?.phone_number_id;
         const tenantId = await resolveTenantFromMeta({ whatsappPhoneNumberId: phoneNumberId });
+        // Número que no es de ningún cliente: no se contesta. Antes se atendía
+        // con el tenant por defecto, así que un mensaje ajeno acababa
+        // respondido en nombre de otro negocio y apuntado en su cuenta.
+        // Se devuelve 200 igualmente: a Meta le decimos que lo hemos recibido
+        // (si no, reintenta en bucle), pero aquí no se hace nada con él.
+        if (!tenantId) {
+          console.warn(
+            `[pablo/webhook] IGNORADO: phone_number_id=${phoneNumberId ?? "(ausente)"} no es de ningún tenant. ` +
+              `${(value.messages ?? []).length} mensaje(s) sin atender.`,
+          );
+          continue;
+        }
         // Diagnóstico: si el panel no ve la conversación, lo primero es saber en
-        // QUÉ tenant se está escribiendo. `resolveTenantFromMeta` cae al tenant
-        // por defecto cuando el phone_number_id no coincide con ninguno, y eso
-        // es indistinguible de un acierto si no se registra aquí.
+        // QUÉ tenant se está escribiendo.
         console.log(
           `[pablo/webhook] tenant resuelto=${tenantId} desde phone_number_id=${phoneNumberId ?? "(ausente)"}`,
         );
@@ -710,8 +720,8 @@ export async function POST(req: Request) {
                 const caso = await resolverCancelacion(business.slug, from, SITE);
                 const resp = textoCancelacionChat(caso, `${SITE}/reservas/${business.slug}`, customerName);
                 await sendWhatsAppText(from, resp);
-                await appendTurn("pablo", from, "user", text, customerName);
-                await appendTurn("pablo", from, "assistant", resp, customerName);
+                await appendTurn("pablo", tenantId, from, "user", text, customerName);
+                await appendTurn("pablo", tenantId, from, "assistant", resp, customerName);
                 // Antes aquí solo se registraba la ENTRADA: la respuesta de Pablo
                 // se perdía y el panel mostraba media conversación.
                 await registrarIntercambio({
@@ -737,8 +747,8 @@ export async function POST(req: Request) {
               const anotado = await anotarEnvioDeDocumentacion({ tenantId, telefono: from });
               if (anotado) {
                 await sendWhatsAppText(from, anotado.texto);
-                await appendTurn("pablo", from, "user", text, customerName);
-                await appendTurn("pablo", from, "assistant", anotado.texto, customerName);
+                await appendTurn("pablo", tenantId, from, "user", text, customerName);
+                await appendTurn("pablo", tenantId, from, "assistant", anotado.texto, customerName);
                 await registrarIntercambio({
                   tenantId, msgId: msg.id, from, nombre: customerName,
                   entrante: text, respuesta: anotado.texto, rxTs, via: anotado.via,
@@ -762,8 +772,8 @@ export async function POST(req: Request) {
               const resp = await responderEstadoExpediente({ tenantId, telefono: from, tramitePedido });
               if (resp) {
                 await sendWhatsAppText(from, resp.texto);
-                await appendTurn("pablo", from, "user", text, customerName);
-                await appendTurn("pablo", from, "assistant", resp.texto, customerName);
+                await appendTurn("pablo", tenantId, from, "user", text, customerName);
+                await appendTurn("pablo", tenantId, from, "assistant", resp.texto, customerName);
                 await registrarIntercambio({
                   tenantId, msgId: msg.id, from, nombre: customerName,
                   entrante: text, respuesta: resp.texto, rxTs, via: resp.via,
@@ -780,7 +790,7 @@ export async function POST(req: Request) {
             // largo de VARIOS turnos. Detectamos sobre el TRANSCRIPT completo de
             // la conversación + el mensaje actual, no solo el último mensaje
             // (eso es lo que hacía que Pablo "confirmara" sin registrar nada).
-            const convForIntent = await getConversation("pablo", from);
+            const convForIntent = await getConversation("pablo", tenantId, from);
             const histTurns = (convForIntent?.turns ?? []).slice(-8);
             const transcript = [
               ...histTurns.map((t) => `${t.role === "user" ? "Cliente" : "Pablo"}: ${t.text}`),
@@ -817,8 +827,8 @@ export async function POST(req: Request) {
               const when = formatStartHumanES(agRes.intent.fields.startIso!);
               const ack = `¡Listo${customerName ? `, ${customerName.split(" ")[0]}` : ""}! 📅\n\nTe he agendado *${agRes.intent.fields.motivo}* el ${when}.\n\nSi necesitas cambiarla, dímelo y la movemos.`;
               await sendWhatsAppText(from, ack);
-              await appendTurn("pablo", from, "user", text, customerName);
-              await appendTurn("pablo", from, "assistant", ack, customerName);
+              await appendTurn("pablo", tenantId, from, "user", text, customerName);
+              await appendTurn("pablo", tenantId, from, "assistant", ack, customerName);
               // Aquí sí se registraba, pero sin el texto: en el panel salía que
               // hubo mensajes y no cuáles. Ahora va por el mismo sitio que el resto.
               await registrarIntercambio({
@@ -842,8 +852,8 @@ export async function POST(req: Request) {
                 });
                 if (pasoRest) {
                   await sendWhatsAppText(from, pasoRest.texto);
-                  await appendTurn("pablo", from, "user", text, customerName);
-                  await appendTurn("pablo", from, "assistant", pasoRest.texto, customerName);
+                  await appendTurn("pablo", tenantId, from, "user", text, customerName);
+                  await appendTurn("pablo", tenantId, from, "assistant", pasoRest.texto, customerName);
                   await registrarIntercambio({
                     tenantId, msgId: msg.id, from, nombre: customerName,
                     entrante: text, respuesta: pasoRest.texto, rxTs, via: pasoRest.via,
@@ -854,8 +864,8 @@ export async function POST(req: Request) {
               const suggested = agRes.suggested ? `\n\nEse hueco está ocupado. ¿Te encajaría el ${formatStartHumanES(agRes.suggested)}?` : `\n\nEse hueco está ocupado. ¿Te encajaría otra hora ese día?`;
               const respSlot = `Vale, lo intento agendar.${suggested}`;
               await sendWhatsAppText(from, respSlot);
-              await appendTurn("pablo", from, "user", text, customerName);
-              await appendTurn("pablo", from, "assistant", `Slot ocupado, propuesta: ${agRes.suggested ?? "—"}`, customerName);
+              await appendTurn("pablo", tenantId, from, "user", text, customerName);
+              await appendTurn("pablo", tenantId, from, "assistant", `Slot ocupado, propuesta: ${agRes.suggested ?? "—"}`, customerName);
               await registrarIntercambio({
                 tenantId, msgId: msg.id, from, nombre: customerName,
                 entrante: text, respuesta: respSlot, rxTs, via: "agenda_hueco_ocupado",
@@ -867,8 +877,8 @@ export async function POST(req: Request) {
               if (q) {
                 const respInc = `Perfecto, te agendo cita. ${q}`;
                 await sendWhatsAppText(from, respInc);
-                await appendTurn("pablo", from, "user", text, customerName);
-                await appendTurn("pablo", from, "assistant", q, customerName);
+                await appendTurn("pablo", tenantId, from, "user", text, customerName);
+                await appendTurn("pablo", tenantId, from, "assistant", q, customerName);
                 await registrarIntercambio({
                   tenantId, msgId: msg.id, from, nombre: customerName,
                   entrante: text, respuesta: respInc, rxTs, via: "agenda_faltan_datos",
@@ -886,7 +896,7 @@ export async function POST(req: Request) {
 
           // Memoria de conversación: si no hay turnos (o estaba stale → ya limpiado
           // on-read por getConversation), tratamos como primer mensaje.
-          const conv = await getConversation("pablo", from);
+          const conv = await getConversation("pablo", tenantId, from);
           const isNew = !conv || conv.turns.length === 0;
 
           // Prompt de Pablo, compuesto EN ESTE MOMENTO con el perfil de sector del
@@ -916,8 +926,8 @@ export async function POST(req: Request) {
 
           // Persistir turno del usuario y de la IA (después de enviar OK, evita
           // guardar interacciones que nunca llegaron al usuario).
-          await appendTurn("pablo", from, "user", text, customerName);
-          await appendTurn("pablo", from, "assistant", reply, customerName);
+          await appendTurn("pablo", tenantId, from, "user", text, customerName);
+          await appendTurn("pablo", tenantId, from, "assistant", reply, customerName);
 
           // Eventos del informe mensual y de la bandeja (silenciosos ante fallos).
           await registrarIntercambio({

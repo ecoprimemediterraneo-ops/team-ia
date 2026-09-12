@@ -8,6 +8,7 @@
 //   · URL (POST):  https://aiteam.marketing/api/carmen/cancelar?secret=CARMEN_WEBHOOK_SECRET
 //   · Params opcionales: telefono, slug (si no llegan, usa call.from_number y el salón piloto).
 import { NextResponse } from "next/server";
+import { resolverSalonDeLlamada, MENSAJE_SIN_SALON } from "@/lib/carmen-salon";
 import { headers } from "next/headers";
 import { timingSafeEqual } from "node:crypto";
 import { getBusinessBySlug } from "@/lib/booking";
@@ -17,7 +18,7 @@ import { sendWhatsAppText } from "@/lib/whatsapp-sender";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const DEFAULT_SLUG = "bendito-arte"; // salón piloto de Carmen si Retell no manda slug
+// (el salón por defecto lo resuelve ahora `carmen-salon.ts`)
 
 function safeEqual(a: string, b: string): boolean {
   const ab = Buffer.from(a), bb = Buffer.from(b);
@@ -55,7 +56,15 @@ export async function POST(req: Request) {
 
   const fromNumber = String(call.from_number ?? "").trim() || undefined;
   const telefono = get("telefono", "customer_phone", "phone", "telefono_cliente", "numero") || fromNumber;
-  const slug = get("slug", "salon", "negocio", "business", "tenant", "salon_slug") || DEFAULT_SLUG;
+  const salon = await resolverSalonDeLlamada(get("slug", "salon", "negocio", "business", "tenant", "salon_slug"));
+  if (!salon.ok) {
+    return NextResponse.json({
+      success: false,
+      reason: salon.motivo === "no_existe" ? "salon_desconocido" : "salon_ambiguo",
+      message: MENSAJE_SIN_SALON,
+    });
+  }
+  const slug = salon.slug;
 
   if (!telefono) {
     return NextResponse.json({ success: false, reason: "no_phone", message: "No tengo tu número para localizar la cita. ¿Me lo dices, por favor?" });

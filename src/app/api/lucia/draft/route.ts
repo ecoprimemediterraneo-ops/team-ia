@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
+import { resolverTenantDeUsuario } from "@/lib/tenants";
+import { capaDeSector } from "@/lib/persona";
 import { fetchMessageBody, getRedirectUri } from "@/lib/gmail";
 import { anthropic } from "@/lib/claude";
 import { getUser } from "@/lib/store";
@@ -36,10 +38,16 @@ export async function POST(req: Request) {
       ? `Negocio: ${user.business.nombre} — ${user.business.sector}. Ofrecemos: ${user.business.ofrece}. Tono: ${user.business.tono}.`
       : "";
 
+    // Capa de sector: identidad, vocabulario, tono y —sobre todo— lo que este
+    // negocio NO puede decir. El prompt de oficio sabe redactar un correo, pero
+    // no sabía dónde trabaja.
+    const tenantId = await resolverTenantDeUsuario(email);
+    const { bloque: bloqueSector } = await capaDeSector(tenantId).catch(() => ({ bloque: "" }));
+
     const aiResp = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 800,
-      system: `Eres Lucía, asistente ejecutiva. Redactas respuestas de email en nombre del jefe. ${businessCtx} Devuelve SOLO el cuerpo del correo (saludo + cuerpo + despedida). Tono cercano y profesional. Conciso.`,
+      system: `Eres Lucía, asistente ejecutiva. Redactas respuestas de email en nombre del jefe. ${businessCtx} Devuelve SOLO el cuerpo del correo (saludo + cuerpo + despedida). Tono cercano y profesional. Conciso.${bloqueSector ? `\n\n${bloqueSector}` : ""}`,
       messages: [
         {
           role: "user",

@@ -19,6 +19,7 @@
 
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { cronAuthError } from "@/lib/cron-auth";
 import { listTenants } from "@/lib/tenants";
 import { resolverSector, tieneFuncion } from "@/lib/sectores";
 import { getBusinessesForTenant } from "@/lib/booking";
@@ -38,15 +39,14 @@ import {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+/**
+ * Una sola puerta: delega en `cronAuthError`. Antes esta función repetía aquí
+ * la lógica del secreto (y cada ruta la suya, con matices distintos). Se queda
+ * como envoltorio para no tocar las llamadas de abajo.
+ */
 function authorized(req: Request, h: Headers): boolean {
-  const expected = process.env.CRON_SECRET || "";
-  // Fail-CLOSED en producción: sin secreto no se abre, porque este endpoint
-  // manda WhatsApp a pacientes reales.
-  if (!expected) return process.env.NODE_ENV !== "production";
-  const qp = new URL(req.url).searchParams.get("secret") || "";
-  const hdr = h.get("x-cron-secret") || "";
-  const bearer = (h.get("authorization") || "").replace(/^Bearer\s+/i, "");
-  return qp === expected || hdr === expected || bearer === expected;
+  void h; // el secreto por cabecera lo lee ya `cronAuthError` de la propia petición
+  return cronAuthError(req) === null;
 }
 
 type ResumenTenant = {
