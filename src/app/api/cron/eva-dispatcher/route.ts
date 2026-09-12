@@ -47,6 +47,7 @@ export async function GET(req: Request) {
   let scheduledSent = 0;
   let welcomeSent = 0;
   let failed = 0;
+  let inciertos = 0; // envíos que quizá salieron y no se pudieron confirmar
 
   for (const [userEmail, user] of Object.entries(users)) {
     if (!user.business) continue;
@@ -87,7 +88,19 @@ export async function GET(req: Request) {
       // A quién ya se le mandó en pasadas anteriores. Un reintento CONTINÚA por
       // donde se quedó; no vuelve a empezar por el primero.
       const yaEnviados = new Set(s.enviados ?? []);
-      const pendientes = recipients.filter((r) => !yaEnviados.has(r));
+      // Y a quién se EMPEZÓ a mandar sin llegar a confirmarlo: puede que lo
+      // recibiera (Resend aceptó y falló el guardado justo después). No se
+      // reenvía; se cuenta aparte para que alguien lo mire.
+      const intentados = new Set(s.intentados ?? []);
+      const dudosos = [...intentados].filter((r) => !yaEnviados.has(r) && recipients.includes(r));
+      if (dudosos.length) {
+        console.warn(
+          `[eva-dispatcher] campaña ${s.id}: ${dudosos.length} destinatario(s) DUDOSOS ` +
+            `(se empezó a mandar y no se confirmó; NO se reenvían): ${dudosos.join(", ")}`,
+        );
+        inciertos += dudosos.length;
+      }
+      const pendientes = recipients.filter((r) => !yaEnviados.has(r) && !intentados.has(r));
 
       if (pendientes.length === 0) {
         // Todos recibidos en pasadas anteriores: la campaña está hecha aunque
@@ -100,6 +113,19 @@ export async function GET(req: Request) {
       try {
         for (const r of pendientes) {
           const cName = user.contacts?.find((c) => c.email === r)?.name || "";
+          // APUNTAR ANTES DE MANDAR. Si esto falla, se corta la campaña sin
+          // haber enviado nada: mejor un correo de menos que uno repetido.
+          intentados.add(r);
+          try {
+            await updateScheduledEmail(userEmail, s.id, { intentados: [...intentados] });
+          } catch (err) {
+            console.error(
+              `[eva-dispatcher] campaña ${s.id}: no se puede apuntar el envío a ${r}; ` +
+                `se corta la campaña SIN mandarlo para no arriesgar duplicados.`,
+              err,
+            );
+            break;
+          }
           const res = await resend.emails.send({
             from,
             to: r,
@@ -108,7 +134,19 @@ export async function GET(req: Request) {
             replyTo: process.env.EVA_REPLY_TO || "cita@parse.aiteam.marketing",
           });
           // Resend NO lanza excepción ante errores de API: los devuelve en res.error.
-          if (res.error) throw new Error(res.error.message || "Resend rechazó el envío");
+          if (res.error) {
+            // RECHAZO CONOCIDO: Resend dice que NO ha salido. Eso no es un
+            // dudoso, es un no-enviado, así que se quita de la lista de
+            // intentados para que el siguiente reintento vuelva a probar.
+            // (Dudoso es solo aquel del que no sabemos si salió.)
+            intentados.delete(r);
+            try {
+              await updateScheduledEmail(userEmail, s.id, { intentados: [...intentados] });
+            } catch {
+              /* si no se puede, el siguiente paso lo tratará como dudoso: nunca de más */
+            }
+            throw new Error(res.error.message || "Resend rechazó el envío");
+          }
           // Se apunta AQUÍ, uno a uno y guardando cada vez. Guardar solo al
           // final del bucle dejaría la lista a medias si la función se corta
           // (tiempo agotado, despliegue en medio), que es exactamente el caso
@@ -153,7 +191,18 @@ export async function GET(req: Request) {
         console.log(`[eva-dispatcher] bienvenida ${w.id} en manos de otra pasada; se salta`);
         continue;
       }
+      // Un envío que se empezó y no se confirmó puede haber salido: no se
+      // repite. Se marca para que alguien lo revise.
+      if (w.intentadoEn && w.status !== "sent") {
+        console.warn(`[eva-dispatcher] bienvenida ${w.id} DUDOSA (se empezó el ${w.intentadoEn} y no se confirmó); no se reenvía`);
+        inciertos++;
+        await kvUnlock(lockWelcome);
+        continue;
+      }
+
       try {
+        // Apuntar antes de mandar, igual que en las campañas.
+        await updateWelcomeSend(userEmail, w.id, { intentadoEn: new Date().toISOString() });
         const e = series.emails[w.stepIndex];
         const cName = user.contacts?.find((c) => c.email === w.contactEmail)?.name || "";
         const res = await resend.emails.send({
@@ -179,5 +228,5 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({ scheduledSent, welcomeSent, failed });
+  return NextResponse.json({ scheduledSent, welcomeSent, failed, inciertos });
 }

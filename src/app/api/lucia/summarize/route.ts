@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { requireSession } from "@/lib/auth";
+import { briefingDelPanel, contextoEnUnaLinea } from "@/lib/briefing-panel";
 import { fetchInbox, getRedirectUri } from "@/lib/gmail";
 import { anthropic } from "@/lib/claude";
-import { getUser } from "@/lib/store";
 import { contextoPanelODefecto } from "@/lib/panel-contexto";
 import { tieneFuncion } from "@/lib/sectores";
 
 export async function POST() {
   try {
     const { email } = await requireSession();
-    const user = await getUser(email);
     const h = await headers();
     const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
     const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
@@ -21,9 +20,11 @@ export async function POST() {
       `${i + 1}. [${m.unread ? "NO LEÍDO" : "leído"}] DE: ${m.from} | ASUNTO: ${m.subject} | ${m.snippet}`
     ).join("\n");
 
-    const businessCtx = user.business
-      ? `Contexto del negocio: ${user.business.nombre} — ${user.business.sector}. Ofrece: ${user.business.ofrece}.`
-      : "";
+    // El negocio sale de `briefing-panel.ts`: manda la FICHA del tenant y el
+    // briefing del panel solo tapa huecos. Antes se leía el briefing a secas, y
+    // en la cuenta de AI-Team ese briefing era una demo de clínica dental.
+    const { business: negocio } = await briefingDelPanel(email);
+    const businessCtx = contextoEnUnaLinea(negocio);
 
     // GESTORÍA: el resumen no opina sobre urgencia ni sobre qué hacer.
     //

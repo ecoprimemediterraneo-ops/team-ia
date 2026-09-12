@@ -3,7 +3,7 @@ import { requireSession } from "@/lib/auth";
 import { getUser, appendMessage, logActivity, bumpStats } from "@/lib/store";
 import { anthropic, SYSTEM_BUILDERS, MODEL_BY_AGENT } from "@/lib/claude";
 import type { AgentSlug } from "@/lib/agents";
-import { resolverTenantDeUsuario } from "@/lib/tenants";
+import { briefingDelPanel } from "@/lib/briefing-panel";
 import { resolverPersona, capaDeSector, type Canal } from "@/lib/persona";
 
 const VALID = new Set<AgentSlug>(["lucia", "marta", "carmen", "pablo", "rocio", "eva", "sergio"]);
@@ -36,7 +36,9 @@ export async function POST(
     // El resto (Marta, Eva, Lucía, Rocío, Sergio) hablan CON EL DUEÑO y ya tienen
     // su prompt de oficio; a esos se les añade solo la capa de sector, para que
     // sepan dónde trabajan y qué no pueden decir.
-    const tenantId = await resolverTenantDeUsuario(email);
+    // El negocio sale de `briefing-panel.ts` (manda la ficha del tenant), no del
+    // briefing suelto del panel: ahí seguía habiendo una demo de clínica dental.
+    const { business: negocio, tenantId, sector: sectorDelTenant } = await briefingDelPanel(email);
     const CANAL_SIMULADO: Partial<Record<AgentSlug, Canal>> = { pablo: "whatsapp", carmen: "voz" };
 
     let system: string;
@@ -44,16 +46,17 @@ export async function POST(
     if (canalSimulado) {
       const persona = await resolverPersona({ tenantId, agente: key, canal: canalSimulado });
       // Sector null = cuenta comercial de AI-Team → se queda con el prompt de siempre.
-      system = persona.sector ? persona.system : SYSTEM_BUILDERS[key](user.business);
+      system = persona.sector ? persona.system : SYSTEM_BUILDERS[key](negocio);
     } else {
-      system = SYSTEM_BUILDERS[key](user.business);
+      system = SYSTEM_BUILDERS[key](negocio);
       const { bloque } = await capaDeSector(tenantId);
       if (bloque) system += `\n\n${bloque}`;
     }
 
-    // Skills dentales: si el negocio es clínica dental, enriquecer el prompt según contexto del mensaje.
-    const sectorLower = (user.business?.sector || "").toLowerCase();
-    if (sectorLower.includes("dental") || sectorLower.includes("dentista") || sectorLower.includes("odonto")) {
+    // Skills dentales: las enciende el SECTOR DEL TENANT, no un "dental" suelto
+    // dentro del texto del briefing. Con la demo de clínica dental guardada en
+    // el panel, se activaban también en la cuenta de AI-Team.
+    if (sectorDelTenant === "dental") {
       const { buildDentalSystemPrompt } = await import("@/lib/skills/dental");
       system = buildDentalSystemPrompt(system, message);
     }

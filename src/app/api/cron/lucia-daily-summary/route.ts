@@ -5,6 +5,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { briefingDelPanel } from "@/lib/briefing-panel";
 import { cronAuthError } from "@/lib/cron-auth";
 import { Resend } from "resend";
 import { getAllUsers } from "@/lib/store";
@@ -34,6 +35,8 @@ export async function GET(req: Request) {
       continue;
     }
     try {
+      // Ficha del tenant primero (ver `briefing-panel.ts`).
+      const { business: negocio } = await briefingDelPanel(email);
       const inbox = await fetchInbox(email, redirect, 20);
       if (!inbox || inbox.messages.length === 0) {
         skipped++;
@@ -46,7 +49,7 @@ export async function GET(req: Request) {
       const ai = await anthropic.messages.create({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 1500,
-        system: `Eres Lucía, asistente ejecutiva. Genera el resumen matutino de la bandeja del jefe. Negocio: ${user.business.nombre} — ${user.business.sector}. Devuelve markdown con secciones: 🔴 Urgente / 🟡 Importantes / 🟢 Promociones / 📋 3 acciones recomendadas. Sé conciso, directo, español de España.`,
+        system: `Eres Lucía, asistente ejecutiva. Genera el resumen matutino de la bandeja del jefe. Negocio: ${negocio.nombre} — ${negocio.sector}. Devuelve markdown con secciones: 🔴 Urgente / 🟡 Importantes / 🟢 Promociones / 📋 3 acciones recomendadas. Sé conciso, directo, español de España.`,
         messages: [{ role: "user", content: `Mis 20 últimos correos:\n\n${lines}` }],
       });
       const summary = ai.content

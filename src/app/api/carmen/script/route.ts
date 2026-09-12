@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
+import { briefingDelPanel, contextoEnUnaLinea } from "@/lib/briefing-panel";
 import { anthropic } from "@/lib/claude";
-import { getUser } from "@/lib/store";
-import { resolverTenantDeUsuario } from "@/lib/tenants";
 import { resolverPersona } from "@/lib/persona";
 
 const schema = z.object({
@@ -15,7 +14,6 @@ const schema = z.object({
 export async function POST(req: Request) {
   try {
     const { email } = await requireSession();
-    const user = await getUser(email);
     const body = await req.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
@@ -33,11 +31,12 @@ export async function POST(req: Request) {
     // Ahora manda la persona del sector (identidad, vocabulario, tono y lo que
     // NO se puede decir), igual que en el chat del panel. El briefing se sigue
     // usando, pero como dato de apoyo, no como toda la verdad.
-    const businessCtx = user.business
-      ? `Negocio: ${user.business.nombre} — ${user.business.sector}. Ofrecemos: ${user.business.ofrece}. Tono: ${user.business.tono}.`
-      : "Negocio sin briefing configurado.";
+    // El negocio sale de `briefing-panel.ts`: manda la FICHA del tenant y el
+    // briefing del panel solo tapa huecos. Antes se leía el briefing a secas, y
+    // en la cuenta de AI-Team ese briefing era una demo de clínica dental.
+    const { business: negocio, tenantId } = await briefingDelPanel(email);
+    const businessCtx = contextoEnUnaLinea(negocio);
 
-    const tenantId = await resolverTenantDeUsuario(email);
     const persona = await resolverPersona({
       tenantId,
       agente: "carmen",

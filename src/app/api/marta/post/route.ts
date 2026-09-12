@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
-import { resolverTenantDeUsuario } from "@/lib/tenants";
+import { briefingDelPanel, contextoEnUnaLinea } from "@/lib/briefing-panel";
 import { capaDeSector } from "@/lib/persona";
 import { anthropic } from "@/lib/claude";
-import { getUser } from "@/lib/store";
 
 const schema = z.object({
   platform: z.enum(["instagram", "linkedin", "tiktok", "facebook"]),
@@ -16,16 +15,17 @@ const schema = z.object({
 export async function POST(req: Request) {
   try {
     const { email } = await requireSession();
-    const user = await getUser(email);
     const body = await req.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
 
     const { platform, format, topic, tone } = parsed.data;
 
-    const businessCtx = user.business
-      ? `Negocio: ${user.business.nombre} — ${user.business.sector}. Ofrecemos: ${user.business.ofrece}. Público objetivo: ${user.business.publico}. Tono de marca: ${user.business.tono}.`
-      : "Negocio sin briefing configurado.";
+    // El negocio sale de `briefing-panel.ts`: manda la FICHA del tenant y el
+    // briefing del panel solo tapa huecos. Antes se leía el briefing a secas, y
+    // en la cuenta de AI-Team ese briefing era una demo de clínica dental.
+    const { business: negocio, tenantId } = await briefingDelPanel(email);
+    const businessCtx = contextoEnUnaLinea(negocio);
 
     const platformRules: Record<string, string> = {
       instagram: "Máx 2200 caracteres. Engaging. Emojis sí, con criterio. 5-10 hashtags al final.",
@@ -50,7 +50,6 @@ export async function POST(req: Request) {
     // negocio NO puede decir. El prompt de oficio de abajo sabe hacer su
     // trabajo, pero no sabía dónde trabaja: sin esto, cada generador inventaba
     // con el briefing suelto y sin ninguna prohibición.
-    const tenantId = await resolverTenantDeUsuario(email);
     const { bloque: bloqueSector } = await capaDeSector(tenantId).catch(() => ({ bloque: "" }));
 
     const ai = await anthropic.messages.create({

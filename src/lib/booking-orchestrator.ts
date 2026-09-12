@@ -28,6 +28,10 @@ const LOCK_TTL_MS = 30_000;
 // antes de rendirse. Ver `esperarLock`.
 const LOCK_ESPERA_MS = 5_000;
 const LOCK_REINTENTO_MS = 120;
+// Guardar la reserva se reintenta: un corte de un segundo en Supabase no puede
+// costar una cita que YA existe en la agenda de Google.
+const GUARDAR_INTENTOS = 3;
+const GUARDAR_ESPERA_MS = 250;
 
 export type ReservaBookingInput = {
   tenantId?: string;
@@ -54,6 +58,15 @@ export type ReservaBookingInput = {
    * libre, y se concedía encima. Guardar aquí cierra el hueco.
    */
   persistir?: (cita: { eventId?: string; htmlLink?: string; simulada?: boolean }) => Promise<void>;
+  /**
+   * Deshacer la cita en Google. Se usa SOLO si `persistir` falla las tres veces.
+   *
+   * Sin esto quedaba una cita en el calendario que el panel no conoce: ocupa el
+   * hueco, nadie la ve, no sale en ningún listado y el cliente tiene un error en
+   * pantalla. Y si volvía a intentarlo, se creaba una SEGUNDA. Borrando la
+   * primera, reintentar es limpio: ni duplicado ni cita fantasma.
+   */
+  deshacerCita?: (eventId: string) => Promise<boolean>;
 };
 
 // Mutex en memoria por (slot|recurso) — serializa dentro de la misma instancia.
@@ -84,6 +97,25 @@ async function esperarLock(lockKey: string, quien: string): Promise<boolean> {
     if (Date.now() >= limite) return false;
     await new Promise((r) => setTimeout(r, LOCK_REINTENTO_MS));
   }
+}
+
+/**
+ * Intenta guardar varias veces. Devuelve null si lo consiguió, o el motivo del
+ * último fallo si no. No lanza: quien llama tiene que poder deshacer la cita.
+ */
+async function guardarConReintentos(fn: () => Promise<void>): Promise<string | null> {
+  let ultimo = "";
+  for (let i = 1; i <= GUARDAR_INTENTOS; i++) {
+    try {
+      await fn();
+      return null;
+    } catch (err) {
+      ultimo = err instanceof Error ? err.message : String(err);
+      console.error(`[booking-orch] intento ${i}/${GUARDAR_INTENTOS} de guardar la reserva: ${ultimo}`);
+      if (i < GUARDAR_INTENTOS) await new Promise((r) => setTimeout(r, GUARDAR_ESPERA_MS * i));
+    }
+  }
+  return ultimo || "error desconocido";
 }
 
 type Decision = "booked" | "rejected_conflict" | "locked" | "error";
@@ -195,18 +227,45 @@ export async function reservarSlotBooking(input: ReservaBookingInput): Promise<R
       // quedaría ocupado sin dueño. Se devuelve error y se deja en el log todo
       // lo necesario para recuperarla a mano.
       if (input.persistir) {
-        try {
-          await input.persistir({ eventId: res.eventId, htmlLink: res.htmlLink });
-        } catch (err) {
-          const detalle = err instanceof Error ? err.message : String(err);
-          console.error(
-            `[booking-orch] CITA CREADA EN GOOGLE PERO NO GUARDADA. ` +
-              `tenant=${tenantId} evento=${res.eventId} inicio=${input.startIso} ` +
-              `duracion=${durationMin} recurso=${input.resourceId ?? "—"} ` +
-              `cliente="${input.nombre}" motivo="${input.motivo}" · ${detalle}`,
-          );
-          await logDecision(tenantId, "error", { ...baseLog, eventId: res.eventId, detail: `no se pudo guardar: ${detalle}` });
-          return { ok: false, reason: "error", detail: `La cita no se pudo guardar (${detalle}).` };
+        const fallo = await guardarConReintentos(() =>
+          input.persistir!({ eventId: res.eventId, htmlLink: res.htmlLink }),
+        );
+        if (fallo) {
+          // La cita existe en Google y no hemos podido apuntarla. Se deshace,
+          // para que reintentar no cree una segunda ni quede un hueco ocupado
+          // por una cita que nadie ve.
+          let deshecha = false;
+          if (res.eventId && input.deshacerCita) {
+            try {
+              deshecha = await input.deshacerCita(res.eventId);
+            } catch (err) {
+              console.error("[booking-orch] al deshacer la cita:", err);
+            }
+          }
+          const comun =
+            `tenant=${tenantId} evento=${res.eventId} inicio=${input.startIso} ` +
+            `duracion=${durationMin} recurso=${input.resourceId ?? "—"} ` +
+            `cliente="${input.nombre}" motivo="${input.motivo}"`;
+          if (deshecha) {
+            console.error(`[booking-orch] NO SE PUDO GUARDAR; cita RETIRADA de Google. ${comun} · ${fallo}`);
+          } else {
+            console.error(
+              `[booking-orch] CITA HUÉRFANA: está en Google, NO está en el panel y NO se ha podido retirar. ` +
+                `Bórrala a mano en el calendario. ${comun} · ${fallo}`,
+            );
+          }
+          await logDecision(tenantId, "error", {
+            ...baseLog,
+            eventId: res.eventId,
+            detail: deshecha ? `no se pudo guardar, cita retirada: ${fallo}` : `CITA HUÉRFANA en Google: ${fallo}`,
+          });
+          return {
+            ok: false,
+            reason: "error",
+            detail: deshecha
+              ? "No hemos podido registrar la cita. Vuelve a intentarlo."
+              : "No hemos podido registrar la cita. Llama al negocio para confirmarla.",
+          };
         }
       }
       await logDecision(tenantId, "booked", { ...baseLog, eventId: res.eventId });

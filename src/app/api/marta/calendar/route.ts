@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
-import { getUser } from "@/lib/store";
+import { briefingDelPanel } from "@/lib/briefing-panel";
 import { anthropic } from "@/lib/claude";
 
 export async function POST(req: Request) {
   try {
     const { email } = await requireSession();
-    const user = await getUser(email);
     const { weeks = 4 } = await req.json().catch(() => ({}));
 
-    const business = user.business;
+    // Ficha del tenant primero (ver `briefing-panel.ts`).
+    const { business } = await briefingDelPanel(email);
     const context = business
       ? `Negocio: ${business.nombre}. Sector: ${business.sector}. Servicios: ${business.ofrece}. Público: ${business.publico}. Tono: ${business.tono}.`
       : "Negocio local general. Tono cercano y profesional.";

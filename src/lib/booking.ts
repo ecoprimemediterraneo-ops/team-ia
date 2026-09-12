@@ -611,6 +611,21 @@ function nuevoId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
 }
 
+/**
+ * Retira de Google una cita recién creada cuyo guardado ha fallado. Lo usa el
+ * orquestador (`deshacerCita`) para que reintentar no deje una cita duplicada
+ * ni una cita fantasma ocupando el hueco.
+ */
+async function retirarCitaDeGoogle(calendarEmail: string, redirectUri: string, eventId: string): Promise<boolean> {
+  if (!eventId || eventId.startsWith("sim_") || process.env.BOOKING_SIMULATE === "1") return true;
+  try {
+    const del = await deleteEvent(calendarEmail, redirectUri, eventId);
+    return del.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function crearReserva(input: CrearReservaInput): Promise<CrearReservaResult> {
   const business = await getBusinessBySlug(input.slug);
   if (!business) return { ok: false, reason: "not_found" };
@@ -697,6 +712,7 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
       };
       await saveRecord(record);
     },
+    deshacerCita: (eventId) => retirarCitaDeGoogle(calendarEmail, input.redirectUri, eventId),
   });
 
   if (!res.ok) {
@@ -1027,6 +1043,7 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
       };
       await saveRecord(record);
     },
+    deshacerCita: (eventId) => retirarCitaDeGoogle(calendarEmail, input.redirectUri, eventId),
   });
   if (!res.ok) {
     if (res.reason === "slot_taken") return { ok: false, reason: "slot_taken", suggested: res.suggested };
@@ -1089,6 +1106,7 @@ export async function crearBloqueo(input: CrearBloqueoInput): Promise<CrearReser
       };
       await saveRecord(record);
     },
+    deshacerCita: (eventId) => retirarCitaDeGoogle(calendarEmail, input.redirectUri, eventId),
   });
   if (!res.ok) {
     if (res.reason === "slot_taken") return { ok: false, reason: "slot_taken", suggested: res.suggested };
@@ -1167,6 +1185,7 @@ export async function reprogramarRecord(
       updated = { ...record, startIso: startNorm, durationMin: dur, eventId: cita.eventId, htmlLink: cita.htmlLink, reprogramadaEn: new Date().toISOString() };
       await saveRecord(updated);
     },
+    deshacerCita: (eventId) => retirarCitaDeGoogle(calendarEmail, redirectUri, eventId),
   });
   if (!res.ok) {
     if (oldEventId) {
