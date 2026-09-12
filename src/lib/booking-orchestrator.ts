@@ -168,7 +168,15 @@ export async function reservarSlotBooking(input: ReservaBookingInput): Promise<R
       // 2) Crear la cita.
       if (input.simulate) {
         const fakeId = `sim_${input.startIso}${input.resourceId ? "_" + input.resourceId : ""}`;
-        if (input.persistir) await input.persistir({ eventId: fakeId, simulada: true });
+        if (input.persistir) {
+          try {
+            await input.persistir({ eventId: fakeId, simulada: true });
+          } catch (err) {
+            const detalle = err instanceof Error ? err.message : String(err);
+            await logDecision(tenantId, "error", { ...baseLog, detail: `no se pudo guardar: ${detalle}`, simulated: true });
+            return { ok: false, reason: "error", detail: `La cita no se pudo guardar (${detalle}).` };
+          }
+        }
         await logDecision(tenantId, "booked", { ...baseLog, eventId: fakeId, simulated: true });
         return { ok: true, eventId: fakeId, simulated: true };
       }
@@ -181,7 +189,26 @@ export async function reservarSlotBooking(input: ReservaBookingInput): Promise<R
         return { ok: false, reason: "error", detail: res.detail };
       }
       // Guardar ANTES de soltar el candado (ver `persistir`).
-      if (input.persistir) await input.persistir({ eventId: res.eventId, htmlLink: res.htmlLink });
+      //
+      // Si el guardado revienta (Supabase caído, por ejemplo) la cita YA existe
+      // en Google. No se puede devolver "ok": el panel no la vería y el hueco
+      // quedaría ocupado sin dueño. Se devuelve error y se deja en el log todo
+      // lo necesario para recuperarla a mano.
+      if (input.persistir) {
+        try {
+          await input.persistir({ eventId: res.eventId, htmlLink: res.htmlLink });
+        } catch (err) {
+          const detalle = err instanceof Error ? err.message : String(err);
+          console.error(
+            `[booking-orch] CITA CREADA EN GOOGLE PERO NO GUARDADA. ` +
+              `tenant=${tenantId} evento=${res.eventId} inicio=${input.startIso} ` +
+              `duracion=${durationMin} recurso=${input.resourceId ?? "—"} ` +
+              `cliente="${input.nombre}" motivo="${input.motivo}" · ${detalle}`,
+          );
+          await logDecision(tenantId, "error", { ...baseLog, eventId: res.eventId, detail: `no se pudo guardar: ${detalle}` });
+          return { ok: false, reason: "error", detail: `La cita no se pudo guardar (${detalle}).` };
+        }
+      }
       await logDecision(tenantId, "booked", { ...baseLog, eventId: res.eventId });
       return { ok: true, eventId: res.eventId, htmlLink: res.htmlLink, eventLogId: res.eventLogId };
     } finally {

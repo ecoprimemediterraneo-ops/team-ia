@@ -18,8 +18,12 @@ import { NextResponse } from "next/server";
 import { cronAuthError } from "@/lib/cron-auth";
 import { Resend } from "resend";
 import { getAllUsers, updateScheduledEmail, updateWelcomeSend } from "@/lib/store";
+import { kvTryLock, kvUnlock } from "@/lib/supabase";
 
 const MAX_ATTEMPTS = 5; // reintentos máximos antes de darlo por perdido
+// Cuánto se reserva una campaña mientras se está mandando. Más que lo que tarda
+// una pasada, menos que el hueco entre pasadas.
+const LOCK_CAMPANA_MS = 10 * 60_000;
 
 function fillVars(text: string, vars: Record<string, string>): string {
   let out = text;
@@ -67,6 +71,19 @@ export async function GET(req: Request) {
         continue;
       }
 
+      // UNA PASADA CADA VEZ POR CAMPAÑA.
+      //
+      // Este cron lo disparan Vercel y n8n, y dos pasadas que se solapan leen
+      // las dos la misma lista de "ya enviados" (vacía) y mandan las dos: la
+      // lista por destinatario no sirve de nada si nadie serializa las pasadas.
+      // Si otra pasada la tiene cogida, esta se la salta y la coge la siguiente.
+      const lockCampana = `lock:eva-campana:${userEmail}:${s.id}`;
+      if (!(await kvTryLock(lockCampana, LOCK_CAMPANA_MS, "eva-dispatcher"))) {
+        console.log(`[eva-dispatcher] campaña ${s.id} en manos de otra pasada; se salta`);
+        continue;
+      }
+      try {
+
       // A quién ya se le mandó en pasadas anteriores. Un reintento CONTINÚA por
       // donde se quedó; no vuelve a empezar por el primero.
       const yaEnviados = new Set(s.enviados ?? []);
@@ -77,7 +94,7 @@ export async function GET(req: Request) {
         // en su día quedara marcada como fallida.
         await updateScheduledEmail(userEmail, s.id, { status: "sent", sentAt: new Date().toISOString() });
         scheduledSent++;
-        continue;
+        continue; // el `finally` suelta el candado
       }
 
       try {
@@ -113,6 +130,9 @@ export async function GET(req: Request) {
         });
         failed++;
       }
+      } finally {
+        await kvUnlock(lockCampana);
+      }
     }
 
     // 2. Welcome series pendientes
@@ -128,6 +148,11 @@ export async function GET(req: Request) {
         continue;
       }
 
+      const lockWelcome = `lock:eva-welcome:${userEmail}:${w.id}`;
+      if (!(await kvTryLock(lockWelcome, LOCK_CAMPANA_MS, "eva-dispatcher"))) {
+        console.log(`[eva-dispatcher] bienvenida ${w.id} en manos de otra pasada; se salta`);
+        continue;
+      }
       try {
         const e = series.emails[w.stepIndex];
         const cName = user.contacts?.find((c) => c.email === w.contactEmail)?.name || "";
@@ -148,6 +173,8 @@ export async function GET(req: Request) {
         });
         failed++;
         console.error("welcome send failed", e);
+      } finally {
+        await kvUnlock(lockWelcome);
       }
     }
   }
