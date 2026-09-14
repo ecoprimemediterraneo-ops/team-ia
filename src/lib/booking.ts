@@ -27,6 +27,7 @@ import { freeBusyQuery, deleteEvent } from "./calendar";
 import { reservarSlotBooking } from "./booking-orchestrator";
 import { benditoArteSeed } from "./booking-seed-bendito";
 import { configRestaurante, estadoInicialReserva } from "./restaurante";
+import { logEvent, makeEventId } from "./event-log";
 
 // -----------------------------------------------------------------------------
 // Tipos
@@ -611,6 +612,21 @@ function nuevoId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
 }
 
+/**
+ * Retira de Google una cita recién creada cuyo guardado ha fallado. Lo usa el
+ * orquestador (`deshacerCita`) para que reintentar no deje una cita duplicada
+ * ni una cita fantasma ocupando el hueco.
+ */
+async function retirarCitaDeGoogle(calendarEmail: string, redirectUri: string, eventId: string): Promise<boolean> {
+  if (!eventId || eventId.startsWith("sim_") || process.env.BOOKING_SIMULATE === "1") return true;
+  try {
+    const del = await deleteEvent(calendarEmail, redirectUri, eventId);
+    return del.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function crearReserva(input: CrearReservaInput): Promise<CrearReservaResult> {
   const business = await getBusinessBySlug(input.slug);
   if (!business) return { ok: false, reason: "not_found" };
@@ -632,6 +648,11 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
   const empleado = asig.empleado;
 
   const calendarEmail = await resolveCalendarEmail(business);
+
+  // Se rellena dentro del candado, en `persistir`. El id se decide AQUÍ para
+  // poder usarlo como identidad estable de la cita en el event-log.
+  const recordId = nuevoId("bk");
+  let record: BookingRecord | null = null;
 
   // El evento en Google cubre el FOOTPRINT (padding antes + servicio + padding
   // después) para bloquear de verdad prep/limpieza. El cliente ve la hora del
@@ -656,12 +677,46 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
     // Multi-empleado: aísla el lock por profesional y re-valida per-staff dentro del
     // lock (en vez del findFreeSlot global, que asume un único calendario).
     resourceId: empleado?.id,
-    revalidate: empleado
-      ? async () => {
-          const fl = await footprintLibre(business, startNorm, sel.paddingBeforeMin, sel.durationMin, sel.paddingAfterMin, input.redirectUri, undefined, empleado.id);
-          return fl.ok && fl.libre;
-        }
-      : undefined,
+    // La disponibilidad se vuelve a mirar SIEMPRE dentro del candado, haya
+    // profesional o no. Antes, sin profesional, se delegaba en `findFreeSlot`,
+    // que solo pregunta a Google y no ve las reservas ya guardadas aquí.
+    revalidate: async () => {
+      const fl = await footprintLibre(business, startNorm, sel.paddingBeforeMin, sel.durationMin, sel.paddingAfterMin, input.redirectUri, undefined, empleado?.id);
+      return fl.ok && fl.libre;
+    },
+    // Guardar dentro del candado: hasta que esto no termina, ninguna otra
+    // reserva del mismo profesional puede mirar la agenda.
+    eventLogRef: recordId,
+    persistir: async (cita) => {
+      record = {
+        id: recordId,
+        token: crypto.randomBytes(16).toString("hex"),
+        slug: business.slug,
+        tenantId: business.tenantId,
+        serviceId: service.id,
+        servicioNombre: service.nombre,
+        variantId: input.variantId,
+        varianteNombre: sel.varianteNombre,
+        addonIds: sel.addonsSel.map((a) => a.id),
+        addonsNombres: sel.addonsSel.map((a) => a.nombre),
+        durationMin: sel.durationMin,
+        paddingBeforeMin: sel.paddingBeforeMin,
+        paddingAfterMin: sel.paddingAfterMin,
+        precioEUR: sel.precioEUR,
+        startIso: startNorm,
+        cliente: input.cliente,
+        empleadoId: empleado?.id,
+        empleadoNombre: empleado?.nombre,
+        eventId: cita.eventId,
+        htmlLink: cita.htmlLink,
+        estado: "confirmada",
+        origen: "online",
+        tipo: "cita",
+        creadaEn: new Date().toISOString(),
+      };
+      await saveRecord(record);
+    },
+    deshacerCita: (eventId) => retirarCitaDeGoogle(calendarEmail, input.redirectUri, eventId),
   });
 
   if (!res.ok) {
@@ -671,33 +726,7 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
     return { ok: false, reason: noCal ? "no_calendar" : "error", detail: res.detail };
   }
 
-  const record: BookingRecord = {
-    id: nuevoId("bk"),
-    token: crypto.randomBytes(16).toString("hex"),
-    slug: business.slug,
-    tenantId: business.tenantId,
-    serviceId: service.id,
-    servicioNombre: service.nombre,
-    variantId: input.variantId,
-    varianteNombre: sel.varianteNombre,
-    addonIds: sel.addonsSel.map((a) => a.id),
-    addonsNombres: sel.addonsSel.map((a) => a.nombre),
-    durationMin: sel.durationMin,
-    paddingBeforeMin: sel.paddingBeforeMin,
-    paddingAfterMin: sel.paddingAfterMin,
-    precioEUR: sel.precioEUR,
-    startIso: startNorm,
-    cliente: input.cliente,
-    empleadoId: empleado?.id,
-    empleadoNombre: empleado?.nombre,
-    eventId: res.eventId,
-    htmlLink: res.htmlLink,
-    estado: "confirmada",
-    origen: "online",
-    tipo: "cita",
-    creadaEn: new Date().toISOString(),
-  };
-  await saveRecord(record);
+  if (!record) return { ok: false, reason: "error", detail: "la reserva no llegó a guardarse" };
   await notificarDueno(record, "nueva");
   return { ok: true, record };
 }
@@ -854,6 +883,7 @@ export async function cancelarReservaPorToken(token: string, redirectUri: string
   if (!del.ok) return { ok: false, reason: "error", detail: del.detail };
   const updated: BookingRecord = { ...record, estado: "cancelada", canceladaEn: new Date().toISOString() };
   await saveRecord(updated);
+  await registrarCitaCancelada(updated);
   await notificarDueno(updated, "cancelada");
   return { ok: true, record: updated };
 }
@@ -877,6 +907,40 @@ export type CambiarEstadoResult =
   | { ok: false; reason: "not_found" | "transicion_invalida" | "error"; detail?: string };
 
 /** Transición de estado desde el panel. Cancelar libera el hueco en Google; completada/no-show conservan el evento como histórico. */
+/**
+ * Apunta en el event-log que una cita se ha caído.
+ *
+ * El event-log solo sumaba: la portada contaba como cita cada reserva creada,
+ * aunque se cancelara el mismo día. Este evento la compensa. Va con el `ts` de
+ * la CITA (no el de la cancelación) para que caiga en el mismo bucket mensual
+ * que su `appointment_set` y lo reste ahí.
+ *
+ * Best-effort: si falla, la cancelación sigue adelante. Un contador desviado no
+ * puede impedir cancelar una cita.
+ */
+async function registrarCitaCancelada(record: BookingRecord, cuandoIso?: string): Promise<void> {
+  if (record.tipo === "bloqueo") return; // un bloqueo nunca contó como cita
+  try {
+    const ts = cuandoIso || record.startIso;
+    await logEvent(record.tenantId || DEFAULT_TENANT_ID, {
+      id: makeEventId("appointment_cancelled", record.id, ts.slice(0, 7)),
+      ts,
+      type: "appointment_cancelled",
+      channel: "booking",
+      meta: {
+        tipo: "cita_cancelada",
+        nombre: record.cliente?.nombre || "",
+        motivo: record.servicioNombre || "",
+        fechaIso: ts,
+        recordId: record.id,
+        empleadoNombre: record.empleadoNombre,
+      },
+    });
+  } catch (err) {
+    console.error("[booking] no se pudo apuntar la cancelación en el event-log:", err);
+  }
+}
+
 export async function cambiarEstadoRecord(id: string, nuevoEstado: EstadoCita, redirectUri: string, expectSlug?: string): Promise<CambiarEstadoResult> {
   const record = await getRecord(id);
   if (!record || (expectSlug && record.slug !== expectSlug)) return { ok: false, reason: "not_found" };
@@ -894,7 +958,10 @@ export async function cambiarEstadoRecord(id: string, nuevoEstado: EstadoCita, r
     ...(nuevoEstado === "cancelada" ? { canceladaEn: new Date().toISOString() } : {}),
   };
   await saveRecord(updated);
-  if (nuevoEstado === "cancelada") await notificarDueno(updated, "cancelada");
+  if (nuevoEstado === "cancelada") {
+    await registrarCitaCancelada(updated);
+    await notificarDueno(updated, "cancelada");
+  }
   return { ok: true, record: updated };
 }
 
@@ -965,6 +1032,8 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
   if (!libre.libre) return { ok: false, reason: "slot_taken" };
 
   const calendarEmail = await resolveCalendarEmail(business);
+  const recordId = nuevoId("bk"); // identidad estable de la cita (event-log)
+  let record: BookingRecord | null = null; // se rellena dentro del candado, en `persistir`
   const eventStart = shiftLocal(startNorm, -pB);
   const eventDuration = pB + dur + pA;
   const motivo = [servicioNombre, varianteNombre].filter(Boolean).join(" · ") + (empleado ? ` · ${empleado.nombre}` : "") + (input.nota ? ` — ${input.nota}` : "");
@@ -982,12 +1051,43 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
     attendees: input.cliente.email ? [input.cliente.email] : undefined,
     simulate: process.env.BOOKING_SIMULATE === "1" ? true : undefined,
     resourceId: empleado?.id,
-    revalidate: empleado
-      ? async () => {
-          const fl = await footprintLibre(business, startNorm, pB, dur, pA, input.redirectUri, undefined, empleado.id);
-          return fl.ok && fl.libre;
-        }
-      : undefined,
+    revalidate: async () => {
+      const fl = await footprintLibre(business, startNorm, pB, dur, pA, input.redirectUri, undefined, empleado?.id);
+      return fl.ok && fl.libre;
+    },
+    eventLogRef: recordId,
+    persistir: async (cita) => {
+      record = {
+        id: recordId,
+        token: crypto.randomBytes(16).toString("hex"),
+        slug: business.slug,
+        tenantId: business.tenantId,
+        serviceId,
+        servicioNombre,
+        varianteNombre,
+        addonIds,
+        addonsNombres,
+        durationMin: dur,
+        paddingBeforeMin: pB,
+        paddingAfterMin: pA,
+        precioEUR: precio,
+        startIso: startNorm,
+        cliente: input.cliente,
+        empleadoId: empleado?.id,
+        empleadoNombre: empleado?.nombre,
+        nota: input.nota,
+        comensales: input.comensales,
+        zona: input.zona,
+        eventId: cita.eventId,
+        htmlLink: cita.htmlLink,
+        estado: input.estadoInicial ?? "confirmada",
+        origen: "manual",
+        tipo: "cita",
+        creadaEn: new Date().toISOString(),
+      };
+      await saveRecord(record);
+    },
+    deshacerCita: (eventId) => retirarCitaDeGoogle(calendarEmail, input.redirectUri, eventId),
   });
   if (!res.ok) {
     if (res.reason === "slot_taken") return { ok: false, reason: "slot_taken", suggested: res.suggested };
@@ -996,35 +1096,7 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
     return { ok: false, reason: noCal ? "no_calendar" : "error", detail: res.detail };
   }
 
-  const record: BookingRecord = {
-    id: nuevoId("bk"),
-    token: crypto.randomBytes(16).toString("hex"),
-    slug: business.slug,
-    tenantId: business.tenantId,
-    serviceId,
-    servicioNombre,
-    varianteNombre,
-    addonIds,
-    addonsNombres,
-    durationMin: dur,
-    paddingBeforeMin: pB,
-    paddingAfterMin: pA,
-    precioEUR: precio,
-    startIso: startNorm,
-    cliente: input.cliente,
-    empleadoId: empleado?.id,
-    empleadoNombre: empleado?.nombre,
-    nota: input.nota,
-    comensales: input.comensales,
-    zona: input.zona,
-    eventId: res.eventId,
-    htmlLink: res.htmlLink,
-    estado: input.estadoInicial ?? "confirmada",
-    origen: "manual",
-    tipo: "cita",
-    creadaEn: new Date().toISOString(),
-  };
-  await saveRecord(record);
+  if (!record) return { ok: false, reason: "error", detail: "la reserva no llegó a guardarse" };
   await notificarDueno(record, "nueva");
   return { ok: true, record };
 }
@@ -1042,6 +1114,7 @@ export async function crearBloqueo(input: CrearBloqueoInput): Promise<CrearReser
   if (!libre.libre) return { ok: false, reason: "slot_taken" };
 
   const calendarEmail = await resolveCalendarEmail(business);
+  let record: BookingRecord | null = null; // se rellena dentro del candado, en `persistir`
   const res = await reservarSlotBooking({
     tenantId: business.tenantId,
     userEmail: calendarEmail,
@@ -1052,6 +1125,34 @@ export async function crearBloqueo(input: CrearBloqueoInput): Promise<CrearReser
     durationMin: dur,
     agenteOrigen: "booking",
     simulate: process.env.BOOKING_SIMULATE === "1" ? true : undefined,
+    // Un bloqueo ocupa la agenda pero NO es una cita: no cuenta en la portada.
+    sinEventLog: true,
+    revalidate: async () => {
+      const fl = await footprintLibre(business, startNorm, 0, dur, 0, input.redirectUri);
+      return fl.ok && fl.libre;
+    },
+    persistir: async (cita) => {
+      record = {
+        id: nuevoId("bloq"),
+        token: crypto.randomBytes(16).toString("hex"),
+        slug: business.slug,
+        tenantId: business.tenantId,
+        serviceId: "",
+        servicioNombre: "Bloqueo",
+        durationMin: dur,
+        startIso: startNorm,
+        cliente: { nombre: "", telefono: "" },
+        nota: input.nota,
+        eventId: cita.eventId,
+        htmlLink: cita.htmlLink,
+        estado: "confirmada",
+        origen: "manual",
+        tipo: "bloqueo",
+        creadaEn: new Date().toISOString(),
+      };
+      await saveRecord(record);
+    },
+    deshacerCita: (eventId) => retirarCitaDeGoogle(calendarEmail, input.redirectUri, eventId),
   });
   if (!res.ok) {
     if (res.reason === "slot_taken") return { ok: false, reason: "slot_taken", suggested: res.suggested };
@@ -1059,25 +1160,7 @@ export async function crearBloqueo(input: CrearBloqueoInput): Promise<CrearReser
     const noCal = pareceCalendarioDesconectado(res.detail);
     return { ok: false, reason: noCal ? "no_calendar" : "error", detail: res.detail };
   }
-  const record: BookingRecord = {
-    id: nuevoId("bloq"),
-    token: crypto.randomBytes(16).toString("hex"),
-    slug: business.slug,
-    tenantId: business.tenantId,
-    serviceId: "",
-    servicioNombre: "Bloqueo",
-    durationMin: dur,
-    startIso: startNorm,
-    cliente: { nombre: "", telefono: "" },
-    nota: input.nota,
-    eventId: res.eventId,
-    htmlLink: res.htmlLink,
-    estado: "confirmada",
-    origen: "manual",
-    tipo: "bloqueo",
-    creadaEn: new Date().toISOString(),
-  };
-  await saveRecord(record);
+  if (!record) return { ok: false, reason: "error", detail: "el bloqueo no llegó a guardarse" };
   return { ok: true, record };
 }
 
@@ -1129,6 +1212,10 @@ export async function reprogramarRecord(
   const del = await borrarEventoGoogle(record, redirectUri);
   if (!del.ok) return { ok: false, reason: "error", detail: del.detail };
 
+  let updated: BookingRecord | null = null; // se rellena dentro del candado, en `persistir`
+  const mesOriginal = record.startIso.slice(0, 7); // para compensar el event-log si cambia de mes
+  const registroOriginal = record;
+
   const res = await reservarSlotBooking({
     tenantId: business.tenantId, userEmail: calendarEmail, redirectUri, nombre, motivo,
     startIso: shiftLocal(startNorm, -pB),
@@ -1136,12 +1223,18 @@ export async function reprogramarRecord(
     agenteOrigen: "booking", customerPhone: telefono, attendees,
     simulate: process.env.BOOKING_SIMULATE === "1" ? true : undefined,
     resourceId: record.empleadoId,
-    revalidate: record.empleadoId
-      ? async () => {
-          const fl = await footprintLibre(business, startNorm, pB, dur, pA, redirectUri, record.id, record.empleadoId);
-          return fl.ok && fl.libre;
-        }
-      : undefined,
+    eventLogRef: record.id,
+    revalidate: async () => {
+      const fl = await footprintLibre(business, startNorm, pB, dur, pA, redirectUri, record.id, record.empleadoId);
+      return fl.ok && fl.libre;
+    },
+    // Mover la cita también se guarda dentro del candado: si no, entre el hueco
+    // concedido y el guardado otra reserva puede colarse en la hora nueva.
+    persistir: async (cita) => {
+      updated = { ...record, startIso: startNorm, durationMin: dur, eventId: cita.eventId, htmlLink: cita.htmlLink, reprogramadaEn: new Date().toISOString() };
+      await saveRecord(updated);
+    },
+    deshacerCita: (eventId) => retirarCitaDeGoogle(calendarEmail, redirectUri, eventId),
   });
   if (!res.ok) {
     if (oldEventId) {
@@ -1167,9 +1260,18 @@ export async function reprogramarRecord(
     return { ok: false, reason: noCal ? "no_calendar" : "error", detail: res.detail };
   }
 
-  const updated: BookingRecord = { ...record, startIso: startNorm, durationMin: dur, eventId: res.eventId, htmlLink: res.htmlLink, reprogramadaEn: new Date().toISOString() };
-  await saveRecord(updated);
-  return { ok: true, record: updated };
+  if (!updated) return { ok: false, reason: "error", detail: "la cita movida no llegó a guardarse" };
+  // TypeScript no sigue las asignaciones hechas dentro de `persistir`, así que
+  // aquí ya cree que `updated` no puede tener valor. Se reancla en una constante.
+  const movida: BookingRecord = updated;
+  // Mover la cita a OTRO MES la apunta en el bucket del mes nuevo; el del mes
+  // viejo se queda con su `appointment_set` y contaría una cita que ya no está
+  // ahí. Se compensa en el mes viejo. (Dentro del mismo mes no hace falta: la
+  // identidad estable del evento evita el duplicado.)
+  if (mesOriginal !== movida.startIso.slice(0, 7)) {
+    await registrarCitaCancelada(registroOriginal, registroOriginal.startIso);
+  }
+  return { ok: true, record: movida };
 }
 
 // -----------------------------------------------------------------------------

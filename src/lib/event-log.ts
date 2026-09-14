@@ -19,6 +19,12 @@ export type EventType =
   | "message_out"
   | "lead_captured"
   | "appointment_set"
+  // La cita de arriba se cayó. Existe porque el event-log SOLO SUMA: sin un
+  // evento que reste, la portada contaba como cita cada reserva creada aunque
+  // se hubiera cancelado el mismo día, y cada vez que se movía sumaba otra.
+  // Lleva el mismo `ts` que la cita (no el momento de cancelar) para que caiga
+  // en el bucket del mes donde está su `appointment_set` y lo compense ahí.
+  | "appointment_cancelled"
   | "sale"
   | "handoff_human"
   | "review_in"
@@ -185,6 +191,7 @@ export async function getMonthCounts(
     message_out: 0,
     lead_captured: 0,
     appointment_set: 0,
+    appointment_cancelled: 0,
     sale: 0,
     handoff_human: 0,
     review_in: 0,

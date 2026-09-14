@@ -13,9 +13,8 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { Resend } from "resend";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { requireFounder } from "@/lib/admin-auth";
+import { apuntar, listar, type ApuntadoWaitlist } from "@/lib/listas-captacion";
 import { pasaElFreno, ipDe } from "@/lib/anti-bot";
 
 const schema = z.object({
@@ -29,33 +28,10 @@ const schema = z.object({
   city: z.string().max(80).optional(),
 });
 
-// Misma lógica de path que store: /tmp en Vercel, ./data en local
-const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
-const WAITLIST_FILE = path.join(DATA_DIR, "waitlist.json");
-
-type Entry = {
-  email: string;
-  name?: string;
-  phone?: string;
-  sector?: string;
-  city?: string;
-  createdAt: string;
-};
-
-async function readWaitlist(): Promise<Entry[]> {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    const raw = await fs.readFile(WAITLIST_FILE, "utf-8");
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-async function writeWaitlist(entries: Entry[]) {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(WAITLIST_FILE, JSON.stringify(entries, null, 2));
-}
+// Dónde se guarda: `listas-captacion.ts` (Supabase en producción). Antes era un
+// archivo en /tmp, que en Vercel se evapora con la función — las plazas
+// apuntadas solo sobrevivían en el correo de aviso al fundador.
+type Entry = ApuntadoWaitlist;
 
 export async function POST(req: Request) {
   try {
@@ -81,12 +57,20 @@ export async function POST(req: Request) {
 
     const { email, name, phone, sector, city } = parsed.data;
 
-    // 1. Guardar en waitlist (JSON)
-    const entries = await readWaitlist();
-    if (!entries.find((e) => e.email === email)) {
-      entries.push({ email, name, phone, sector, city, createdAt: new Date().toISOString() });
-      await writeWaitlist(entries);
+    // 1. Guardar la plaza. Si esto falla, se dice: no se puede contestar "estás
+    //    dentro" a quien no ha quedado apuntado en ningún sitio.
+    try {
+      await apuntar<Entry>("waitlist", {
+        email, name, phone, sector, city, createdAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("[api/waitlist] NO SE PUDO GUARDAR la plaza de", email, err);
+      return NextResponse.json(
+        { error: "No hemos podido guardar tu plaza. Inténtalo de nuevo en un momento." },
+        { status: 503 },
+      );
     }
+    const entries = await listar<Entry>("waitlist", "createdAt").catch(() => [] as Entry[]);
 
     // 2. Mandar email de bienvenida + notificarme a mí (founder)
     const apiKey = process.env.RESEND_API_KEY;
@@ -163,7 +147,7 @@ export async function GET() {
     return NextResponse.json({ error: "unauthorized" }, { status: auth.status });
   }
   try {
-    const entries = await readWaitlist();
+    const entries = await listar<Entry>("waitlist", "createdAt");
     return NextResponse.json({ total: entries.length, entries });
   } catch {
     return NextResponse.json({ total: 0, entries: [] });

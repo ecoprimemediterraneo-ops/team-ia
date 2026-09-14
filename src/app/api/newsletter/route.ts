@@ -1,24 +1,15 @@
+// Alta en la newsletter.
+//
+// Antes escribía en `data/newsletter.json` DENTRO del proyecto. En Vercel ese
+// directorio es de solo lectura: el guardado reventaba y el visitante recibía
+// un 500 justo después de darnos su correo. Ahora va por `listas-captacion.ts`
+// (Supabase en producción, archivo local solo en desarrollo).
+
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import fs from "node:fs/promises";
-import path from "node:path";
+import { apuntar, type ApuntadoNewsletter } from "@/lib/listas-captacion";
 
 const schema = z.object({ email: z.string().email() });
-const FILE = path.join(process.cwd(), "data", "newsletter.json");
-
-async function load(): Promise<{ email: string; date: string }[]> {
-  try {
-    const raw = await fs.readFile(FILE, "utf-8");
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-async function save(list: { email: string; date: string }[]) {
-  await fs.mkdir(path.dirname(FILE), { recursive: true });
-  await fs.writeFile(FILE, JSON.stringify(list, null, 2));
-}
 
 export async function POST(req: Request) {
   try {
@@ -27,14 +18,16 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: "Email inválido" }, { status: 400 });
     }
-    const list = await load();
-    if (list.find((x) => x.email === parsed.data.email)) {
-      return NextResponse.json({ ok: true, message: "Ya estabas suscrito" });
-    }
-    list.push({ email: parsed.data.email, date: new Date().toISOString() });
-    await save(list);
+
+    const res = await apuntar<ApuntadoNewsletter>("newsletter", {
+      email: parsed.data.email,
+      date: new Date().toISOString(),
+    });
+
+    if (res.duplicado) return NextResponse.json({ ok: true, message: "Ya estabas suscrito" });
     return NextResponse.json({ ok: true });
   } catch (e) {
+    console.error("[api/newsletter] no se pudo guardar la suscripción:", e);
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
   }
 }

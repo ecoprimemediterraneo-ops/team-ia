@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
+import { briefingDelPanel, contextoEnUnaLinea } from "@/lib/briefing-panel";
+import { capaDeSector } from "@/lib/persona";
 import { anthropic } from "@/lib/claude";
-import { getUser } from "@/lib/store";
 
 const schema = z.object({
   review: z.string().min(5).max(2000),
@@ -14,16 +15,17 @@ const schema = z.object({
 export async function POST(req: Request) {
   try {
     const { email } = await requireSession();
-    const user = await getUser(email);
     const body = await req.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
 
     const { review, rating, tone, customerName } = parsed.data;
 
-    const businessCtx = user.business
-      ? `Negocio: ${user.business.nombre} — ${user.business.sector}. Lo que ofrecemos: ${user.business.ofrece}. Tono general de marca: ${user.business.tono}.`
-      : "Negocio sin briefing configurado.";
+    // El negocio sale de `briefing-panel.ts`: manda la FICHA del tenant y el
+    // briefing del panel solo tapa huecos. Antes se leía el briefing a secas, y
+    // en la cuenta de AI-Team ese briefing era una demo de clínica dental.
+    const { business: negocio, tenantId } = await briefingDelPanel(email);
+    const businessCtx = contextoEnUnaLinea(negocio);
 
     const toneInstr: Record<string, string> = {
       cordial: "Tono cordial y agradecido, calidez profesional.",
@@ -31,6 +33,12 @@ export async function POST(req: Request) {
       profesional: "Tono formal y profesional, sin emoticonos.",
       cercano: "Tono muy cercano y humano, como hablándole a un vecino.",
     };
+
+    // Capa de sector: identidad, vocabulario, tono y —sobre todo— lo que este
+    // negocio NO puede decir. El prompt de oficio de abajo sabe hacer su
+    // trabajo, pero no sabía dónde trabaja: sin esto, cada generador inventaba
+    // con el briefing suelto y sin ninguna prohibición.
+    const { bloque: bloqueSector } = await capaDeSector(tenantId).catch(() => ({ bloque: "" }));
 
     const ai = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
@@ -47,7 +55,7 @@ Reglas estrictas:
 - Cierra con el nombre del negocio o "El equipo de [negocio]".
 - ${toneInstr[tone]}
 
-Devuelve SOLO el texto de la respuesta. Sin comillas, sin explicaciones, sin asunto. Listo para pegar en Google.`,
+Devuelve SOLO el texto de la respuesta. Sin comillas, sin explicaciones, sin asunto. Listo para pegar en Google.${bloqueSector ? `\n\n${bloqueSector}` : ""}`,
       messages: [
         {
           role: "user",

@@ -14,28 +14,12 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { Resend } from "resend";
-import fs from "node:fs/promises";
-import path from "node:path";
+import { anadirCalBooking, leerCalBookings } from "@/lib/admin-stores";
+import { requireFounder } from "@/lib/admin-auth";
 
-const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
-const BOOKINGS_FILE = path.join(DATA_DIR, "calendar-bookings.json");
-
-type Booking = {
-  uid: string;
-  trigger: string;
-  receivedAt: string;
-  payload: Record<string, unknown>;
-};
-
-async function appendBooking(b: Booking) {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  let arr: Booking[] = [];
-  try {
-    arr = JSON.parse(await fs.readFile(BOOKINGS_FILE, "utf-8"));
-  } catch { /* first time */ }
-  arr.push(b);
-  await fs.writeFile(BOOKINGS_FILE, JSON.stringify(arr, null, 2));
-}
+// Dónde se guardan: `admin-stores.ts` (Supabase en producción). Antes era un
+// fichero en /tmp, que en Vercel se borra con la función: la reserva se perdía
+// entre que entraba y alguien abría el panel.
 
 function verifyCalcomSignature(rawBody: string, signature: string | null): boolean {
   const secret = process.env.CALCOM_WEBHOOK_SECRET;
@@ -56,7 +40,7 @@ export async function POST(req: Request) {
     const trigger = body.triggerEvent || body.type || "UNKNOWN";
     const payload = body.payload || body;
 
-    await appendBooking({
+    await anadirCalBooking({
       uid: payload.uid || payload.id || crypto.randomUUID(),
       trigger,
       receivedAt: new Date().toISOString(),
@@ -98,11 +82,13 @@ export async function POST(req: Request) {
   }
 }
 
+/**
+ * Últimas reservas recibidas. SOLO ADMINISTRADOR: aquí salen nombre, email y
+ * hora de gente real, y esto era público.
+ */
 export async function GET() {
-  try {
-    const arr = JSON.parse(await fs.readFile(BOOKINGS_FILE, "utf-8")) as Booking[];
-    return NextResponse.json({ total: arr.length, bookings: arr.slice(-20) });
-  } catch {
-    return NextResponse.json({ total: 0, bookings: [] });
-  }
+  const auth = await requireFounder();
+  if (!auth.ok) return NextResponse.json({ error: "unauthorized" }, { status: auth.status });
+  const arr = await leerCalBookings();
+  return NextResponse.json({ total: arr.length, bookings: arr.slice(-20) });
 }

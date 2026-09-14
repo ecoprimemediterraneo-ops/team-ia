@@ -405,7 +405,7 @@ export async function procesarComentario(
   // 6. Sembrar la conversación para que la IA continúe el hilo por DM.
   if (fromId) {
     try {
-      await appendTurn("marta", fromId, "assistant", dmTexto, username);
+      await appendTurn("marta", tenantId, fromId, "assistant", dmTexto, username);
     } catch (err) {
       console.error("[marta/comment] no se pudo sembrar la conversación:", err);
     }

@@ -20,7 +20,7 @@ export async function scanReviewsAction(
   const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
   const redirectUri = getRedirectUri(host, proto);
 
-  const tenantId = await resolveTenantForRocio();
+  const tenantId = await resolveTenantForRocio(s.email);
   const result = await processNewReviews({
     userEmail: s.email,
     redirectUri,

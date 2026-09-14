@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
+import { briefingDelPanel, contextoEnUnaLinea } from "@/lib/briefing-panel";
 import { openai } from "@/lib/openai";
 import { anthropic } from "@/lib/claude";
-import { getUser } from "@/lib/store";
 
 const schema = z.object({
   topic: z.string().min(3).max(500),
@@ -14,16 +14,17 @@ const schema = z.object({
 export async function POST(req: Request) {
   try {
     const { email } = await requireSession();
-    const user = await getUser(email);
     const body = await req.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
 
     const { topic, platform, style } = parsed.data;
 
-    const businessCtx = user.business
-      ? `Negocio: ${user.business.nombre} — ${user.business.sector}.`
-      : "";
+    // El negocio sale de `briefing-panel.ts`: manda la FICHA del tenant y el
+    // briefing del panel solo tapa huecos. Antes se leía el briefing a secas, y
+    // en la cuenta de AI-Team ese briefing era una demo de clínica dental.
+    const { business: negocio } = await briefingDelPanel(email);
+    const businessCtx = contextoEnUnaLinea(negocio);
 
     // 1. Claude convierte el tema en un prompt visual concreto
     const promptResp = await anthropic.messages.create({

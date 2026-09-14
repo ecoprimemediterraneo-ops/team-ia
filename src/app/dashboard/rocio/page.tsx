@@ -26,7 +26,7 @@ export default async function RocioPage({
   const live = await isRocioLive(s.email);
   const mock = isMockMode();
   const autoReply = (process.env.ROCIO_AUTO_REPLY || "").toLowerCase() === "true";
-  const tenantId = await resolveTenantForRocio();
+  const tenantId = await resolveTenantForRocio(s.email);
   const proposals = live ? await listRocioByTenant(tenantId) : [];
   const sp = await searchParams;
 

@@ -8,6 +8,7 @@
 // que le llegue nada a nadie.
 
 import { NextResponse } from "next/server";
+import { cronAuthError } from "@/lib/cron-auth";
 import { listTenants } from "@/lib/tenants";
 import { resolverSector } from "@/lib/sectores";
 import { avisoDelDia, avisoDiarioEnabled } from "@/lib/gestoria-aviso-diario";
@@ -18,13 +19,11 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function GET(req: Request) {
-  // Mismo candado que el resto de crons.
-  const secreto = process.env.CRON_SECRET;
-  const cabecera = req.headers.get("authorization") || "";
-  const esVercel = req.headers.get("user-agent")?.includes("vercel-cron");
-  if (secreto && !esVercel && cabecera !== `Bearer ${secreto}`) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  // Mismo candado que el resto de crons, y AHORA es literalmente el mismo
+  // código. El de antes se apoyaba en el user-agent "vercel-cron" —que lo pone
+  // quien quiera— y no comprobaba nada si faltaba CRON_SECRET.
+  const authErr = cronAuthError(req);
+  if (authErr) return authErr;
 
   const encendido = avisoDiarioEnabled();
   const salida: Array<Record<string, unknown>> = [];

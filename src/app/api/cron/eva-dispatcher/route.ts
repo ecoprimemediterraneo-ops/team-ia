@@ -15,10 +15,15 @@
  */
 
 import { NextResponse } from "next/server";
+import { cronAuthError } from "@/lib/cron-auth";
 import { Resend } from "resend";
 import { getAllUsers, updateScheduledEmail, updateWelcomeSend } from "@/lib/store";
+import { kvTryLock, kvUnlock } from "@/lib/supabase";
 
 const MAX_ATTEMPTS = 5; // reintentos máximos antes de darlo por perdido
+// Cuánto se reserva una campaña mientras se está mandando. Más que lo que tarda
+// una pasada, menos que el hueco entre pasadas.
+const LOCK_CAMPANA_MS = 10 * 60_000;
 
 function fillVars(text: string, vars: Record<string, string>): string {
   let out = text;
@@ -29,11 +34,8 @@ function fillVars(text: string, vars: Record<string, string>): string {
 }
 
 export async function GET(req: Request) {
-  const auth = req.headers.get("authorization") || "";
-  const expected = process.env.CRON_SECRET;
-  if (expected && !auth.includes(expected)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authErr = cronAuthError(req);
+  if (authErr) return authErr;
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "No Resend key" }, { status: 200 });
@@ -45,6 +47,7 @@ export async function GET(req: Request) {
   let scheduledSent = 0;
   let welcomeSent = 0;
   let failed = 0;
+  let inciertos = 0; // envíos que quizá salieron y no se pudieron confirmar
 
   for (const [userEmail, user] of Object.entries(users)) {
     if (!user.business) continue;
@@ -69,9 +72,60 @@ export async function GET(req: Request) {
         continue;
       }
 
+      // UNA PASADA CADA VEZ POR CAMPAÑA.
+      //
+      // Este cron lo disparan Vercel y n8n, y dos pasadas que se solapan leen
+      // las dos la misma lista de "ya enviados" (vacía) y mandan las dos: la
+      // lista por destinatario no sirve de nada si nadie serializa las pasadas.
+      // Si otra pasada la tiene cogida, esta se la salta y la coge la siguiente.
+      const lockCampana = `lock:eva-campana:${userEmail}:${s.id}`;
+      if (!(await kvTryLock(lockCampana, LOCK_CAMPANA_MS, "eva-dispatcher"))) {
+        console.log(`[eva-dispatcher] campaña ${s.id} en manos de otra pasada; se salta`);
+        continue;
+      }
       try {
-        for (const r of recipients) {
+
+      // A quién ya se le mandó en pasadas anteriores. Un reintento CONTINÚA por
+      // donde se quedó; no vuelve a empezar por el primero.
+      const yaEnviados = new Set(s.enviados ?? []);
+      // Y a quién se EMPEZÓ a mandar sin llegar a confirmarlo: puede que lo
+      // recibiera (Resend aceptó y falló el guardado justo después). No se
+      // reenvía; se cuenta aparte para que alguien lo mire.
+      const intentados = new Set(s.intentados ?? []);
+      const dudosos = [...intentados].filter((r) => !yaEnviados.has(r) && recipients.includes(r));
+      if (dudosos.length) {
+        console.warn(
+          `[eva-dispatcher] campaña ${s.id}: ${dudosos.length} destinatario(s) DUDOSOS ` +
+            `(se empezó a mandar y no se confirmó; NO se reenvían): ${dudosos.join(", ")}`,
+        );
+        inciertos += dudosos.length;
+      }
+      const pendientes = recipients.filter((r) => !yaEnviados.has(r) && !intentados.has(r));
+
+      if (pendientes.length === 0) {
+        // Todos recibidos en pasadas anteriores: la campaña está hecha aunque
+        // en su día quedara marcada como fallida.
+        await updateScheduledEmail(userEmail, s.id, { status: "sent", sentAt: new Date().toISOString() });
+        scheduledSent++;
+        continue; // el `finally` suelta el candado
+      }
+
+      try {
+        for (const r of pendientes) {
           const cName = user.contacts?.find((c) => c.email === r)?.name || "";
+          // APUNTAR ANTES DE MANDAR. Si esto falla, se corta la campaña sin
+          // haber enviado nada: mejor un correo de menos que uno repetido.
+          intentados.add(r);
+          try {
+            await updateScheduledEmail(userEmail, s.id, { intentados: [...intentados] });
+          } catch (err) {
+            console.error(
+              `[eva-dispatcher] campaña ${s.id}: no se puede apuntar el envío a ${r}; ` +
+                `se corta la campaña SIN mandarlo para no arriesgar duplicados.`,
+              err,
+            );
+            break;
+          }
           const res = await resend.emails.send({
             from,
             to: r,
@@ -80,19 +134,42 @@ export async function GET(req: Request) {
             replyTo: process.env.EVA_REPLY_TO || "cita@parse.aiteam.marketing",
           });
           // Resend NO lanza excepción ante errores de API: los devuelve en res.error.
-          if (res.error) throw new Error(res.error.message || "Resend rechazó el envío");
+          if (res.error) {
+            // RECHAZO CONOCIDO: Resend dice que NO ha salido. Eso no es un
+            // dudoso, es un no-enviado, así que se quita de la lista de
+            // intentados para que el siguiente reintento vuelva a probar.
+            // (Dudoso es solo aquel del que no sabemos si salió.)
+            intentados.delete(r);
+            try {
+              await updateScheduledEmail(userEmail, s.id, { intentados: [...intentados] });
+            } catch {
+              /* si no se puede, el siguiente paso lo tratará como dudoso: nunca de más */
+            }
+            throw new Error(res.error.message || "Resend rechazó el envío");
+          }
+          // Se apunta AQUÍ, uno a uno y guardando cada vez. Guardar solo al
+          // final del bucle dejaría la lista a medias si la función se corta
+          // (tiempo agotado, despliegue en medio), que es exactamente el caso
+          // en el que se producían los duplicados.
+          yaEnviados.add(r);
+          await updateScheduledEmail(userEmail, s.id, { enviados: [...yaEnviados] });
         }
         // Solo si TODOS los envíos fueron aceptados: marcar enviado.
         await updateScheduledEmail(userEmail, s.id, { status: "sent", sentAt: new Date().toISOString() });
         scheduledSent++;
       } catch (e) {
-        // Rechazo/error → failed + 1 intento. Se reintentará hasta MAX_ATTEMPTS.
+        // Rechazo/error → failed + 1 intento. Se reintentará hasta MAX_ATTEMPTS,
+        // pero solo con los que falten: los ya aceptados quedan apuntados.
         await updateScheduledEmail(userEmail, s.id, {
           status: "failed",
           error: e instanceof Error ? e.message : "Error",
           attempts: attempts + 1,
+          enviados: [...yaEnviados],
         });
         failed++;
+      }
+      } finally {
+        await kvUnlock(lockCampana);
       }
     }
 
@@ -109,7 +186,23 @@ export async function GET(req: Request) {
         continue;
       }
 
+      const lockWelcome = `lock:eva-welcome:${userEmail}:${w.id}`;
+      if (!(await kvTryLock(lockWelcome, LOCK_CAMPANA_MS, "eva-dispatcher"))) {
+        console.log(`[eva-dispatcher] bienvenida ${w.id} en manos de otra pasada; se salta`);
+        continue;
+      }
+      // Un envío que se empezó y no se confirmó puede haber salido: no se
+      // repite. Se marca para que alguien lo revise.
+      if (w.intentadoEn && w.status !== "sent") {
+        console.warn(`[eva-dispatcher] bienvenida ${w.id} DUDOSA (se empezó el ${w.intentadoEn} y no se confirmó); no se reenvía`);
+        inciertos++;
+        await kvUnlock(lockWelcome);
+        continue;
+      }
+
       try {
+        // Apuntar antes de mandar, igual que en las campañas.
+        await updateWelcomeSend(userEmail, w.id, { intentadoEn: new Date().toISOString() });
         const e = series.emails[w.stepIndex];
         const cName = user.contacts?.find((c) => c.email === w.contactEmail)?.name || "";
         const res = await resend.emails.send({
@@ -129,9 +222,11 @@ export async function GET(req: Request) {
         });
         failed++;
         console.error("welcome send failed", e);
+      } finally {
+        await kvUnlock(lockWelcome);
       }
     }
   }
 
-  return NextResponse.json({ scheduledSent, welcomeSent, failed });
+  return NextResponse.json({ scheduledSent, welcomeSent, failed, inciertos });
 }

@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
+import { briefingDelPanel, contextoEnUnaLinea } from "@/lib/briefing-panel";
+import { capaDeSector } from "@/lib/persona";
 import { fetchMessageBody, getRedirectUri } from "@/lib/gmail";
 import { anthropic } from "@/lib/claude";
-import { getUser } from "@/lib/store";
 
 const schema = z.object({
   messageId: z.string().min(1),
@@ -15,7 +16,6 @@ const schema = z.object({
 export async function POST(req: Request) {
   try {
     const { email } = await requireSession();
-    const user = await getUser(email);
     const body = await req.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
@@ -32,14 +32,21 @@ export async function POST(req: Request) {
     const senderEmail = fromMatch ? fromMatch[1] : original.from;
     const senderName = original.from.replace(/<[^>]+>/, "").replace(/"/g, "").trim() || senderEmail;
 
-    const businessCtx = user.business
-      ? `Negocio: ${user.business.nombre} — ${user.business.sector}. Ofrecemos: ${user.business.ofrece}. Tono: ${user.business.tono}.`
-      : "";
+    // El negocio sale de `briefing-panel.ts`: manda la FICHA del tenant y el
+    // briefing del panel solo tapa huecos. Antes se leía el briefing a secas, y
+    // en la cuenta de AI-Team ese briefing era una demo de clínica dental.
+    const { business: negocio, tenantId } = await briefingDelPanel(email);
+    const businessCtx = contextoEnUnaLinea(negocio);
+
+    // Capa de sector: identidad, vocabulario, tono y —sobre todo— lo que este
+    // negocio NO puede decir. El prompt de oficio sabe redactar un correo, pero
+    // no sabía dónde trabaja.
+    const { bloque: bloqueSector } = await capaDeSector(tenantId).catch(() => ({ bloque: "" }));
 
     const aiResp = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 800,
-      system: `Eres Lucía, asistente ejecutiva. Redactas respuestas de email en nombre del jefe. ${businessCtx} Devuelve SOLO el cuerpo del correo (saludo + cuerpo + despedida). Tono cercano y profesional. Conciso.`,
+      system: `Eres Lucía, asistente ejecutiva. Redactas respuestas de email en nombre del jefe. ${businessCtx} Devuelve SOLO el cuerpo del correo (saludo + cuerpo + despedida). Tono cercano y profesional. Conciso.${bloqueSector ? `\n\n${bloqueSector}` : ""}`,
       messages: [
         {
           role: "user",

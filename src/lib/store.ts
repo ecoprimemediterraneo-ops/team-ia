@@ -93,6 +93,28 @@ export type ScheduledEmail = {
   sentAt?: string;
   error?: string;
   attempts?: number; // intentos de envío (para reintentos con tope)
+  /**
+   * A quién se le ha mandado YA, de esta campaña. Se apunta destinatario a
+   * destinatario, en cuanto Resend acepta cada uno.
+   *
+   * Sin esto, el estado era solo de la campaña entera: si el destinatario nº 40
+   * rebotaba, la campaña quedaba "failed" y el siguiente cron la reintentaba
+   * DESDE EL PRIMERO. Los 39 de antes recibían el mismo correo otra vez, hasta
+   * cinco veces con el tope de reintentos.
+   */
+  enviados?: string[];
+  /**
+   * A quién se ESTABA mandando cuando se apuntó, ANTES de llamar a Resend.
+   *
+   * `enviados` solo se escribe DESPUÉS de que Resend acepte, así que si el
+   * proveedor acepta y justo después falla el guardado, ese destinatario no
+   * queda en ninguna lista y el siguiente reintento se lo manda otra vez.
+   * Apuntando la intención antes de enviar, un destinatario que esté aquí y no
+   * en `enviados` es un DUDOSO: puede que lo recibiera. No se le reenvía —
+   * repetir un correo comercial es peor que no mandarlo— y se avisa para que
+   * alguien lo mire.
+   */
+  intentados?: string[];
 };
 
 export type WelcomeSend = {
@@ -103,6 +125,8 @@ export type WelcomeSend = {
   status: "pending" | "sent" | "failed" | "cancelled";
   sentAt?: string;
   attempts?: number; // intentos de envío (para reintentos con tope)
+  /** Cuándo se empezó a mandar (antes de llamar a Resend). Ver `intentados`. */
+  intentadoEn?: string;
 };
 
 export type LearnedPattern = {

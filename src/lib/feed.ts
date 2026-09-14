@@ -103,6 +103,15 @@ function formatEvent(ev: AnalyticsEvent): { label: string; detail?: string; html
       return { label, detail: detail || undefined, htmlLink };
     }
 
+    case "appointment_cancelled": {
+      const nombre = String(meta.nombre || "");
+      const cuando = formatStartHumanES(String(meta.fechaIso || ev.ts));
+      return {
+        label: nombre ? `Cita cancelada · ${nombre}` : "Cita cancelada",
+        detail: cuando || undefined,
+      };
+    }
+
     case "sale": {
       const valorEUR = typeof meta.valueEUR === "number" ? meta.valueEUR : undefined;
       const sector = typeof meta.sector === "string" ? meta.sector : "";
@@ -248,7 +257,10 @@ export async function getFeed(
   };
   for (const e of all) {
     switch (e.type) {
-      case "appointment_set": counters.citas++; break;
+      case "appointment_set":       counters.citas++; break;
+      // Resta: una cita cancelada no es una cita. Puede quedar en negativo si
+      // se canceló una cita de un mes anterior; se corrige abajo con el clamp.
+      case "appointment_cancelled": counters.citas--; break;
       case "message_in":      counters.mensajesIn++; break;
       case "message_out":     counters.mensajesOut++; break;
       case "lead_captured":   counters.leads++; break;
@@ -259,6 +271,10 @@ export async function getFeed(
         break;
     }
   }
+
+  // Ningún contador puede salir negativo: cancelar una cita de un mes anterior
+  // restaría de un mes donde nunca se sumó.
+  counters.citas = Math.max(0, counters.citas);
 
   return { entries, counters, loaded };
 }

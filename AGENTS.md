@@ -500,6 +500,13 @@ final. Se documentan aquí porque `.env.local.example` está en `.gitignore`.
 | `INFORME_MENSUAL_SEND_ENABLED` | Envío por email del informe mensual al cliente (cron del día 1). Apagado, el cron recopila, renderiza y registra la decisión de cada destino en el log, pero no sale ningún correo. | off |
 | `GESTORIA_RECLAMACION_SEND_ENABLED` + `GESTORIA_RECLAMACION_TEMPLATE` | Pedirle por WhatsApp al cliente de la gestoría la factura que falta. Va por plantilla (`gestoria_falta_factura`, 5 variables: cliente, gestoría, fecha, importe, concepto), porque se escribe fuera de la ventana de 24 h. Apagado, el panel prepara el texto y lo manda el gestor. | off |
 
+**Variables nuevas de los arreglos de la auditoría (rama `arreglos-auditoria`):**
+
+| Variable | Qué hace | Si falta |
+|---|---|---|
+| `CRON_SECRET` | Ya era obligatoria en Vercel para los crons, pero dos rutas (`eva-dispatcher` y `eval`) no la comprobaban si no existía. Ahora TODAS pasan por `cron-auth.ts`. | Las 15 rutas de cron devuelven 500 en Vercel. Ninguna queda abierta. |
+| `CARMEN_SLUG_POR_DEFECTO` | Negocio al que van las llamadas de Carmen cuando Retell no manda `slug`. | Si solo hay un negocio dado de alta, se usa ése. Si hay varios, Carmen dice que no puede acceder a la agenda en vez de meter la cita en el salón piloto. |
+
 Los avisos de recall y presupuestos llegan meses después de la última
 conversación, o sea SIEMPRE fuera de la ventana de 24 h de WhatsApp: sin
 plantilla aprobada por Meta (`*_TEMPLATE`) el mensaje no sale y el panel lo dice

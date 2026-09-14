@@ -5,9 +5,20 @@
 //   - Fallback a fichero local data/conversations.json (dev).
 //
 // Modelo:
-//   Una entrada por conversación, clave kv_store:
-//     "conv:pablo:34600123456"
-//     "conv:marta:17841405793187041"
+//   Una entrada por conversación Y POR NEGOCIO, clave kv_store:
+//     "conv:pablo:tenant_aiteam:34600123456"
+//     "conv:marta:tenant_clinicasonrisa:17841405793187041"
+//
+//   EL TENANT VA EN LA CLAVE, Y NO ES DECORACIÓN. Sin él, la clave era solo
+//   canal + número, así que una persona que escribe a DOS negocios distintos
+//   con el mismo móvil tenía UNA sola conversación: lo que le contó a la
+//   clínica dental se lo leía la peluquería, y la IA de la peluquería
+//   respondía con ese contexto. El día que hubo un segundo cliente eso pasó de
+//   ser un detalle a ser una fuga de datos entre empresas.
+//
+//   Las claves viejas (sin tenant) quedan huérfanas: nadie las lee y mueren
+//   solas por TTL. No se migran a propósito — arrastrarlas sería repartir
+//   conversaciones mezcladas entre los negocios a los que pertenecen a medias.
 //   En modo fichero local, todas viven en un único JSON
 //     { "conv:pablo:34600...": Conversation, ... }
 //   para no crear cientos de ficheros en dev.
@@ -33,6 +44,7 @@ export type ConversationTurn = {
 
 export type Conversation = {
   channel: ConversationChannel;
+  tenantId: string;
   senderId: string;
   name?: string;
   turns: ConversationTurn[];
@@ -53,8 +65,8 @@ function clampInt(raw: string | undefined, def: number, min: number, max: number
   return Math.min(max, Math.max(min, n));
 }
 
-function key(channel: ConversationChannel, senderId: string): string {
-  return `conv:${channel}:${senderId}`;
+function key(channel: ConversationChannel, tenantId: string, senderId: string): string {
+  return `conv:${channel}:${tenantId}:${senderId}`;
 }
 
 function isStale(updatedAt: string): boolean {
@@ -85,9 +97,11 @@ async function deleteOneSupabase(k: string): Promise<void> {
   // No tenemos delete en el helper; sobrescribir con conversación vacía equivale a reset
   // (los lectores con isStale lo limpian igualmente). Para evitar dependencias nuevas,
   // simplemente sobrescribimos con un objeto mínimo y updatedAt antiguo.
+  const partes = k.split(":");
   await kvSet(k, {
-    channel: k.split(":")[1] as ConversationChannel,
-    senderId: k.split(":").slice(2).join(":"),
+    channel: partes[1] as ConversationChannel,
+    tenantId: partes[2] ?? "",
+    senderId: partes.slice(3).join(":"),
     turns: [],
     updatedAt: new Date(0).toISOString(),
   } satisfies Conversation);
@@ -123,10 +137,11 @@ async function writeAllLocal(map: LocalMap): Promise<void> {
  */
 export async function getConversation(
   channel: ConversationChannel,
+  tenantId: string,
   senderId: string,
 ): Promise<Conversation | null> {
-  if (!senderId) return null;
-  const k = key(channel, senderId);
+  if (!senderId || !tenantId) return null;
+  const k = key(channel, tenantId, senderId);
 
   let conv: Conversation | null = null;
   if (USE_SUPABASE) {
@@ -140,7 +155,7 @@ export async function getConversation(
   if (isStale(conv.updatedAt)) {
     // Limpieza on-read: dejar la clave en estado "vacío" para que el siguiente
     // appendTurn parta de cero.
-    await resetConversation(channel, senderId);
+    await resetConversation(channel, tenantId, senderId);
     return null;
   }
   return conv;
@@ -153,20 +168,22 @@ export async function getConversation(
  */
 export async function appendTurn(
   channel: ConversationChannel,
+  tenantId: string,
   senderId: string,
   role: TurnRole,
   text: string,
   name?: string,
 ): Promise<Conversation> {
-  if (!senderId) {
+  if (!senderId || !tenantId) {
     return {
       channel,
-      senderId: "",
+      tenantId: tenantId || "",
+      senderId: senderId || "",
       turns: [],
       updatedAt: new Date().toISOString(),
     };
   }
-  const k = key(channel, senderId);
+  const k = key(channel, tenantId, senderId);
 
   let conv: Conversation | null;
   if (USE_SUPABASE) {
@@ -181,6 +198,7 @@ export async function appendTurn(
 
   const base: Conversation = conv ?? {
     channel,
+    tenantId,
     senderId,
     turns: [],
     updatedAt: new Date().toISOString(),
@@ -211,10 +229,11 @@ export async function appendTurn(
  */
 export async function resetConversation(
   channel: ConversationChannel,
+  tenantId: string,
   senderId: string,
 ): Promise<void> {
-  if (!senderId) return;
-  const k = key(channel, senderId);
+  if (!senderId || !tenantId) return;
+  const k = key(channel, tenantId, senderId);
   if (USE_SUPABASE) {
     await deleteOneSupabase(k);
   } else {
