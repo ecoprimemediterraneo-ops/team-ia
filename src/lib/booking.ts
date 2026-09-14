@@ -27,6 +27,7 @@ import { freeBusyQuery, deleteEvent } from "./calendar";
 import { reservarSlotBooking } from "./booking-orchestrator";
 import { benditoArteSeed } from "./booking-seed-bendito";
 import { configRestaurante, estadoInicialReserva } from "./restaurante";
+import { logEvent, makeEventId } from "./event-log";
 
 // -----------------------------------------------------------------------------
 // Tipos
@@ -648,7 +649,9 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
 
   const calendarEmail = await resolveCalendarEmail(business);
 
-  // Se rellena dentro del candado, en `persistir`.
+  // Se rellena dentro del candado, en `persistir`. El id se decide AQUÍ para
+  // poder usarlo como identidad estable de la cita en el event-log.
+  const recordId = nuevoId("bk");
   let record: BookingRecord | null = null;
 
   // El evento en Google cubre el FOOTPRINT (padding antes + servicio + padding
@@ -683,9 +686,10 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
     },
     // Guardar dentro del candado: hasta que esto no termina, ninguna otra
     // reserva del mismo profesional puede mirar la agenda.
+    eventLogRef: recordId,
     persistir: async (cita) => {
       record = {
-        id: nuevoId("bk"),
+        id: recordId,
         token: crypto.randomBytes(16).toString("hex"),
         slug: business.slug,
         tenantId: business.tenantId,
@@ -879,6 +883,7 @@ export async function cancelarReservaPorToken(token: string, redirectUri: string
   if (!del.ok) return { ok: false, reason: "error", detail: del.detail };
   const updated: BookingRecord = { ...record, estado: "cancelada", canceladaEn: new Date().toISOString() };
   await saveRecord(updated);
+  await registrarCitaCancelada(updated);
   await notificarDueno(updated, "cancelada");
   return { ok: true, record: updated };
 }
@@ -902,6 +907,40 @@ export type CambiarEstadoResult =
   | { ok: false; reason: "not_found" | "transicion_invalida" | "error"; detail?: string };
 
 /** Transición de estado desde el panel. Cancelar libera el hueco en Google; completada/no-show conservan el evento como histórico. */
+/**
+ * Apunta en el event-log que una cita se ha caído.
+ *
+ * El event-log solo sumaba: la portada contaba como cita cada reserva creada,
+ * aunque se cancelara el mismo día. Este evento la compensa. Va con el `ts` de
+ * la CITA (no el de la cancelación) para que caiga en el mismo bucket mensual
+ * que su `appointment_set` y lo reste ahí.
+ *
+ * Best-effort: si falla, la cancelación sigue adelante. Un contador desviado no
+ * puede impedir cancelar una cita.
+ */
+async function registrarCitaCancelada(record: BookingRecord, cuandoIso?: string): Promise<void> {
+  if (record.tipo === "bloqueo") return; // un bloqueo nunca contó como cita
+  try {
+    const ts = cuandoIso || record.startIso;
+    await logEvent(record.tenantId || DEFAULT_TENANT_ID, {
+      id: makeEventId("appointment_cancelled", record.id, ts.slice(0, 7)),
+      ts,
+      type: "appointment_cancelled",
+      channel: "booking",
+      meta: {
+        tipo: "cita_cancelada",
+        nombre: record.cliente?.nombre || "",
+        motivo: record.servicioNombre || "",
+        fechaIso: ts,
+        recordId: record.id,
+        empleadoNombre: record.empleadoNombre,
+      },
+    });
+  } catch (err) {
+    console.error("[booking] no se pudo apuntar la cancelación en el event-log:", err);
+  }
+}
+
 export async function cambiarEstadoRecord(id: string, nuevoEstado: EstadoCita, redirectUri: string, expectSlug?: string): Promise<CambiarEstadoResult> {
   const record = await getRecord(id);
   if (!record || (expectSlug && record.slug !== expectSlug)) return { ok: false, reason: "not_found" };
@@ -919,7 +958,10 @@ export async function cambiarEstadoRecord(id: string, nuevoEstado: EstadoCita, r
     ...(nuevoEstado === "cancelada" ? { canceladaEn: new Date().toISOString() } : {}),
   };
   await saveRecord(updated);
-  if (nuevoEstado === "cancelada") await notificarDueno(updated, "cancelada");
+  if (nuevoEstado === "cancelada") {
+    await registrarCitaCancelada(updated);
+    await notificarDueno(updated, "cancelada");
+  }
   return { ok: true, record: updated };
 }
 
@@ -990,6 +1032,7 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
   if (!libre.libre) return { ok: false, reason: "slot_taken" };
 
   const calendarEmail = await resolveCalendarEmail(business);
+  const recordId = nuevoId("bk"); // identidad estable de la cita (event-log)
   let record: BookingRecord | null = null; // se rellena dentro del candado, en `persistir`
   const eventStart = shiftLocal(startNorm, -pB);
   const eventDuration = pB + dur + pA;
@@ -1012,9 +1055,10 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
       const fl = await footprintLibre(business, startNorm, pB, dur, pA, input.redirectUri, undefined, empleado?.id);
       return fl.ok && fl.libre;
     },
+    eventLogRef: recordId,
     persistir: async (cita) => {
       record = {
-        id: nuevoId("bk"),
+        id: recordId,
         token: crypto.randomBytes(16).toString("hex"),
         slug: business.slug,
         tenantId: business.tenantId,
@@ -1081,6 +1125,8 @@ export async function crearBloqueo(input: CrearBloqueoInput): Promise<CrearReser
     durationMin: dur,
     agenteOrigen: "booking",
     simulate: process.env.BOOKING_SIMULATE === "1" ? true : undefined,
+    // Un bloqueo ocupa la agenda pero NO es una cita: no cuenta en la portada.
+    sinEventLog: true,
     revalidate: async () => {
       const fl = await footprintLibre(business, startNorm, 0, dur, 0, input.redirectUri);
       return fl.ok && fl.libre;
@@ -1167,6 +1213,8 @@ export async function reprogramarRecord(
   if (!del.ok) return { ok: false, reason: "error", detail: del.detail };
 
   let updated: BookingRecord | null = null; // se rellena dentro del candado, en `persistir`
+  const mesOriginal = record.startIso.slice(0, 7); // para compensar el event-log si cambia de mes
+  const registroOriginal = record;
 
   const res = await reservarSlotBooking({
     tenantId: business.tenantId, userEmail: calendarEmail, redirectUri, nombre, motivo,
@@ -1175,6 +1223,7 @@ export async function reprogramarRecord(
     agenteOrigen: "booking", customerPhone: telefono, attendees,
     simulate: process.env.BOOKING_SIMULATE === "1" ? true : undefined,
     resourceId: record.empleadoId,
+    eventLogRef: record.id,
     revalidate: async () => {
       const fl = await footprintLibre(business, startNorm, pB, dur, pA, redirectUri, record.id, record.empleadoId);
       return fl.ok && fl.libre;
@@ -1212,7 +1261,17 @@ export async function reprogramarRecord(
   }
 
   if (!updated) return { ok: false, reason: "error", detail: "la cita movida no llegó a guardarse" };
-  return { ok: true, record: updated };
+  // TypeScript no sigue las asignaciones hechas dentro de `persistir`, así que
+  // aquí ya cree que `updated` no puede tener valor. Se reancla en una constante.
+  const movida: BookingRecord = updated;
+  // Mover la cita a OTRO MES la apunta en el bucket del mes nuevo; el del mes
+  // viejo se queda con su `appointment_set` y contaría una cita que ya no está
+  // ahí. Se compensa en el mes viejo. (Dentro del mismo mes no hace falta: la
+  // identidad estable del evento evita el duplicado.)
+  if (mesOriginal !== movida.startIso.slice(0, 7)) {
+    await registrarCitaCancelada(registroOriginal, registroOriginal.startIso);
+  }
+  return { ok: true, record: movida };
 }
 
 // -----------------------------------------------------------------------------

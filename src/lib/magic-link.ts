@@ -14,9 +14,15 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
+import { kvGet, kvSet, supabaseEnabled } from "./supabase";
 
-const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
+// Hoy NADIE llama a `crearMagicLink`: el acceso es usuario + contraseña. Se
+// migra igualmente porque escribir en /tmp no funciona en Vercel (el enlace se
+// crearía en una máquina y se validaría en otra, así que nunca abriría), y
+// dejarlo así convierte un archivo muerto en una trampa para quien lo reviva.
+const DATA_DIR = path.join(process.cwd(), "data");
 const FILE = path.join(DATA_DIR, "magic-links.json");
+const KV_LINKS = "magic-links";
 const TTL_MS = 15 * 60 * 1000; // 15 min
 
 export type MagicLink = {
@@ -28,6 +34,7 @@ export type MagicLink = {
 };
 
 async function load(): Promise<MagicLink[]> {
+  if (supabaseEnabled()) return (await kvGet<MagicLink[]>(KV_LINKS)) ?? [];
   try {
     return JSON.parse(await fs.readFile(FILE, "utf-8"));
   } catch {
@@ -36,6 +43,10 @@ async function load(): Promise<MagicLink[]> {
 }
 
 async function save(items: MagicLink[]) {
+  if (supabaseEnabled()) {
+    await kvSet(KV_LINKS, items);
+    return;
+  }
   await fs.mkdir(path.dirname(FILE), { recursive: true });
   await fs.writeFile(FILE, JSON.stringify(items, null, 2));
 }

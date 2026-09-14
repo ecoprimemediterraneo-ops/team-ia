@@ -68,6 +68,20 @@ export type AgendarCitaInput = {
    */
   comensales?: number;
   zona?: "terraza" | "interior" | "indiferente";
+  /**
+   * Identidad ESTABLE de la cita en el event-log (normalmente el id del
+   * registro de reserva). Sin esto, el id salía del id del evento de Google, y
+   * mover una cita —que borra el evento y crea otro— escribía un SEGUNDO
+   * `appointment_set`: la portada contaba dos citas donde solo había una.
+   * Con una identidad estable, `logEvent` la reconoce y no la duplica.
+   */
+  eventLogRef?: string;
+  /**
+   * No escribir `appointment_set`. Lo usan los BLOQUEOS: reservar la hora del
+   * descanso ocupa la agenda, pero no es una cita de un cliente y no puede
+   * contar como tal en la portada ni en el informe.
+   */
+  sinEventLog?: boolean;
 };
 
 export type AgendarCitaResult =
@@ -365,10 +379,13 @@ export async function agendarCita(input: AgendarCitaInput): Promise<AgendarCitaR
 
   // Log en event-log para informe mensual / feed.
   let eventLogId = "";
+  if (input.sinEventLog) {
+    return { ok: true, eventId: result.eventId, htmlLink: result.htmlLink, eventLogId: "" };
+  }
   try {
     const ts = input.start;
     const ev = await logEvent(tenantId, {
-      id: makeEventId("appointment_set", result.eventId || ts),
+      id: makeEventId("appointment_set", input.eventLogRef || result.eventId || ts),
       ts,
       type: "appointment_set",
       channel: input.agenteOrigen,

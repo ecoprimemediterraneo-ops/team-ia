@@ -7,22 +7,12 @@ import { getSessionLocal } from "@/lib/auth";
 import { estadoToken as estadoTokenInstagram } from "@/lib/instagram-login";
 import { listTenants } from "@/lib/tenants";
 import { listar } from "@/lib/listas-captacion";
+import { leerCalBookings, leerEvals } from "@/lib/admin-stores";
 import { resolverSector } from "@/lib/sectores";
 import { resumenCoste, PRECIOS } from "@/lib/gestoria-coste";
 import { MODELO_LECTURA } from "@/lib/gestoria-lectura";
-import fs from "node:fs/promises";
-import path from "node:path";
 
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
-const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
-
-async function readJson<T>(file: string, fallback: T): Promise<T> {
-  try {
-    return JSON.parse(await fs.readFile(path.join(DATA_DIR, file), "utf-8"));
-  } catch {
-    return fallback;
-  }
-}
 
 export default async function AdminPage() {
   // getSessionLocal (no getSession): en producción es idéntico, y en local levanta
@@ -43,15 +33,15 @@ export default async function AdminPage() {
   }
 
   type WaitlistEntry = { email: string; name?: string; sector?: string; city?: string; createdAt: string };
-  type Booking = { uid: string; trigger: string; receivedAt: string; payload: Record<string, unknown> };
-  type EvalResult = { ts: string; email: string; agent: string; score: number; reasoning: string; userMessage: string; agentResponse: string };
 
   // La lista beta ya NO se lee de un archivo: vive en Supabase (ver
   // `listas-captacion.ts`). El archivo de /tmp que se leía aquí estaba casi
   // siempre vacío, así que el panel enseñaba cero apuntados habiendo apuntados.
   const waitlist = (await listar<WaitlistEntry & Record<string, unknown>>("waitlist", "createdAt").catch(() => [])) as WaitlistEntry[];
-  const bookings = await readJson<Booking[]>("calendar-bookings.json", []);
-  const evals = await readJson<EvalResult[]>("evals.json", []);
+  // Las reservas de Cal.com y las evaluaciones se leen por la MISMA puerta por
+  // la que se escriben (antes: un /tmp que en producción siempre estaba vacío).
+  const bookings = await leerCalBookings().catch(() => []);
+  const evals = await leerEvals().catch(() => []);
 
   // Token de Instagram Business Login: caduca a los 60 días y si nadie mira la
   // fecha, se entera uno el día que Marta deja de publicar.

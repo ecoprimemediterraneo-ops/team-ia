@@ -16,6 +16,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import { kvGet, kvSet, supabaseEnabled } from "./supabase";
 
 export type Red = "instagram" | "facebook" | "linkedin" | "tiktok";
 
@@ -33,8 +34,18 @@ export type Publicacion = {
   actualizadaEn: string;
 };
 
-const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
+// DÓNDE VIVE LA COLA
+// ------------------
+// Escribía en `/tmp/aiteam-data/queue.json`. En Vercel `/tmp` muere con la
+// función: aprobar un post o marcarlo como publicado NO sobrevivía a la
+// siguiente petición, y la cola volvía sola a la semilla del repo — con lo que
+// un post ya publicado podía volver a aparecer como pendiente.
+//
+// Ahora manda Supabase (una sola clave: la cola es corta y se lee entera). El
+// fichero local sigue existiendo para desarrollo sin credenciales.
+const DATA_DIR = path.join(process.cwd(), "data");
 const FILE = path.join(DATA_DIR, "queue.json");
+const KV_COLA = "redes:cola";
 
 // Seed bundled (commiteado en src/data/queue-seed.json) — siempre disponible incluso si /tmp se borra
 import seedJson from "@/data/queue-seed.json";
@@ -43,10 +54,14 @@ const SEED: Publicacion[] = seedJson as Publicacion[];
 
 async function load(): Promise<Publicacion[]> {
   let runtime: Publicacion[] = [];
-  try {
-    runtime = JSON.parse(await fs.readFile(FILE, "utf-8")) as Publicacion[];
-  } catch {
-    runtime = [];
+  if (supabaseEnabled()) {
+    runtime = (await kvGet<Publicacion[]>(KV_COLA)) ?? [];
+  } else {
+    try {
+      runtime = JSON.parse(await fs.readFile(FILE, "utf-8")) as Publicacion[];
+    } catch {
+      runtime = [];
+    }
   }
   // Mezclar: el runtime tiene prioridad si hay mismo id (porque pueden tener estados modificados)
   const runtimeIds = new Set(runtime.map((p) => p.id));
@@ -55,6 +70,13 @@ async function load(): Promise<Publicacion[]> {
 }
 
 async function save(items: Publicacion[]) {
+  // Se guarda la cola ENTERA, semilla incluida: si no, un post de la semilla que
+  // se aprueba se guardaría como "runtime" y el resto seguiría viniendo del
+  // fichero del repo. Al leer se vuelven a mezclar por id, así que da igual.
+  if (supabaseEnabled()) {
+    await kvSet(KV_COLA, items);
+    return;
+  }
   await fs.mkdir(path.dirname(FILE), { recursive: true });
   await fs.writeFile(FILE, JSON.stringify(items, null, 2));
 }

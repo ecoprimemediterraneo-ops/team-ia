@@ -11,41 +11,32 @@
 import { NextResponse } from "next/server";
 import { cronAuthError } from "@/lib/cron-auth";
 import { Resend } from "resend";
-import fs from "node:fs/promises";
-import path from "node:path";
-import type { UserData } from "@/lib/store";
+import { getAllUsers, type UserData } from "@/lib/store";
+import { anadirEvals, type EvalResult } from "@/lib/admin-stores";
 import { anthropic } from "@/lib/claude";
 
-const DATA_DIR = process.env.VERCEL ? "/tmp/aiteam-data" : path.join(process.cwd(), "data");
-const USERS_FILE = path.join(DATA_DIR, "users.json");
-const EVALS_FILE = path.join(DATA_DIR, "evals.json");
-
-type EvalResult = {
-  ts: string;
-  email: string;
-  agent: string;
-  userMessage: string;
-  agentResponse: string;
-  score: number; // 1-10
-  reasoning: string;
-};
+// DE DÓNDE SALEN LOS USUARIOS, Y POR QUÉ ESTO NO EVALUABA NADA
+// ------------------------------------------------------------
+// Este cron leía los usuarios de `/tmp/aiteam-data/users.json`. En producción
+// los usuarios NO viven ahí: viven en Supabase (clave "users", ver store.ts), y
+// `/tmp` además se borra con cada función. O sea que el evaluador nocturno leía
+// una lista vacía, no evaluaba a nadie y nunca avisaba de nada — en silencio,
+// porque una lista vacía no es un error.
+//
+// Ahora los pide por la misma puerta que el resto del sistema (`getAllUsers`) y
+// las evaluaciones se guardan donde se puedan volver a leer.
 
 async function readUsers(): Promise<Record<string, UserData>> {
   try {
-    return JSON.parse(await fs.readFile(USERS_FILE, "utf-8"));
-  } catch { return {}; }
+    return await getAllUsers();
+  } catch (err) {
+    console.error("[cron/eval] no se pudieron leer los usuarios:", err);
+    return {};
+  }
 }
 
 async function appendEvals(results: EvalResult[]) {
-  let arr: EvalResult[] = [];
-  try {
-    arr = JSON.parse(await fs.readFile(EVALS_FILE, "utf-8"));
-  } catch { /* first run */ }
-  arr.push(...results);
-  // Keep last 1000
-  arr = arr.slice(-1000);
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(EVALS_FILE, JSON.stringify(arr, null, 2));
+  await anadirEvals(results);
 }
 
 async function evaluateSample(

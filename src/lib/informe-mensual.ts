@@ -23,7 +23,7 @@ export type MetricasEsencial = {
   mensajesAtendidos: number;        // message_out totales
   tiempoAhorradoHoras: number;      // mensajesAtendidos × minutesPerInteraction / 60
   leads: number;                    // lead_captured
-  citas: number;                    // appointment_set
+  citas: number;                    // appointment_set menos appointment_cancelled
   ventas: number;                   // sale
   tasaConversion: number;           // ventas / leads (0..1)
   valorEconomicoEUR: number;        // ventas × conversionValueEUR
@@ -77,11 +77,15 @@ export async function computeMetricasEsencial(
     if (e.type === "message_out" && e.meta?.kind !== "comment_reply") mensajesAtendidos++;
     if (e.type === "lead_captured") leads++;
     if (e.type === "appointment_set") citas++;
+    else if (e.type === "appointment_cancelled") citas--;
     if (e.type === "sale") {
       ventas++;
       valorEconomicoEUR += (e.meta?.valueEUR as number | undefined) ?? tenant.conversionValueEUR;
     }
   }
+
+  // Cancelar una cita de un mes anterior no puede dejar este mes en negativo.
+  citas = Math.max(0, citas);
 
   // Cruce con pipeline: si por lo que sea no hay eventos pero sí hay leads
   // del tenant creados/movidos en el mes, los contamos también para no quedar

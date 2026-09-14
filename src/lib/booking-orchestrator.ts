@@ -67,6 +67,10 @@ export type ReservaBookingInput = {
    * primera, reintentar es limpio: ni duplicado ni cita fantasma.
    */
   deshacerCita?: (eventId: string) => Promise<boolean>;
+  /** Identidad estable de la cita en el event-log. Ver `agendarCita`. */
+  eventLogRef?: string;
+  /** Bloqueos: ocupan agenda pero no son citas y no se cuentan como tales. */
+  sinEventLog?: boolean;
 };
 
 // Mutex en memoria por (slot|recurso) — serializa dentro de la misma instancia.
@@ -215,6 +219,7 @@ export async function reservarSlotBooking(input: ReservaBookingInput): Promise<R
       const res = await agendarCita({
         tenantId, userEmail: input.userEmail, nombre: input.nombre, motivo: input.motivo, start: input.startIso, durationMin,
         agenteOrigen: input.agenteOrigen, customerPhone: input.customerPhone, attendees: input.attendees, location: input.location, redirectUri: input.redirectUri,
+        eventLogRef: input.eventLogRef, sinEventLog: input.sinEventLog,
       });
       if (!res.ok) {
         await logDecision(tenantId, "error", { ...baseLog, detail: res.detail });

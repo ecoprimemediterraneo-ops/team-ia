@@ -7,7 +7,8 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { cronAuthError } from "@/lib/cron-auth";
-import { listRecords, getBusinessBySlug, saveRecord, localToEpoch } from "@/lib/booking";
+import { listRecords, getBusinessBySlug, getRecord, saveRecord, localToEpoch } from "@/lib/booking";
+import { kvTryLock, kvUnlock } from "@/lib/supabase";
 import { enviarRecordatorio } from "@/lib/booking-email";
 import { restauranteRecordatorioEnabled } from "@/lib/restaurante";
 import { barrerOfertasCaducadas } from "@/lib/booking-waitlist";
@@ -18,6 +19,7 @@ export const runtime = "nodejs";
 
 const WINDOW_MIN_H = 6;   // no recordar citas a menos de 6h (ya casi encima)
 const WINDOW_MAX_H = 30;  // hasta 30h antes (cubre "mañana" con un tick diario)
+const LOCK_RECORDATORIO_MS = 5 * 60_000; // reserva la cita mientras se manda
 
 /**
  * Una sola puerta: delega en `cronAuthError`. Antes esta función repetía aquí
@@ -65,14 +67,31 @@ async function run(req: Request) {
     // (mismo tzOffset/DST que computeFreeSlots; evita el desfase en runtime UTC).
     const startEpoch = localToEpoch(r.startIso, business.timezone || "Europe/Madrid");
     if (isNaN(startEpoch) || startEpoch < min || startEpoch > max) continue;
+    // UN RECORDATORIO POR CITA, AUNQUE HAYA DOS PASADAS A LA VEZ.
+    //
+    // `recordatorioEnviado` se escribe DESPUÉS de enviar, así que dos pasadas
+    // solapadas —este cron lo dispara Vercel, y n8n puede dispararlo también—
+    // leen las dos la cita sin marcar y le mandan las dos el recordatorio: dos
+    // WhatsApps y dos correos a la misma persona. Comprobado. El candado las
+    // serializa; la segunda encuentra la cita ya marcada y se la salta.
+    const lockCita = `lock:recordatorio:${r.id}`;
+    if (!(await kvTryLock(lockCita, LOCK_RECORDATORIO_MS, "booking-recordatorios"))) {
+      console.log(`[booking-recordatorios] cita ${r.id} en manos de otra pasada; se salta`);
+      continue;
+    }
     try {
-      const notif = await enviarRecordatorio(r, business, baseUrl);
-      await saveRecord({ ...r, recordatorioEnviado: true });
+      // Releer: si la otra pasada acabó entre medias, ya está marcada.
+      const fresco = await getRecord(r.id);
+      if (!fresco || fresco.recordatorioEnviado || fresco.estado !== "confirmada") continue;
+      const notif = await enviarRecordatorio(fresco, business, baseUrl);
+      await saveRecord({ ...fresco, recordatorioEnviado: true });
       enviados++;
       detalle.push({ id: r.id, email: notif.email.modo, whatsapp: notif.whatsapp.modo });
     } catch (err) {
       fallidos++;
       console.error("[booking-recordatorios] fallo:", err);
+    } finally {
+      await kvUnlock(lockCita);
     }
   }
   // Lista de espera inteligente: caduca ofertas sin respuesta y reoferta a la siguiente.
