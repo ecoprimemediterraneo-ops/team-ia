@@ -23,7 +23,7 @@ import {
   getConversation,
   type Conversation,
 } from "@/lib/conversation-store";
-import { logEvent, makeEventId, getMonthEvents, monthKey } from "@/lib/event-log";
+import { logEvent, makeEventId } from "@/lib/event-log";
 import { resolveTenantFromMeta, getTenantSector, getTenant } from "@/lib/tenants";
 import { resolverSector } from "@/lib/sectores";
 import { getFicha, fichaToPromptContext } from "@/lib/ficha";
@@ -45,6 +45,7 @@ import {
   detectAppointmentIntent,
   missingFieldsToQuestion,
   formatStartHumanES,
+  alreadyBookedForContact,
 } from "@/lib/appointment-intent";
 import { getBusinessByTenant } from "@/lib/booking";
 import { pasoRestauranteSinHueco } from "@/lib/restaurante-flujo";
@@ -152,29 +153,6 @@ async function claimMessageOnce(msgId: string): Promise<boolean> {
   seenLocal.add(msgId);
   if (seenLocal.size > 2000) seenLocal.clear();
   return true;
-}
-
-// Idempotencia: ¿ya hay una cita registrada para este teléfono a esa hora?
-// Evita que, al detectar la cita sobre el transcript completo, se vuelva a
-// reservar el mismo hueco en cada mensaje posterior del cliente.
-async function alreadyBookedForPhone(
-  tenantId: string,
-  phone: string,
-  startIso: string,
-): Promise<boolean> {
-  try {
-    const months = new Set([monthKey(startIso), monthKey(new Date().toISOString())]);
-    const evs = (
-      await Promise.all([...months].map((m) => getMonthEvents(tenantId, m)))
-    ).flat();
-    return evs.some((e) => {
-      if (e.type !== "appointment_set") return false;
-      const m = (e.meta ?? {}) as Record<string, unknown>;
-      return m.customerPhone === phone && (m.fechaIso === startIso || m.horaIso === startIso);
-    });
-  } catch {
-    return false;
-  }
 }
 
 export const runtime = "nodejs";
@@ -809,7 +787,7 @@ export async function POST(req: Request) {
             // normal para que Pablo responda con naturalidad.
             const complete =
               intent.wantsAppointment && intent.missing.length === 0 && !!intent.fields.startIso;
-            if (complete && (await alreadyBookedForPhone(tenantId, from, intent.fields.startIso!))) {
+            if (complete && (await alreadyBookedForContact(tenantId, from, intent.fields.startIso!))) {
               // ya reservada → no re-reservar; sigue al flujo normal de Pablo.
               throw { __skip: true };
             }

@@ -5,7 +5,7 @@
 // abiertas, que es justo lo que se quería quitar. Pero el panel no se borra —
 // tiene los KPIs del sector y la actividad— y hay que poder llegar tecleando.
 
-import { PanelClasico } from "../page";
+import { PanelClasico } from "@/components/dashboard/PanelClasico";
 
 export const dynamic = "force-dynamic";
 

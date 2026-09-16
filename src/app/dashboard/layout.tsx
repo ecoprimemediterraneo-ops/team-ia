@@ -32,10 +32,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
     ? ctx.perfil.agentes.map((slug) => agentBySlug[slug]).filter(Boolean)
     : agents;
   const v = ctx.vocabulario;
+  // Solo gestoría clava la cabecera arriba del todo (ChatGPT/Claude-style,
+  // pedido explícitamente). El resto de sectores sigue con la cabecera en
+  // flujo normal, tal cual estaba — este `id` y esta clase condicional son el
+  // único cambio de este archivo que los afecta, y no los afecta: sin
+  // `esGestoria` no se añade ninguna clase nueva.
+  const esGestoria = ctx.perfil.id === "gestoria";
 
   return (
     <div className="min-h-screen bg-[color:var(--cream)]">
-      <header className="border-b-[3px] border-black bg-white">
+      <header
+        id="cabecera-ai-team"
+        className={`border-b-[3px] border-black bg-white ${esGestoria ? "sticky top-0 z-50" : ""}`}
+      >
         <div className="max-w-7xl mx-auto flex items-center justify-between px-5 py-3">
           <EnlaceIdioma href="/dashboard"><Logo size="sm" /></EnlaceIdioma>
           <div className="flex items-center gap-4 text-sm">

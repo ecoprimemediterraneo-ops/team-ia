@@ -9,7 +9,6 @@ import { extractoDeCliente, listarMovimientos, listarFacturas } from "@/lib/gest
 import FacturasCliente from "@/components/gestoria/FacturasCliente";
 import PagadoSinFactura from "@/components/gestoria/PagadoSinFactura";
 import { pagosSinFacturaPorCliente } from "@/lib/gestoria-conciliacion";
-import BarraGestoria from "@/components/gestoria/BarraGestoria";
 
 export const dynamic = "force-dynamic";
 
@@ -69,9 +68,6 @@ export default async function FacturasPage() {
 
   return (
     <div className="space-y-4">
-      {/* Lo que aprieta y el cuadro de preguntar, en todas las pantallas. */}
-      <BarraGestoria />
-
       <div>
         <div className="text-xs font-mono uppercase tracking-widest text-black/50">{ctx.tenant?.name}</div>
         {/* Como en el lateral: el nombre de verdad grande y el apodo debajo.

@@ -49,6 +49,7 @@ const AGENTES_CON_RECORD: ReadonlySet<EventChannel> = new Set<EventChannel>([
   "carmen",
   "eva",
   "lucia",
+  "marta",
 ]);
 
 // -----------------------------------------------------------------------------

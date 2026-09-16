@@ -30,12 +30,23 @@ import {
   type Conversation,
 } from "@/lib/conversation-store";
 import { logEvent, makeEventId } from "@/lib/event-log";
-import { resolveTenantFromMeta } from "@/lib/tenants";
+import { resolveTenantFromMeta, getTenantSector, getTenant } from "@/lib/tenants";
 import { procesarComentario } from "@/lib/marta-comment-flow";
 import { apuntarMensaje } from "@/lib/marta-inbox";
 import { sendInstagramDM, usernameDeIgsid } from "@/lib/marta-graph";
 import { kvTryLock } from "@/lib/supabase";
 import { idiomaDeTexto, type Idioma } from "@/lib/idioma";
+import { getSectorPrompt } from "@/lib/sector-prompts";
+import { resolverSector } from "@/lib/sectores";
+import { getBusinessByTenant } from "@/lib/booking";
+import { esIntencionCancelar, resolverCancelacion, textoCancelacionChat } from "@/lib/booking-cancel-intent";
+import {
+  tryAgendarFromText,
+  detectAppointmentIntent,
+  missingFieldsToQuestion,
+  formatStartHumanES,
+  alreadyBookedForContact,
+} from "@/lib/appointment-intent";
 
 async function safeLogEvent(...args: Parameters<typeof logEvent>): Promise<void> {
   try {
@@ -43,6 +54,84 @@ async function safeLogEvent(...args: Parameters<typeof logEvent>): Promise<void>
   } catch (err) {
     console.error("[marta/webhook] event log error:", err);
   }
+}
+
+/**
+ * Quita `*negrita*` y emojis de un texto pensado para WhatsApp antes de
+ * mandarlo por Instagram. Se usa solo con `textoCancelacionChat` (Pablo):
+ * evita reescribir esa función para reutilizarla tal cual, respetando el
+ * estilo de casa (cero emojis en cualquier canal, sin markdown en Instagram)
+ * sin tocar el texto que sigue viendo Pablo por WhatsApp.
+ */
+function sinFormatoInstagram(t: string): string {
+  return t
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
+    .replace(/[ \t]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .trim();
+}
+
+const recorteLogIntercambio = (t: string, max = 600): string =>
+  t.replace(/\s+/g, " ").trim().slice(0, max);
+
+/**
+ * REGISTRA UN INTERCAMBIO COMPLETO DE RESERVA/CANCELACIÓN: lo que entró y lo
+ * que se contestó — mismo criterio que `registrarIntercambio` en el webhook
+ * de Pablo (`pablo/webhook/route.ts`), adaptado a las dos piezas propias de
+ * Marta: la bandeja (`apuntarMensaje`) y el formato `dm_in`/`dm_out` que ya
+ * usa el resto de este archivo para que "Actividad reciente" y el informe
+ * mensual sigan contando exactamente igual, venga la conversación de donde
+ * venga.
+ *
+ * Todo interceptor que conteste y haga `continue` TIENE que pasar por aquí
+ * antes: si no, el DM se ve en Instagram pero no en el panel — el mismo
+ * fallo que ya se corrigió una vez en Pablo.
+ */
+async function registrarIntercambioMarta(opts: {
+  tenantId: string;
+  senderId: string;
+  mid: string | undefined;
+  username: string | undefined;
+  entrante: string;
+  respuesta: string;
+  rxTs: string;
+  dmOk: boolean;
+  via: string;
+}): Promise<void> {
+  const { tenantId, senderId, mid, username, entrante, respuesta, rxTs, dmOk, via } = opts;
+
+  await appendTurn("marta", tenantId, senderId, "user", entrante);
+  await appendTurn("marta", tenantId, senderId, "assistant", respuesta);
+
+  await apuntarMensaje(tenantId, senderId, { de: "cliente", texto: entrante, ts: rxTs, id: mid }, username);
+  // El `via` fino (cancelacion, agenda_cita_creada…) va al event-log, abajo;
+  // la bandeja solo distingue manual/automático, y esto siempre es lo segundo.
+  await apuntarMensaje(tenantId, senderId, { de: "nosotros", texto: respuesta, ts: new Date().toISOString(), via: "automatico" });
+
+  await safeLogEvent(tenantId, {
+    id: makeEventId("message_in", "marta", mid),
+    ts: rxTs,
+    type: "message_in",
+    channel: "marta",
+    senderId,
+    meta: { kind: "dm_in", mid, username, texto: recorteLogIntercambio(entrante), via },
+  });
+  await safeLogEvent(tenantId, {
+    id: makeEventId("message_out", "marta", mid),
+    type: "message_out",
+    channel: "marta",
+    senderId,
+    meta: {
+      kind: "dm_out",
+      mid,
+      username,
+      texto: recorteLogIntercambio(respuesta),
+      ok: dmOk,
+      latencyMs: Date.now() - Date.parse(rxTs),
+      via,
+    },
+  });
 }
 
 export const runtime = "nodejs";
@@ -232,6 +321,148 @@ export async function POST(req: Request) {
         }
 
         console.log(`[marta/webhook] DM RX tenant=${tenantId} from=${senderId} idioma=${idiomaDeTexto(text)} text="${text}"`);
+
+        // === INTERCEPTOR: ¿el cliente quiere reservar, cancelar o mover una cita? ===
+        //
+        // MISMO MOTOR QUE PABLO, no un camino paralelo: mismo `tryAgendarFromText`
+        // (que pasa por `reservarSlot`, el candado en memoria + el distribuido de
+        // Supabase, y `registrarRecordDeCita`), mismo detector de cancelación, y el
+        // MISMO candado de idempotencia (`alreadyBookedForContact`, movido a
+        // `appointment-intent.ts` justo para que los dos canales usen la misma
+        // comprobación y no dos copias que acaben divergiendo). El IGSID
+        // (`senderId`) hace de clave de contacto donde Pablo usa el teléfono: es
+        // una cadena opaca para el motor de reservas, le da igual de qué canal
+        // viene.
+        //
+        // Va ANTES de `generateReply()`: si es una reserva o una cancelación no
+        // tiene que pasar por Claude a pedir una respuesta genérica.
+        try {
+          let sectorAgenda = true;
+          try {
+            const sk = await getTenantSector(tenantId);
+            sectorAgenda = getSectorPrompt(sk).agendaCitas;
+          } catch { /* por defecto intentamos agendar */ }
+
+          // ¿Restaurante? Se extraen personas y zona igual que en Pablo. La
+          // rama de "sin hueco → alternativas de turno / lista de espera" de
+          // Pablo (`pasoRestauranteSinHueco`) NO se replica aquí en esta
+          // entrega: ver el resumen final de "qué queda fuera".
+          let modoRest: { restaurante?: boolean } | undefined;
+          try {
+            const t = await getTenant(tenantId);
+            const sec = t ? resolverSector(t) : null;
+            if (sec === "restaurante") modoRest = { restaurante: true };
+          } catch { /* si no se puede saber, se trata como hasta ahora */ }
+
+          if (sectorAgenda) {
+            const username = await usernameDeIgsid(senderId).catch(() => undefined);
+
+            // --- ¿Quiere CANCELAR o MOVER? Va antes que reservar: un "quiero
+            // cancelar" no es una petición de cita nueva. ---
+            if (esIntencionCancelar(text)) {
+              const business = await getBusinessByTenant(tenantId);
+              if (business) {
+                const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://aiteam.marketing";
+                const caso = await resolverCancelacion(business.slug, senderId, SITE);
+                // `textoCancelacionChat` está escrito para WhatsApp (Pablo): lleva
+                // `*negrita*` y algún emoji. Instagram no lleva ni una cosa ni la
+                // otra (estilo de casa: cero emojis en ningún canal, y en
+                // Instagram tampoco markdown), así que se reutiliza el texto
+                // —no se duplica la lógica de "una / varias / ninguna cita"— y
+                // solo se le quita el formato antes de mandarlo.
+                const resp = sinFormatoInstagram(textoCancelacionChat(caso, `${SITE}/reservas/${business.slug}`, username));
+                const sendResult = await sendInstagramDM(senderId, resp);
+                const dmOk = !(sendResult && typeof sendResult === "object" && ("error" in sendResult || "skipped" in sendResult || "simulado" in sendResult));
+                await registrarIntercambioMarta({
+                  tenantId, senderId, mid, username, entrante: text, respuesta: resp,
+                  rxTs, dmOk, via: "cancelacion",
+                });
+                continue;
+              }
+            }
+
+            // --- ¿Quiere RESERVAR? El transcript sale del MISMO
+            // `conversation-store.ts` que usa Pablo, solo que con canal
+            // "marta" — ya lo usaba este webhook para la memoria de la IA. ---
+            const convForIntent = await getConversation("marta", tenantId, senderId);
+            const histTurns = (convForIntent?.turns ?? []).slice(-8);
+            const transcript = [
+              ...histTurns.map((t) => `${t.role === "user" ? "Cliente" : "Marta"}: ${t.text}`),
+              `Cliente: ${text}`,
+            ].join("\n");
+
+            const intent = await detectAppointmentIntent(transcript, new Date(), modoRest);
+            if (!intent.fields.nombre && username) {
+              intent.fields.nombre = username;
+              intent.missing = intent.missing.filter((m) => m !== "nombre");
+            }
+
+            const complete =
+              intent.wantsAppointment && intent.missing.length === 0 && !!intent.fields.startIso;
+            if (complete && (await alreadyBookedForContact(tenantId, senderId, intent.fields.startIso!))) {
+              // Ya reservada para este IGSID y esa hora: no se vuelve a
+              // reservar, cae al flujo normal de Marta (Claude conversando).
+              throw { __skip: true };
+            }
+
+            const agRes = await tryAgendarFromText({
+              text: transcript,
+              intentOverride: intent,
+              agenteOrigen: "marta",
+              redirectUri: `https://aiteam.marketing/api/lucia/callback`,
+              customerPhone: senderId,
+              customerNameFallback: username,
+              modo: modoRest,
+            });
+
+            if (agRes.kind === "agendada") {
+              const when = formatStartHumanES(agRes.intent.fields.startIso!);
+              // SIN markdown y sin emoji: es Instagram, no WhatsApp — lo
+              // importante va en MAYÚSCULAS, como en el resto de Marta.
+              const motivo = (agRes.intent.fields.motivo ?? "tu cita").toUpperCase();
+              const ack = `Hecho${username ? `, ${username}` : ""}. Te dejo agendado ${motivo} el ${when}.\n\nSi necesitas cambiarla, dímelo por aquí y la movemos.`;
+              const sendResult = await sendInstagramDM(senderId, ack);
+              const dmOk = !(sendResult && typeof sendResult === "object" && ("error" in sendResult || "skipped" in sendResult || "simulado" in sendResult));
+              await registrarIntercambioMarta({
+                tenantId, senderId, mid, username, entrante: text, respuesta: ack,
+                rxTs, dmOk, via: "agenda_cita_creada",
+              });
+              continue;
+            }
+            if (agRes.kind === "slot_taken") {
+              const suggested = agRes.suggested
+                ? `\n\nEse hueco ya está ocupado. ¿Te viene bien el ${formatStartHumanES(agRes.suggested)}?`
+                : `\n\nEse hueco ya está ocupado. ¿Te viene bien otra hora ese día?`;
+              const respSlot = `Vale, intento agendarlo.${suggested}`;
+              const sendResult = await sendInstagramDM(senderId, respSlot);
+              const dmOk = !(sendResult && typeof sendResult === "object" && ("error" in sendResult || "skipped" in sendResult || "simulado" in sendResult));
+              await registrarIntercambioMarta({
+                tenantId, senderId, mid, username, entrante: text,
+                respuesta: respSlot, rxTs, dmOk, via: "agenda_hueco_ocupado",
+              });
+              continue;
+            }
+            if (agRes.kind === "incomplete") {
+              const q = missingFieldsToQuestion(agRes.missing, modoRest);
+              if (q) {
+                const respInc = `Vale, te agendo. ${q}`;
+                const sendResult = await sendInstagramDM(senderId, respInc);
+                const dmOk = !(sendResult && typeof sendResult === "object" && ("error" in sendResult || "skipped" in sendResult || "simulado" in sendResult));
+                await registrarIntercambioMarta({
+                  tenantId, senderId, mid, username, entrante: text,
+                  respuesta: respInc, rxTs, dmOk, via: "agenda_faltan_datos",
+                });
+                continue;
+              }
+            }
+            // kind === "no_intent" o "error" → cae al flujo normal de Marta (Claude).
+          }
+        } catch (err) {
+          if (!(err && typeof err === "object" && "__skip" in err)) {
+            console.error("[marta/webhook] interceptor agenda/cancelación falló:", err);
+          }
+          // cualquier fallo cae al flujo normal de Marta, no rompe el DM.
+        }
 
         // Memoria: si no hay turnos (o estaba stale → ya limpiado on-read),
         // se trata como primer mensaje.

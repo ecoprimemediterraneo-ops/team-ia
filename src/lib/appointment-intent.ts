@@ -451,3 +451,37 @@ export function formatStartHumanES(iso: string): string {
   const hora = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   return `${fecha} a las ${hora}`;
 }
+
+/**
+ * Idempotencia: ¿ya hay una cita registrada para este contacto a esa hora?
+ *
+ * Vivía duplicada dentro de `pablo/webhook/route.ts` como función privada
+ * (`alreadyBookedForPhone`). Se mueve aquí, al módulo que ya es compartido
+ * por todos los canales, para que Marta (Instagram) pueda usar EXACTAMENTE
+ * el mismo candado en vez de reescribirlo — dos copias de esta comprobación
+ * es el tipo de cosa que diverge la primera vez que alguien arregla una sola.
+ *
+ * `contacto` es una clave opaca: el número de WhatsApp para Pablo, el IGSID
+ * (sender id de Instagram) para Marta. No se interpreta, solo se compara
+ * contra lo que quedó guardado en `customerPhone` al reservar.
+ */
+export async function alreadyBookedForContact(
+  tenantId: string,
+  contacto: string,
+  startIso: string,
+): Promise<boolean> {
+  try {
+    const { getMonthEvents, monthKey } = await import("./event-log");
+    const months = new Set([monthKey(startIso), monthKey(new Date().toISOString())]);
+    const evs = (
+      await Promise.all([...months].map((m) => getMonthEvents(tenantId, m)))
+    ).flat();
+    return evs.some((e) => {
+      if (e.type !== "appointment_set") return false;
+      const m = (e.meta ?? {}) as Record<string, unknown>;
+      return m.customerPhone === contacto && (m.fechaIso === startIso || m.horaIso === startIso);
+    });
+  } catch {
+    return false;
+  }
+}
