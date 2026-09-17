@@ -6,14 +6,14 @@
 // Este componente NUNCA manda un tenantId: no tiene forma de escribir en otro
 // panel aunque se manipule desde el navegador.
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export type Presupuesto = {
   id: string;
   paciente: { nombre: string; telefono: string };
   concepto: string;
   importeEUR?: number;
-  estado: "dado" | "aceptado" | "ejecutado" | "descartado";
+  estado: "pendiente" | "aceptado" | "rechazado" | "caducado";
   creadoEn: string;
   nota?: string;
   recordadoEn?: string;
@@ -21,17 +21,17 @@ export type Presupuesto = {
 };
 
 const ETIQUETA: Record<Presupuesto["estado"], string> = {
-  dado: "Dado",
+  pendiente: "Pendiente",
   aceptado: "Aceptado",
-  ejecutado: "Hecho",
-  descartado: "Descartado",
+  rechazado: "Rechazado",
+  caducado: "Caducado",
 };
 
 const COLOR: Record<Presupuesto["estado"], string> = {
-  dado: "bg-white",
-  aceptado: "bg-[color:var(--mustard)]",
-  ejecutado: "bg-green-200",
-  descartado: "bg-black/10",
+  pendiente: "bg-white",
+  aceptado: "bg-green-200",
+  rechazado: "bg-black/10",
+  caducado: "bg-black/10",
 };
 
 function dias(iso: string): number {
@@ -58,6 +58,19 @@ export default function PresupuestosPanel({
   const [pendientes, setPendientes] = useState<string[]>(pendientesIniciales);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+
+  // `useState(presupuestosIniciales)` solo lee el prop la PRIMERA vez que se
+  // monta el componente — React no reinicia el estado porque el prop haya
+  // cambiado. Sin este efecto, un `router.refresh()` desde el chat (crear
+  // presupuesto, aceptar uno) volvía a pedir los datos al servidor pero esta
+  // tabla se quedaba mirando la copia vieja que guardó al montarse: había
+  // que recargar la página a mano para verlo, justo el fallo que se venía a
+  // arreglar.
+  useEffect(() => {
+    setLista(presupuestosIniciales);
+    setPendientes(pendientesIniciales);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presupuestosIniciales, pendientesIniciales]);
 
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -114,8 +127,8 @@ export default function PresupuestosPanel({
     await cargar();
   }
 
-  const vivos = useMemo(() => lista.filter((p) => p.estado !== "descartado"), [lista]);
-  const hechos = vivos.filter((p) => p.estado === "ejecutado").length;
+  const vivos = lista;
+  const aceptados = useMemo(() => vivos.filter((p) => p.estado === "aceptado").length, [vivos]);
   const setPendientes_ = new Set(pendientes);
 
   return (
@@ -124,7 +137,7 @@ export default function PresupuestosPanel({
         <h2 className="font-stencil text-2xl leading-none">Presupuestos</h2>
         {vivos.length > 0 && (
           <span className="text-xs font-mono uppercase tracking-widest text-black/60">
-            {hechos} de {vivos.length} ya hechos
+            {aceptados} de {vivos.length} aceptados
           </span>
         )}
       </div>
@@ -220,14 +233,11 @@ export default function PresupuestosPanel({
                   </td>
                   <td className="py-2">
                     <div className="flex flex-wrap gap-1">
-                      {p.estado === "dado" && (
+                      {(p.estado === "pendiente" || p.estado === "caducado") && (
                         <>
-                          <button onClick={() => mover(p.id, "aceptado")} className="border-2 border-black px-1.5 py-0.5 text-[10px] font-bold uppercase hover:bg-[color:var(--mustard)]">Aceptado</button>
-                          <button onClick={() => mover(p.id, "descartado")} className="border-2 border-black px-1.5 py-0.5 text-[10px] font-bold uppercase hover:bg-black hover:text-white">Descartar</button>
+                          <button onClick={() => mover(p.id, "aceptado")} className="border-2 border-black px-1.5 py-0.5 text-[10px] font-bold uppercase hover:bg-green-200">Aceptar</button>
+                          <button onClick={() => mover(p.id, "rechazado")} className="border-2 border-black px-1.5 py-0.5 text-[10px] font-bold uppercase hover:bg-black hover:text-white">Rechazar</button>
                         </>
-                      )}
-                      {p.estado === "aceptado" && (
-                        <button onClick={() => mover(p.id, "ejecutado")} className="border-2 border-black px-1.5 py-0.5 text-[10px] font-bold uppercase hover:bg-green-200">Ya hecho</button>
                       )}
                       <button onClick={() => borrar(p.id)} className="border-2 border-black px-1.5 py-0.5 text-[10px] font-bold uppercase text-black/50 hover:bg-black hover:text-white">Borrar</button>
                     </div>

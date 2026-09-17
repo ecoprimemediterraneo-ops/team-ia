@@ -344,7 +344,14 @@ const DENTAL: PerfilSector = {
   id: "dental",
   label: "Clínica dental",
   descripcion: "Recurrencia (revisiones) más tratamientos caros (implantes, ortodoncia).",
-  agentes: ["pablo", "carmen", "lucia", "marta", "eva", "rocio"],
+  // Orden = quién pesa. Pablo y Carmen delante: WhatsApp y teléfono son cómo
+  // se pide cita de verdad en una clínica. Rocío sube al grupo de cabeza —las
+  // reseñas son la reputación con la que decide un paciente nuevo, no un
+  // extra— justo detrás de los dos canales de entrada. Marta, en segundo
+  // plano pero visible: Instagram ayuda pero no es por donde entra la cita.
+  // Lucía y Eva, al final: agenda de correo y email marketing son los que
+  // menos pesan en el día a día de una clínica.
+  agentes: ["pablo", "carmen", "rocio", "marta", "lucia", "eva"],
   kpis: [
     { id: "revisiones_recuperadas", etiqueta: "Revisiones recuperadas", ayuda: "Pacientes que vuelven tras el aviso de revisión" },
     { id: "presupuestos_convertidos", etiqueta: "Presupuestos convertidos", ayuda: "Presupuestos aceptados que ya se han hecho" },

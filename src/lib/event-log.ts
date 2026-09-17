@@ -39,12 +39,14 @@ export type EventType =
   // Recall dental: se avisó a un paciente de que le toca revisión. Cruzado con
   // `appointment_set` da la "revisión recuperada" (le avisamos y volvió).
   | "recall_enviado"
-  // Presupuestos de tratamiento. `presupuesto_ejecutado` sobre
-  // `presupuesto_aceptado` es la conversión que mira una clínica dental.
+  // Presupuestos de tratamiento. `presupuesto_aceptado` sobre
+  // `presupuesto_creado` es la conversión que mira una clínica dental.
   | "presupuesto_creado"
   | "presupuesto_aceptado"
-  | "presupuesto_ejecutado"
-  | "presupuesto_recordado";
+  | "presupuesto_rechazado"
+  | "presupuesto_recordado"
+  // Ruta de urgencia dental: un paciente escribió con dolor o urgencia.
+  | "urgencia_marcada";
 
 export type EventChannel =
   | "pablo"
@@ -201,8 +203,9 @@ export async function getMonthCounts(
     recall_enviado: 0,
     presupuesto_creado: 0,
     presupuesto_aceptado: 0,
-    presupuesto_ejecutado: 0,
+    presupuesto_rechazado: 0,
     presupuesto_recordado: 0,
+    urgencia_marcada: 0,
   };
   for (const e of events) {
     out[e.type] = (out[e.type] ?? 0) + 1;

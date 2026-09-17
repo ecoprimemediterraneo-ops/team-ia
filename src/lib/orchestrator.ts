@@ -50,6 +50,9 @@ const AGENTES_CON_RECORD: ReadonlySet<EventChannel> = new Set<EventChannel>([
   "eva",
   "lucia",
   "marta",
+  // "dashboard": citas creadas desde el chat del propio panel (confirmadas por
+  // el dueño, no por un cliente externo) — dental, por ahora.
+  "dashboard",
 ]);
 
 // -----------------------------------------------------------------------------

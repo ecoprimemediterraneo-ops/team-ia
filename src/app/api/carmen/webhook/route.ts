@@ -45,6 +45,7 @@ import { headers } from "next/headers";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { reservarSlot } from "@/lib/orchestrator";
 import { getRedirectUri } from "@/lib/gmail";
+import { resolverSalonDeLlamada, MENSAJE_SIN_SALON } from "@/lib/carmen-salon";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -61,6 +62,14 @@ type RetellPayload = {
   call_analysis?: {
     custom_analysis_data?: Record<string, unknown>;
   };
+  // El número al que ha llamado el cliente vive en el objeto `call`, no en
+  // los campos extraídos por la LLM — es un dato de la llamada, no algo que
+  // Retell "entienda" de la conversación.
+  call?: {
+    to_number?: string;
+    from_number?: string;
+  };
+  to_number?: string;
 };
 
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com";
@@ -151,6 +160,7 @@ export async function POST(req: Request) {
   const startIso = pick<string>(body, "appointment_datetime");
   const customerPhone = pick<string>(body, "customer_phone");
   const durationMin = Number(pick<number>(body, "duration_min")) || 30;
+  const toNumber = (body.call?.to_number || body.to_number || "").trim() || undefined;
 
   if (!nombre || !motivo || !startIso) {
     return NextResponse.json({
@@ -160,12 +170,26 @@ export async function POST(req: Request) {
     }, { status: 422 });
   }
 
+  // A qué negocio pertenece la llamada — por el número al que ha llamado
+  // (`call.to_number`), igual que el resto de la ruta en directo
+  // (`/api/carmen/agendar`). Antes esta ruta no resolvía tenant en absoluto:
+  // toda cita post-llamada caía en la cuenta del fundador.
+  const salon = await resolverSalonDeLlamada(undefined, toNumber);
+  if (!salon.ok) {
+    return NextResponse.json({
+      ok: false,
+      error: salon.motivo === "no_existe" ? "salon_desconocido" : "salon_ambiguo",
+      message: MENSAJE_SIN_SALON,
+    }, { status: 422 });
+  }
+
   const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
   const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
   const redirectUri = getRedirectUri(host, proto);
 
   // Reserva vía ORQUESTADOR (disponibilidad + lock + log de decisión)
   const result = await reservarSlot({
+    tenantId: salon.tenantId,
     userEmail: FOUNDER_EMAIL,
     redirectUri,
     nombre,

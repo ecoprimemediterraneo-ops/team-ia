@@ -56,6 +56,7 @@ import { destinoDeAdjunto } from "@/lib/gestoria-desvio";
 import { esElGestor, transcribir, entender } from "@/lib/gestoria-audio";
 import { descargarMedia } from "@/lib/gestoria-adjuntos";
 import { esIntencionCancelar, resolverCancelacion, textoCancelacionChat } from "@/lib/booking-cancel-intent";
+import { detectarUrgencia as detectarUrgenciaDental, marcarUrgencia as marcarUrgenciaDental } from "@/lib/dental-urgencias";
 import {
   findEntryByProposalId,
   markCalendarEntryRejected,
@@ -680,12 +681,23 @@ export async function POST(req: Request) {
           // es "¿cómo va lo mío?". Se resuelve en su propia rama, antes del
           // interceptor de agenda. Para los otros sectores queda en undefined.
           let modoGest: { gestoria?: boolean } | undefined;
+          let esDental = false;
           try {
             const t = await getTenant(tenantId);
             const sec = t ? resolverSector(t) : null;
             if (sec === "restaurante") modoRest = { restaurante: true };
             if (sec === "gestoria") modoGest = { gestoria: true };
+            if (sec === "dental") esDental = true;
           } catch { /* si no se puede saber, se trata como hasta ahora */ }
+
+          // === RUTA DE URGENCIA: solo dental. No intercepta nada — Pablo
+          // sigue la conversación exactamente igual, esto solo deja
+          // constancia para que la pestaña Hoy y el chat del panel puedan
+          // enseñar a quién hay que meter hoy sí o sí. Nunca bloquea el flujo
+          // normal: si falla, se ignora. ===
+          if (esDental && detectarUrgenciaDental(text)) {
+            marcarUrgenciaDental(tenantId, { telefono: from, nombre: customerName, texto: text }).catch(() => {});
+          }
 
           // === INTERCEPTOR: ¿la clienta quiere CANCELAR o MOVER su cita? ===
           // Le pasamos su enlace de autocancelación web (por token) en vez de gestionarlo

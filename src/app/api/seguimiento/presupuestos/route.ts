@@ -2,7 +2,7 @@
 //
 // GET    → los presupuestos del tenant que mira quien ha entrado.
 // POST   → apunta uno nuevo.
-// PATCH  → cambia el estado (aceptado / ejecutado / descartado).
+// PATCH  → cambia el estado (aceptado / rechazado / caducado).
 // DELETE → lo borra.
 //
 // AISLAMIENTO: el tenant SIEMPRE sale de `resolverContextoPanel()`, nunca del
@@ -17,13 +17,14 @@ import {
   cambiarEstado,
   borrarPresupuesto,
   presupuestosPendientes,
+  ESTADOS_PRESUPUESTO,
   type EstadoPresupuesto,
 } from "@/lib/presupuestos";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const ESTADOS: EstadoPresupuesto[] = ["dado", "aceptado", "ejecutado", "descartado"];
+const ESTADOS: EstadoPresupuesto[] = ESTADOS_PRESUPUESTO;
 
 async function tenant(): Promise<string | null> {
   const ctx = await resolverContextoPanel();

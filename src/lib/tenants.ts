@@ -112,6 +112,14 @@ export type Tenant = {
   whatsappPhoneNumberId?: string;          // mapea Meta → tenant (número EMISOR)
   ownerWhatsapp?: string;                  // WhatsApp del DUEÑO para recibir avisos (E.164, p.ej. 34656989373)
   instagramUserId?: string;                // mapea Meta → tenant
+  /**
+   * El número de teléfono al que llaman los clientes de Carmen (voz, Retell),
+   * en el formato E.164 que manda Retell en `call.to_number` (p.ej.
+   * "+34911234567"). Mapea la llamada al tenant exactamente igual que
+   * `whatsappPhoneNumberId` mapea un mensaje de WhatsApp: por el número al que
+   * ha llamado, no por configuración ni por ser el único negocio dado de alta.
+   */
+  carmenPhoneNumber?: string;
   plan: TenantPlan;
   pricing: { monthlyEUR: number };
   startedAt: string;                       // ISO
@@ -538,6 +546,33 @@ export async function resolveTenantFromMeta(input: {
       `NO se atiende (antes se atendía como "${DEFAULT_TENANT_ID}", que podía no ser el suyo). ` +
       `Si es un alta nueva, dale de alta su identificador en el tenant. ` +
       `Conocidos: ${conocidos}`,
+  );
+  return null;
+}
+
+/**
+ * Resuelve el tenantId a partir del número al que ha llamado el cliente de
+ * Carmen (`call.to_number` de Retell). Mismo criterio que
+ * `resolveTenantFromMeta`: si el número no es de ningún tenant, se devuelve
+ * `null` — NUNCA el tenant por defecto. Antes Carmen no miraba este número en
+ * absoluto: caía a `CARMEN_SLUG_POR_DEFECTO`, o si había un único negocio
+ * dado de alta lo usaba, o se negaba a reservar si había varios. Con el
+ * número de la llamada, saber de qué negocio es deja de depender de
+ * configuración o de que solo haya un cliente.
+ */
+export async function resolveTenantFromCarmenNumber(toNumber: string): Promise<string | null> {
+  const numero = (toNumber || "").trim();
+  if (!numero) return null;
+  const all = await readAll();
+  for (const t of Object.values(all)) {
+    if (t.carmenPhoneNumber && t.carmenPhoneNumber === numero) return t.id;
+  }
+  const conocidos = Object.values(all)
+    .map((t) => `${t.id}:${t.carmenPhoneNumber || "—"}`)
+    .join(", ");
+  console.warn(
+    `[tenants] CARMEN SIN DUEÑO: llegó una llamada a "${numero}" y no es de ningún tenant. ` +
+      `NO se reserva. Conocidos: ${conocidos}`,
   );
   return null;
 }

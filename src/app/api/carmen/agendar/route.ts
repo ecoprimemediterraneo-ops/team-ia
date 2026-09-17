@@ -266,12 +266,15 @@ export async function POST(req: Request) {
   const motivo = get("motivo", "appointment_motivo", "reason", "servicio", "asunto", "tratamiento", "descripcion");
   const fechaRaw = get("fecha_hora", "fechaHora", "appointment_datetime", "datetime", "date_time", "fecha", "hora", "when", "cuando", "start", "startIso", "start_time");
   const fromNumber = String(call.from_number ?? "").trim() || undefined;
+  const toNumber = String(call.to_number ?? "").trim() || undefined;
   const telefono = get("telefono", "customer_phone", "phone", "telefono_cliente", "numero") || fromNumber;
   const durationMin = Number(get("duracion_min", "duration_min", "duracion", "minutos")) || 30;
-  // Salón (tenant) al que pertenece la cita. Ver `carmen-salon.ts`: si no se
-  // puede saber de qué negocio es la llamada, NO se adivina (antes caía al
-  // salón piloto, o sea a la agenda de otro).
-  const salon = await resolverSalonDeLlamada(get("slug", "salon", "negocio", "business", "tenant", "salon_slug"));
+  // Salón (tenant) al que pertenece la cita. Ver `carmen-salon.ts`: PRIMERO
+  // por el número al que ha llamado (`call.to_number`, igual que Pablo
+  // resuelve por `phone_number_id` de WhatsApp); si no se puede saber de qué
+  // negocio es, NO se adivina (antes caía al salón piloto, o sea a la agenda
+  // de otro).
+  const salon = await resolverSalonDeLlamada(get("slug", "salon", "negocio", "business", "tenant", "salon_slug"), toNumber);
   if (!salon.ok) {
     return NextResponse.json({
       success: false,

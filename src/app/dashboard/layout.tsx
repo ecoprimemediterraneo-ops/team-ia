@@ -32,18 +32,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
     ? ctx.perfil.agentes.map((slug) => agentBySlug[slug]).filter(Boolean)
     : agents;
   const v = ctx.vocabulario;
-  // Solo gestoría clava la cabecera arriba del todo (ChatGPT/Claude-style,
-  // pedido explícitamente). El resto de sectores sigue con la cabecera en
-  // flujo normal, tal cual estaba — este `id` y esta clase condicional son el
-  // único cambio de este archivo que los afecta, y no los afecta: sin
-  // `esGestoria` no se añade ninguna clase nueva.
-  const esGestoria = ctx.perfil.id === "gestoria";
+  // Solo los sectores con panel rediseñado (ChatGPT/Claude-style, pedido
+  // explícitamente para gestoría y ahora también dental) clavan la cabecera
+  // arriba del todo. El resto sigue con la cabecera en flujo normal, tal cual
+  // estaba — sin `panelFijo` no se añade ninguna clase nueva.
+  const panelFijo = ctx.perfil.id === "gestoria" || ctx.perfil.id === "dental";
 
   return (
     <div className="min-h-screen bg-[color:var(--cream)]">
       <header
         id="cabecera-ai-team"
-        className={`border-b-[3px] border-black bg-white ${esGestoria ? "sticky top-0 z-50" : ""}`}
+        className={`border-b-[3px] border-black bg-white ${panelFijo ? "sticky top-0 z-50" : ""}`}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between px-5 py-3">
           <EnlaceIdioma href="/dashboard"><Logo size="sm" /></EnlaceIdioma>
@@ -65,13 +64,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </header>
 
       <MarcoPanel lateral={<>
-        {/* EL LATERAL DE UNA GESTORÍA ES OTRO.
+        {/* EL LATERAL DE LOS PANELES REDISEÑADOS ES OTRO: NINGUNO.
             Trece bloques con emojis y tres colores compitiendo no le sirven a
             quien lleva cien clientes: se le ha hecho uno en texto plano, con los
-            agentes y los ajustes plegados. El de peluquerías, clínicas y
+            agentes y los ajustes plegados. El de peluquerías, estética y
             restaurantes queda EXACTAMENTE como estaba — es el `else` de abajo. */}
-        {ctx.perfil.id === "gestoria" ? (
-          // EL LATERAL DE GESTORÍA SE HA QUITADO.
+        {panelFijo ? (
+          // EL LATERAL DE GESTORÍA Y DENTAL SE HA QUITADO.
           //
           // Tenía Chat IA, Vencimientos, Facturas y Correo importante, y esos
           // mismos tres destinos volvían a estar al pie de la portada: dos

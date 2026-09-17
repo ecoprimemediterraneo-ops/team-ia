@@ -232,9 +232,9 @@ export async function calcularKpis(tenantId: string, perfil: PerfilSector): Prom
           ? { ...base, valor: `${recall.recuperadas} de ${recall.avisados}` }
           : { ...base, valor: null, motivo: "Todavía no se ha enviado ningún aviso de revisión." };
       case "presupuestos_convertidos":
-        // "5 de 14" = de catorce presupuestos vivos, cinco ya se han hecho.
+        // "5 de 14" = de catorce presupuestos dados, cinco se han aceptado.
         return presu
-          ? { ...base, valor: `${presu.ejecutados} de ${presu.total}` }
+          ? { ...base, valor: `${presu.aceptados} de ${presu.total}` }
           : { ...base, valor: null, motivo: "Todavía no hay ningún presupuesto apuntado." };
       default:
         return { ...base, valor: null, motivo: "Todavía no se mide." };

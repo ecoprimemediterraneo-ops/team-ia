@@ -315,6 +315,30 @@ export async function avisarRecall(
   return { ...base, enviado: true, modo: "enviado" };
 }
 
+/**
+ * Marca un aviso de revisión como HECHO A MANO — por teléfono, en persona, en
+ * la ventanilla — sin pasar por WhatsApp. Escribe el MISMO evento
+ * `recall_enviado` que deja `avisarRecall` cuando el envío automático sí
+ * sale: así `avisadoEn` y el KPI "revisiones recuperadas" cuentan un aviso
+ * manual exactamente igual que uno por plantilla — para saber si el paciente
+ * volvió, cómo se le avisó da igual.
+ */
+export async function marcarRevisionAvisadaManual(tenantId: string, c: CandidatoRecall): Promise<void> {
+  await logEvent(tenantId, {
+    id: makeEventId("recall_enviado", c.clave, new Date().toISOString().slice(0, 10)),
+    type: "recall_enviado",
+    channel: "dashboard",
+    senderId: c.telefono,
+    meta: {
+      ultimaVisita: c.ultimaVisita,
+      ultimoServicio: c.ultimoServicio,
+      mesesRecomendados: c.mesesRecomendados,
+      diasDeRetraso: c.diasDeRetraso,
+      manual: true,
+    },
+  }).catch(() => {});
+}
+
 // -----------------------------------------------------------------------------
 // Cuántos volvieron — el KPI
 // -----------------------------------------------------------------------------
