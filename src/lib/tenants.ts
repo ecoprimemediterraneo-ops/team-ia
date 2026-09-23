@@ -110,6 +110,8 @@ export type Tenant = {
    */
   ownerName?: string;
   whatsappPhoneNumberId?: string;          // mapea Meta → tenant (número EMISOR)
+  /** WABA (cuenta de WhatsApp Business) a la que pertenece ese número. Solo informativo/para suscribir el webhook. */
+  whatsappBusinessAccountId?: string;
   ownerWhatsapp?: string;                  // WhatsApp del DUEÑO para recibir avisos (E.164, p.ej. 34656989373)
   instagramUserId?: string;                // mapea Meta → tenant
   /**

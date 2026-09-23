@@ -16,6 +16,7 @@ import { contextoPanelODefecto } from "@/lib/panel-contexto";
 import { PanelClasico } from "@/components/dashboard/PanelClasico";
 import ResumenDelDia from "@/components/gestoria/ResumenDelDia";
 import ContenidoHoyDental from "@/components/dental/ContenidoHoyDental";
+import ContenidoHoyEstetica from "@/components/estetica/ContenidoHoyEstetica";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,17 @@ export default async function DashboardHome() {
   }
   if (ctx.perfil.id === "dental") {
     return <ContenidoHoyDental tenantId={ctx.tenantId} />;
+  }
+  // Estética: misma idea que dental —la agenda del día— pero sin urgencias y
+  // con los leads calientes sin contestar arriba, que es lo que aquí aprieta.
+  if (ctx.perfil.id === "estetica") {
+    return (
+      <ContenidoHoyEstetica
+        tenantId={ctx.tenantId}
+        vocCita={ctx.vocabulario.cita}
+        vocCitaPlural={ctx.vocabulario.citaPlural}
+      />
+    );
   }
   return <PanelClasico />;
 }

@@ -46,7 +46,15 @@ export type EventType =
   | "presupuesto_rechazado"
   | "presupuesto_recordado"
   // Ruta de urgencia dental: un paciente escribió con dolor o urgencia.
-  | "urgencia_marcada";
+  | "urgencia_marcada"
+  // Leads de clínica ESTÉTICA (`estetica-leads.ts`). Nada que ver con
+  // `lead_captured`, que son los leads de la web comercial de AI-Team: estos
+  // son los del negocio del cliente, y por eso llevan su propio nombre.
+  // `lead_estetica_cualificado` lo escribe el enganche de los webhooks de
+  // Pablo y Marta cuando el agente detecta un lead con interés real.
+  | "lead_estetica_creado"
+  | "lead_estetica_estado"
+  | "lead_estetica_cualificado";
 
 export type EventChannel =
   | "pablo"
@@ -205,6 +213,9 @@ export async function getMonthCounts(
     presupuesto_aceptado: 0,
     presupuesto_rechazado: 0,
     presupuesto_recordado: 0,
+    lead_estetica_creado: 0,
+    lead_estetica_estado: 0,
+    lead_estetica_cualificado: 0,
     urgencia_marcada: 0,
   };
   for (const e of events) {

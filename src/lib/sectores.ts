@@ -263,7 +263,12 @@ const ESTETICA: PerfilSector = {
   id: "estetica",
   label: "Clínica estética",
   descripcion: "Medicina y cirugía estética. Pocos leads, ticket alto, decisión lenta.",
-  agentes: ["pablo", "carmen", "marta", "eva", "rocio"],
+  // EL ORDEN IMPORTA: es el orden en que se pintan en el panel. Marta sube
+  // junto a Pablo porque en estética el lead sale de Instagram, no del
+  // teléfono; Rocío entra en el grupo de cabeza porque en un ticket alto la
+  // gente compara reseñas antes de escribir; Carmen detrás (la llamada llega
+  // cuando el lead ya está caliente), y Lucía y Eva al final.
+  agentes: ["pablo", "marta", "rocio", "carmen", "lucia", "eva"],
   kpis: [
     { id: "leads", etiqueta: "Leads del mes", ayuda: "Personas nuevas que han preguntado" },
     { id: "leads_a_valoracion", etiqueta: "Llegan a valoración", ayuda: "Cuántos acaban pidiendo una valoración" },

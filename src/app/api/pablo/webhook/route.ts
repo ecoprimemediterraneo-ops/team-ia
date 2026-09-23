@@ -57,6 +57,7 @@ import { esElGestor, transcribir, entender } from "@/lib/gestoria-audio";
 import { descargarMedia } from "@/lib/gestoria-adjuntos";
 import { esIntencionCancelar, resolverCancelacion, textoCancelacionChat } from "@/lib/booking-cancel-intent";
 import { detectarUrgencia as detectarUrgenciaDental, marcarUrgencia as marcarUrgenciaDental } from "@/lib/dental-urgencias";
+import { detectarLeadCualificado, marcarLeadCualificado, quitarMarcadorLeadCualificado } from "@/lib/estetica-leads";
 import {
   findEntryByProposalId,
   markCalendarEntryRejected,
@@ -682,12 +683,16 @@ export async function POST(req: Request) {
           // interceptor de agenda. Para los otros sectores queda en undefined.
           let modoGest: { gestoria?: boolean } | undefined;
           let esDental = false;
+          // ¿Y una CLÍNICA ESTÉTICA? Ahí lo que hay que no perder no es una
+          // urgencia, es un lead. Ver el enganche más abajo, tras la respuesta.
+          let esEstetica = false;
           try {
             const t = await getTenant(tenantId);
             const sec = t ? resolverSector(t) : null;
             if (sec === "restaurante") modoRest = { restaurante: true };
             if (sec === "gestoria") modoGest = { gestoria: true };
             if (sec === "dental") esDental = true;
+            if (sec === "estetica") esEstetica = true;
           } catch { /* si no se puede saber, se trata como hasta ahora */ }
 
           // === RUTA DE URGENCIA: solo dental. No intercepta nada — Pablo
@@ -908,8 +913,34 @@ export async function POST(req: Request) {
           } catch (err) {
             console.error("[pablo/webhook] no se pudo componer la persona, uso default:", err);
           }
-          const reply = await generateReply(text, customerName, isNew, conv, sectorSystem);
+          let reply = await generateReply(text, customerName, isNew, conv, sectorSystem);
           console.log(`[pablo/webhook] AI reply: "${reply}"`);
+
+          // === LEAD CUALIFICADO: solo estética. No intercepta nada — Pablo
+          // sigue la conversación exactamente igual, esto solo apunta el lead
+          // para que la pestaña "Leads y valoraciones" y el chat del panel
+          // puedan enseñar a quién hay que coger hoy. Mismo patrón, misma
+          // colocación y mismas garantías que la ruta de urgencia de dental de
+          // más arriba: NO se espera (`.catch(() => {})` sin `await`), así que
+          // si falla o tarda no bloquea ni retrasa la respuesta al cliente.
+          //
+          // La señal ya existía y nadie la leía: el prompt de Pablo (ver
+          // `claude.ts`) le pide que, cuando detecte un lead cualificado,
+          // cierre con `[🎯 Lead cualificado: …]`. Se escribía, se enviaba al
+          // cliente dentro del mensaje y se perdía ahí.
+          if (esEstetica) {
+            const resumen = detectarLeadCualificado(reply);
+            if (resumen) {
+              marcarLeadCualificado(tenantId, {
+                telefono: from,
+                nombre: customerName,
+                resumen,
+                canal: "pablo",
+              }).catch(() => {});
+            }
+            // El marcador es de uso interno — nunca debe llegar al cliente.
+            reply = quitarMarcadorLeadCualificado(reply);
+          }
 
           // Enviar de vuelta vía Graph API
           const sendResult = await sendWhatsAppText(from, reply);

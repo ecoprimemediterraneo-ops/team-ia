@@ -291,3 +291,23 @@ export async function sembrarDemos(): Promise<{ id: string; sector: SectorNegoci
   }
   return out;
 }
+
+/**
+ * Deja UNA demo en pie SIN pisar lo que ya tenga. `sembrarDemos()` reescribe el
+ * tenant entero con `upsertTenant({...base, ficha})`, y eso borraría un
+ * `ownerWhatsapp` o un `whatsappPhoneNumberId` que se hubiera puesto después.
+ * Aquí, si el tenant ya existe, se conserva tal cual y solo se rellena lo que le
+ * falte (sector y ficha). Idempotente.
+ */
+export async function sembrarDemoConservando(id: string): Promise<{ id: string; creado: boolean; slug: string } | null> {
+  const d = DEMOS.find((x) => x.id === id);
+  if (!d) return null;
+  const previo = await getTenant(d.id);
+  if (!previo) {
+    await upsertTenant({ ...base(d), ficha: FICHAS[d.sector] });
+  } else if (!previo.sector || !previo.ficha) {
+    await upsertTenant({ ...previo, sector: previo.sector ?? d.sector, ficha: previo.ficha ?? FICHAS[d.sector] });
+  }
+  const slug = await sembrarNegocio(d);
+  return { id: d.id, creado: !previo, slug };
+}

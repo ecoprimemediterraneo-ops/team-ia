@@ -33,10 +33,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     : agents;
   const v = ctx.vocabulario;
   // Solo los sectores con panel rediseñado (ChatGPT/Claude-style, pedido
-  // explícitamente para gestoría y ahora también dental) clavan la cabecera
+  // explícitamente para gestoría, dental y estética) clavan la cabecera
   // arriba del todo. El resto sigue con la cabecera en flujo normal, tal cual
   // estaba — sin `panelFijo` no se añade ninguna clase nueva.
-  const panelFijo = ctx.perfil.id === "gestoria" || ctx.perfil.id === "dental";
+  const panelFijo =
+    ctx.perfil.id === "gestoria" || ctx.perfil.id === "dental" || ctx.perfil.id === "estetica";
 
   return (
     <div className="min-h-screen bg-[color:var(--cream)]">

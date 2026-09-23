@@ -2,7 +2,7 @@
  {
   "id": "gx1",
   "tenantId": "tenant_demo_gestoria",
-  "telefono": "600110011",
+  "telefono": "099000011",
   "clienteNombre": "Talleres Ruiz SL",
   "tramite": "trimestrales",
   "estado": "esperando_documentacion",
@@ -28,7 +28,7 @@
  {
   "id": "gx2",
   "tenantId": "tenant_demo_gestoria",
-  "telefono": "600220022",
+  "telefono": "099000022",
   "clienteNombre": "María Ferrer",
   "tramite": "renta",
   "estado": "esperando_documentacion",
@@ -50,7 +50,7 @@
  {
   "id": "gx3",
   "tenantId": "tenant_demo_gestoria",
-  "telefono": "600330033",
+  "telefono": "099000033",
   "clienteNombre": "Bar El Puerto",
   "tramite": "nominas",
   "estado": "esperando_documentacion",
@@ -72,7 +72,7 @@
  {
   "id": "gx4",
   "tenantId": "tenant_demo_gestoria",
-  "telefono": "600440044",
+  "telefono": "099000044",
   "clienteNombre": "Carmen Lozano",
   "tramite": "autonomos",
   "estado": "en_curso",
@@ -86,7 +86,7 @@
  {
   "id": "gx5",
   "tenantId": "tenant_demo_gestoria",
-  "telefono": "600550055",
+  "telefono": "099000055",
   "clienteNombre": "Distribuciones Vega",
   "tramite": "trimestrales",
   "estado": "presentado",
@@ -107,7 +107,7 @@
  {
   "id": "gx6",
   "tenantId": "tenant_demo_gestoria",
-  "telefono": "600660066",
+  "telefono": "099000066",
   "clienteNombre": "Nuevo Rumbo SL",
   "tramite": "sociedades",
   "estado": "recibido",
@@ -121,7 +121,7 @@
  {
   "id": "gx7",
   "tenantId": "tenant_demo_gestoria",
-  "telefono": "600110011",
+  "telefono": "099000011",
   "clienteNombre": "Talleres Ruiz SL",
   "tramite": "nominas",
   "estado": "en_curso",

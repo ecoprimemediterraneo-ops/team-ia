@@ -8,6 +8,8 @@
 //   - WHATSAPP_PHONE_NUMBER_ID
 //   - WHATSAPP_ACCESS_TOKEN
 
+import { esTelefonoFicticio } from "./telefonos-demo";
+
 const GRAPH_VERSION = "v21.0";
 
 export type WhatsAppSendResult =
@@ -99,6 +101,19 @@ async function registrar(rastro: Rastro | undefined, r: WhatsAppSendResult, tipo
 }
 
 async function postGraph(payload: unknown, rastro?: Rastro, tipo = "texto"): Promise<WhatsAppSendResult> {
+  // FRENO DE LAS DEMOS: un número de demostración no recibe nada, ni en local ni
+  // en producción, tengan los interruptores el valor que tengan. Es el último
+  // candado y el único que no depende de que nadie se acuerde de otro.
+  const para = (payload as { to?: string } | null)?.to;
+  if (para && esTelefonoFicticio(para)) {
+    console.warn(`[whatsapp-sender] BLOQUEADO: "${para}" es un número de demostración. No se llama a Meta.`);
+    const bloqueado: WhatsAppSendResult = {
+      ok: false, reason: "graph_error",
+      detail: "número de demostración: no se envía nada a números ficticios.",
+    };
+    await registrar(rastro, bloqueado, tipo);
+    return bloqueado;
+  }
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const token = process.env.WHATSAPP_ACCESS_TOKEN;
   if (!phoneNumberId || !token) {

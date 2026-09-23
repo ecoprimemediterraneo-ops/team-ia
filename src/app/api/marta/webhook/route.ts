@@ -36,9 +36,10 @@ import { apuntarMensaje } from "@/lib/marta-inbox";
 import { sendInstagramDM, usernameDeIgsid } from "@/lib/marta-graph";
 import { kvTryLock } from "@/lib/supabase";
 import { idiomaDeTexto, type Idioma } from "@/lib/idioma";
-import { getSectorPrompt } from "@/lib/sector-prompts";
+import { getSectorPrompt, buildEsteticaInstagramSystem } from "@/lib/sector-prompts";
 import { resolverSector } from "@/lib/sectores";
 import { getBusinessByTenant } from "@/lib/booking";
+import { detectarLeadCualificado, marcarLeadCualificado, quitarMarcadorLeadCualificado } from "@/lib/estetica-leads";
 import { esIntencionCancelar, resolverCancelacion, textoCancelacionChat } from "@/lib/booking-cancel-intent";
 import {
   tryAgendarFromText,
@@ -472,8 +473,57 @@ export async function POST(req: Request) {
         // Marta contesta en el idioma en que le escriben. Ante la duda, castellano,
         // que es lo de siempre.
         const idiomaCliente = idiomaDeTexto(text);
-        const reply = await generateReply(text, isNew, conv, idiomaCliente);
+
+        // Prompt por sector, SOLO para estética — el resto de tenants (y la
+        // cuenta comercial de AI-Team, sector null) siguen con `martaPrompt`
+        // de siempre. Mismo criterio que Pablo en `/api/pablo/webhook`, pero
+        // sin generalizarlo a los demás sectores hasta que les toque: Marta
+        // hoy no tiene interceptor de reserva propio por sector como Pablo, y
+        // ampliar esto de golpe a dental/gestoría/salón se saldría de lo que
+        // se pidió (dale a Marta su prompt de ESTÉTICA).
+        let sistemaMarta = martaPrompt;
+        try {
+          const t = await getTenant(tenantId);
+          if (t && resolverSector(t) === "estetica") {
+            sistemaMarta = buildEsteticaInstagramSystem();
+          }
+        } catch { /* ante la duda, el prompt comercial de siempre */ }
+
+        let reply = await generateReply(text, isNew, conv, idiomaCliente, sistemaMarta);
         console.log(`[marta/webhook] AI reply: "${reply}"`);
+
+        // === LEAD CUALIFICADO: solo estética. El equivalente al hook de
+        // `/api/pablo/webhook`, y aquí importa MÁS: en una clínica estética el
+        // lead sale de Instagram, así que este es su camino principal.
+        //
+        // No intercepta nada — Marta sigue su conversación igual—, y no se
+        // espera a que termine: si falla o tarda, el DM ya ha salido. El
+        // marcador `[🎯 Lead cualificado: …]` lo insertan los prompts de
+        // agente (ver `claude.ts`) y hasta ahora no lo leía nadie.
+        //
+        // Un lead de Instagram NO trae teléfono: se le identifica por su
+        // @usuario (o, si Meta no lo da, por el IGSID). `estetica-leads.ts`
+        // acepta las dos cosas y deduplica por la que haya.
+        try {
+          const resumen = detectarLeadCualificado(reply);
+          if (resumen) {
+            const t = await getTenant(tenantId);
+            if (t && resolverSector(t) === "estetica") {
+              const usuario = await usernameDeIgsid(senderId).catch(() => undefined);
+              marcarLeadCualificado(tenantId, {
+                instagram: usuario || senderId,
+                nombre: usuario ? `@${usuario}` : "",
+                resumen,
+                canal: "marta",
+              }).catch(() => {});
+            }
+          }
+        } catch { /* nunca puede tumbar el webhook: Meta lo reintentaría */ }
+        // Defensa igual que en Pablo: si el marcador llegó a colarse, nunca
+        // sale hacia el cliente. Hoy Marta no tiene prompt por sector (ver
+        // nota en el informe), así que esto es cinturón por si el día que lo
+        // tenga alguien reutiliza `reply` tal cual.
+        reply = quitarMarcadorLeadCualificado(reply);
 
         const sendResult = await sendInstagramDM(senderId, reply);
         // Enviado SOLO si Meta lo aceptó. Además de `error`, cuentan como no
@@ -611,6 +661,7 @@ async function generateReply(
   firstMessage: boolean,
   conv: Conversation | null,
   idioma: Idioma = "es",
+  sistema: string = martaPrompt,
 ): Promise<string> {
   if (!process.env.ANTHROPIC_API_KEY) {
     return RESPALDO.sinIA[idioma];
@@ -628,7 +679,7 @@ async function generateReply(
     const ai = await anthropic.messages.create({
       model: MODELS.fast,
       max_tokens: 400,
-      system: idioma === "en" ? martaPrompt + INSTRUCCION_INGLES : martaPrompt,
+      system: idioma === "en" ? sistema + INSTRUCCION_INGLES : sistema,
       messages: [
         ...history,
         { role: "user", content: currentUserContent },

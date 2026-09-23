@@ -23,6 +23,7 @@ import { listarMovimientos, listarFacturas } from "@/lib/gestoria-facturas";
 import { pagosSinFacturaPorCliente } from "@/lib/gestoria-conciliacion";
 import PanelGestoriaShell from "@/components/gestoria/PanelGestoriaShell";
 import PanelDentalShell from "@/components/dental/PanelDentalShell";
+import PanelEsteticaShell from "@/components/estetica/PanelEsteticaShell";
 
 export default async function GestoriaLayout({ children }: { children: React.ReactNode }) {
   const ctx = await contextoPanelODefecto();
@@ -56,6 +57,24 @@ export default async function GestoriaLayout({ children }: { children: React.Rea
       <PanelDentalShell tenantNombre={ctx.tenant?.name ?? "Clínica"} tenantId={ctx.tenantId}>
         {children}
       </PanelDentalShell>
+    );
+  }
+
+  // ESTÉTICA — tercera rama, y por el mismo motivo que la de dental: el chat
+  // sobrevive a cambiar de pestaña solo si su marco vive en el LAYOUT, y
+  // `/dashboard` es una única URL para todos los sectores. Sus pestañas usan
+  // rutas propias (`agenda-estetica`, `leads-valoraciones`, `clientas`,
+  // `redes-estetica`) para no pisar las de dental, que rechazan cualquier
+  // perfil que no sea el suyo.
+  if (ctx.perfil.id === "estetica") {
+    return (
+      <PanelEsteticaShell
+        tenantNombre={ctx.tenant?.name ?? "Clínica"}
+        tenantId={ctx.tenantId}
+        etiquetaClientas={ctx.vocabulario.clientePlural.charAt(0).toUpperCase() + ctx.vocabulario.clientePlural.slice(1)}
+      >
+        {children}
+      </PanelEsteticaShell>
     );
   }
 

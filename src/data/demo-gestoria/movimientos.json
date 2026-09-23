@@ -2,7 +2,7 @@
  {
   "id": "mov_mtjw7vrj_20b2lu",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-28",
   "signo": "abono",
   "importe": 631.61,
@@ -16,7 +16,7 @@
  {
   "id": "mov_mtjw7vrj_labqeu",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-27",
   "signo": "cargo",
   "importe": 2693.31,
@@ -30,7 +30,7 @@
  {
   "id": "mov_mtjw7vrj_1an6dq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-27",
   "signo": "cargo",
   "importe": 2711.84,
@@ -44,7 +44,7 @@
  {
   "id": "mov_mtjw7vsv_o3iblr",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-27",
   "signo": "cargo",
   "importe": 271.49,
@@ -58,7 +58,7 @@
  {
   "id": "mov_mtjw7vsv_is3u28",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-27",
   "signo": "cargo",
   "importe": 729.93,
@@ -72,7 +72,7 @@
  {
   "id": "mov_mtjw7vsv_gshl9n",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-27",
   "signo": "cargo",
   "importe": 44.46,
@@ -86,7 +86,7 @@
  {
   "id": "mov_mtjw7vrj_mbc0wv",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-26",
   "signo": "cargo",
   "importe": 1025.27,
@@ -100,7 +100,7 @@
  {
   "id": "mov_mtjw7vrj_alhyfa",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-25",
   "signo": "cargo",
   "importe": 790.2,
@@ -114,7 +114,7 @@
  {
   "id": "mov_mtjw7vrj_7gi0sx",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-24",
   "signo": "cargo",
   "importe": 1182.13,
@@ -128,7 +128,7 @@
  {
   "id": "mov_mtjw7vrj_m0d88f",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-24",
   "signo": "abono",
   "importe": 1021.38,
@@ -142,7 +142,7 @@
  {
   "id": "mov_mtjw7vrj_74jy5o",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-22",
   "signo": "cargo",
   "importe": 1698.94,
@@ -156,7 +156,7 @@
  {
   "id": "mov_mtjw7vrj_n197ne",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-22",
   "signo": "cargo",
   "importe": 368.29,
@@ -170,7 +170,7 @@
  {
   "id": "mov_mtjw7vrj_lnuh98",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-21",
   "signo": "cargo",
   "importe": 2819,
@@ -184,7 +184,7 @@
  {
   "id": "mov_mtjw7vrj_2m2lyp",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-21",
   "signo": "cargo",
   "importe": 2898.35,
@@ -198,7 +198,7 @@
  {
   "id": "mov_mtjw7vsv_stvz9g",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-21",
   "signo": "abono",
   "importe": 836.56,
@@ -212,7 +212,7 @@
  {
   "id": "mov_mtjw7vrj_zlla9h",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-19",
   "signo": "abono",
   "importe": 550.2,
@@ -226,7 +226,7 @@
  {
   "id": "mov_mtjw7vrj_t0a4ss",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-19",
   "signo": "cargo",
   "importe": 1733.14,
@@ -240,7 +240,7 @@
  {
   "id": "mov_mtjw7vsv_trggn8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-19",
   "signo": "cargo",
   "importe": 128.9,
@@ -254,7 +254,7 @@
  {
   "id": "mov_mtjw7vrj_ul4v2z",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-18",
   "signo": "cargo",
   "importe": 2451.47,
@@ -268,7 +268,7 @@
  {
   "id": "mov_mtjw7vrj_incx2j",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-18",
   "signo": "cargo",
   "importe": 1272.37,
@@ -282,7 +282,7 @@
  {
   "id": "mov_mtjw7vsv_cxc54f",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-18",
   "signo": "cargo",
   "importe": 1244.15,
@@ -296,7 +296,7 @@
  {
   "id": "mov_mtjw7vsv_uyrqx5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-18",
   "signo": "cargo",
   "importe": 2477.58,
@@ -310,7 +310,7 @@
  {
   "id": "mov_mtjw7vsv_n0mj57",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-17",
   "signo": "cargo",
   "importe": 2263.73,
@@ -324,7 +324,7 @@
  {
   "id": "mov_mtjw7vrj_q0jiwh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-16",
   "signo": "cargo",
   "importe": 241.46,
@@ -338,7 +338,7 @@
  {
   "id": "mov_mtjw7vrj_zhvpdt",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-16",
   "signo": "cargo",
   "importe": 2338.84,
@@ -352,7 +352,7 @@
  {
   "id": "mov_mtjw7vrj_v8dgf4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-15",
   "signo": "cargo",
   "importe": 1919.76,
@@ -366,7 +366,7 @@
  {
   "id": "mov_mtjw7vrj_1qhufe",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-15",
   "signo": "cargo",
   "importe": 908.09,
@@ -380,7 +380,7 @@
  {
   "id": "mov_mtjw7vrj_4644e0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-15",
   "signo": "cargo",
   "importe": 16.7,
@@ -394,7 +394,7 @@
  {
   "id": "mov_mtjw7vsv_cngz2l",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-15",
   "signo": "cargo",
   "importe": 684.18,
@@ -408,7 +408,7 @@
  {
   "id": "mov_mtjw7vrj_p8luzx",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-14",
   "signo": "cargo",
   "importe": 894.34,
@@ -422,7 +422,7 @@
  {
   "id": "mov_mtjw7vsv_fen5xw",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-14",
   "signo": "cargo",
   "importe": 559.23,
@@ -436,7 +436,7 @@
  {
   "id": "mov_mtjw7vrj_w446es",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-13",
   "signo": "cargo",
   "importe": 1224.52,
@@ -450,7 +450,7 @@
  {
   "id": "mov_mtjw7vrj_3k5k9b",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-13",
   "signo": "cargo",
   "importe": 1284.6,
@@ -464,7 +464,7 @@
  {
   "id": "mov_msri0jvx_p92t7q",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-12",
   "signo": "cargo",
   "importe": 210.7,
@@ -474,14 +474,14 @@
   "factura_id": null,
   "lote_id": "lote_msri0jvu",
   "fecha_importacion": "2026-08-13T12:32:41.130Z",
-  "pedido_a": "600330033",
+  "pedido_a": "099000033",
   "pedido_canal": "whatsapp",
   "pedido_en": "2026-08-14T08:56:06.142Z"
  },
  {
   "id": "mov_mtjw7vrj_c0kkql",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-12",
   "signo": "cargo",
   "importe": 2795.11,
@@ -495,7 +495,7 @@
  {
   "id": "mov_mtjw7vsv_b8s9zh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-12",
   "signo": "cargo",
   "importe": 742.35,
@@ -509,7 +509,7 @@
  {
   "id": "mov_mtjw7vrj_uve25k",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-11",
   "signo": "abono",
   "importe": 38.28,
@@ -523,7 +523,7 @@
  {
   "id": "mov_mtjw7vsv_5fzeux",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-11",
   "signo": "cargo",
   "importe": 2306.16,
@@ -537,7 +537,7 @@
  {
   "id": "mov_msri0jvx_95dfnr",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-10",
   "signo": "cargo",
   "importe": 95,
@@ -552,7 +552,7 @@
  {
   "id": "mov_mtjw7vrj_h5a6pf",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-10",
   "signo": "cargo",
   "importe": 3020.41,
@@ -566,7 +566,7 @@
  {
   "id": "mov_mtjw7vrj_hq5lqq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-10",
   "signo": "cargo",
   "importe": 1334.61,
@@ -580,7 +580,7 @@
  {
   "id": "mov_mtjw7vrj_ms2mgb",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-10",
   "signo": "cargo",
   "importe": 3184.76,
@@ -594,7 +594,7 @@
  {
   "id": "mov_mtjw7vsv_v4w2sf",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-10",
   "signo": "cargo",
   "importe": 299.64,
@@ -608,7 +608,7 @@
  {
   "id": "mov_mtjw7vsv_3cy1g2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-10",
   "signo": "abono",
   "importe": 1051.45,
@@ -622,7 +622,7 @@
  {
   "id": "mov_msri0jvx_9xz71d",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-09",
   "signo": "cargo",
   "importe": 51.49,
@@ -637,7 +637,7 @@
  {
   "id": "mov_msri0jvx_011tjd",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-09",
   "signo": "cargo",
   "importe": 9.15,
@@ -652,7 +652,7 @@
  {
   "id": "mov_msri0jvx_oo36yr",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-08",
   "signo": "cargo",
   "importe": 10.89,
@@ -667,7 +667,7 @@
  {
   "id": "mov_msri0jvx_ufak7h",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-08",
   "signo": "cargo",
   "importe": 108.9,
@@ -682,7 +682,7 @@
  {
   "id": "mov_msri0jvx_9pjp6k",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-08",
   "signo": "cargo",
   "importe": 9.39,
@@ -697,7 +697,7 @@
  {
   "id": "mov_mtjw7vsv_wdwp0y",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-08",
   "signo": "cargo",
   "importe": 299.87,
@@ -711,7 +711,7 @@
  {
   "id": "mov_mtjw7vsv_mankc0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-08",
   "signo": "cargo",
   "importe": 1507.13,
@@ -725,7 +725,7 @@
  {
   "id": "mov_mtjw7vsv_iaxb5y",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-08",
   "signo": "cargo",
   "importe": 1001.47,
@@ -739,7 +739,7 @@
  {
   "id": "mov_msri0jvx_ldvlc7",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-07",
   "signo": "cargo",
   "importe": 18,
@@ -754,7 +754,7 @@
  {
   "id": "mov_mtjw7vsv_4vob4a",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-07",
   "signo": "cargo",
   "importe": 739.17,
@@ -768,7 +768,7 @@
  {
   "id": "mov_msri0jvx_9pyq41",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-06",
   "signo": "cargo",
   "importe": 9.38,
@@ -783,7 +783,7 @@
  {
   "id": "mov_msri0jvx_3koyrn",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-06",
   "signo": "cargo",
   "importe": 224.95,
@@ -798,7 +798,7 @@
  {
   "id": "mov_msri0jvx_ctr7d7",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-06",
   "signo": "cargo",
   "importe": 70,
@@ -813,7 +813,7 @@
  {
   "id": "mov_msri0jvx_68j6ox",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-06",
   "signo": "cargo",
   "importe": 98,
@@ -828,7 +828,7 @@
  {
   "id": "mov_msri0jvx_2ls9i0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-05",
   "signo": "abono",
   "importe": 61.95,
@@ -842,7 +842,7 @@
  {
   "id": "mov_msri0jvx_liihif",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-05",
   "signo": "cargo",
   "importe": 1.56,
@@ -857,7 +857,7 @@
  {
   "id": "mov_msri0jvx_9qkv7p",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-05",
   "signo": "cargo",
   "importe": 72.6,
@@ -872,7 +872,7 @@
  {
   "id": "mov_msri0jvx_zghyx6",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-05",
   "signo": "cargo",
   "importe": 4583.97,
@@ -887,7 +887,7 @@
  {
   "id": "mov_msri0jvx_vz2l0w",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-05",
   "signo": "cargo",
   "importe": 216.42,
@@ -902,7 +902,7 @@
  {
   "id": "mov_msri0jvx_w5skdj",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-05",
   "signo": "cargo",
   "importe": 9.9,
@@ -917,7 +917,7 @@
  {
   "id": "mov_msri0jvx_kf9cv9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-05",
   "signo": "cargo",
   "importe": 95.02,
@@ -932,7 +932,7 @@
  {
   "id": "mov_msri0jvx_4gkb6m",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-05",
   "signo": "cargo",
   "importe": 45.07,
@@ -947,7 +947,7 @@
  {
   "id": "mov_mtjw7vsv_5vjatk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-05",
   "signo": "cargo",
   "importe": 3196.46,
@@ -961,7 +961,7 @@
  {
   "id": "mov_msri0jvx_oqllbv",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "cargo",
   "importe": 14376.65,
@@ -976,7 +976,7 @@
  {
   "id": "mov_msri0jvx_fresl4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "cargo",
   "importe": 10208,
@@ -991,7 +991,7 @@
  {
   "id": "mov_msri0jvx_g0qmz1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "cargo",
   "importe": 3240.67,
@@ -1006,7 +1006,7 @@
  {
   "id": "mov_msri0jvx_laamu0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "cargo",
   "importe": 40907.48,
@@ -1021,7 +1021,7 @@
  {
   "id": "mov_msri0jvx_8w2wyg",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "cargo",
   "importe": 516.88,
@@ -1036,7 +1036,7 @@
  {
   "id": "mov_msri0jvx_uxcoo3",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "cargo",
   "importe": 31.68,
@@ -1051,7 +1051,7 @@
  {
   "id": "mov_msri0jvx_331li6",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "cargo",
   "importe": 6.8,
@@ -1066,7 +1066,7 @@
  {
   "id": "mov_msri0jvx_99ko3u",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "cargo",
   "importe": 459.8,
@@ -1081,7 +1081,7 @@
  {
   "id": "mov_msri0jvx_770phw",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "abono",
   "importe": 13298.23,
@@ -1095,7 +1095,7 @@
  {
   "id": "mov_msri0jvx_ikgjp6",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "abono",
   "importe": 9088.9,
@@ -1109,7 +1109,7 @@
  {
   "id": "mov_msri0jvx_jp7uqa",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "abono",
   "importe": 9674.52,
@@ -1123,7 +1123,7 @@
  {
   "id": "mov_msri0jvx_0d95zd",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "abono",
   "importe": 7720.08,
@@ -1137,7 +1137,7 @@
  {
   "id": "mov_msri0jvx_hkgj2m",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "abono",
   "importe": 6979.49,
@@ -1151,7 +1151,7 @@
  {
   "id": "mov_msri0jvx_dkm18q",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "abono",
   "importe": 4368.46,
@@ -1165,7 +1165,7 @@
  {
   "id": "mov_mtjw7vrj_vgjwr3",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "cargo",
   "importe": 2769.06,
@@ -1179,7 +1179,7 @@
  {
   "id": "mov_mtjw7vrj_oh44m4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-04",
   "signo": "cargo",
   "importe": 2142.35,
@@ -1193,7 +1193,7 @@
  {
   "id": "mov_msri0jvx_179ny4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-03",
   "signo": "cargo",
   "importe": 1530,
@@ -1208,7 +1208,7 @@
  {
   "id": "mov_msri0jvx_6jvtoc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-03",
   "signo": "abono",
   "importe": 16423.95,
@@ -1222,7 +1222,7 @@
  {
   "id": "mov_msri0jvx_1rxjhf",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-03",
   "signo": "abono",
   "importe": 13484.36,
@@ -1236,7 +1236,7 @@
  {
   "id": "mov_msri0jvx_70n4ws",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-03",
   "signo": "abono",
   "importe": 4186.65,
@@ -1250,7 +1250,7 @@
  {
   "id": "mov_mtjw7vrj_51m857",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-03",
   "signo": "cargo",
   "importe": 491.96,
@@ -1264,7 +1264,7 @@
  {
   "id": "mov_mtjw7vsv_olrgei",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600550055",
+  "cliente_id": "099000055",
   "fecha": "2026-08-03",
   "signo": "abono",
   "importe": 3161.44,
@@ -1278,7 +1278,7 @@
  {
   "id": "mov_mtjw7vrj_teuqbv",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-02",
   "signo": "abono",
   "importe": 2382.49,
@@ -1292,7 +1292,7 @@
  {
   "id": "mov_mtjw7vrj_nwpseq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-02",
   "signo": "cargo",
   "importe": 2216.23,
@@ -1306,7 +1306,7 @@
  {
   "id": "mov_mtjw7vrj_3pr6d8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-08-01",
   "signo": "cargo",
   "importe": 2999.3,
@@ -1320,7 +1320,7 @@
  {
   "id": "mov_msri0jvx_qb88n1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-31",
   "signo": "cargo",
   "importe": 1950.5,
@@ -1334,7 +1334,7 @@
  {
   "id": "mov_msri0jvx_zrvcx3",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-31",
   "signo": "cargo",
   "importe": 315,
@@ -1348,7 +1348,7 @@
  {
   "id": "mov_msri0jvx_bfm7hk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-31",
   "signo": "cargo",
   "importe": 80.5,
@@ -1363,7 +1363,7 @@
  {
   "id": "mov_msri0jvx_sqiz9x",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-31",
   "signo": "cargo",
   "importe": 3.29,
@@ -1378,7 +1378,7 @@
  {
   "id": "mov_msri0jvx_9sdwnu",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-31",
   "signo": "cargo",
   "importe": 56.83,
@@ -1393,7 +1393,7 @@
  {
   "id": "mov_msri0jvx_j353yd",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-30",
   "signo": "cargo",
   "importe": 441.05,
@@ -1408,7 +1408,7 @@
  {
   "id": "mov_msri0jvx_2ibnnu",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-30",
   "signo": "cargo",
   "importe": 1581.92,
@@ -1422,7 +1422,7 @@
  {
   "id": "mov_msri0jvx_jv53ri",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-30",
   "signo": "cargo",
   "importe": 1490,
@@ -1436,7 +1436,7 @@
  {
   "id": "mov_msri0jvx_fkn9i2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-30",
   "signo": "cargo",
   "importe": 2353.95,
@@ -1450,7 +1450,7 @@
  {
   "id": "mov_msri0jvx_r58uht",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-30",
   "signo": "cargo",
   "importe": 993.22,
@@ -1464,7 +1464,7 @@
  {
   "id": "mov_msri0jvx_9oi579",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-30",
   "signo": "cargo",
   "importe": 1154.23,
@@ -1478,7 +1478,7 @@
  {
   "id": "mov_msri0jvx_a3578y",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-29",
   "signo": "cargo",
   "importe": 100,
@@ -1493,7 +1493,7 @@
  {
   "id": "mov_msri0jvx_jbady4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-29",
   "signo": "cargo",
   "importe": 1479.22,
@@ -1508,7 +1508,7 @@
  {
   "id": "mov_msri0jvx_qnak47",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-29",
   "signo": "cargo",
   "importe": 50,
@@ -1523,7 +1523,7 @@
  {
   "id": "mov_msri0jvx_b1pbxt",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-28",
   "signo": "cargo",
   "importe": 3.74,
@@ -1538,7 +1538,7 @@
  {
   "id": "mov_msri0jvx_lsus66",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-28",
   "signo": "cargo",
   "importe": 18,
@@ -1553,7 +1553,7 @@
  {
   "id": "mov_msri0jvx_k6thvs",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-28",
   "signo": "cargo",
   "importe": 21.94,
@@ -1568,7 +1568,7 @@
  {
   "id": "mov_msri0jvx_xkkz0j",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-28",
   "signo": "cargo",
   "importe": 525.52,
@@ -1583,7 +1583,7 @@
  {
   "id": "mov_msri0jvx_bdzt6u",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-27",
   "signo": "cargo",
   "importe": 6030.67,
@@ -1597,7 +1597,7 @@
  {
   "id": "mov_msri0jvx_8wijli",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-27",
   "signo": "abono",
   "importe": 3.95,
@@ -1611,7 +1611,7 @@
  {
   "id": "mov_msri0jvx_gt9i5f",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-27",
   "signo": "abono",
   "importe": 3.95,
@@ -1625,7 +1625,7 @@
  {
   "id": "mov_msri0jvx_8b40ko",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-25",
   "signo": "cargo",
   "importe": 93.51,
@@ -1640,7 +1640,7 @@
  {
   "id": "mov_msri0jvx_3of70i",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-25",
   "signo": "cargo",
   "importe": 4.62,
@@ -1655,7 +1655,7 @@
  {
   "id": "mov_msri0jvx_e2rbxf",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-24",
   "signo": "cargo",
   "importe": 141.61,
@@ -1670,7 +1670,7 @@
  {
   "id": "mov_msri0jvx_x2524p",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-24",
   "signo": "cargo",
   "importe": 3.95,
@@ -1684,7 +1684,7 @@
  {
   "id": "mov_msri0jvx_cyo5b6",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-24",
   "signo": "cargo",
   "importe": 599.36,
@@ -1699,7 +1699,7 @@
  {
   "id": "mov_msri0jvx_vmyq4i",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-24",
   "signo": "cargo",
   "importe": 250,
@@ -1714,7 +1714,7 @@
  {
   "id": "mov_msri0jvx_49p0dx",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-24",
   "signo": "cargo",
   "importe": 3.95,
@@ -1728,7 +1728,7 @@
  {
   "id": "mov_msri0jvx_c9qkbb",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-23",
   "signo": "abono",
   "importe": 6082.34,
@@ -1742,7 +1742,7 @@
  {
   "id": "mov_msri0jvx_ui4ngv",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-23",
   "signo": "abono",
   "importe": 5456.06,
@@ -1756,7 +1756,7 @@
  {
   "id": "mov_msri0jvx_alkxqw",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-22",
   "signo": "cargo",
   "importe": 49.29,
@@ -1771,7 +1771,7 @@
  {
   "id": "mov_msri0jvx_1ul8ki",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-22",
   "signo": "cargo",
   "importe": 10,
@@ -1786,7 +1786,7 @@
  {
   "id": "mov_msri0jvx_f9x8ia",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-21",
   "signo": "cargo",
   "importe": 50,
@@ -1801,7 +1801,7 @@
  {
   "id": "mov_msri0jvx_ehsf22",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-20",
   "signo": "cargo",
   "importe": 4129.62,
@@ -1815,7 +1815,7 @@
  {
   "id": "mov_msri0jvx_4vcseo",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-20",
   "signo": "cargo",
   "importe": 3.82,
@@ -1830,7 +1830,7 @@
  {
   "id": "mov_msri0jvx_ylys7d",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-20",
   "signo": "cargo",
   "importe": 855,
@@ -1844,7 +1844,7 @@
  {
   "id": "mov_msri0jvx_rfozrb",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-20",
   "signo": "cargo",
   "importe": 610.51,
@@ -1858,7 +1858,7 @@
  {
   "id": "mov_msri0jvx_66fv85",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-19",
   "signo": "cargo",
   "importe": 54.52,
@@ -1873,7 +1873,7 @@
  {
   "id": "mov_msri0jvx_ygi5z5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-18",
   "signo": "cargo",
   "importe": 61.62,
@@ -1888,7 +1888,7 @@
  {
   "id": "mov_msri0jvx_pckzge",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-18",
   "signo": "cargo",
   "importe": 106.4,
@@ -1903,7 +1903,7 @@
  {
   "id": "mov_msri0jvx_zf3ads",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-18",
   "signo": "cargo",
   "importe": 97.59,
@@ -1918,7 +1918,7 @@
  {
   "id": "mov_msri0jvx_japr79",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-17",
   "signo": "cargo",
   "importe": 85.48,
@@ -1933,7 +1933,7 @@
  {
   "id": "mov_msri0jvx_dz0x26",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-17",
   "signo": "cargo",
   "importe": 67.2,
@@ -1948,7 +1948,7 @@
  {
   "id": "mov_msri0jvx_a2km49",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-17",
   "signo": "cargo",
   "importe": 138.2,
@@ -1963,7 +1963,7 @@
  {
   "id": "mov_msri0jvx_s9j8cc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-17",
   "signo": "cargo",
   "importe": 25,
@@ -1978,7 +1978,7 @@
  {
   "id": "mov_msri0jvx_tjq3c9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-16",
   "signo": "cargo",
   "importe": 45.92,
@@ -1993,7 +1993,7 @@
  {
   "id": "mov_msri0jvx_pdxmwt",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-16",
   "signo": "cargo",
   "importe": 14.5,
@@ -2008,7 +2008,7 @@
  {
   "id": "mov_msri0jvx_5p4733",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-16",
   "signo": "cargo",
   "importe": 13.03,
@@ -2023,7 +2023,7 @@
  {
   "id": "mov_msri0jvx_7cey8g",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-16",
   "signo": "abono",
   "importe": 2581.46,
@@ -2037,7 +2037,7 @@
  {
   "id": "mov_msri0jvx_n7si19",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-15",
   "signo": "cargo",
   "importe": 22.16,
@@ -2052,7 +2052,7 @@
  {
   "id": "mov_msri0jvx_322zow",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-15",
   "signo": "cargo",
   "importe": 48,
@@ -2067,7 +2067,7 @@
  {
   "id": "mov_msri0jvx_l7l0zd",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-15",
   "signo": "cargo",
   "importe": 172.41,
@@ -2082,7 +2082,7 @@
  {
   "id": "mov_msri0jvx_62ms6r",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-14",
   "signo": "cargo",
   "importe": 22.81,
@@ -2097,7 +2097,7 @@
  {
   "id": "mov_msri0jvx_df1uh1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-14",
   "signo": "cargo",
   "importe": 12,
@@ -2112,7 +2112,7 @@
  {
   "id": "mov_msri0jvx_c56zvw",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-14",
   "signo": "cargo",
   "importe": 19.01,
@@ -2127,7 +2127,7 @@
  {
   "id": "mov_msri0jvx_xt53vp",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-13",
   "signo": "cargo",
   "importe": 30,
@@ -2142,7 +2142,7 @@
  {
   "id": "mov_msri0jvx_lwy7ra",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-13",
   "signo": "cargo",
   "importe": 24.63,
@@ -2157,7 +2157,7 @@
  {
   "id": "mov_msri0jvx_dqinnq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-13",
   "signo": "cargo",
   "importe": 3.85,
@@ -2172,7 +2172,7 @@
  {
   "id": "mov_msri0jvx_mfagcz",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-13",
   "signo": "cargo",
   "importe": 435.6,
@@ -2187,7 +2187,7 @@
  {
   "id": "mov_msri0jvx_6fpy8d",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-11",
   "signo": "cargo",
   "importe": 50,
@@ -2202,7 +2202,7 @@
  {
   "id": "mov_msri0jvx_wr6ui3",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-11",
   "signo": "cargo",
   "importe": 477.95,
@@ -2217,7 +2217,7 @@
  {
   "id": "mov_msri0jvx_qbz86o",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-11",
   "signo": "cargo",
   "importe": 69.04,
@@ -2232,7 +2232,7 @@
  {
   "id": "mov_msri0jvx_ivzcps",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-11",
   "signo": "cargo",
   "importe": 1.93,
@@ -2247,7 +2247,7 @@
  {
   "id": "mov_msri0jvx_sduo9e",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-11",
   "signo": "cargo",
   "importe": 30,
@@ -2262,7 +2262,7 @@
  {
   "id": "mov_msri0jvx_ri2bt6",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-10",
   "signo": "cargo",
   "importe": 1.93,
@@ -2277,7 +2277,7 @@
  {
   "id": "mov_msri0jvx_awq08n",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-10",
   "signo": "cargo",
   "importe": 17.46,
@@ -2292,7 +2292,7 @@
  {
   "id": "mov_msri0jvx_z1ba6v",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-10",
   "signo": "cargo",
   "importe": 4.62,
@@ -2307,7 +2307,7 @@
  {
   "id": "mov_msri0jvx_age278",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-09",
   "signo": "cargo",
   "importe": 25.37,
@@ -2322,7 +2322,7 @@
  {
   "id": "mov_msri0jvx_koqou6",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-09",
   "signo": "cargo",
   "importe": 12087.92,
@@ -2337,7 +2337,7 @@
  {
   "id": "mov_msri0jvx_n7yunl",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-09",
   "signo": "cargo",
   "importe": 8932,
@@ -2352,7 +2352,7 @@
  {
   "id": "mov_msri0jvx_dlmdd0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-09",
   "signo": "cargo",
   "importe": 72.6,
@@ -2367,7 +2367,7 @@
  {
   "id": "mov_msri0jvx_j6cnnc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-08",
   "signo": "cargo",
   "importe": 13.45,
@@ -2382,7 +2382,7 @@
  {
   "id": "mov_msri0jvx_yoe08c",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-08",
   "signo": "cargo",
   "importe": 38675.28,
@@ -2397,7 +2397,7 @@
  {
   "id": "mov_msri0jvx_loxup8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-08",
   "signo": "cargo",
   "importe": 5877.42,
@@ -2412,7 +2412,7 @@
  {
   "id": "mov_msri0jvx_qfpyxc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-08",
   "signo": "cargo",
   "importe": 5778.76,
@@ -2427,7 +2427,7 @@
  {
   "id": "mov_msri0jvx_oksi1c",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-08",
   "signo": "cargo",
   "importe": 108.9,
@@ -2442,7 +2442,7 @@
  {
   "id": "mov_msri0jvx_zl8l7c",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-08",
   "signo": "cargo",
   "importe": 19.74,
@@ -2457,7 +2457,7 @@
  {
   "id": "mov_msri0jvx_xbfnjz",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-07",
   "signo": "cargo",
   "importe": 24.82,
@@ -2472,7 +2472,7 @@
  {
   "id": "mov_msri0jvx_kx48ub",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-07",
   "signo": "cargo",
   "importe": 68,
@@ -2487,7 +2487,7 @@
  {
   "id": "mov_msri0jvx_dw2ole",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-07",
   "signo": "cargo",
   "importe": 106.65,
@@ -2502,7 +2502,7 @@
  {
   "id": "mov_msri0jvx_dffqdw",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-07",
   "signo": "cargo",
   "importe": 6.24,
@@ -2517,7 +2517,7 @@
  {
   "id": "mov_msri0jvx_rikjc9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-06",
   "signo": "abono",
   "importe": 7880.59,
@@ -2531,7 +2531,7 @@
  {
   "id": "mov_msri0jvx_nws1qh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-06",
   "signo": "abono",
   "importe": 12221.23,
@@ -2545,7 +2545,7 @@
  {
   "id": "mov_msri0jvx_poqtas",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-06",
   "signo": "abono",
   "importe": 8316.68,
@@ -2559,7 +2559,7 @@
  {
   "id": "mov_msri0jvx_wdghz9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-06",
   "signo": "abono",
   "importe": 9685.47,
@@ -2573,7 +2573,7 @@
  {
   "id": "mov_msri0jvx_xb38ag",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-06",
   "signo": "abono",
   "importe": 6927.35,
@@ -2587,7 +2587,7 @@
  {
   "id": "mov_msri0jvx_vis9bw",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-06",
   "signo": "abono",
   "importe": 6621.84,
@@ -2601,7 +2601,7 @@
  {
   "id": "mov_msri0jvx_mw80bp",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-06",
   "signo": "abono",
   "importe": 4476.27,
@@ -2615,7 +2615,7 @@
  {
   "id": "mov_msri0jvx_xlq483",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-06",
   "signo": "cargo",
   "importe": 19.8,
@@ -2630,7 +2630,7 @@
  {
   "id": "mov_msri0jvx_xauzqg",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-06",
   "signo": "cargo",
   "importe": 1530,
@@ -2645,7 +2645,7 @@
  {
   "id": "mov_msri0jvx_j8yq18",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-06",
   "signo": "cargo",
   "importe": 78.75,
@@ -2660,7 +2660,7 @@
  {
   "id": "mov_msri0jvx_w3f9ly",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-05",
   "signo": "cargo",
   "importe": 45.69,
@@ -2675,7 +2675,7 @@
  {
   "id": "mov_msri0jvx_98b7j8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-04",
   "signo": "cargo",
   "importe": 19.87,
@@ -2690,7 +2690,7 @@
  {
   "id": "mov_msri0jvx_v7jcq8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-04",
   "signo": "cargo",
   "importe": 4.8,
@@ -2705,7 +2705,7 @@
  {
   "id": "mov_msri0jvx_62no6n",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-03",
   "signo": "cargo",
   "importe": 6.8,
@@ -2720,7 +2720,7 @@
  {
   "id": "mov_msri0jvx_j3vqzq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-03",
   "signo": "cargo",
   "importe": 37,
@@ -2735,7 +2735,7 @@
  {
   "id": "mov_msri0jvx_5vtber",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-02",
   "signo": "cargo",
   "importe": 55.3,
@@ -2750,7 +2750,7 @@
  {
   "id": "mov_msri0jvx_uddeji",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-02",
   "signo": "abono",
   "importe": 266.74,
@@ -2764,7 +2764,7 @@
  {
   "id": "mov_msri0jvx_w855u3",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-01",
   "signo": "cargo",
   "importe": 68,
@@ -2779,7 +2779,7 @@
  {
   "id": "mov_msri0jvx_y385ks",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-01",
   "signo": "cargo",
   "importe": 1495,
@@ -2793,7 +2793,7 @@
  {
   "id": "mov_msri0jvx_w1gon3",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-01",
   "signo": "cargo",
   "importe": 1490,
@@ -2807,7 +2807,7 @@
  {
   "id": "mov_msri0jvx_h7qkru",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-01",
   "signo": "cargo",
   "importe": 2795,
@@ -2821,7 +2821,7 @@
  {
   "id": "mov_msri0jvx_b78pea",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-01",
   "signo": "cargo",
   "importe": 1098.13,
@@ -2835,7 +2835,7 @@
  {
   "id": "mov_msri0jvx_3jk1hk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-01",
   "signo": "abono",
   "importe": 11526.66,
@@ -2849,7 +2849,7 @@
  {
   "id": "mov_msri0jvx_jfhsn5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-01",
   "signo": "abono",
   "importe": 12799.82,
@@ -2863,7 +2863,7 @@
  {
   "id": "mov_msri0jvx_crw4zu",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-07-01",
   "signo": "abono",
   "importe": 2720.84,
@@ -2877,7 +2877,7 @@
  {
   "id": "mov_msri0jvx_c29t0m",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-30",
   "signo": "cargo",
   "importe": 1950.5,
@@ -2891,7 +2891,7 @@
  {
   "id": "mov_msri0jvx_ot7m7p",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-30",
   "signo": "cargo",
   "importe": 315,
@@ -2905,7 +2905,7 @@
  {
   "id": "mov_msri0jvx_bw1xu4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-30",
   "signo": "cargo",
   "importe": 9.15,
@@ -2920,7 +2920,7 @@
  {
   "id": "mov_msri0jvx_zlq9yl",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-30",
   "signo": "cargo",
   "importe": 13.43,
@@ -2935,7 +2935,7 @@
  {
   "id": "mov_msri0jvx_o2goxp",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-30",
   "signo": "cargo",
   "importe": 88.92,
@@ -2950,7 +2950,7 @@
  {
   "id": "mov_msri0jvx_fi2fzj",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-30",
   "signo": "cargo",
   "importe": 56.83,
@@ -2965,7 +2965,7 @@
  {
   "id": "mov_msri0jvx_kaaqkb",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-30",
   "signo": "cargo",
   "importe": 1000,
@@ -2980,7 +2980,7 @@
  {
   "id": "mov_msri0jvx_hkwrs2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-29",
   "signo": "abono",
   "importe": 29.86,
@@ -2994,7 +2994,7 @@
  {
   "id": "mov_msri0jvx_1wz10c",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-29",
   "signo": "cargo",
   "importe": 388.24,
@@ -3009,7 +3009,7 @@
  {
   "id": "mov_msri0jvx_tbe8va",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-27",
   "signo": "cargo",
   "importe": 1479.22,
@@ -3024,7 +3024,7 @@
  {
   "id": "mov_msri0jvx_ijy6e4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-27",
   "signo": "cargo",
   "importe": 12.95,
@@ -3039,7 +3039,7 @@
  {
   "id": "mov_msri0jvx_hh1ffj",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-26",
   "signo": "cargo",
   "importe": 7.4,
@@ -3054,7 +3054,7 @@
  {
   "id": "mov_msri0jvx_h8zf6d",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-26",
   "signo": "cargo",
   "importe": 162.89,
@@ -3069,7 +3069,7 @@
  {
   "id": "mov_msri0jvx_gje9ny",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-25",
   "signo": "cargo",
   "importe": 3.12,
@@ -3084,7 +3084,7 @@
  {
   "id": "mov_msri0jvx_tqp6fd",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-25",
   "signo": "cargo",
   "importe": 59.99,
@@ -3099,7 +3099,7 @@
  {
   "id": "mov_msri0jvx_bbt0n6",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-25",
   "signo": "cargo",
   "importe": 5.95,
@@ -3114,7 +3114,7 @@
  {
   "id": "mov_msri0jvx_tcxcl4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-24",
   "signo": "cargo",
   "importe": 86.3,
@@ -3129,7 +3129,7 @@
  {
   "id": "mov_msri0jvx_h93nzs",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-24",
   "signo": "cargo",
   "importe": 18.68,
@@ -3144,7 +3144,7 @@
  {
   "id": "mov_msri0jvx_ob2bwu",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-24",
   "signo": "cargo",
   "importe": 92.1,
@@ -3159,7 +3159,7 @@
  {
   "id": "mov_msri0jvx_uxvpss",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-24",
   "signo": "abono",
   "importe": 8021.12,
@@ -3173,7 +3173,7 @@
  {
   "id": "mov_msri0jvx_di8prm",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-24",
   "signo": "abono",
   "importe": 6176.18,
@@ -3187,7 +3187,7 @@
  {
   "id": "mov_msri0jvx_cbdjh0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-23",
   "signo": "cargo",
   "importe": 6116.24,
@@ -3202,7 +3202,7 @@
  {
   "id": "mov_msri0jvx_se3o4v",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-23",
   "signo": "cargo",
   "importe": 7.05,
@@ -3217,7 +3217,7 @@
  {
   "id": "mov_msri0jvx_5cdgqt",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-23",
   "signo": "cargo",
   "importe": 9.41,
@@ -3232,7 +3232,7 @@
  {
   "id": "mov_msri0jvx_vruj6h",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-21",
   "signo": "cargo",
   "importe": 18.15,
@@ -3247,7 +3247,7 @@
  {
   "id": "mov_msri0jvx_t2b20v",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-20",
   "signo": "cargo",
   "importe": 1.62,
@@ -3262,7 +3262,7 @@
  {
   "id": "mov_msri0jvx_cmw3ix",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-20",
   "signo": "cargo",
   "importe": 5.5,
@@ -3277,7 +3277,7 @@
  {
   "id": "mov_msri0jvx_btiuyb",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-20",
   "signo": "cargo",
   "importe": 68.15,
@@ -3292,7 +3292,7 @@
  {
   "id": "mov_msri0jvx_o8n9d3",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-19",
   "signo": "cargo",
   "importe": 11.6,
@@ -3307,7 +3307,7 @@
  {
   "id": "mov_msri0jvx_f56mri",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-19",
   "signo": "cargo",
   "importe": 6.15,
@@ -3322,7 +3322,7 @@
  {
   "id": "mov_msri0jvx_ikfov8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-18",
   "signo": "cargo",
   "importe": 75.42,
@@ -3337,7 +3337,7 @@
  {
   "id": "mov_msri0jvx_gqe4q9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-17",
   "signo": "cargo",
   "importe": 88.92,
@@ -3352,7 +3352,7 @@
  {
   "id": "mov_msri0jvx_zmizg5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-17",
   "signo": "abono",
   "importe": 88.92,
@@ -3366,7 +3366,7 @@
  {
   "id": "mov_msri0jvx_p7v2ak",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-17",
   "signo": "cargo",
   "importe": 88.92,
@@ -3381,7 +3381,7 @@
  {
   "id": "mov_msri0jvx_4akxf2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-17",
   "signo": "abono",
   "importe": 88.92,
@@ -3395,7 +3395,7 @@
  {
   "id": "mov_msri0jvx_yxo1mw",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-17",
   "signo": "cargo",
   "importe": 88.92,
@@ -3410,7 +3410,7 @@
  {
   "id": "mov_msri0jvx_kr0xu9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-17",
   "signo": "abono",
   "importe": 88.92,
@@ -3424,7 +3424,7 @@
  {
   "id": "mov_msri0jvx_3tegj5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-17",
   "signo": "cargo",
   "importe": 162.25,
@@ -3439,7 +3439,7 @@
  {
   "id": "mov_msri0jvx_1bgfo4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-17",
   "signo": "abono",
   "importe": 162.25,
@@ -3453,7 +3453,7 @@
  {
   "id": "mov_msri0jvx_mmdwcm",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-17",
   "signo": "cargo",
   "importe": 117.25,
@@ -3468,7 +3468,7 @@
  {
   "id": "mov_msri0jvx_va2qpl",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-17",
   "signo": "cargo",
   "importe": 92.66,
@@ -3483,7 +3483,7 @@
  {
   "id": "mov_msri0jvx_8o9smp",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-15",
   "signo": "cargo",
   "importe": 4.16,
@@ -3498,7 +3498,7 @@
  {
   "id": "mov_msri0jvx_bj6prt",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-14",
   "signo": "cargo",
   "importe": 19.01,
@@ -3513,7 +3513,7 @@
  {
   "id": "mov_msri0jvx_owbzlc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-14",
   "signo": "cargo",
   "importe": 12,
@@ -3528,7 +3528,7 @@
  {
   "id": "mov_msri0jvx_52wzl7",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-13",
   "signo": "cargo",
   "importe": 9.88,
@@ -3543,7 +3543,7 @@
  {
   "id": "mov_msri0jvx_4gno7h",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-13",
   "signo": "cargo",
   "importe": 4.16,
@@ -3558,7 +3558,7 @@
  {
   "id": "mov_msri0jvx_vqo36b",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-12",
   "signo": "cargo",
   "importe": 19.39,
@@ -3573,7 +3573,7 @@
  {
   "id": "mov_msri0jvx_z2gfcd",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-11",
   "signo": "cargo",
   "importe": 11584.77,
@@ -3588,7 +3588,7 @@
  {
   "id": "mov_msri0jvx_p94mq7",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-11",
   "signo": "cargo",
   "importe": 21.68,
@@ -3603,7 +3603,7 @@
  {
   "id": "mov_msri0jvx_u7hucf",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-11",
   "signo": "cargo",
   "importe": 89.47,
@@ -3618,7 +3618,7 @@
  {
   "id": "mov_msri0jvx_a2yep9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-10",
   "signo": "abono",
   "importe": 128.5,
@@ -3632,7 +3632,7 @@
  {
   "id": "mov_msri0jvx_k90w1n",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-10",
   "signo": "cargo",
   "importe": 1530,
@@ -3647,7 +3647,7 @@
  {
   "id": "mov_msri0jvx_4i0mf2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-10",
   "signo": "cargo",
   "importe": 40,
@@ -3662,7 +3662,7 @@
  {
   "id": "mov_msri0jvx_mtbyz9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-10",
   "signo": "cargo",
   "importe": 40,
@@ -3677,7 +3677,7 @@
  {
   "id": "mov_msri0jvx_gva29p",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-10",
   "signo": "cargo",
   "importe": 459.8,
@@ -3692,7 +3692,7 @@
  {
   "id": "mov_msri0jvx_fhdzap",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-10",
   "signo": "abono",
   "importe": 4698.57,
@@ -3706,7 +3706,7 @@
  {
   "id": "mov_msri0jvx_0vntsl",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-09",
   "signo": "cargo",
   "importe": 5199.89,
@@ -3721,7 +3721,7 @@
  {
   "id": "mov_msri0jvx_97osa6",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-09",
   "signo": "cargo",
   "importe": 134.03,
@@ -3736,7 +3736,7 @@
  {
   "id": "mov_msri0jvx_spgvrd",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-09",
   "signo": "cargo",
   "importe": 126.45,
@@ -3751,7 +3751,7 @@
  {
   "id": "mov_msri0jvx_lroor5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-09",
   "signo": "cargo",
   "importe": 7656,
@@ -3766,7 +3766,7 @@
  {
   "id": "mov_msri0jvx_j9s23b",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-09",
   "signo": "cargo",
   "importe": 7857.69,
@@ -3781,7 +3781,7 @@
  {
   "id": "mov_msri0jvx_flm687",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-09",
   "signo": "cargo",
   "importe": 40722.12,
@@ -3796,7 +3796,7 @@
  {
   "id": "mov_msri0jvx_c8oqpb",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-09",
   "signo": "cargo",
   "importe": 68,
@@ -3811,7 +3811,7 @@
  {
   "id": "mov_msri0jvx_uwv631",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-09",
   "signo": "cargo",
   "importe": 108.9,
@@ -3826,7 +3826,7 @@
  {
   "id": "mov_msri0jvx_wrzbsk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-08",
   "signo": "cargo",
   "importe": 6.84,
@@ -3841,7 +3841,7 @@
  {
   "id": "mov_msri0jvx_hyfhvs",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-08",
   "signo": "cargo",
   "importe": 10,
@@ -3856,7 +3856,7 @@
  {
   "id": "mov_msri0jvx_gl6ja4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-07",
   "signo": "cargo",
   "importe": 28.01,
@@ -3871,7 +3871,7 @@
  {
   "id": "mov_msri0jvx_xdt927",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-06",
   "signo": "cargo",
   "importe": 11.7,
@@ -3886,7 +3886,7 @@
  {
   "id": "mov_msri0jvx_4uyok8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-06",
   "signo": "cargo",
   "importe": 17.4,
@@ -3901,7 +3901,7 @@
  {
   "id": "mov_msri0jvx_hobq2o",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-06",
   "signo": "cargo",
   "importe": 147.5,
@@ -3916,7 +3916,7 @@
  {
   "id": "mov_msri0jvx_tao2ju",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-06",
   "signo": "cargo",
   "importe": 72.6,
@@ -3931,7 +3931,7 @@
  {
   "id": "mov_msri0jvx_gd7gmp",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-06",
   "signo": "cargo",
   "importe": 9.27,
@@ -3946,7 +3946,7 @@
  {
   "id": "mov_msri0jvx_olgm6m",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-05",
   "signo": "cargo",
   "importe": 11.02,
@@ -3961,7 +3961,7 @@
  {
   "id": "mov_msri0jvx_ijvuwu",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-05",
   "signo": "cargo",
   "importe": 91.89,
@@ -3976,7 +3976,7 @@
  {
   "id": "mov_msri0jvx_vci2yc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-05",
   "signo": "cargo",
   "importe": 21.47,
@@ -3991,7 +3991,7 @@
  {
   "id": "mov_msri0jvx_rtelrm",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-04",
   "signo": "cargo",
   "importe": 11.34,
@@ -4006,7 +4006,7 @@
  {
   "id": "mov_msri0jvx_8vniap",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-04",
   "signo": "cargo",
   "importe": 2.8,
@@ -4021,7 +4021,7 @@
  {
   "id": "mov_msri0jvx_4yzazo",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-04",
   "signo": "cargo",
   "importe": 38.49,
@@ -4036,7 +4036,7 @@
  {
   "id": "mov_msri0jvx_umdnqf",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-04",
   "signo": "abono",
   "importe": 10118.4,
@@ -4050,7 +4050,7 @@
  {
   "id": "mov_msri0jvx_lumzj0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-04",
   "signo": "abono",
   "importe": 7049,
@@ -4064,7 +4064,7 @@
  {
   "id": "mov_msri0jvx_ng8ltr",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-04",
   "signo": "abono",
   "importe": 10677.29,
@@ -4078,7 +4078,7 @@
  {
   "id": "mov_msri0jvx_xkw31a",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-04",
   "signo": "abono",
   "importe": 7772.12,
@@ -4092,7 +4092,7 @@
  {
   "id": "mov_msri0jvx_78nod8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-04",
   "signo": "abono",
   "importe": 8166.84,
@@ -4106,7 +4106,7 @@
  {
   "id": "mov_msri0jvx_v1kypn",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-04",
   "signo": "abono",
   "importe": 4616.16,
@@ -4120,7 +4120,7 @@
  {
   "id": "mov_msri0jvx_3bkkrw",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-04",
   "signo": "abono",
   "importe": 13090.54,
@@ -4134,7 +4134,7 @@
  {
   "id": "mov_msri0jvx_7j1vdk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-03",
   "signo": "cargo",
   "importe": 64,
@@ -4149,7 +4149,7 @@
  {
   "id": "mov_msri0jvx_jpsr23",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-03",
   "signo": "cargo",
   "importe": 2.63,
@@ -4164,7 +4164,7 @@
  {
   "id": "mov_msri0jvx_lv547q",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-03",
   "signo": "abono",
   "importe": 10777.21,
@@ -4178,7 +4178,7 @@
  {
   "id": "mov_msri0jvx_l4bcob",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-03",
   "signo": "abono",
   "importe": 1805.99,
@@ -4192,7 +4192,7 @@
  {
   "id": "mov_msri0jvx_py9a68",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-03",
   "signo": "abono",
   "importe": 12264.62,
@@ -4206,7 +4206,7 @@
  {
   "id": "mov_msri0jvx_42yyri",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-01",
   "signo": "cargo",
   "importe": 16.18,
@@ -4221,7 +4221,7 @@
  {
   "id": "mov_msri0jvx_dqw6zn",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-01",
   "signo": "abono",
   "importe": 450,
@@ -4235,7 +4235,7 @@
  {
   "id": "mov_msri0jvx_n2r6b2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-01",
   "signo": "cargo",
   "importe": 450,
@@ -4249,7 +4249,7 @@
  {
   "id": "mov_msri0jvx_34gqyj",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-01",
   "signo": "cargo",
   "importe": 1495,
@@ -4263,7 +4263,7 @@
  {
   "id": "mov_msri0jvx_m6ovi8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-01",
   "signo": "cargo",
   "importe": 1490,
@@ -4277,7 +4277,7 @@
  {
   "id": "mov_msri0jvx_g945vg",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-01",
   "signo": "cargo",
   "importe": 2795,
@@ -4291,7 +4291,7 @@
  {
   "id": "mov_msri0jvx_i8tml1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-01",
   "signo": "cargo",
   "importe": 1098.13,
@@ -4305,7 +4305,7 @@
  {
   "id": "mov_msri0jvx_xsim7w",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-01",
   "signo": "cargo",
   "importe": 326.69,
@@ -4320,7 +4320,7 @@
  {
   "id": "mov_msri0jvx_3j4bao",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-06-01",
   "signo": "cargo",
   "importe": 56.83,
@@ -4335,7 +4335,7 @@
  {
   "id": "mov_msri0jvx_oeexsr",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-29",
   "signo": "cargo",
   "importe": 2244.45,
@@ -4349,7 +4349,7 @@
  {
   "id": "mov_msri0jvx_bx5j4t",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-29",
   "signo": "cargo",
   "importe": 69,
@@ -4364,7 +4364,7 @@
  {
   "id": "mov_msri0jvx_82fa2k",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-29",
   "signo": "cargo",
   "importe": 1479.22,
@@ -4379,7 +4379,7 @@
  {
   "id": "mov_msri0jvx_juu6vi",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-29",
   "signo": "cargo",
   "importe": 27.29,
@@ -4394,7 +4394,7 @@
  {
   "id": "mov_msri0jvw_kqefr9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-28",
   "signo": "abono",
   "importe": 6495.52,
@@ -4408,7 +4408,7 @@
  {
   "id": "mov_msri0jvw_jh4f78",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-28",
   "signo": "abono",
   "importe": 4599.9,
@@ -4422,7 +4422,7 @@
  {
   "id": "mov_msri0jvx_jzg55m",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-28",
   "signo": "cargo",
   "importe": 17.78,
@@ -4437,7 +4437,7 @@
  {
   "id": "mov_msri0jvx_uqg33k",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-28",
   "signo": "cargo",
   "importe": 92.71,
@@ -4452,7 +4452,7 @@
  {
   "id": "mov_msri0jvw_uj2ooe",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-27",
   "signo": "cargo",
   "importe": 6.01,
@@ -4467,7 +4467,7 @@
  {
   "id": "mov_msri0jvw_v8j6op",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-26",
   "signo": "cargo",
   "importe": 3.7,
@@ -4482,7 +4482,7 @@
  {
   "id": "mov_msri0jvw_nyq6rq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-26",
   "signo": "cargo",
   "importe": 3,
@@ -4497,7 +4497,7 @@
  {
   "id": "mov_msri0jvw_u56lrq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-26",
   "signo": "cargo",
   "importe": 31.51,
@@ -4512,7 +4512,7 @@
  {
   "id": "mov_msri0jvw_aa77i5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-25",
   "signo": "cargo",
   "importe": 1.25,
@@ -4527,7 +4527,7 @@
  {
   "id": "mov_msri0jvw_195cgr",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-25",
   "signo": "cargo",
   "importe": 6.66,
@@ -4542,7 +4542,7 @@
  {
   "id": "mov_msri0jvw_3u8sx0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-23",
   "signo": "cargo",
   "importe": 7.3,
@@ -4557,7 +4557,7 @@
  {
   "id": "mov_msri0jvw_lve7q8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-22",
   "signo": "cargo",
   "importe": 35.02,
@@ -4572,7 +4572,7 @@
  {
   "id": "mov_msri0jvw_mq9uq9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-22",
   "signo": "cargo",
   "importe": 40,
@@ -4587,7 +4587,7 @@
  {
   "id": "mov_msri0jvw_jzwsgd",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-22",
   "signo": "cargo",
   "importe": 50,
@@ -4602,7 +4602,7 @@
  {
   "id": "mov_msri0jvw_3cm2pl",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-21",
   "signo": "cargo",
   "importe": 82.02,
@@ -4617,7 +4617,7 @@
  {
   "id": "mov_msri0jvw_lygbof",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-20",
   "signo": "cargo",
   "importe": 16.22,
@@ -4632,7 +4632,7 @@
  {
   "id": "mov_msri0jvw_yk8gqp",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-20",
   "signo": "cargo",
   "importe": 5.95,
@@ -4647,7 +4647,7 @@
  {
   "id": "mov_msri0jvw_aa2zsb",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-20",
   "signo": "cargo",
   "importe": 48,
@@ -4662,7 +4662,7 @@
  {
   "id": "mov_msri0jvw_c8i2vn",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-20",
   "signo": "cargo",
   "importe": 20000,
@@ -4677,7 +4677,7 @@
  {
   "id": "mov_msri0jvw_ezcdg9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-19",
   "signo": "cargo",
   "importe": 4704.83,
@@ -4692,7 +4692,7 @@
  {
   "id": "mov_msri0jvw_1k9exm",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-19",
   "signo": "cargo",
   "importe": 14603.68,
@@ -4707,7 +4707,7 @@
  {
   "id": "mov_msri0jvw_7g63uv",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-19",
   "signo": "cargo",
   "importe": 10208,
@@ -4722,7 +4722,7 @@
  {
   "id": "mov_msri0jvw_7xnsyq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-19",
   "signo": "cargo",
   "importe": 24522.65,
@@ -4737,7 +4737,7 @@
  {
   "id": "mov_msri0jvw_06wnb1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-19",
   "signo": "abono",
   "importe": 15379.3,
@@ -4751,7 +4751,7 @@
  {
   "id": "mov_msri0jvw_1sohzj",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-19",
   "signo": "abono",
   "importe": 11702.77,
@@ -4765,7 +4765,7 @@
  {
   "id": "mov_msri0jvw_o1rcu3",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-19",
   "signo": "abono",
   "importe": 11903.08,
@@ -4779,7 +4779,7 @@
  {
   "id": "mov_msri0jvw_4929a4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-19",
   "signo": "abono",
   "importe": 9554.86,
@@ -4793,7 +4793,7 @@
  {
   "id": "mov_msri0jvw_xsnh2h",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-19",
   "signo": "abono",
   "importe": 8718.39,
@@ -4807,7 +4807,7 @@
  {
   "id": "mov_msri0jvw_qz0xn1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-19",
   "signo": "abono",
   "importe": 9724.62,
@@ -4821,7 +4821,7 @@
  {
   "id": "mov_msri0jvw_dy0i8r",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-19",
   "signo": "abono",
   "importe": 5010.93,
@@ -4835,7 +4835,7 @@
  {
   "id": "mov_msri0jvw_3eg45v",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-18",
   "signo": "cargo",
   "importe": 79.56,
@@ -4850,7 +4850,7 @@
  {
   "id": "mov_msri0jvw_2i01tc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-17",
   "signo": "cargo",
   "importe": 76.8,
@@ -4865,7 +4865,7 @@
  {
   "id": "mov_msri0jvw_cgewno",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-15",
   "signo": "cargo",
   "importe": 10.14,
@@ -4880,7 +4880,7 @@
  {
   "id": "mov_msri0jvw_plet08",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-15",
   "signo": "cargo",
   "importe": 94.55,
@@ -4895,7 +4895,7 @@
  {
   "id": "mov_msri0jvw_xg8rh9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-15",
   "signo": "cargo",
   "importe": 16.6,
@@ -4910,7 +4910,7 @@
  {
   "id": "mov_msri0jvw_cp5gqa",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-14",
   "signo": "cargo",
   "importe": 6.86,
@@ -4925,7 +4925,7 @@
  {
   "id": "mov_msri0jvw_k6a820",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-14",
   "signo": "cargo",
   "importe": 19.01,
@@ -4940,7 +4940,7 @@
  {
   "id": "mov_msri0jvw_604pxa",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-14",
   "signo": "abono",
   "importe": 1905.61,
@@ -4954,7 +4954,7 @@
  {
   "id": "mov_msri0jvw_skbzq2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-13",
   "signo": "cargo",
   "importe": 37.44,
@@ -4969,7 +4969,7 @@
  {
   "id": "mov_msri0jvw_yeethh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-13",
   "signo": "cargo",
   "importe": 459.8,
@@ -4984,7 +4984,7 @@
  {
   "id": "mov_msri0jvw_x6t9r3",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-12",
   "signo": "cargo",
   "importe": 6.93,
@@ -4999,7 +4999,7 @@
  {
   "id": "mov_msri0jvw_tb34th",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-12",
   "signo": "cargo",
   "importe": 67.2,
@@ -5014,7 +5014,7 @@
  {
   "id": "mov_msri0jvw_zgw9tq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-12",
   "signo": "cargo",
   "importe": 126.45,
@@ -5029,7 +5029,7 @@
  {
   "id": "mov_msri0jvw_yloq79",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-11",
   "signo": "cargo",
   "importe": 1.64,
@@ -5044,7 +5044,7 @@
  {
   "id": "mov_msri0jvw_aichva",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-11",
   "signo": "abono",
   "importe": 11777.1,
@@ -5058,7 +5058,7 @@
  {
   "id": "mov_msri0jvw_x4nyf5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-11",
   "signo": "abono",
   "importe": 13317.62,
@@ -5072,7 +5072,7 @@
  {
   "id": "mov_msri0jvw_tv6s8h",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-09",
   "signo": "cargo",
   "importe": 24.96,
@@ -5087,7 +5087,7 @@
  {
   "id": "mov_msri0jvw_lia8se",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-09",
   "signo": "cargo",
   "importe": 100.29,
@@ -5102,7 +5102,7 @@
  {
   "id": "mov_msri0jvw_cl2750",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-08",
   "signo": "cargo",
   "importe": 40.35,
@@ -5117,7 +5117,7 @@
  {
   "id": "mov_msri0jvw_7ef2wk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-08",
   "signo": "cargo",
   "importe": 5.65,
@@ -5132,7 +5132,7 @@
  {
   "id": "mov_msri0jvw_8a66pp",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-08",
   "signo": "cargo",
   "importe": 78,
@@ -5147,7 +5147,7 @@
  {
   "id": "mov_msri0jvw_3em28s",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-08",
   "signo": "cargo",
   "importe": 88.39,
@@ -5162,7 +5162,7 @@
  {
   "id": "mov_msri0jvw_dlagnt",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-08",
   "signo": "cargo",
   "importe": 3,
@@ -5177,7 +5177,7 @@
  {
   "id": "mov_msri0jvw_pp3flk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-08",
   "signo": "cargo",
   "importe": 1530,
@@ -5192,7 +5192,7 @@
  {
   "id": "mov_msri0jvw_7q09j9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-07",
   "signo": "cargo",
   "importe": 104.08,
@@ -5207,7 +5207,7 @@
  {
   "id": "mov_msri0jvw_10hc1m",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-07",
   "signo": "cargo",
   "importe": 60.58,
@@ -5222,7 +5222,7 @@
  {
   "id": "mov_msri0jvw_6ybg3i",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-07",
   "signo": "abono",
   "importe": 2945.26,
@@ -5236,7 +5236,7 @@
  {
   "id": "mov_msri0jvw_wokd5p",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-06",
   "signo": "abono",
   "importe": 2405.1,
@@ -5250,7 +5250,7 @@
  {
   "id": "mov_msri0jvw_zslpex",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-06",
   "signo": "cargo",
   "importe": 6.86,
@@ -5265,7 +5265,7 @@
  {
   "id": "mov_msri0jvw_35m2ve",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-06",
   "signo": "cargo",
   "importe": 21.78,
@@ -5280,7 +5280,7 @@
  {
   "id": "mov_msri0jvw_b3b77p",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-06",
   "signo": "cargo",
   "importe": 13.34,
@@ -5295,7 +5295,7 @@
  {
   "id": "mov_msri0jvw_nvv5vm",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-06",
   "signo": "cargo",
   "importe": 35,
@@ -5310,7 +5310,7 @@
  {
   "id": "mov_msri0jvw_7dd8uc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-05",
   "signo": "cargo",
   "importe": 10.64,
@@ -5325,7 +5325,7 @@
  {
   "id": "mov_msri0jvw_wda6v2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-04",
   "signo": "cargo",
   "importe": 84.01,
@@ -5340,7 +5340,7 @@
  {
   "id": "mov_msri0jvw_fhl2c4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-04",
   "signo": "cargo",
   "importe": 72.6,
@@ -5355,7 +5355,7 @@
  {
   "id": "mov_msri0jvw_qnm0al",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-03",
   "signo": "cargo",
   "importe": 48,
@@ -5370,7 +5370,7 @@
  {
   "id": "mov_msri0jvw_ymfqfg",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-03",
   "signo": "cargo",
   "importe": 81.33,
@@ -5385,7 +5385,7 @@
  {
   "id": "mov_msri0jvw_ozcxih",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-02",
   "signo": "cargo",
   "importe": 11.19,
@@ -5400,7 +5400,7 @@
  {
   "id": "mov_msri0jvw_ka02u1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-02",
   "signo": "cargo",
   "importe": 7.46,
@@ -5415,7 +5415,7 @@
  {
   "id": "mov_msri0jvw_5spnvz",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-05-02",
   "signo": "cargo",
   "importe": 94.67,
@@ -5430,7 +5430,7 @@
  {
   "id": "mov_msri0jvw_0d6279",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-30",
   "signo": "cargo",
   "importe": 2248.19,
@@ -5444,7 +5444,7 @@
  {
   "id": "mov_msri0jvw_gno6fr",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-30",
   "signo": "cargo",
   "importe": 1495,
@@ -5458,7 +5458,7 @@
  {
   "id": "mov_msri0jvw_d2tcmx",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-30",
   "signo": "cargo",
   "importe": 1379,
@@ -5472,7 +5472,7 @@
  {
   "id": "mov_msri0jvw_spfps8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-30",
   "signo": "cargo",
   "importe": 858.68,
@@ -5486,7 +5486,7 @@
  {
   "id": "mov_msri0jvw_b9eexp",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-30",
   "signo": "cargo",
   "importe": 1098.13,
@@ -5500,7 +5500,7 @@
  {
   "id": "mov_msri0jvw_2ca1pb",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-30",
   "signo": "cargo",
   "importe": 2795,
@@ -5514,7 +5514,7 @@
  {
   "id": "mov_msri0jvw_6z8b4a",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-30",
   "signo": "cargo",
   "importe": 229.9,
@@ -5529,7 +5529,7 @@
  {
   "id": "mov_msri0jvw_yz134o",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-30",
   "signo": "cargo",
   "importe": 56.83,
@@ -5544,7 +5544,7 @@
  {
   "id": "mov_msri0jvw_ooka2h",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-29",
   "signo": "cargo",
   "importe": 26.98,
@@ -5559,7 +5559,7 @@
  {
   "id": "mov_msri0jvw_tyhkds",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-29",
   "signo": "cargo",
   "importe": 1479.22,
@@ -5574,7 +5574,7 @@
  {
   "id": "mov_msri0jvw_2t7qmq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-29",
   "signo": "cargo",
   "importe": 286.8,
@@ -5589,7 +5589,7 @@
  {
   "id": "mov_msri0jvw_uuz8zl",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-28",
   "signo": "cargo",
   "importe": 12.31,
@@ -5604,7 +5604,7 @@
  {
   "id": "mov_msri0jvw_u1p3ww",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-27",
   "signo": "abono",
   "importe": 7833.89,
@@ -5618,7 +5618,7 @@
  {
   "id": "mov_msri0jvw_jczbcg",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-27",
   "signo": "abono",
   "importe": 6111.18,
@@ -5632,7 +5632,7 @@
  {
   "id": "mov_msri0jvw_6cnix1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-27",
   "signo": "cargo",
   "importe": 97.62,
@@ -5647,7 +5647,7 @@
  {
   "id": "mov_msri0jvw_q6xfxh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-27",
   "signo": "cargo",
   "importe": 4.59,
@@ -5662,7 +5662,7 @@
  {
   "id": "mov_msri0jvw_box8mn",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-27",
   "signo": "cargo",
   "importe": 96,
@@ -5677,7 +5677,7 @@
  {
   "id": "mov_msri0jvw_w209wu",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-25",
   "signo": "cargo",
   "importe": 98.2,
@@ -5692,7 +5692,7 @@
  {
   "id": "mov_msri0jvw_vwxg6h",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-25",
   "signo": "cargo",
   "importe": 10.45,
@@ -5707,7 +5707,7 @@
  {
   "id": "mov_msri0jvw_hs9e5x",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-24",
   "signo": "cargo",
   "importe": 24.11,
@@ -5722,7 +5722,7 @@
  {
   "id": "mov_msri0jvw_s97r2n",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-24",
   "signo": "cargo",
   "importe": 12.51,
@@ -5737,7 +5737,7 @@
  {
   "id": "mov_msri0jvw_bevmlo",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-23",
   "signo": "cargo",
   "importe": 13.77,
@@ -5752,7 +5752,7 @@
  {
   "id": "mov_msri0jvw_2fwul2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-22",
   "signo": "cargo",
   "importe": 53.96,
@@ -5767,7 +5767,7 @@
  {
   "id": "mov_msri0jvw_ap3nqf",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-22",
   "signo": "cargo",
   "importe": 156,
@@ -5782,7 +5782,7 @@
  {
   "id": "mov_msri0jvw_75fyde",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-21",
   "signo": "cargo",
   "importe": 96,
@@ -5797,7 +5797,7 @@
  {
   "id": "mov_msri0jvw_9o9mbh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-21",
   "signo": "cargo",
   "importe": 10,
@@ -5812,7 +5812,7 @@
  {
   "id": "mov_msri0jvw_73659b",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-20",
   "signo": "cargo",
   "importe": 3273.24,
@@ -5826,7 +5826,7 @@
  {
   "id": "mov_msri0jvw_axel93",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-20",
   "signo": "cargo",
   "importe": 855,
@@ -5840,7 +5840,7 @@
  {
   "id": "mov_msri0jvw_hvwl4l",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-18",
   "signo": "cargo",
   "importe": 98.7,
@@ -5855,7 +5855,7 @@
  {
   "id": "mov_msri0jvw_chipja",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-17",
   "signo": "cargo",
   "importe": 4.6,
@@ -5870,7 +5870,7 @@
  {
   "id": "mov_msri0jvw_zaq6xe",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-17",
   "signo": "cargo",
   "importe": 19.2,
@@ -5885,7 +5885,7 @@
  {
   "id": "mov_msri0jvw_30r3ic",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-17",
   "signo": "cargo",
   "importe": 100.51,
@@ -5900,7 +5900,7 @@
  {
   "id": "mov_msri0jvw_a9jvxj",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-15",
   "signo": "cargo",
   "importe": 7.02,
@@ -5915,7 +5915,7 @@
  {
   "id": "mov_msri0jvw_twuvbv",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-15",
   "signo": "cargo",
   "importe": 93.9,
@@ -5930,7 +5930,7 @@
  {
   "id": "mov_msri0jvw_za4hpt",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-15",
   "signo": "cargo",
   "importe": 20,
@@ -5945,7 +5945,7 @@
  {
   "id": "mov_msri0jvw_ty0f7v",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-14",
   "signo": "cargo",
   "importe": 459.8,
@@ -5960,7 +5960,7 @@
  {
   "id": "mov_msri0jvw_026qkp",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-13",
   "signo": "cargo",
   "importe": 152.26,
@@ -5975,7 +5975,7 @@
  {
   "id": "mov_msri0jvw_wrqi5d",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-13",
   "signo": "cargo",
   "importe": 21.63,
@@ -5990,7 +5990,7 @@
  {
   "id": "mov_msri0jvw_5wu1nq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-13",
   "signo": "cargo",
   "importe": 9.19,
@@ -6005,7 +6005,7 @@
  {
   "id": "mov_msri0jvw_q27jwi",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-13",
   "signo": "cargo",
   "importe": 40,
@@ -6020,7 +6020,7 @@
  {
   "id": "mov_msri0jvw_5imhoc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-13",
   "signo": "abono",
   "importe": 2036.62,
@@ -6034,7 +6034,7 @@
  {
   "id": "mov_msri0jvw_1xn6g9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-11",
   "signo": "cargo",
   "importe": 30000,
@@ -6049,7 +6049,7 @@
  {
   "id": "mov_msri0jvw_xdiutw",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-11",
   "signo": "cargo",
   "importe": 30.94,
@@ -6064,7 +6064,7 @@
  {
   "id": "mov_msri0jvw_2wj66s",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-11",
   "signo": "cargo",
   "importe": 10163.81,
@@ -6080,7 +6080,7 @@
  {
   "id": "mov_msri0jvw_gfehkv",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-11",
   "signo": "cargo",
   "importe": 10.32,
@@ -6095,7 +6095,7 @@
  {
   "id": "mov_msri0jvw_kdrpyk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-11",
   "signo": "cargo",
   "importe": 108.57,
@@ -6110,7 +6110,7 @@
  {
   "id": "mov_msri0jvw_9sipzi",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-10",
   "signo": "cargo",
   "importe": 5.41,
@@ -6125,7 +6125,7 @@
  {
   "id": "mov_msri0jvw_6x7pyu",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-09",
   "signo": "cargo",
   "importe": 7.2,
@@ -6140,7 +6140,7 @@
  {
   "id": "mov_msri0jvw_1apxq5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-09",
   "signo": "cargo",
   "importe": 111.88,
@@ -6155,7 +6155,7 @@
  {
   "id": "mov_msri0jvw_vwc6te",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-08",
   "signo": "abono",
   "importe": 14299.52,
@@ -6169,7 +6169,7 @@
  {
   "id": "mov_msri0jvw_wb3dz9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-08",
   "signo": "abono",
   "importe": 10791.72,
@@ -6183,7 +6183,7 @@
  {
   "id": "mov_msri0jvw_aezueh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-08",
   "signo": "abono",
   "importe": 10757.51,
@@ -6197,7 +6197,7 @@
  {
   "id": "mov_msri0jvw_li2mq7",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-08",
   "signo": "abono",
   "importe": 9555.71,
@@ -6211,7 +6211,7 @@
  {
   "id": "mov_msri0jvw_a7nyjp",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-08",
   "signo": "abono",
   "importe": 7837.45,
@@ -6225,7 +6225,7 @@
  {
   "id": "mov_msri0jvw_p8mzuz",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-08",
   "signo": "abono",
   "importe": 8926.73,
@@ -6239,7 +6239,7 @@
  {
   "id": "mov_msri0jvw_b1tunr",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-08",
   "signo": "cargo",
   "importe": 60,
@@ -6254,7 +6254,7 @@
  {
   "id": "mov_msri0jvw_2ru6x8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-08",
   "signo": "cargo",
   "importe": 35,
@@ -6269,7 +6269,7 @@
  {
   "id": "mov_msri0jvw_i4s3o3",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-07",
   "signo": "cargo",
   "importe": 1530,
@@ -6284,7 +6284,7 @@
  {
   "id": "mov_msri0jvw_ayvlna",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-07",
   "signo": "cargo",
   "importe": 10208,
@@ -6299,7 +6299,7 @@
  {
   "id": "mov_msri0jvw_06juxs",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-07",
   "signo": "cargo",
   "importe": 4587.55,
@@ -6314,7 +6314,7 @@
  {
   "id": "mov_msri0jvw_67d2z2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-07",
   "signo": "cargo",
   "importe": 13486.93,
@@ -6330,7 +6330,7 @@
  {
   "id": "mov_msri0jvw_vj4x7z",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-07",
   "signo": "cargo",
   "importe": 17924.87,
@@ -6345,7 +6345,7 @@
  {
   "id": "mov_msri0jvw_clvby9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-07",
   "signo": "cargo",
   "importe": 5.95,
@@ -6360,7 +6360,7 @@
  {
   "id": "mov_msri0jvw_taba03",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-07",
   "signo": "cargo",
   "importe": 22,
@@ -6375,7 +6375,7 @@
  {
   "id": "mov_msri0jvw_64w2lx",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-07",
   "signo": "cargo",
   "importe": 38.4,
@@ -6390,7 +6390,7 @@
  {
   "id": "mov_msri0jvw_zjmxvy",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-07",
   "signo": "cargo",
   "importe": 40,
@@ -6405,7 +6405,7 @@
  {
   "id": "mov_msri0jvw_gpjk7w",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-07",
   "signo": "cargo",
   "importe": 6.03,
@@ -6420,7 +6420,7 @@
  {
   "id": "mov_msri0jvw_p91705",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-07",
   "signo": "cargo",
   "importe": 4.8,
@@ -6435,7 +6435,7 @@
  {
   "id": "mov_msri0jvw_xh8s68",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-07",
   "signo": "abono",
   "importe": 4782.83,
@@ -6449,7 +6449,7 @@
  {
   "id": "mov_msri0jvw_9ssmic",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-07",
   "signo": "abono",
   "importe": 257.33,
@@ -6463,7 +6463,7 @@
  {
   "id": "mov_msri0jvw_4ebj4k",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-06",
   "signo": "cargo",
   "importe": 4.21,
@@ -6478,7 +6478,7 @@
  {
   "id": "mov_msri0jvw_yxfi20",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-06",
   "signo": "cargo",
   "importe": 81,
@@ -6493,7 +6493,7 @@
  {
   "id": "mov_msri0jvw_sqgp3k",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-04",
   "signo": "cargo",
   "importe": 6.61,
@@ -6508,7 +6508,7 @@
  {
   "id": "mov_msri0jvw_bww7ei",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-03",
   "signo": "cargo",
   "importe": 234.99,
@@ -6523,7 +6523,7 @@
  {
   "id": "mov_msri0jvw_dl71fx",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-02",
   "signo": "cargo",
   "importe": 288.06,
@@ -6538,7 +6538,7 @@
  {
   "id": "mov_msri0jvw_qkp2y2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-01",
   "signo": "cargo",
   "importe": 96,
@@ -6553,7 +6553,7 @@
  {
   "id": "mov_msri0jvw_fuwveg",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-01",
   "signo": "cargo",
   "importe": 80,
@@ -6568,7 +6568,7 @@
  {
   "id": "mov_msri0jvw_1kegzz",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-01",
   "signo": "cargo",
   "importe": 72.6,
@@ -6583,7 +6583,7 @@
  {
   "id": "mov_msri0jvw_qu6ynz",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-01",
   "signo": "abono",
   "importe": 10744.28,
@@ -6597,7 +6597,7 @@
  {
   "id": "mov_msri0jvw_324ghv",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-01",
   "signo": "abono",
   "importe": 8402.08,
@@ -6611,7 +6611,7 @@
  {
   "id": "mov_msri0jvw_myvna1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-01",
   "signo": "abono",
   "importe": 1281.98,
@@ -6625,7 +6625,7 @@
  {
   "id": "mov_msri0jvw_8o68md",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-01",
   "signo": "cargo",
   "importe": 1495,
@@ -6639,7 +6639,7 @@
  {
   "id": "mov_msri0jvw_d6d6y3",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-01",
   "signo": "cargo",
   "importe": 1379,
@@ -6653,7 +6653,7 @@
  {
   "id": "mov_msri0jvw_dqvze6",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-01",
   "signo": "cargo",
   "importe": 2495,
@@ -6667,7 +6667,7 @@
  {
   "id": "mov_msri0jvw_bv8fzc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-01",
   "signo": "cargo",
   "importe": 858.68,
@@ -6681,7 +6681,7 @@
  {
   "id": "mov_msri0jvw_xqip2g",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-01",
   "signo": "cargo",
   "importe": 1098.13,
@@ -6695,7 +6695,7 @@
  {
   "id": "mov_msri0jvw_bwadtt",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-04-01",
   "signo": "cargo",
   "importe": 4.17,
@@ -6710,7 +6710,7 @@
  {
   "id": "mov_msri0jvw_jk78ky",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-31",
   "signo": "cargo",
   "importe": 2273.95,
@@ -6724,7 +6724,7 @@
  {
   "id": "mov_msri0jvw_n3tsou",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-31",
   "signo": "cargo",
   "importe": 56.83,
@@ -6739,7 +6739,7 @@
  {
   "id": "mov_msri0jvw_ejb7v0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-30",
   "signo": "cargo",
   "importe": 274.35,
@@ -6754,7 +6754,7 @@
  {
   "id": "mov_msri0jvw_rp6fwf",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-30",
   "signo": "cargo",
   "importe": 95.45,
@@ -6769,7 +6769,7 @@
  {
   "id": "mov_msri0jvw_ujvwsh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-29",
   "signo": "cargo",
   "importe": 16.93,
@@ -6784,7 +6784,7 @@
  {
   "id": "mov_msri0jvw_5c64b7",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-28",
   "signo": "cargo",
   "importe": 1380.61,
@@ -6799,7 +6799,7 @@
  {
   "id": "mov_msri0jvw_kds0sm",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-27",
   "signo": "cargo",
   "importe": 11.13,
@@ -6814,7 +6814,7 @@
  {
   "id": "mov_msri0jvw_qbk4dh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-27",
   "signo": "cargo",
   "importe": 170,
@@ -6829,7 +6829,7 @@
  {
   "id": "mov_msri0jvw_szcw1q",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-26",
   "signo": "cargo",
   "importe": 64,
@@ -6844,7 +6844,7 @@
  {
   "id": "mov_msri0jvw_7r1yi2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-26",
   "signo": "cargo",
   "importe": 39.16,
@@ -6859,7 +6859,7 @@
  {
   "id": "mov_msri0jvw_o0lgh0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-26",
   "signo": "cargo",
   "importe": 90,
@@ -6874,7 +6874,7 @@
  {
   "id": "mov_msri0jvw_md00d4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-25",
   "signo": "cargo",
   "importe": 15.6,
@@ -6889,7 +6889,7 @@
  {
   "id": "mov_msri0jvw_yqiucc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-25",
   "signo": "cargo",
   "importe": 59.99,
@@ -6904,7 +6904,7 @@
  {
   "id": "mov_msri0jvw_zqbf5w",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-25",
   "signo": "abono",
   "importe": 3755,
@@ -6918,7 +6918,7 @@
  {
   "id": "mov_msri0jvw_iumkoh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-25",
   "signo": "abono",
   "importe": 5153.71,
@@ -6932,7 +6932,7 @@
  {
   "id": "mov_msri0jvw_aktkld",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-24",
   "signo": "cargo",
   "importe": 48.68,
@@ -6947,7 +6947,7 @@
  {
   "id": "mov_msri0jvw_qifyuc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-24",
   "signo": "cargo",
   "importe": 85.94,
@@ -6962,7 +6962,7 @@
  {
   "id": "mov_msri0jvw_hq9ka0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-24",
   "signo": "cargo",
   "importe": 51.04,
@@ -6977,7 +6977,7 @@
  {
   "id": "mov_msri0jvw_kzq9zh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-23",
   "signo": "cargo",
   "importe": 3.26,
@@ -6992,7 +6992,7 @@
  {
   "id": "mov_msri0jvw_frl5dh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-23",
   "signo": "cargo",
   "importe": 2.99,
@@ -7007,7 +7007,7 @@
  {
   "id": "mov_msri0jvw_mla7hs",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-21",
   "signo": "cargo",
   "importe": 115.7,
@@ -7022,7 +7022,7 @@
  {
   "id": "mov_msri0jvw_0pwnza",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-21",
   "signo": "cargo",
   "importe": 83.48,
@@ -7037,7 +7037,7 @@
  {
   "id": "mov_msri0jvw_b3swsc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-21",
   "signo": "cargo",
   "importe": 3.64,
@@ -7052,7 +7052,7 @@
  {
   "id": "mov_msri0jvw_e8hf5c",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-21",
   "signo": "cargo",
   "importe": 14157.4,
@@ -7067,7 +7067,7 @@
  {
   "id": "mov_msri0jvw_g14ev7",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-21",
   "signo": "cargo",
   "importe": 10.59,
@@ -7082,7 +7082,7 @@
  {
   "id": "mov_msri0jvw_gp3q4k",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-21",
   "signo": "cargo",
   "importe": 40,
@@ -7097,7 +7097,7 @@
  {
   "id": "mov_msri0jvw_dbo1ll",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-20",
   "signo": "cargo",
   "importe": 7.28,
@@ -7112,7 +7112,7 @@
  {
   "id": "mov_msri0jvw_y1y2we",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-20",
   "signo": "cargo",
   "importe": 48,
@@ -7127,7 +7127,7 @@
  {
   "id": "mov_msri0jvw_64e99j",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-20",
   "signo": "cargo",
   "importe": 5.95,
@@ -7142,7 +7142,7 @@
  {
   "id": "mov_msri0jvw_snvkb7",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-19",
   "signo": "cargo",
   "importe": 34.19,
@@ -7157,7 +7157,7 @@
  {
   "id": "mov_msri0jvw_tnp9bm",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-19",
   "signo": "cargo",
   "importe": 75,
@@ -7172,7 +7172,7 @@
  {
   "id": "mov_msri0jvw_cbtgex",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-18",
   "signo": "cargo",
   "importe": 7.48,
@@ -7187,7 +7187,7 @@
  {
   "id": "mov_msri0jvw_ty53cu",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-18",
   "signo": "cargo",
   "importe": 50,
@@ -7201,7 +7201,7 @@
  {
   "id": "mov_msri0jvw_14vs9o",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-18",
   "signo": "cargo",
   "importe": 25.15,
@@ -7216,7 +7216,7 @@
  {
   "id": "mov_msri0jvw_78c1xc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-18",
   "signo": "cargo",
   "importe": 109,
@@ -7231,7 +7231,7 @@
  {
   "id": "mov_msri0jvw_irb7e2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-17",
   "signo": "abono",
   "importe": 9588.93,
@@ -7245,7 +7245,7 @@
  {
   "id": "mov_msri0jvw_fa44o1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-17",
   "signo": "abono",
   "importe": 8348.74,
@@ -7259,7 +7259,7 @@
  {
   "id": "mov_msri0jvw_n7dbjl",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-17",
   "signo": "abono",
   "importe": 7636.14,
@@ -7273,7 +7273,7 @@
  {
   "id": "mov_msri0jvw_63egvs",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-17",
   "signo": "abono",
   "importe": 5685.81,
@@ -7287,7 +7287,7 @@
  {
   "id": "mov_msri0jvw_i80yjm",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-17",
   "signo": "abono",
   "importe": 7750.46,
@@ -7301,7 +7301,7 @@
  {
   "id": "mov_msri0jvw_jobbe0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-17",
   "signo": "abono",
   "importe": 3721.66,
@@ -7315,7 +7315,7 @@
  {
   "id": "mov_msri0jvw_jm9u4u",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-16",
   "signo": "cargo",
   "importe": 60,
@@ -7330,7 +7330,7 @@
  {
   "id": "mov_msri0jvw_c6pfkh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-16",
   "signo": "cargo",
   "importe": 48,
@@ -7345,7 +7345,7 @@
  {
   "id": "mov_msri0jvw_mt003m",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-15",
   "signo": "cargo",
   "importe": 31.94,
@@ -7360,7 +7360,7 @@
  {
   "id": "mov_msri0jvw_x8eslu",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-14",
   "signo": "cargo",
   "importe": 7.45,
@@ -7375,7 +7375,7 @@
  {
   "id": "mov_msri0jvw_ui6fgg",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-13",
   "signo": "cargo",
   "importe": 25000,
@@ -7390,7 +7390,7 @@
  {
   "id": "mov_msri0jvw_d1wtft",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-13",
   "signo": "cargo",
   "importe": 484.94,
@@ -7405,7 +7405,7 @@
  {
   "id": "mov_msri0jvw_c356tr",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-13",
   "signo": "cargo",
   "importe": 80,
@@ -7420,7 +7420,7 @@
  {
   "id": "mov_msri0jvw_28yh05",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-12",
   "signo": "cargo",
   "importe": 50,
@@ -7435,7 +7435,7 @@
  {
   "id": "mov_msri0jvw_ihoh79",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-12",
   "signo": "cargo",
   "importe": 6380,
@@ -7450,7 +7450,7 @@
  {
   "id": "mov_msri0jvw_ar15op",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-12",
   "signo": "cargo",
   "importe": 459.8,
@@ -7465,7 +7465,7 @@
  {
   "id": "mov_msri0jvw_hrc88w",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-11",
   "signo": "cargo",
   "importe": 58.37,
@@ -7480,7 +7480,7 @@
  {
   "id": "mov_msri0jvw_c0x3rn",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-11",
   "signo": "cargo",
   "importe": 27.16,
@@ -7495,7 +7495,7 @@
  {
   "id": "mov_msri0jvw_47s7wq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-11",
   "signo": "cargo",
   "importe": 10.4,
@@ -7510,7 +7510,7 @@
  {
   "id": "mov_msri0jvw_9wltve",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-11",
   "signo": "cargo",
   "importe": 10.58,
@@ -7525,7 +7525,7 @@
  {
   "id": "mov_msri0jvw_2u3r7k",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-10",
   "signo": "cargo",
   "importe": 2.4,
@@ -7540,7 +7540,7 @@
  {
   "id": "mov_msri0jvw_vtqyy7",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-10",
   "signo": "cargo",
   "importe": 52,
@@ -7555,7 +7555,7 @@
  {
   "id": "mov_msri0jvw_sepbkf",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-09",
   "signo": "cargo",
   "importe": 85.54,
@@ -7570,7 +7570,7 @@
  {
   "id": "mov_msri0jvw_jbnguf",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-09",
   "signo": "cargo",
   "importe": 9.35,
@@ -7585,7 +7585,7 @@
  {
   "id": "mov_msri0jvw_iuofsq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-09",
   "signo": "cargo",
   "importe": 1.35,
@@ -7600,7 +7600,7 @@
  {
   "id": "mov_msri0jvw_sq2mop",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-09",
   "signo": "cargo",
   "importe": 50,
@@ -7615,7 +7615,7 @@
  {
   "id": "mov_msri0jvw_3affs7",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-09",
   "signo": "abono",
   "importe": 12930.36,
@@ -7629,7 +7629,7 @@
  {
   "id": "mov_msri0jvw_8rlrxq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-07",
   "signo": "cargo",
   "importe": 29.74,
@@ -7644,7 +7644,7 @@
  {
   "id": "mov_msri0jvw_pvbmvf",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-07",
   "signo": "cargo",
   "importe": 59.69,
@@ -7659,7 +7659,7 @@
  {
   "id": "mov_msri0jvw_2x2zs4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-06",
   "signo": "cargo",
   "importe": 20,
@@ -7674,7 +7674,7 @@
  {
   "id": "mov_msri0jvw_2uet73",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-06",
   "signo": "cargo",
   "importe": 415.27,
@@ -7689,7 +7689,7 @@
  {
   "id": "mov_msri0jvw_30c3dh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-06",
   "signo": "cargo",
   "importe": 5.95,
@@ -7704,7 +7704,7 @@
  {
   "id": "mov_msri0jvw_4qswhr",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-06",
   "signo": "cargo",
   "importe": 35,
@@ -7719,7 +7719,7 @@
  {
   "id": "mov_msri0jvw_7q3ird",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-05",
   "signo": "abono",
   "importe": 453.97,
@@ -7733,7 +7733,7 @@
  {
   "id": "mov_msri0jvw_amm6og",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-05",
   "signo": "abono",
   "importe": 892.51,
@@ -7747,7 +7747,7 @@
  {
   "id": "mov_msri0jvw_2ilopy",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-05",
   "signo": "abono",
   "importe": 5944.81,
@@ -7761,7 +7761,7 @@
  {
   "id": "mov_msri0jvw_dygu9q",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-05",
   "signo": "abono",
   "importe": 8305.45,
@@ -7775,7 +7775,7 @@
  {
   "id": "mov_msri0jvw_11jy8c",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-05",
   "signo": "cargo",
   "importe": 35,
@@ -7790,7 +7790,7 @@
  {
   "id": "mov_msri0jvw_4y3f6j",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-05",
   "signo": "cargo",
   "importe": 1530,
@@ -7805,7 +7805,7 @@
  {
   "id": "mov_msri0jvw_x1gz1n",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-05",
   "signo": "cargo",
   "importe": 10819.64,
@@ -7821,7 +7821,7 @@
  {
   "id": "mov_msri0jvw_k5qea2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-05",
   "signo": "cargo",
   "importe": 2244.54,
@@ -7836,7 +7836,7 @@
  {
   "id": "mov_msri0jvw_hy7dzv",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-05",
   "signo": "cargo",
   "importe": 3352.91,
@@ -7851,7 +7851,7 @@
  {
   "id": "mov_msri0jvw_fvbg9w",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-04",
   "signo": "cargo",
   "importe": 20,
@@ -7866,7 +7866,7 @@
  {
   "id": "mov_msri0jvw_zm4ckx",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-04",
   "signo": "cargo",
   "importe": 1561.22,
@@ -7881,7 +7881,7 @@
  {
   "id": "mov_msri0jvw_ig93ro",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-04",
   "signo": "cargo",
   "importe": 47.42,
@@ -7896,7 +7896,7 @@
  {
   "id": "mov_msri0jvw_1io18k",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-03",
   "signo": "cargo",
   "importe": 1495,
@@ -7910,7 +7910,7 @@
  {
   "id": "mov_msri0jvw_gjm8wk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-03",
   "signo": "cargo",
   "importe": 1379,
@@ -7924,7 +7924,7 @@
  {
   "id": "mov_msri0jvw_7gy4zj",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-03",
   "signo": "cargo",
   "importe": 2495,
@@ -7938,7 +7938,7 @@
  {
   "id": "mov_msri0jvw_kz7oom",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-03",
   "signo": "cargo",
   "importe": 875.5,
@@ -7952,7 +7952,7 @@
  {
   "id": "mov_msri0jvw_ufkcwv",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-03",
   "signo": "cargo",
   "importe": 1119.07,
@@ -7966,7 +7966,7 @@
  {
   "id": "mov_msri0jvw_he8d83",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-03",
   "signo": "cargo",
   "importe": 69,
@@ -7981,7 +7981,7 @@
  {
   "id": "mov_msri0jvw_ups3n9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-03",
   "signo": "cargo",
   "importe": 277.43,
@@ -7996,7 +7996,7 @@
  {
   "id": "mov_msri0jvw_jsrcrz",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-02",
   "signo": "cargo",
   "importe": 25,
@@ -8011,7 +8011,7 @@
  {
   "id": "mov_msri0jvw_4vyffu",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-03-02",
   "signo": "cargo",
   "importe": 56.83,
@@ -8026,7 +8026,7 @@
  {
   "id": "mov_msri0jvw_iqakiw",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-28",
   "signo": "cargo",
   "importe": 72.6,
@@ -8041,7 +8041,7 @@
  {
   "id": "mov_msri0jvw_m2w5jo",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-28",
   "signo": "cargo",
   "importe": 1148.9,
@@ -8056,7 +8056,7 @@
  {
   "id": "mov_msri0jvw_xtnb9k",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-27",
   "signo": "cargo",
   "importe": 2168.36,
@@ -8070,7 +8070,7 @@
  {
   "id": "mov_msri0jvw_6f3bnc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-27",
   "signo": "cargo",
   "importe": 63.89,
@@ -8085,7 +8085,7 @@
  {
   "id": "mov_msri0jvw_svf5d3",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-27",
   "signo": "cargo",
   "importe": 12.27,
@@ -8100,7 +8100,7 @@
  {
   "id": "mov_msri0jvw_8idc7a",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-27",
   "signo": "cargo",
   "importe": 74.72,
@@ -8115,7 +8115,7 @@
  {
   "id": "mov_msri0jvw_u6v0p5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-25",
   "signo": "cargo",
   "importe": 30,
@@ -8130,7 +8130,7 @@
  {
   "id": "mov_msri0jvw_9wh7fk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-25",
   "signo": "cargo",
   "importe": 20,
@@ -8145,7 +8145,7 @@
  {
   "id": "mov_msri0jvw_yoyrbt",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-25",
   "signo": "cargo",
   "importe": 59.99,
@@ -8160,7 +8160,7 @@
  {
   "id": "mov_msri0jvw_km8k6d",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-25",
   "signo": "cargo",
   "importe": 7.28,
@@ -8175,7 +8175,7 @@
  {
   "id": "mov_msri0jvw_leru23",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-25",
   "signo": "cargo",
   "importe": 11.27,
@@ -8190,7 +8190,7 @@
  {
   "id": "mov_msri0jvw_cnw044",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-24",
   "signo": "cargo",
   "importe": 4.94,
@@ -8205,7 +8205,7 @@
  {
   "id": "mov_msri0jvw_k3qv8h",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-23",
   "signo": "cargo",
   "importe": 25,
@@ -8220,7 +8220,7 @@
  {
   "id": "mov_msri0jvw_frq2gx",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-22",
   "signo": "cargo",
   "importe": 20,
@@ -8235,7 +8235,7 @@
  {
   "id": "mov_msri0jvw_fd8tzk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-21",
   "signo": "cargo",
   "importe": 66.78,
@@ -8250,7 +8250,7 @@
  {
   "id": "mov_msri0jvw_og1c0z",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-19",
   "signo": "cargo",
   "importe": 48.47,
@@ -8265,7 +8265,7 @@
  {
   "id": "mov_msri0jvw_17a3bm",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-19",
   "signo": "abono",
   "importe": 6460.01,
@@ -8279,7 +8279,7 @@
  {
   "id": "mov_msri0jvw_2j8bp5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-19",
   "signo": "abono",
   "importe": 5344.4,
@@ -8293,7 +8293,7 @@
  {
   "id": "mov_msri0jvw_xisfyn",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-18",
   "signo": "cargo",
   "importe": 25,
@@ -8308,7 +8308,7 @@
  {
   "id": "mov_msri0jvw_02ttnx",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-17",
   "signo": "cargo",
   "importe": 8.64,
@@ -8323,7 +8323,7 @@
  {
   "id": "mov_msri0jvw_0y1ci1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-16",
   "signo": "cargo",
   "importe": 2.64,
@@ -8338,7 +8338,7 @@
  {
   "id": "mov_msri0jvw_lgt71s",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-16",
   "signo": "cargo",
   "importe": 81,
@@ -8353,7 +8353,7 @@
  {
   "id": "mov_msri0jvw_8sty8x",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-16",
   "signo": "cargo",
   "importe": 73.4,
@@ -8368,7 +8368,7 @@
  {
   "id": "mov_msri0jvw_ojevq7",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-15",
   "signo": "cargo",
   "importe": 31.95,
@@ -8383,7 +8383,7 @@
  {
   "id": "mov_msri0jvw_5stieo",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-15",
   "signo": "abono",
   "importe": 0.01,
@@ -8397,7 +8397,7 @@
  {
   "id": "mov_msri0jvw_ko1o0d",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-15",
   "signo": "cargo",
   "importe": 31.95,
@@ -8412,7 +8412,7 @@
  {
   "id": "mov_msri0jvw_za0q32",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-14",
   "signo": "cargo",
   "importe": 19.97,
@@ -8427,7 +8427,7 @@
  {
   "id": "mov_msri0jvw_wh16bl",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-14",
   "signo": "cargo",
   "importe": 9.35,
@@ -8442,7 +8442,7 @@
  {
   "id": "mov_msri0jvw_d99d2r",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-14",
   "signo": "cargo",
   "importe": 2.55,
@@ -8457,7 +8457,7 @@
  {
   "id": "mov_msri0jvw_wwihgq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-13",
   "signo": "cargo",
   "importe": 88.43,
@@ -8472,7 +8472,7 @@
  {
   "id": "mov_msri0jvw_i9qlfc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-13",
   "signo": "cargo",
   "importe": 6.75,
@@ -8487,7 +8487,7 @@
  {
   "id": "mov_msri0jvw_qkhy3v",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-13",
   "signo": "cargo",
   "importe": 339.6,
@@ -8502,7 +8502,7 @@
  {
   "id": "mov_msri0jvw_84pcuw",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-13",
   "signo": "cargo",
   "importe": 20,
@@ -8517,7 +8517,7 @@
  {
   "id": "mov_msri0jvw_k18s2k",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-13",
   "signo": "abono",
   "importe": 362.89,
@@ -8531,7 +8531,7 @@
  {
   "id": "mov_msri0jvw_c1dd2j",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-12",
   "signo": "cargo",
   "importe": 19.32,
@@ -8546,7 +8546,7 @@
  {
   "id": "mov_msri0jvw_z6dh8h",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-12",
   "signo": "cargo",
   "importe": 13.33,
@@ -8561,7 +8561,7 @@
  {
   "id": "mov_msri0jvw_c3ufhd",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-12",
   "signo": "abono",
   "importe": 900,
@@ -8575,7 +8575,7 @@
  {
   "id": "mov_msri0jvw_lyte72",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-12",
   "signo": "cargo",
   "importe": 459.8,
@@ -8590,7 +8590,7 @@
  {
   "id": "mov_msri0jvw_41q1wd",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-11",
   "signo": "cargo",
   "importe": 84.94,
@@ -8605,7 +8605,7 @@
  {
   "id": "mov_msri0jvw_20izfu",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-10",
   "signo": "cargo",
   "importe": 58,
@@ -8620,7 +8620,7 @@
  {
   "id": "mov_msri0jvw_v7ynpo",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-10",
   "signo": "cargo",
   "importe": 60,
@@ -8635,7 +8635,7 @@
  {
   "id": "mov_msri0jvw_pn8w0k",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-10",
   "signo": "cargo",
   "importe": 55.57,
@@ -8650,7 +8650,7 @@
  {
   "id": "mov_msri0jvw_2uppqx",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-09",
   "signo": "cargo",
   "importe": 4.84,
@@ -8665,7 +8665,7 @@
  {
   "id": "mov_msri0jvw_6d7qnv",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-09",
   "signo": "cargo",
   "importe": 4.05,
@@ -8680,7 +8680,7 @@
  {
   "id": "mov_msri0jvw_8ioqwb",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-09",
   "signo": "cargo",
   "importe": 35,
@@ -8695,7 +8695,7 @@
  {
   "id": "mov_msri0jvw_ajf19j",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-07",
   "signo": "cargo",
   "importe": 12.54,
@@ -8710,7 +8710,7 @@
  {
   "id": "mov_msri0jvw_6kd2s1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-07",
   "signo": "cargo",
   "importe": 4.84,
@@ -8725,7 +8725,7 @@
  {
   "id": "mov_msri0jvw_g4tqxa",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-07",
   "signo": "cargo",
   "importe": 4.99,
@@ -8740,7 +8740,7 @@
  {
   "id": "mov_msri0jvw_7nuahk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-07",
   "signo": "cargo",
   "importe": 32328,
@@ -8755,7 +8755,7 @@
  {
   "id": "mov_msri0jvw_5n6rov",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-07",
   "signo": "cargo",
   "importe": 1.25,
@@ -8770,7 +8770,7 @@
  {
   "id": "mov_msri0jvw_8byiiv",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-06",
   "signo": "cargo",
   "importe": 30,
@@ -8785,7 +8785,7 @@
  {
   "id": "mov_msri0jvw_8o0don",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-06",
   "signo": "cargo",
   "importe": 445.44,
@@ -8800,7 +8800,7 @@
  {
   "id": "mov_msri0jvw_0nopos",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-05",
   "signo": "cargo",
   "importe": 6.18,
@@ -8815,7 +8815,7 @@
  {
   "id": "mov_msri0jvw_e6pist",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-05",
   "signo": "cargo",
   "importe": 58,
@@ -8830,7 +8830,7 @@
  {
   "id": "mov_msri0jvw_1o8xr0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-05",
   "signo": "abono",
   "importe": 1379,
@@ -8844,7 +8844,7 @@
  {
   "id": "mov_msri0jvw_afnin1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-04",
   "signo": "cargo",
   "importe": 8309.95,
@@ -8859,7 +8859,7 @@
  {
   "id": "mov_msri0jvw_aodwu0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-04",
   "signo": "cargo",
   "importe": 1530,
@@ -8874,7 +8874,7 @@
  {
   "id": "mov_msri0jvw_bkvktr",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-04",
   "signo": "cargo",
   "importe": 5582.22,
@@ -8889,7 +8889,7 @@
  {
   "id": "mov_msri0jvw_dsy8wk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-04",
   "signo": "cargo",
   "importe": 7008.58,
@@ -8904,7 +8904,7 @@
  {
   "id": "mov_msri0jvw_a8drrp",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-04",
   "signo": "cargo",
   "importe": 9756.24,
@@ -8920,7 +8920,7 @@
  {
   "id": "mov_msri0jvw_d3r32f",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-04",
   "signo": "cargo",
   "importe": 82.57,
@@ -8935,7 +8935,7 @@
  {
   "id": "mov_msri0jvw_1ffvtf",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-04",
   "signo": "cargo",
   "importe": 1379,
@@ -8949,7 +8949,7 @@
  {
   "id": "mov_msri0jvw_jbs1j5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-03",
   "signo": "cargo",
   "importe": 2.1,
@@ -8964,7 +8964,7 @@
  {
   "id": "mov_msri0jvw_fw88v8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-03",
   "signo": "abono",
   "importe": 14048.45,
@@ -8978,7 +8978,7 @@
  {
   "id": "mov_msri0jvw_nyfupu",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-03",
   "signo": "abono",
   "importe": 9709.73,
@@ -8992,7 +8992,7 @@
  {
   "id": "mov_msri0jvw_7a3wpo",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-03",
   "signo": "abono",
   "importe": 7996.6,
@@ -9006,7 +9006,7 @@
  {
   "id": "mov_msri0jvw_lyoq69",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-03",
   "signo": "abono",
   "importe": 8338.52,
@@ -9020,7 +9020,7 @@
  {
   "id": "mov_msri0jvw_6qivlr",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-03",
   "signo": "abono",
   "importe": 7208.76,
@@ -9034,7 +9034,7 @@
  {
   "id": "mov_msri0jvw_7utwq3",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-03",
   "signo": "abono",
   "importe": 3919.15,
@@ -9048,7 +9048,7 @@
  {
   "id": "mov_msri0jvw_tp5s6i",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-03",
   "signo": "abono",
   "importe": 5602.26,
@@ -9062,7 +9062,7 @@
  {
   "id": "mov_msri0jvw_v7o58e",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-02",
   "signo": "cargo",
   "importe": 7.48,
@@ -9077,7 +9077,7 @@
  {
   "id": "mov_msri0jvw_1exrua",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-02",
   "signo": "abono",
   "importe": 5371.81,
@@ -9091,7 +9091,7 @@
  {
   "id": "mov_msri0jvw_ndfx1r",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-02",
   "signo": "abono",
   "importe": 9027.89,
@@ -9105,7 +9105,7 @@
  {
   "id": "mov_msri0jvw_6bz957",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-02",
   "signo": "abono",
   "importe": 838.05,
@@ -9119,7 +9119,7 @@
  {
   "id": "mov_msri0jvw_1289zp",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-02",
   "signo": "cargo",
   "importe": 1495,
@@ -9133,7 +9133,7 @@
  {
   "id": "mov_msri0jvw_evvay5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-02",
   "signo": "cargo",
   "importe": 1379,
@@ -9147,7 +9147,7 @@
  {
   "id": "mov_msri0jvw_be46j0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-02",
   "signo": "cargo",
   "importe": 2495,
@@ -9161,7 +9161,7 @@
  {
   "id": "mov_msri0jvw_n6cnx1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-02",
   "signo": "cargo",
   "importe": 841.85,
@@ -9175,7 +9175,7 @@
  {
   "id": "mov_msri0jvw_3op7cx",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-02",
   "signo": "cargo",
   "importe": 1049.12,
@@ -9189,7 +9189,7 @@
  {
   "id": "mov_msri0jvw_wf60r0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-02-02",
   "signo": "cargo",
   "importe": 56.83,
@@ -9204,7 +9204,7 @@
  {
   "id": "mov_msri0jvw_wngijn",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-31",
   "signo": "cargo",
   "importe": 83.8,
@@ -9219,7 +9219,7 @@
  {
   "id": "mov_msri0jvw_a4uvsy",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-31",
   "signo": "cargo",
   "importe": 26.31,
@@ -9234,7 +9234,7 @@
  {
   "id": "mov_msri0jvw_8l32bk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-31",
   "signo": "cargo",
   "importe": 22.04,
@@ -9249,7 +9249,7 @@
  {
   "id": "mov_msri0jvw_lk4mn8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-30",
   "signo": "cargo",
   "importe": 2041.08,
@@ -9263,7 +9263,7 @@
  {
   "id": "mov_msri0jvw_s5j4z3",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-30",
   "signo": "cargo",
   "importe": 1429.92,
@@ -9278,7 +9278,7 @@
  {
   "id": "mov_msri0jvw_rq9xdv",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-29",
   "signo": "cargo",
   "importe": 81.72,
@@ -9293,7 +9293,7 @@
  {
   "id": "mov_msri0jvw_cmg341",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-29",
   "signo": "cargo",
   "importe": 75,
@@ -9308,7 +9308,7 @@
  {
   "id": "mov_msri0jvw_111k2h",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-29",
   "signo": "cargo",
   "importe": 58,
@@ -9323,7 +9323,7 @@
  {
   "id": "mov_msq2ms8j_6fupaw",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600110011",
+  "cliente_id": "099000011",
   "fecha": "2026-01-28",
   "signo": "cargo",
   "importe": 67.5,
@@ -9337,7 +9337,7 @@
  {
   "id": "mov_msri0jvw_i1pv8x",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-28",
   "signo": "cargo",
   "importe": 72.6,
@@ -9352,7 +9352,7 @@
  {
   "id": "mov_msri0jvw_l8aa0z",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-28",
   "signo": "cargo",
   "importe": 8.16,
@@ -9367,7 +9367,7 @@
  {
   "id": "mov_msri0jvw_ovtzzt",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-28",
   "signo": "cargo",
   "importe": 10000,
@@ -9382,7 +9382,7 @@
  {
   "id": "mov_msri0jvw_zupcbo",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-27",
   "signo": "cargo",
   "importe": 7.48,
@@ -9397,7 +9397,7 @@
  {
   "id": "mov_msri0jvw_ejycth",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-27",
   "signo": "cargo",
   "importe": 48,
@@ -9412,7 +9412,7 @@
  {
   "id": "mov_msri0jvw_7bj5jq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-27",
   "signo": "cargo",
   "importe": 955.9,
@@ -9427,7 +9427,7 @@
  {
   "id": "mov_msri0jvw_0napbm",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-27",
   "signo": "abono",
   "importe": 5942.88,
@@ -9441,7 +9441,7 @@
  {
   "id": "mov_msri0jvw_5txrw5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-27",
   "signo": "abono",
   "importe": 3808.48,
@@ -9455,7 +9455,7 @@
  {
   "id": "mov_msri0jvw_i3ah8z",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-26",
   "signo": "cargo",
   "importe": 7.48,
@@ -9470,7 +9470,7 @@
  {
   "id": "mov_msri0jvw_60v0a8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-26",
   "signo": "cargo",
   "importe": 10.03,
@@ -9485,7 +9485,7 @@
  {
   "id": "mov_msri0jvw_feursb",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-25",
   "signo": "cargo",
   "importe": 59.99,
@@ -9500,7 +9500,7 @@
  {
   "id": "mov_msri0jvw_uz5bnq",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-25",
   "signo": "cargo",
   "importe": 14.7,
@@ -9515,7 +9515,7 @@
  {
   "id": "mov_msri0jvw_glf4tc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-24",
   "signo": "cargo",
   "importe": 20.5,
@@ -9530,7 +9530,7 @@
  {
   "id": "mov_msri0jvw_hfhn4v",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-24",
   "signo": "cargo",
   "importe": 2.7,
@@ -9545,7 +9545,7 @@
  {
   "id": "mov_msri0jvw_n84nxc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-24",
   "signo": "cargo",
   "importe": 48.23,
@@ -9560,7 +9560,7 @@
  {
   "id": "mov_msri0jvw_m87xnc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-23",
   "signo": "cargo",
   "importe": 7.08,
@@ -9575,7 +9575,7 @@
  {
   "id": "mov_msri0jvw_hxeh03",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-22",
   "signo": "cargo",
   "importe": 3.74,
@@ -9590,7 +9590,7 @@
  {
   "id": "mov_msri0jvw_c7evz8",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-22",
   "signo": "cargo",
   "importe": 64.06,
@@ -9605,7 +9605,7 @@
  {
   "id": "mov_msq2ms8j_x2yeh2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600110011",
+  "cliente_id": "099000011",
   "fecha": "2026-01-20",
   "signo": "cargo",
   "importe": 1320,
@@ -9619,7 +9619,7 @@
  {
   "id": "mov_msri0jvw_7qb1il",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-20",
   "signo": "cargo",
   "importe": 525,
@@ -9633,7 +9633,7 @@
  {
   "id": "mov_msri0jvw_ab1bvk",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-20",
   "signo": "cargo",
   "importe": 855,
@@ -9647,7 +9647,7 @@
  {
   "id": "mov_msri0jvw_w0v9gi",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-19",
   "signo": "cargo",
   "importe": 70,
@@ -9662,7 +9662,7 @@
  {
   "id": "mov_msri0jvw_4h5kth",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-16",
   "signo": "cargo",
   "importe": 61.54,
@@ -9677,7 +9677,7 @@
  {
   "id": "mov_msri0jvw_lla9p5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-16",
   "signo": "cargo",
   "importe": 5.95,
@@ -9692,7 +9692,7 @@
  {
   "id": "mov_msri0jvw_uule25",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-16",
   "signo": "cargo",
   "importe": 19.2,
@@ -9707,7 +9707,7 @@
  {
   "id": "mov_msri0jvw_d0gz79",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-16",
   "signo": "cargo",
   "importe": 80.93,
@@ -9722,7 +9722,7 @@
  {
   "id": "mov_msq2ms8j_866hzc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600110011",
+  "cliente_id": "099000011",
   "fecha": "2026-01-15",
   "signo": "cargo",
   "importe": 84.5,
@@ -9736,7 +9736,7 @@
  {
   "id": "mov_msri0jvw_r513ad",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-14",
   "signo": "abono",
   "importe": 14367.76,
@@ -9750,7 +9750,7 @@
  {
   "id": "mov_msri0jvw_vw7ujg",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-14",
   "signo": "abono",
   "importe": 11942.37,
@@ -9764,7 +9764,7 @@
  {
   "id": "mov_msri0jvw_idtgbn",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-14",
   "signo": "abono",
   "importe": 11034.37,
@@ -9778,7 +9778,7 @@
  {
   "id": "mov_msri0jvw_2ae5bn",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-14",
   "signo": "abono",
   "importe": 10581.71,
@@ -9792,7 +9792,7 @@
  {
   "id": "mov_msri0jvw_tnv7zc",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-14",
   "signo": "abono",
   "importe": 7326.93,
@@ -9806,7 +9806,7 @@
  {
   "id": "mov_msri0jvw_kipnv1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-14",
   "signo": "abono",
   "importe": 9913.24,
@@ -9820,7 +9820,7 @@
  {
   "id": "mov_msri0jvw_vlkicg",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-14",
   "signo": "cargo",
   "importe": 30108.34,
@@ -9835,7 +9835,7 @@
  {
   "id": "mov_msri0jvw_k2eiyh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-14",
   "signo": "cargo",
   "importe": 9593.12,
@@ -9850,7 +9850,7 @@
  {
   "id": "mov_msri0jvw_x5x5z1",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-13",
   "signo": "cargo",
   "importe": 50,
@@ -9865,7 +9865,7 @@
  {
   "id": "mov_msri0jvw_lczl6z",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-12",
   "signo": "cargo",
   "importe": 10907.88,
@@ -9881,7 +9881,7 @@
  {
   "id": "mov_msri0jvw_i6i960",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-12",
   "signo": "abono",
   "importe": 1403.36,
@@ -9895,7 +9895,7 @@
  {
   "id": "mov_msri0jvw_iuyck5",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-12",
   "signo": "cargo",
   "importe": 1403.36,
@@ -9909,7 +9909,7 @@
  {
   "id": "mov_msri0jvw_hl8lmm",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-11",
   "signo": "abono",
   "importe": 40,
@@ -9923,7 +9923,7 @@
  {
   "id": "mov_msri0jvw_g9oabi",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-11",
   "signo": "cargo",
   "importe": 59.8,
@@ -9938,7 +9938,7 @@
  {
   "id": "mov_msri0jvw_birwrh",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-11",
   "signo": "cargo",
   "importe": 8932,
@@ -9953,7 +9953,7 @@
  {
   "id": "mov_msq2ms8j_s76vjx",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600110011",
+  "cliente_id": "099000011",
   "fecha": "2026-01-10",
   "signo": "abono",
   "importe": 2500,
@@ -9967,7 +9967,7 @@
  {
   "id": "mov_msri0jvw_epgi4a",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-10",
   "signo": "cargo",
   "importe": 6.86,
@@ -9982,7 +9982,7 @@
  {
   "id": "mov_msri0jvw_2rlc4s",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-10",
   "signo": "cargo",
   "importe": 2.6,
@@ -9997,7 +9997,7 @@
  {
   "id": "mov_msri0jvw_frlb3v",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-09",
   "signo": "abono",
   "importe": 4994.92,
@@ -10011,7 +10011,7 @@
  {
   "id": "mov_msri0jvw_xc6nw7",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-09",
   "signo": "cargo",
   "importe": 70.67,
@@ -10026,7 +10026,7 @@
  {
   "id": "mov_msri0jvw_868hmf",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-09",
   "signo": "cargo",
   "importe": 264.89,
@@ -10041,7 +10041,7 @@
  {
   "id": "mov_msri0jvw_6gbbry",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-09",
   "signo": "cargo",
   "importe": 5506.17,
@@ -10056,7 +10056,7 @@
  {
   "id": "mov_msri0jvw_qnfy6f",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-09",
   "signo": "cargo",
   "importe": 65.98,
@@ -10071,7 +10071,7 @@
  {
   "id": "mov_msri0jvw_3t9jxi",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-08",
   "signo": "cargo",
   "importe": 62.52,
@@ -10086,7 +10086,7 @@
  {
   "id": "mov_msri0jvw_d4r71v",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-08",
   "signo": "cargo",
   "importe": 35,
@@ -10101,7 +10101,7 @@
  {
   "id": "mov_msri0jvw_ctmz49",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-07",
   "signo": "cargo",
   "importe": 34.94,
@@ -10116,7 +10116,7 @@
  {
   "id": "mov_msri0jvw_4ndg67",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-07",
   "signo": "abono",
   "importe": 6844.16,
@@ -10130,7 +10130,7 @@
  {
   "id": "mov_msri0jvw_8i636v",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-07",
   "signo": "abono",
   "importe": 1081.69,
@@ -10144,7 +10144,7 @@
  {
   "id": "mov_msri0jvw_ae2r2b",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-07",
   "signo": "abono",
   "importe": 10431.54,
@@ -10158,7 +10158,7 @@
  {
   "id": "mov_msri0jvw_dnxc0s",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-06",
   "signo": "cargo",
   "importe": 18.6,
@@ -10173,7 +10173,7 @@
  {
   "id": "mov_msri0jvw_r86mek",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-06",
   "signo": "cargo",
   "importe": 5.95,
@@ -10188,7 +10188,7 @@
  {
   "id": "mov_msri0jvw_2nxzzf",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-06",
   "signo": "cargo",
   "importe": 91.64,
@@ -10202,7 +10202,7 @@
  {
   "id": "mov_msri0jvw_xbatp9",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-06",
   "signo": "cargo",
   "importe": 1403.36,
@@ -10216,7 +10216,7 @@
  {
   "id": "mov_msq2ms8j_62a37n",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600110011",
+  "cliente_id": "099000011",
   "fecha": "2026-01-05",
   "signo": "cargo",
   "importe": 121,
@@ -10230,7 +10230,7 @@
  {
   "id": "mov_msri0jvw_81qf85",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-05",
   "signo": "cargo",
   "importe": 7.5,
@@ -10245,7 +10245,7 @@
  {
   "id": "mov_msri0jvw_kyvz38",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-05",
   "signo": "cargo",
   "importe": 1530,
@@ -10260,7 +10260,7 @@
  {
   "id": "mov_msri0jvw_6mj2ix",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-03",
   "signo": "cargo",
   "importe": 70,
@@ -10275,7 +10275,7 @@
  {
   "id": "mov_msri0jvw_9ref8v",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-03",
   "signo": "cargo",
   "importe": 18.2,
@@ -10290,7 +10290,7 @@
  {
   "id": "mov_msri0jvw_82brue",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-03",
   "signo": "cargo",
   "importe": 58.4,
@@ -10305,7 +10305,7 @@
  {
   "id": "mov_msri0jvw_ki1nt4",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-03",
   "signo": "cargo",
   "importe": 14.56,
@@ -10320,7 +10320,7 @@
  {
   "id": "mov_msq2ms8j_z7l9o0",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600110011",
+  "cliente_id": "099000011",
   "fecha": "2026-01-02",
   "signo": "cargo",
   "importe": 459.8,
@@ -10334,7 +10334,7 @@
  {
   "id": "mov_msri0jvv_2vemfd",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-02",
   "signo": "cargo",
   "importe": 34.35,
@@ -10349,7 +10349,7 @@
  {
   "id": "mov_msri0jvw_xrdhcy",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-02",
   "signo": "abono",
   "importe": 1403.36,
@@ -10363,7 +10363,7 @@
  {
   "id": "mov_msri0jvw_kjw3m2",
   "tenant_id": "tenant_demo_gestoria",
-  "cliente_id": "600330033",
+  "cliente_id": "099000033",
   "fecha": "2026-01-02",
   "signo": "cargo",
   "importe": 459.8,

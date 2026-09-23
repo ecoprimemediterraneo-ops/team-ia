@@ -18,6 +18,7 @@ import { listLeads } from "./pipeline";
 import { informe, getBusinessByTenant, listRecords, type BookingRecord } from "./booking";
 import { revisionesRecuperadas } from "./recall";
 import { conversionPresupuestos } from "./presupuestos";
+import { leadsDelMes, conversionAValoracion, leadsAbiertos } from "./estetica-leads";
 import type { Kpi, KpiId, PerfilSector } from "./sectores";
 
 export type ValorKpi = {
@@ -143,6 +144,24 @@ export async function calcularKpis(tenantId: string, perfil: PerfilSector): Prom
     ? await conversionPresupuestos(tenantId).catch(() => null)
     : null;
 
+  // Los dos de estética. Antes `leads` contaba eventos sueltos o, peor, caía a
+  // `listLeads()` — que es el CRM COMERCIAL DE AI-TEAM (leads de la web para
+  // vender AI-Team), otro dominio entero: a una clínica le salía en su panel un
+  // número que no era suyo. Y `leads_a_valoracion` se calculaba cruzando
+  // `message_in` con `appointment_set`, lo que mide "quién escribió y reservó",
+  // no "cuántos leads llegan a valoración". Ahora que `estetica-leads.ts`
+  // existe de verdad, los dos salen de ahí.
+  const esEstetica = perfil.id === "estetica";
+  const leadsEstetica = esEstetica ? await leadsDelMes(tenantId).catch(() => null) : null;
+  const valoracionEstetica = esEstetica
+    ? await conversionAValoracion(tenantId).catch(() => null)
+    : null;
+  // `pipeline` ("En seguimiento") arrastraba el MISMO error de dominio que
+  // `leads`: contaba los leads de `pipeline.ts`, que son los de AI-Team. A una
+  // clínica le aparecía en su panel un número de otra empresa, y eso es peor
+  // que un guion. Se arregla aquí porque es el mismo módulo y la misma causa.
+  const abiertosEstetica = esEstetica ? await leadsAbiertos(tenantId).catch(() => null) : null;
+
   const leads = await listLeads().catch(() => []);
   const leadsTenant = leads.filter((l) => (l.tenantId || "tenant_aiteam") === tenantId);
 
@@ -162,8 +181,20 @@ export async function calcularKpis(tenantId: string, perfil: PerfilSector): Prom
         return inf ? { ...base, valor: String(inf.citas.total) }
                    : { ...base, valor: null, motivo: "Sin motor de reservas conectado." };
       case "leads":
+        // En estética, los leads DEL NEGOCIO. Guion mientras no haya ninguno
+        // apuntado: ahí no es que no lleguen, es que no hay nada que medir.
+        if (esEstetica) {
+          return leadsEstetica === null
+            ? { ...base, valor: null, motivo: "Todavía no hay ningún lead apuntado." }
+            : { ...base, valor: String(leadsEstetica) };
+        }
         return { ...base, valor: String(cuenta("lead_captured") || leadsTenant.length) };
       case "pipeline":
+        if (esEstetica) {
+          return abiertosEstetica === null
+            ? { ...base, valor: null, motivo: "Todavía no hay ningún lead apuntado." }
+            : { ...base, valor: String(abiertosEstetica) };
+        }
         return { ...base, valor: String(leadsTenant.filter((l) => l.stage !== "client" && l.stage !== "lost").length) };
       case "consultas_recibidas":
         return { ...base, valor: String(remitentes.size) };
@@ -206,6 +237,14 @@ export async function calcularKpis(tenantId: string, perfil: PerfilSector): Prom
           ? { ...base, valor: String(huecosRellenados(recs, desde, hasta)) }
           : { ...base, valor: null, motivo: "Sin motor de reservas conectado." };
       case "leads_a_valoracion": {
+        // "4 de 17" = de diecisiete leads captados, cuatro han llegado a tener
+        // valoración puesta. Los descartados siguen contando en el total a
+        // propósito: esconderlos inflaría la conversión.
+        if (esEstetica) {
+          return valoracionEstetica
+            ? { ...base, valor: `${valoracionEstetica.conValoracion} de ${valoracionEstetica.total}` }
+            : { ...base, valor: null, motivo: "Todavía no hay ningún lead apuntado." };
+        }
         const c = conversion(eventos);
         return { ...base, ...c };
       }

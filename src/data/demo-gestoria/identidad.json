@@ -1,12 +1,12 @@
 [
  {
-  "clienteId": "600550055",
+  "clienteId": "099000055",
   "nif": "B93765204",
   "nifMostrado": "B-93.765.204",
   "telefonos": [
-   "600550055",
-   "34655443322",
-   "34677555444"
+   "099000055",
+   "34099000101",
+   "34099000102"
   ],
   "emails": [
    "compras@vega.example"
@@ -17,18 +17,18 @@
   "actualizadoEn": "2026-08-20T16:54:20.349Z"
  },
  {
-  "clienteId": "600660066",
+  "clienteId": "099000066",
   "telefonos": [
-   "600660066"
+   "099000066"
   ],
   "emails": [],
   "modelos": [],
   "actualizadoEn": "2026-08-20T16:54:20.250Z"
  },
  {
-  "clienteId": "600330033",
+  "clienteId": "099000033",
   "telefonos": [
-   "600330033"
+   "099000033"
   ],
   "emails": [],
   "modelos": [
@@ -39,9 +39,9 @@
   "actualizadoEn": "2026-08-20T16:52:39.797Z"
  },
  {
-  "clienteId": "600110011",
+  "clienteId": "099000011",
   "telefonos": [
-   "600110011"
+   "099000011"
   ],
   "emails": [],
   "modelos": [
@@ -51,7 +51,7 @@
   "actualizadoEn": "2026-08-20T16:52:39.886Z"
  },
  {
-  "clienteId": "600440044",
+  "clienteId": "099000044",
   "nif": "12345678Z",
   "nifMostrado": "12345678Z",
   "telefonos": [],

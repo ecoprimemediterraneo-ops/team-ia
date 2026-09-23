@@ -152,3 +152,89 @@ export async function sembrarDatosDemoGestoria(): Promise<ResultadoSiembra> {
     return { ok: false, detalle, error: e instanceof Error ? e.message : String(e) };
   }
 }
+
+
+// -----------------------------------------------------------------------------
+// TELÉFONOS: de los "600…" reales-posibles al prefijo 099 de mentira
+// -----------------------------------------------------------------------------
+// La siembra no pisa lo que ya existe, así que una demo sembrada con los
+// teléfonos antiguos (600110011…, números que SÍ pueden existir) los conservaría
+// para siempre. Esto los cambia en los cinco almacenes de la demo, y SOLO en la
+// demo. `whatsapp-sender.ts` los bloquea de todos modos; esto además deja de
+// enseñarlos en pantalla.
+
+const CAMBIO_TELEFONOS: Array<[string, string]> = [
+  ["600110011", "099000011"], ["600220022", "099000022"], ["600330033", "099000033"],
+  ["600440044", "099000044"], ["600550055", "099000055"], ["600660066", "099000066"],
+  ["34655443322", "34099000101"], ["34677555444", "34099000102"], ["34600111222", "34099000103"],
+  ["34688111000", "34099000104"], ["34611999888", "34099000105"],
+];
+
+function cambiarTelefonos<T>(dato: T): { dato: T; cambios: number } {
+  let txt = JSON.stringify(dato);
+  let cambios = 0;
+  for (const [viejo, nuevo] of CAMBIO_TELEFONOS) {
+    const partes = txt.split(viejo);
+    if (partes.length > 1) { cambios += partes.length - 1; txt = partes.join(nuevo); }
+  }
+  return { dato: JSON.parse(txt) as T, cambios };
+}
+
+export async function migrarTelefonosDemo(): Promise<{ ok: boolean; detalle: string[]; error?: string }> {
+  const detalle: string[] = [];
+  try {
+    const exp = cambiarTelefonos(await listarExpedientes(TENANT_DEMO));
+    if (exp.cambios) await guardarExpedientes(TENANT_DEMO, exp.dato);
+    detalle.push(`Expedientes: ${exp.cambios} cambios.`);
+    // Al cambiar el teléfono cambia el `clienteId` de la ficha. Si la semilla
+    // nueva ya había metido la suya, quedarían dos por cliente: se juntan.
+    const ide = cambiarTelefonos(await listarIdentidades(TENANT_DEMO));
+    const porCliente = new Map<string, IdentidadCliente>();
+    for (const f of ide.dato) {
+      const previa = porCliente.get(f.clienteId);
+      if (!previa) { porCliente.set(f.clienteId, f); continue; }
+      const union = <T,>(a: T[] = [], b: T[] = []) => [...new Set([...a, ...b])];
+      porCliente.set(f.clienteId, {
+        ...previa, ...f,
+        telefonos: union(previa.telefonos, f.telefonos),
+        emails: union(previa.emails, f.emails),
+        modelos: union(previa.modelos, f.modelos),
+      });
+    }
+    const fichas = [...porCliente.values()];
+    const juntadas = ide.dato.length - fichas.length;
+    if (ide.cambios || juntadas) await reemplazarIdentidades(TENANT_DEMO, fichas);
+    detalle.push(`Fichas de identidad: ${ide.cambios} cambios, ${juntadas} duplicadas juntadas.`);
+    const fac = cambiarTelefonos(await listarFacturas(TENANT_DEMO));
+    if (fac.cambios) await guardarFacturas(TENANT_DEMO, fac.dato);
+    detalle.push(`Documentos: ${fac.cambios} cambios.`);
+    const mov = cambiarTelefonos(await listarMovimientos(TENANT_DEMO));
+    if (mov.cambios) await guardarMovimientos(TENANT_DEMO, mov.dato);
+    detalle.push(`Movimientos del banco: ${mov.cambios} cambios.`);
+    const obl = cambiarTelefonos(await listarObligaciones(TENANT_DEMO));
+    if (obl.cambios) await reemplazarObligaciones(TENANT_DEMO, obl.dato);
+    detalle.push(`Vencimientos: ${obl.cambios} cambios.`);
+    return { ok: true, detalle };
+  } catch (e) {
+    return { ok: false, detalle, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/** Lo que hay ahora en la demo, sin escribir nada. */
+export async function estadoDemoGestoria() {
+  const [exp, ide, fac, mov, obl] = await Promise.all([
+    listarExpedientes(TENANT_DEMO), listarIdentidades(TENANT_DEMO), listarFacturas(TENANT_DEMO),
+    listarMovimientos(TENANT_DEMO), listarObligaciones(TENANT_DEMO),
+  ]);
+  const antiguos = CAMBIO_TELEFONOS.map(([v]) => v);
+  const todo = JSON.stringify([exp, ide, fac, mov, obl]);
+  return {
+    expedientes: exp.length, fichasIdentidad: ide.length, documentos: fac.length,
+    movimientosBanco: mov.length, vencimientos: obl.length,
+    telefonosAntiguosPresentes: antiguos.filter((n) => todo.includes(n)),
+    semilla: {
+      expedientes: (semillaExpedientes as unknown[]).length, documentos: (semillaFacturas as unknown[]).length,
+      movimientos: (semillaMovimientos as unknown[]).length, vencimientos: (semillaObligaciones as unknown[]).length,
+    },
+  };
+}
