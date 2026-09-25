@@ -9,6 +9,7 @@
 
 import "server-only";
 import { getBusinessesForTenant } from "./booking";
+import { textoFalloReserva } from "./reserva-texto";
 import {
   registrarLead,
   cambiarEstadoLead,
@@ -193,10 +194,7 @@ export async function ejecutar(tenantId: string, accion: AccionPendiente): Promi
       customerPhone: accion.telefono || undefined,
     });
     if (res.ok) return { ok: true, texto: `Hecho. Cita creada: ${accion.etiqueta}.` };
-    if (res.reason === "slot_taken" || res.reason === "locked") {
-      return { ok: false, texto: "Ese hueco ya está ocupado, no se ha creado la cita. Prueba con otra hora." };
-    }
-    return { ok: false, texto: `No se ha podido crear la cita: ${res.detail}.` };
+    return { ok: false, texto: textoFalloReserva(res) };
   }
 
   if (accion.clase === "crear_lead") {

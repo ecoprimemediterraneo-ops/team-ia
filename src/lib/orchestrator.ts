@@ -35,6 +35,7 @@ import { findFreeSlot } from "./appointment-intent";
 import { logEvent, makeEventId, getMonthEvents, monthKey, type EventChannel, type AnalyticsEvent } from "./event-log";
 import { DEFAULT_TENANT_ID } from "./tenants";
 import { kvTryLock, kvUnlock, supabaseEnabled } from "./supabase";
+import { reservarSlotBooking } from "./booking-orchestrator";
 
 const DEFAULT_DURATION_MIN = 30;
 const LOCK_TTL_MS = 30_000;
@@ -80,11 +81,18 @@ export type ReservaInput = {
   zona?: "terraza" | "interior" | "indiferente";
   /** Solo para pruebas locales sin tokens de Google: simula la disponibilidad. */
   simulate?: boolean;
+  /**
+   * Preparación del servicio. Si el tenant tiene negocio de reservas y no se dice
+   * `durationMin`, duración y padding salen del servicio que corresponde al
+   * motivo (el mismo criterio de la lista de huecos).
+   */
+  paddingBeforeMin?: number;
+  paddingAfterMin?: number;
 };
 
 export type ReservaResult =
   | { ok: true; eventId: string; htmlLink?: string; eventLogId?: string; simulated?: boolean }
-  | { ok: false; reason: "slot_taken"; suggested?: string }
+  | { ok: false; reason: "slot_taken"; suggested?: string; motivo?: "fuera_de_horario" | "pasado" | "ocupado" | "no_calendar" }
   | { ok: false; reason: "locked" }
   | { ok: false; reason: "error"; detail: string };
 
@@ -166,6 +174,18 @@ async function logDecision(
  */
 export async function reservarSlot(input: ReservaInput): Promise<ReservaResult> {
   const tenantId = input.tenantId || DEFAULT_TENANT_ID;
+
+  // UN SOLO CAMINO cuando el tenant tiene negocio de reservas: la disponibilidad
+  // se pregunta con la MISMA función que la lista de huecos (horario, antelación,
+  // duración y padding del servicio, reservas y bloqueos propios, y Google solo si
+  // el negocio lo tiene conectado), el candado es el de la agenda del negocio (el
+  // mismo que usa la reserva online, así que chat, Pablo, Carmen, Marta y la web
+  // pública no se pisan) y la cita se guarda DENTRO del candado. Sin negocio (la
+  // cuenta comercial de AI-Team) sigue el camino de siempre, contra Google.
+  if (!input.simulate) {
+    const negocio = await reservarConNegocio(input, tenantId);
+    if (negocio) return negocio;
+  }
   const durationMin = input.durationMin ?? DEFAULT_DURATION_MIN;
   const slotKey = `${tenantId}|${input.startIso}|${durationMin}`;
 
@@ -270,6 +290,83 @@ export async function reservarSlot(input: ReservaInput): Promise<ReservaResult> 
   }
 
   return result;
+}
+
+async function reservarConNegocio(input: ReservaInput, tenantId: string): Promise<ReservaResult | null> {
+  const { getBusinessByTenant, resolveCalendarEmail, servicioParaTexto, resolverServicio, disponibilidadParaReserva, registrarRecordDeCita, avisosDeCitaNueva } =
+    await import("./booking");
+  const business = await getBusinessByTenant(tenantId);
+  if (!business) return null;
+
+  // Duración y padding: los que diga quien llama, o los del servicio que
+  // corresponde al motivo (por defecto el de referencia de la lista de huecos).
+  let durationMin = input.durationMin;
+  let pB = input.paddingBeforeMin ?? 0;
+  let pA = input.paddingAfterMin ?? 0;
+  if (!durationMin) {
+    const sv = servicioParaTexto(business, input.motivo);
+    if (sv) {
+      const sel = resolverServicio(sv, {});
+      durationMin = sel.durationMin; pB = sel.paddingBeforeMin; pA = sel.paddingAfterMin;
+    }
+  }
+  durationMin = durationMin ?? DEFAULT_DURATION_MIN;
+
+  // El calendario es el DEL NEGOCIO, no el del fundador.
+  const calendarEmail = await resolveCalendarEmail(business);
+  const startNorm = input.startIso.length === 16 ? `${input.startIso}:00` : input.startIso.slice(0, 19);
+  let ultima: Awaited<ReturnType<typeof disponibilidadParaReserva>> | null = null;
+  let record: Awaited<ReturnType<typeof registrarRecordDeCita>> = null;
+
+  const res = await reservarSlotBooking({
+    tenantId,
+    userEmail: calendarEmail,
+    redirectUri: input.redirectUri,
+    nombre: input.nombre,
+    motivo: input.motivo,
+    startIso: startNorm,
+    durationMin,
+    agenteOrigen: input.agenteOrigen,
+    customerPhone: input.customerPhone,
+    attendees: input.attendees,
+    location: input.location,
+    simulate: process.env.BOOKING_SIMULATE === "1" ? true : undefined,
+    revalidate: async () => {
+      ultima = await disponibilidadParaReserva(tenantId, { startIso: startNorm, durationMin: durationMin!, paddingBeforeMin: pB, paddingAfterMin: pA }, input.redirectUri);
+      return ultima.negocio && ultima.available;
+    },
+    persistir: async (cita) => {
+      if (!AGENTES_CON_RECORD.has(input.agenteOrigen)) return;
+      let baseUrl: string | undefined;
+      try { baseUrl = new URL(input.redirectUri).origin; } catch { baseUrl = undefined; }
+      record = await registrarRecordDeCita({
+        slug: business.slug, startIso: startNorm, durationMin: durationMin!, paddingBeforeMin: pB, paddingAfterMin: pA,
+        motivo: input.motivo,
+        cliente: { nombre: input.nombre, telefono: input.customerPhone || "", email: input.attendees?.[0] },
+        eventId: cita.eventId, htmlLink: cita.htmlLink, baseUrl,
+        comensales: input.comensales, zona: input.zona,
+      }, { sinAvisos: true });
+    },
+  });
+
+  if (res.ok) {
+    // Fuera del candado: los avisos tardan y no deben retener la agenda.
+    if (record) {
+      let baseUrl: string | undefined;
+      try { baseUrl = new URL(input.redirectUri).origin; } catch { baseUrl = undefined; }
+      await avisosDeCitaNueva(record, baseUrl).catch((e) => console.error("[orchestrator] avisos de cita (no crítico):", e));
+    }
+    return res;
+  }
+  if (res.reason === "slot_taken") {
+    const u = ultima as Awaited<ReturnType<typeof disponibilidadParaReserva>> | null;
+    if (u && u.negocio && !u.available) {
+      if (u.motivo === "no_calendar") return { ok: false, reason: "error", detail: "calendario de Google desconectado" };
+      if (u.motivo === "error") return { ok: false, reason: "error", detail: u.detail || "no se pudo consultar el calendario" };
+      return { ok: false, reason: "slot_taken", suggested: u.suggested, motivo: u.motivo };
+    }
+  }
+  return res;
 }
 
 // -----------------------------------------------------------------------------

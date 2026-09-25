@@ -23,7 +23,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { kvGet, kvSet, kvListByPrefix, supabaseEnabled } from "./supabase";
 import { getTenant, DEFAULT_TENANT_ID } from "./tenants";
-import { freeBusyQuery, deleteEvent } from "./calendar";
+import { freeBusyQuery, deleteEvent, esEventoInterno } from "./calendar";
 import { reservarSlotBooking } from "./booking-orchestrator";
 import { benditoArteSeed } from "./booking-seed-bendito";
 import { configRestaurante, estadoInicialReserva } from "./restaurante";
@@ -405,6 +405,11 @@ export type DuracionFootprint = { durationMin: number; paddingBeforeMin?: number
 
 type Ocupado = { start: number; end: number };
 
+export const MENSAJE_CALENDARIO_DESCONECTADO =
+  "El calendario de Google de este negocio se ha desconectado. Vuelve a conectarlo en Agenda → «Reconectar Google Calendar» para ver los huecos.";
+export const MENSAJE_CALENDARIO_ERROR =
+  "No se ha podido consultar el calendario ahora mismo. Vuelve a intentarlo en un minuto.";
+
 /**
  * ¿El detalle de error de Google indica que el calendario está DESCONECTADO y hay
  * que reconectar OAuth (no un fallo transitorio)? Cubre el caso típico `invalid_grant`
@@ -447,7 +452,21 @@ async function reunirOcupado(
     const fb = await freeBusyQuery(calendarEmail, redirectUri, new Date(fromEpoch).toISOString(), new Date(toEpoch).toISOString());
     const SIM = process.env.BOOKING_SIMULATE === "1";
     if (fb.ok) for (const b of fb.busy) busy.push({ start: Date.parse(b.start), end: Date.parse(b.end) });
-    else if (!SIM) return { ok: false, reason: (fb.reason === "no_tokens" || pareceCalendarioDesconectado(fb.detail)) ? "no_calendar" : "error", detail: fb.detail };
+    // Sin Google conectado (no hay token, no que haya caducado): la agenda es la
+    // interna, con las reservas y bloqueos de aquí. Es lo que permite enseñar un
+    // negocio de demostración funcionando y dar de alta un negocio antes de que
+    // conecte su calendario. Un token revocado o caducado NO entra aquí: sigue
+    // siendo "reconecta", porque sus eventos de Google seguirían sin verse.
+    else if (fb.reason === "no_tokens") { /* agenda interna */ }
+    else if (!SIM) {
+      // El texto técnico de Google ("invalid_grant", "insufficient scopes"…) NO sale de
+      // aquí: llega a pantallas y a chats que lee el cliente. Se queda en el log del
+      // servidor y hacia fuera va una frase que dice qué pasa y cómo se arregla.
+      console.warn(`[booking] calendario de ${business.slug} no consultable: ${fb.detail}`);
+      return pareceCalendarioDesconectado(fb.detail)
+        ? { ok: false, reason: "no_calendar", detail: MENSAJE_CALENDARIO_DESCONECTADO }
+        : { ok: false, reason: "error", detail: MENSAJE_CALENDARIO_ERROR };
+    }
   }
 
   try {
@@ -618,7 +637,7 @@ function nuevoId(prefix: string): string {
  * ni una cita fantasma ocupando el hueco.
  */
 async function retirarCitaDeGoogle(calendarEmail: string, redirectUri: string, eventId: string): Promise<boolean> {
-  if (!eventId || eventId.startsWith("sim_") || process.env.BOOKING_SIMULATE === "1") return true;
+  if (!eventId || esEventoInterno(eventId) || process.env.BOOKING_SIMULATE === "1") return true;
   try {
     const del = await deleteEvent(calendarEmail, redirectUri, eventId);
     return del.ok;
@@ -752,6 +771,9 @@ export type RegistrarRecordInput = {
   cliente: { nombre: string; telefono: string; email?: string };
   eventId?: string; // evento YA creado en Google por el orquestador
   htmlLink?: string;
+  /** Padding del servicio: sin él, la reserva guardada solo ocuparía el servicio y no su preparación. */
+  paddingBeforeMin?: number;
+  paddingAfterMin?: number;
   baseUrl?: string; // origen público (para el enlace de cancelar de la confirmación al cliente)
   /** SOLO RESTAURACIÓN. Ausentes en los demás sectores, como hasta ahora. */
   comensales?: number;
@@ -764,12 +786,15 @@ export type RegistrarRecordInput = {
  * Idempotente por eventId (protege ante reintentos de webhook). Devuelve null si
  * el tenant no tiene business → se comporta como hoy, sin regresión.
  */
-export async function registrarRecordDeCita(input: RegistrarRecordInput): Promise<BookingRecord | null> {
+export async function registrarRecordDeCita(
+  input: RegistrarRecordInput,
+  opts?: { sinAvisos?: boolean },
+): Promise<BookingRecord | null> {
   const business = await getBusinessBySlug(input.slug);
   if (!business) return null;
   // Idempotencia: si ya existe un record con este eventId, no dupliques.
   if (input.eventId) {
-    const existente = (await listRecords()).find((r) => r.eventId === input.eventId);
+    const existente = (await listRecords()).find((r) => r.eventId === input.eventId && r.estado !== "cancelada");
     if (existente) return existente;
   }
   const startNorm = input.startIso.length === 16 ? `${input.startIso}:00` : input.startIso;
@@ -781,6 +806,8 @@ export async function registrarRecordDeCita(input: RegistrarRecordInput): Promis
     serviceId: "",
     servicioNombre: input.motivo || "Cita",
     durationMin: input.durationMin,
+    ...(input.paddingBeforeMin ? { paddingBeforeMin: input.paddingBeforeMin } : {}),
+    ...(input.paddingAfterMin ? { paddingAfterMin: input.paddingAfterMin } : {}),
     startIso: startNorm,
     cliente: input.cliente,
     comensales: input.comensales,
@@ -800,19 +827,29 @@ export async function registrarRecordDeCita(input: RegistrarRecordInput): Promis
     creadaEn: new Date().toISOString(),
   };
   await saveRecord(record);
+  // Con `sinAvisos` solo se guarda (se llama DENTRO del candado de reserva) y los
+  // avisos —email y WhatsApp, que tardan— se mandan después con `avisosDeCitaNueva`.
+  if (opts?.sinAvisos) return record;
+  await avisosDeCitaNueva(record, input.baseUrl);
+  return record;
+}
+
+/** Aviso al dueño y confirmación al cliente de una cita agendada por un agente. Best-effort. */
+export async function avisosDeCitaNueva(record: BookingRecord, baseUrl?: string): Promise<void> {
+  const business = await getBusinessBySlug(record.slug).catch(() => null);
+  if (!business) return;
   await notificarDueno(record, "nueva");
   // Confirmación al CLIENTE (email + WhatsApp con enlace de cancelar/reprogramar).
   // Cuando la cita la agenda un agente (Pablo por WhatsApp, Carmen, Eva, Lucía), la
   // clienta recibe la MISMA confirmación con enlace que en la reserva online. Reutiliza
   // enviarConfirmacion (mismo texto y misma URL con token). Best-effort: nunca rompe la cita.
   try {
-    const base = input.baseUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://aiteam.marketing";
+    const base = baseUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://aiteam.marketing";
     const { enviarConfirmacion } = await import("./booking-email");
     await enviarConfirmacion(record, business, base);
   } catch (e) {
     console.error("[booking] confirmación al cliente (whatsapp/email) falló (no crítico):", e);
   }
-  return record;
 }
 
 /**
@@ -851,7 +888,7 @@ async function notificarDueno(record: BookingRecord, tipo: "nueva" | "cancelada"
 async function borrarEventoGoogle(record: BookingRecord, redirectUri: string): Promise<{ ok: boolean; detail?: string }> {
   const business = await getBusinessBySlug(record.slug);
   const calendarEmail = business ? await resolveCalendarEmail(business) : record.tenantId;
-  const simulado = process.env.BOOKING_SIMULATE === "1" || record.eventId?.startsWith("sim_");
+  const simulado = process.env.BOOKING_SIMULATE === "1" || esEventoInterno(record.eventId);
   if (record.eventId && !simulado) {
     const del = await deleteEvent(calendarEmail, redirectUri, record.eventId);
     if (!del.ok) return { ok: false, detail: del.detail };
@@ -1824,4 +1861,101 @@ function seedBusinesses(): ConfigMap {
     horario: { 0: cerrado, 1: laborable, 2: laborable, 3: laborable, 4: laborable, 5: laborable, 6: sabado },
   };
   return { demo };
+}
+
+
+// -----------------------------------------------------------------------------
+// UNA SOLA FUENTE DE VERDAD para "¿se puede reservar esto?"
+// -----------------------------------------------------------------------------
+// Antes había dos: la lista de huecos (`computeFreeSlots`: horario, antelación,
+// duración del servicio, padding, reservas propias + Google del negocio) y la
+// reserva de los agentes (`reservarSlot`, que solo preguntaba a Google con el
+// email del FUNDADOR y con 30 minutos fijos). Un hueco podía salir libre en la
+// lista y dar "ocupado" al reservarlo, y sin Google conectado daba "ocupado"
+// SIEMPRE. Ahora las dos preguntas pasan por `reunirOcupado` y por las mismas
+// reglas de horario y antelación.
+
+export type DisponibilidadReserva =
+  | { negocio: false }
+  | {
+      negocio: true;
+      available: true;
+    }
+  | {
+      negocio: true;
+      available: false;
+      /** Por qué: fuera de horario, ya pasado, ocupado, o el calendario está desconectado. */
+      motivo: "fuera_de_horario" | "pasado" | "ocupado" | "no_calendar" | "error";
+      suggested?: string;
+      detail?: string;
+    };
+
+/**
+ * ¿Se puede reservar `startIso` (hora local del negocio) con esta duración? Mismas
+ * reglas que `computeFreeSlots`: dentro de una franja de apertura, sin pasar de la
+ * hora de cierre, respetando la antelación mínima y sin solaparse con nada
+ * (Google si está conectado + reservas + bloqueos + padding). Todo hueco que la
+ * lista ofrece cumple esto; lo que no lo cumple no se ofrece.
+ */
+export async function disponibilidadParaReserva(
+  tenantId: string,
+  input: { startIso: string; durationMin: number; paddingBeforeMin?: number; paddingAfterMin?: number },
+  redirectUri: string,
+): Promise<DisponibilidadReserva> {
+  const business = await getBusinessByTenant(tenantId);
+  if (!business) return { negocio: false };
+  const tz = business.timezone || "Europe/Madrid";
+  const startNorm = input.startIso.length === 16 ? `${input.startIso}:00` : input.startIso.slice(0, 19);
+  const dateStr = startNorm.slice(0, 10);
+  const dur = input.durationMin;
+  const pB = input.paddingBeforeMin ?? 0;
+  const pA = input.paddingAfterMin ?? 0;
+  const sel: DuracionFootprint = { durationMin: dur, paddingBeforeMin: pB, paddingAfterMin: pA };
+
+  const siguiente = async (empleadoId?: string): Promise<string | undefined> => {
+    const r = await computeFreeSlots(business, sel, dateStr, redirectUri, undefined, empleadoId);
+    return r.ok ? r.slots.find((x) => x > startNorm) : undefined;
+  };
+
+  const emps = (business.empleados || []).filter((e) => e.activo);
+  const candidatos: Array<Empleado | undefined> = emps.length ? emps : [undefined];
+
+  let ultimoMotivo: "fuera_de_horario" | "pasado" | "ocupado" = "fuera_de_horario";
+  for (const emp of candidatos) {
+    const horario = emp?.horario ?? business.horario;
+    const weekday = new Date(`${dateStr}T12:00:00Z`).getUTCDay();
+    const day = horario[weekday];
+    const minutos = Number(startNorm.slice(11, 13)) * 60 + Number(startNorm.slice(14, 16));
+    const cabe = !!day?.abierto && day.franjas.some((f) => {
+      const [dh, dm] = f.desde.split(":").map(Number);
+      const [hh, hm] = f.hasta.split(":").map(Number);
+      return minutos >= dh * 60 + dm && minutos + dur <= hh * 60 + hm;
+    });
+    if (!cabe) { ultimoMotivo = "fuera_de_horario"; continue; }
+    const lead = business.leadTimeMin ?? 60;
+    if (localToEpoch(startNorm, tz) < Date.now() + lead * 60_000) { ultimoMotivo = "pasado"; continue; }
+    const fl = await footprintLibre(business, startNorm, pB, dur, pA, redirectUri, undefined, emp?.id);
+    if (!fl.ok) {
+      return { negocio: true, available: false, motivo: fl.reason === "no_calendar" ? "no_calendar" : "error", detail: fl.detail };
+    }
+    if (fl.libre) return { negocio: true, available: true };
+    ultimoMotivo = "ocupado";
+  }
+  return { negocio: true, available: false, motivo: ultimoMotivo, suggested: await siguiente(emps[0]?.id) };
+}
+
+/**
+ * El servicio al que corresponde lo que dice el dueño ("implante", "limpieza"):
+ * el que lo contiene en el nombre, o el de referencia (el primero activo) si no
+ * hay coincidencia — que es el mismo con el que se calcula la lista de huecos.
+ */
+export function servicioParaTexto(business: BusinessBooking, texto: string): BookingService | undefined {
+  const activos = business.servicios.filter((s) => s.activo);
+  const norm = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const q = norm(texto || "");
+  const palabras = q.split(/[^a-z0-9]+/).filter((w) => w.length > 3);
+  const exacto = activos.find((s) => q && (norm(s.nombre).includes(q) || q.includes(norm(s.nombre))));
+  if (exacto) return exacto;
+  const parcial = activos.find((s) => palabras.some((w) => norm(s.nombre).includes(w)));
+  return parcial ?? activos[0];
 }

@@ -141,6 +141,21 @@ export async function getLiveGrantedScopes(
   }
 }
 
+/**
+ * ¿Tiene esta cuenta un calendario de Google conectado? Solo mira si hay
+ * refresh token guardado. Una cuenta que SÍ estuvo conectada y cuyo token se
+ * revocó cuenta como conectada: ahí hay que reconectar, no sustituir Google por
+ * la agenda interna a escondidas (se perderían los eventos que el dueño tenga
+ * puestos a mano en su calendario).
+ */
+export async function calendarioConectado(userEmail: string): Promise<boolean> {
+  const tokens = await getGmailTokens(userEmail);
+  return !!tokens?.refreshToken;
+}
+
+/** Las citas de la agenda interna llevan un id propio: no existen en Google. */
+export const esEventoInterno = (id?: string): boolean => !!id && (id.startsWith("sim_") || id.startsWith("int_"));
+
 function defaultRedirectUri(): string {
   const base = process.env.NEXT_PUBLIC_SITE_URL || "https://aiteam.marketing";
   return `${base.replace(/\/$/, "")}/api/lucia/callback`;
@@ -364,14 +379,21 @@ export async function agendarCita(input: AgendarCitaInput): Promise<AgendarCitaR
     .filter(Boolean)
     .join("\n");
 
-  const result = await createEvent(input.userEmail, redirectUri, {
-    summary: `${input.motivo} · ${input.nombre}`,
-    description: descripcion,
-    start: input.start,
-    end,
-    attendees: input.attendees,
-    location: input.location,
-  });
+  // AGENDA INTERNA. Un negocio sin Google Calendar conectado no puede crear el
+  // evento en Google, pero sí puede tener citas: viven en la agenda propia
+  // (BookingRecord) y ocupan hueco igual. El id lleva el prefijo `int_` para que
+  // cancelar no intente borrar en Google algo que nunca estuvo allí.
+  const interna = !(await calendarioConectado(input.userEmail));
+  const result: CreateEventResult = interna
+    ? { ok: true, eventId: `int_${input.start}_${Math.random().toString(36).slice(2, 8)}` }
+    : await createEvent(input.userEmail, redirectUri, {
+        summary: `${input.motivo} · ${input.nombre}`,
+        description: descripcion,
+        start: input.start,
+        end,
+        attendees: input.attendees,
+        location: input.location,
+      });
 
   if (!result.ok) {
     return { ok: false, reason: result.reason, detail: result.detail };
