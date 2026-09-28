@@ -178,3 +178,22 @@ test("9. Multi-marca: logo y colores propios, y solo los agentes contratados", a
     await marca({ marcaPanel: null, agentesContratados: null });
   }
 });
+
+test("10. Carmen: saludo de asistente virtual, inglés, urgencias y botones del panel", async ({ page, request }) => {
+  const s = encodeURIComponent(process.env.CARMEN_WEBHOOK_SECRET || "");
+  const ent = await (await request.post(`/api/carmen/entrante?secret=${s}`, { data: { event: "call_inbound", call_inbound: { to_number: E2E.carmenNumero, from_number: "+34611000000" } } })).json();
+  expect(ent.call_inbound.dynamic_variables.saludo).toBe("Hola, soy Carmen, la asistente virtual de Salón de Pruebas E2E. ¿En qué te puedo ayudar?");
+  const en = await carmenAgendar({ nombre: "John Smith", motivo: "haircut", fecha_hora: `${diaLaborable(1)}T12:30:00`, idioma: "en" });
+  expect(String(en.json.message), "contesta en inglés").toMatch(/booked|slot|open|offer/i);
+  const urg = await (await request.post(`/api/carmen/urgencia?secret=${s}`, { data: { call: { to_number: E2E.carmenNumero, from_number: "+34611000000" }, args: { texto: "me duele mucho la zona tratada" } } })).json();
+  expect(urg.urgente, "detecta la urgencia").toBe(true);
+  const sin = await (await request.post(`/api/carmen/urgencia?secret=${s}`, { data: { call: { to_number: E2E.carmenNumero, from_number: "+34611000000" }, args: { accion: "sin_respuesta", resumen: "dolor fuerte" } } })).json();
+  expect(sin.success).toBe(true);
+
+  await panelComoFundador(page, "/dashboard/carmen");
+  await page.getByRole("button", { name: "Enviar informe ahora" }).click();
+  await expect(page.getByText(/Llamadas atendidas/).first()).toBeVisible();
+  await page.getByPlaceholder(/móvil|\+34/).fill("+34 699 000 111");
+  await page.getByRole("button", { name: "Llamarme" }).click();
+  await expect(page.getByText(/No se llama|Modo prueba|llamando/).first()).toBeVisible();
+});

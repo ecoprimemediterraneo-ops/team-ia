@@ -167,6 +167,8 @@ export type Tenant = {
    * (Pablo, Marta, Carmen) no contestan.
    */
   agentesContratados?: string[];
+  /** Carmen: palabras de urgencia y límite diario de llamadas salientes (ver `carmen-llamadas.ts`). */
+  carmenConfig?: { urgencias?: string[]; llamadasDiarias?: number };
 };
 
 export type MarcaPanel = {

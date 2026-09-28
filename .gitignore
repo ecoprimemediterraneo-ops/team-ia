@@ -50,3 +50,5 @@ next-env.d.ts
 /e2e-resultados/
 /tests/.run/
 /tests/.data-antes-de-e2e/
+.env.produccion.local
+/docs/carmen-retell-backup.json

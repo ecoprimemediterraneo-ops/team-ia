@@ -225,6 +225,17 @@ export async function gestionarCitaExistente(o: { tenantId: string; contacto: st
   if (!negocio) return null;
   const p = await leerP(o.tenantId, o.contacto);
 
+  // "SÍ" AL RECORDATORIO. Si tiene una cita con recordatorio enviado y sin
+  // confirmar, un "sí" la confirma y Carmen ya no le llamará.
+  if (!p && esSi(o.texto)) {
+    const pendientes = (await citasActivasDeCliente(negocio.slug, o.contacto)).filter((c) => c.recordatorioEnviadoEn && !c.confirmadaPorClienteEn);
+    if (pendientes.length) {
+      const { saveRecord } = await import("./booking");
+      for (const c of pendientes) await saveRecord({ ...c, confirmadaPorClienteEn: new Date().toISOString() });
+      return { texto: `Perfecto, confirmada: ${describir(pendientes[0])}. Te esperamos.`, via: "recordatorio_confirmado" };
+    }
+  }
+
   // --- Está contestando a algo que le preguntamos ---
   if (p?.accion === "confirmar_cancelar") {
     const r = await getRecord(p.recordId);

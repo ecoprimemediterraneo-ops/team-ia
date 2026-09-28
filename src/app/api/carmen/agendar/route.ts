@@ -45,6 +45,7 @@ import { getBusinessBySlug } from "@/lib/booking";
 import { reservarSlot } from "@/lib/orchestrator";
 import { agenteContratado } from "@/lib/tenants";
 import { huecosCercanos, listaDeOpciones } from "@/lib/guion-huecos";
+import { idiomaDe } from "@/lib/carmen-llamadas";
 import { getRedirectUri } from "@/lib/gmail";
 
 export const dynamic = "force-dynamic";
@@ -154,6 +155,9 @@ export async function POST(req: Request) {
   };
 
   const nombre = get("nombre", "customer_name", "name", "cliente", "nombre_cliente");
+  // INGLÉS: Retell manda `idioma: "en"` (o se deduce de lo que ha dicho el
+  // cliente). Lo que Carmen lee en voz alta sale en su idioma.
+  const idiomaPedido = (get("idioma", "language", "lang") || "").toLowerCase();
   const motivo = get("motivo", "appointment_motivo", "reason", "servicio", "asunto", "tratamiento", "descripcion");
   const fechaRaw = get("fecha_hora", "fechaHora", "appointment_datetime", "datetime", "date_time", "fecha", "hora", "when", "cuando", "start", "startIso", "start_time");
   const fromNumber = String(call.from_number ?? "").trim() || undefined;
@@ -193,25 +197,27 @@ export async function POST(req: Request) {
       missing: { nombre: !nombre, motivo: !motivo, fecha_hora: !fechaRaw },
     });
   }
+  const en = idiomaPedido.startsWith("en") || (!idiomaPedido && idiomaDe(`${motivo ?? ""} ${fechaRaw}`) === "en");
+  const L = (es: string, ing: string) => (en ? ing : es);
   const startIso = normalizarFecha(fechaRaw);
   const negocio = await getBusinessBySlug(slug);
   const ofrecer = async (desde: string) => {
     const opciones = await huecosCercanos(salon.tenantId, { startIso: desde, motivo }).catch(() => [] as string[]);
-    return opciones.length ? ` Te puedo ofrecer ${listaDeOpciones(opciones)}. ¿Cuál te viene mejor?` : " ¿Qué otro día te vendría bien?";
+    return opciones.length ? L(` Te puedo ofrecer ${listaDeOpciones(opciones)}. ¿Cuál te viene mejor?`, ` I can offer ${opciones.map((o) => `${o.slice(0, 10)} at ${o.slice(11, 16)}`).join(" or ")}. Which suits you?`) : L(" ¿Qué otro día te vendría bien?", " What other day would suit you?");
   };
   if (startIso === PASADO) {
     const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
     return NextResponse.json({
       success: false,
       reason: "pasado",
-      message: `Esa hora de hoy ya ha pasado.${await ofrecer(`${hoy}T23:59:00`)}`,
+      message: `${L("Esa hora de hoy ya ha pasado.", "That time today has already passed.")}${await ofrecer(`${hoy}T23:59:00`)}`,
     });
   }
   if (!ISO_RE.test(startIso) || isNaN(new Date(startIso).getTime())) {
     return NextResponse.json({
       success: false,
       reason: "bad_datetime",
-      message: "No he entendido bien la fecha y la hora. ¿Me la repites con día y hora?",
+      message: L("No he entendido bien la fecha y la hora. ¿Me la repites con día y hora?", "Sorry, I didn't catch the date and time. Could you repeat the day and the time?"),
     });
   }
 
@@ -249,16 +255,16 @@ export async function POST(req: Request) {
   if (result.ok) {
     return NextResponse.json({
       success: true,
-      message: `Perfecto, te he agendado ${formatoHumano(startIso)}. ¡Te esperamos!`,
+      message: L(`Perfecto, te he agendado ${formatoHumano(startIso)}. ¡Te esperamos!`, `Perfect, you're booked for ${startIso.slice(0, 10)} at ${startIso.slice(11, 16)}. See you then!`),
       eventId: result.eventId,
       htmlLink: result.htmlLink,
     });
   }
   if (result.reason === "slot_taken") {
     const porque =
-      result.motivo === "pasado" ? "Esa hora ya ha pasado o es demasiado pronto para reservarla."
-      : result.motivo === "fuera_de_horario" ? "A esa hora no estamos abiertos."
-      : "Ese hueco está ocupado.";
+      result.motivo === "pasado" ? L("Esa hora ya ha pasado o es demasiado pronto para reservarla.", "That time has passed or is too soon to book.")
+      : result.motivo === "fuera_de_horario" ? L("A esa hora no estamos abiertos.", "We're not open at that time.")
+      : L("Ese hueco está ocupado.", "That slot is taken.");
     return NextResponse.json({
       success: false,
       reason: "slot_taken",

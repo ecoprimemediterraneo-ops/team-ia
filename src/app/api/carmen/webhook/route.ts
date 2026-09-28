@@ -47,6 +47,7 @@ import { reservarSlot } from "@/lib/orchestrator";
 import { getRedirectUri } from "@/lib/gmail";
 import { resolverSalonDeLlamada, MENSAJE_SIN_SALON } from "@/lib/carmen-salon";
 import { citasActivasDeCliente } from "@/lib/booking";
+import { logEvent, makeEventId } from "@/lib/event-log";
 import { agenteContratado } from "@/lib/tenants";
 
 export const dynamic = "force-dynamic";
@@ -163,6 +164,17 @@ export async function POST(req: Request) {
   const customerPhone = pick<string>(body, "customer_phone");
   const toNumber = (body.call?.to_number || body.to_number || "").trim() || undefined;
 
+  {
+    const s0 = await resolverSalonDeLlamada(undefined, toNumber);
+  // Cada llamada que acaba cuenta como atendida (informe semanal de Carmen).
+  if (s0.ok) {
+    await logEvent(s0.tenantId, {
+      id: makeEventId("carmen_llamada", String(pick<string>(body, "call_id") || `${customerPhone}-${startIso}`)),
+      type: "message_in", channel: "carmen", senderId: customerPhone || undefined,
+      meta: { kind: "llamada", texto: String(pick<string>(body, "transcript") || "").slice(0, 300) },
+    }).catch(() => {});
+  }
+  }
   if (!nombre || !motivo || !startIso) {
     return NextResponse.json({
       ok: false,

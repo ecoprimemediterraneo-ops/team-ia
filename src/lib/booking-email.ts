@@ -173,17 +173,47 @@ async function enviarWhatsApp(telefono: string | undefined, texto: string, tenan
   }
 }
 
+/** Enlace de Google Maps a la dirección del negocio (o "" si no tiene). */
+export function enlaceMaps(business: BusinessBooking): string {
+  if (business.lat && business.lng) return `https://www.google.com/maps/search/?api=1&query=${business.lat},${business.lng}`;
+  return business.direccion ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${business.direccion} ${business.nombre}`)}` : "";
+}
+
 function textoWhatsApp(record: BookingRecord, business: BusinessBooking, tipo: "confirmacion" | "recordatorio", baseUrl: string): string {
-  const cab = tipo === "confirmacion" ? "✅ Cita confirmada" : "⏰ Recordatorio de tu cita";
-  const gestionar = `\n\n¿No puedes venir? Cancela o cambia tu cita aquí: ${urlCancelacion(record, baseUrl)}`;
-  return `${cab} en *${business.nombre}*\n${record.servicioNombre} · ${fechaHumana(record.startIso)}\nA nombre de ${record.cliente.nombre}.${gestionar}`;
+  // Estilo de casa: sin emojis y sin signos de apertura en WhatsApp.
+  const cab = tipo === "confirmacion" ? "Cita confirmada" : "Recordatorio de tu cita de mañana";
+  const donde = business.direccion ? `\nDónde: ${business.direccion}${enlaceMaps(business) ? `\n${enlaceMaps(business)}` : ""}` : "";
+  const confirmar = tipo === "recordatorio" ? "\n\nContesta SI para confirmar." : "";
+  const gestionar = `\n\nNo puedes venir? Anula o cambia tu cita aquí: ${urlCancelacion(record, baseUrl)}`;
+  return `${cab} en *${business.nombre}*\n${record.servicioNombre} · ${fechaHumana(record.startIso)}${record.empleadoNombre ? ` con ${record.empleadoNombre}` : ""}\nA nombre de ${record.cliente.nombre}.${donde}${confirmar}${gestionar}`;
+}
+
+/**
+ * Por plantilla (fuera de la ventana de 24 h). Plantillas creadas con
+ * `scripts/whatsapp-plantillas.mjs`: 5 variables (nombre, negocio, cuándo,
+ * servicio, dónde) y un botón "Anular o cambiar" cuya URL acaba en el token.
+ */
+async function porPlantilla(nombre: string, record: BookingRecord, business: BusinessBooking): Promise<NotifResult["whatsapp"]> {
+  const tel = record.cliente.telefono;
+  if (!tel || /^ig:/i.test(tel)) return { intentado: false, enviado: false, modo: "no_intentado" };
+  const idioma = record.idioma === "en" ? "en" : "es";
+  const donde = [business.direccion, enlaceMaps(business)].filter(Boolean).join(" · ") || business.nombre;
+  const r = await sendWhatsAppTemplate(tel.replace(/[^\d+]/g, ""), nombre, idioma,
+    [record.cliente.nombre.split(" ")[0] || "", business.nombre, fechaHumana(record.startIso), record.servicioNombre || "tu cita", donde],
+    { tenantId: business.tenantId, a: tel, motivo: nombre }, record.token);
+  return r.ok ? { intentado: true, enviado: true, modo: "enviado" } : { intentado: true, enviado: false, modo: "error", error: r.detail };
 }
 
 /** Confirmación inmediata tras reservar (email + WhatsApp best-effort). */
 export async function enviarConfirmacion(record: BookingRecord, business: BusinessBooking, baseUrl: string): Promise<NotifResult> {
   const { subject, html } = construirConfirmacion(record, business, baseUrl);
   const email = await enviarEmail(record.cliente.email, subject, html);
-  const whatsapp = await enviarWhatsApp(record.cliente.telefono, textoWhatsApp(record, business, "confirmacion", baseUrl), business.tenantId);
+  // Quien reserva por TELÉFONO (Carmen) o por la web no ha escrito nunca por
+  // WhatsApp: el texto libre no le llega. Con la plantilla aprobada
+  // (BOOKING_CONFIRMACION_TEMPLATE) sí; sin ella, modo prueba (texto).
+  const whatsapp = process.env.BOOKING_CONFIRMACION_TEMPLATE
+    ? await porPlantilla(process.env.BOOKING_CONFIRMACION_TEMPLATE, record, business)
+    : await enviarWhatsApp(record.cliente.telefono, textoWhatsApp(record, business, "confirmacion", baseUrl), business.tenantId);
   return { email, whatsapp };
 }
 
@@ -199,13 +229,8 @@ export async function enviarRecordatorio(record: BookingRecord, business: Busine
   // escribió en las últimas 24 h, y el resultado lo dice.
   const plantilla = process.env.BOOKING_RECORDATORIO_TEMPLATE;
   const tel = record.cliente.telefono;
-  const whatsapp = plantilla && tel && !/^ig:/i.test(tel)
-    ? await (async (): Promise<NotifResult["whatsapp"]> => {
-        const r = await sendWhatsAppTemplate(tel.replace(/[^\d+]/g, ""), plantilla, process.env.BOOKING_RECORDATORIO_TEMPLATE_IDIOMA || "es",
-          [record.cliente.nombre.split(" ")[0] || "", business.nombre, fechaHumana(record.startIso), record.servicioNombre || "tu cita"],
-          { tenantId: business.tenantId, a: tel, motivo: "recordatorio" });
-        return r.ok ? { intentado: true, enviado: true, modo: "enviado" } : { intentado: true, enviado: false, modo: "error", error: r.detail };
-      })()
+  const whatsapp = plantilla
+    ? await porPlantilla(plantilla, record, business)
     : await enviarWhatsApp(tel, textoWhatsApp(record, business, "recordatorio", baseUrl), business.tenantId);
   return { email, whatsapp };
 }

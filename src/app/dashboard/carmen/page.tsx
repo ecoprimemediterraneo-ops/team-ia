@@ -3,6 +3,7 @@ import { getSessionLocal } from "@/lib/auth";
 import { getUser } from "@/lib/store";
 import AgentChat from "@/components/AgentChat";
 import CarmenTools from "@/components/CarmenTools";
+import CarmenPruebas from "@/components/CarmenPruebas";
 import { agentBySlug } from "@/lib/agents";
 
 export default async function CarmenPage() {
@@ -33,6 +34,8 @@ export default async function CarmenPage() {
           </p>
         </div>
       </header>
+
+      <CarmenPruebas />
 
       {/* Generador a ancho completo (input | output side-by-side a partir de lg) */}
       <CarmenTools />

@@ -304,7 +304,16 @@ export async function sendWhatsAppTemplate(
   languageCode: string,
   bodyParams: string[] = [],
   rastro?: Rastro,
+  /** Parte variable del botón de URL de la plantilla (p. ej. el token de anular). */
+  botonUrl?: string,
 ): Promise<WhatsAppSendResult> {
+  const componentes: unknown[] = [];
+  if (bodyParams.length) componentes.push({ type: "body", parameters: bodyParams.map((text) => ({ type: "text", text: text || "—" })) });
+  if (botonUrl) componentes.push({ type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: botonUrl }] });
+  if (botonUrl) return postGraph({
+    messaging_product: "whatsapp", recipient_type: "individual", to, type: "template",
+    template: { name: templateName, language: { code: languageCode }, components: componentes },
+  }, rastro ?? { tenantId: "", a: to, motivo: `plantilla:${templateName}` }, "plantilla");
   return postGraph({
     messaging_product: "whatsapp",
     recipient_type: "individual",

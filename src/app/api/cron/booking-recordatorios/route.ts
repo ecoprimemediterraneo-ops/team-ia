@@ -97,7 +97,7 @@ async function run(req: Request) {
       const fresco = await getRecord(r.id);
       if (!fresco || fresco.recordatorioEnviado || fresco.estado !== "confirmada") continue;
       const notif = await enviarRecordatorio(fresco, business, baseUrl);
-      await saveRecord({ ...fresco, recordatorioEnviado: true });
+      await saveRecord({ ...fresco, recordatorioEnviado: true, recordatorioEnviadoEn: new Date().toISOString() });
       enviados++;
       detalle.push({ id: r.id, email: notif.email.modo, whatsapp: notif.whatsapp.modo });
     } catch (err) {

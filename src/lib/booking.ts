@@ -178,6 +178,14 @@ export type BookingRecord = {
   canceladaEn?: string;
   reprogramadaEn?: string; // última vez que se movió/reprogramó (para la campanita)
   recordatorioEnviado?: boolean;
+  /** Cuándo salió el recordatorio (para llamar si en 3 h no confirma). */
+  recordatorioEnviadoEn?: string;
+  /** El cliente contestó "sí" al recordatorio. */
+  confirmadaPorClienteEn?: string;
+  /** Carmen llamó porque no confirmaba (un solo aviso por cita). */
+  llamadaRecordatorioEn?: string;
+  /** Idioma del cliente ("en" para inglés): plantillas en su idioma. */
+  idioma?: "es" | "en";
 };
 
 /** Transiciones válidas de la máquina de estados. */
