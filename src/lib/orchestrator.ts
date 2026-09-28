@@ -88,6 +88,8 @@ export type ReservaInput = {
    */
   paddingBeforeMin?: number;
   paddingAfterMin?: number;
+  /** Profesional pedida (negocios con personal). Sin ella se asigna la primera libre que haga el servicio. */
+  empleadoId?: string;
 };
 
 export type ReservaResult =
@@ -303,8 +305,10 @@ async function reservarConNegocio(input: ReservaInput, tenantId: string): Promis
   let durationMin = input.durationMin;
   let pB = input.paddingBeforeMin ?? 0;
   let pA = input.paddingAfterMin ?? 0;
+  const svPedido = servicioParaTexto(business, input.motivo);
+  let asignado: { id: string; nombre: string } | undefined;
   if (!durationMin) {
-    const sv = servicioParaTexto(business, input.motivo);
+    const sv = svPedido;
     if (sv) {
       const sel = resolverServicio(sv, {});
       durationMin = sel.durationMin; pB = sel.paddingBeforeMin; pA = sel.paddingAfterMin;
@@ -324,6 +328,7 @@ async function reservarConNegocio(input: ReservaInput, tenantId: string): Promis
     redirectUri: input.redirectUri,
     nombre: input.nombre,
     motivo: input.motivo,
+    motivoFinal: () => input.motivo + (asignado ? ` · ${asignado.nombre}` : ""),
     startIso: startNorm,
     durationMin,
     agenteOrigen: input.agenteOrigen,
@@ -332,7 +337,8 @@ async function reservarConNegocio(input: ReservaInput, tenantId: string): Promis
     location: input.location,
     simulate: process.env.BOOKING_SIMULATE === "1" ? true : undefined,
     revalidate: async () => {
-      ultima = await disponibilidadParaReserva(tenantId, { startIso: startNorm, durationMin: durationMin!, paddingBeforeMin: pB, paddingAfterMin: pA }, input.redirectUri);
+      ultima = await disponibilidadParaReserva(tenantId, { startIso: startNorm, durationMin: durationMin!, paddingBeforeMin: pB, paddingAfterMin: pA, serviceId: svPedido?.id, preferidoId: input.empleadoId }, input.redirectUri);
+      if (ultima.negocio && ultima.available) asignado = ultima.empleado ? { id: ultima.empleado.id, nombre: ultima.empleado.nombre } : undefined;
       return ultima.negocio && ultima.available;
     },
     persistir: async (cita) => {
@@ -341,6 +347,7 @@ async function reservarConNegocio(input: ReservaInput, tenantId: string): Promis
       try { baseUrl = new URL(input.redirectUri).origin; } catch { baseUrl = undefined; }
       record = await registrarRecordDeCita({
         slug: business.slug, startIso: startNorm, durationMin: durationMin!, paddingBeforeMin: pB, paddingAfterMin: pA,
+        empleadoId: asignado?.id, empleadoNombre: asignado?.nombre, serviceId: svPedido?.id, servicioNombre: svPedido?.nombre,
         motivo: input.motivo,
         cliente: { nombre: input.nombre, telefono: input.customerPhone || "", email: input.attendees?.[0] },
         eventId: cita.eventId, htmlLink: cita.htmlLink, baseUrl,

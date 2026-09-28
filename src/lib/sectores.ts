@@ -180,10 +180,12 @@ const SALON: PerfilSector = {
   id: "salon",
   label: "Salón de belleza",
   descripcion: "Peluquería, estética básica, uñas. Muchas citas, ticket bajo, agenda apretada.",
-  // Marta va la segunda a propósito: en un salón, Instagram es el escaparate.
-  // Fuera Sergio (no hay vigilancia de competencia que valga aquí) y fuera Lucía
-  // (el correo pesa poco: todo pasa por WhatsApp).
-  agentes: ["pablo", "marta", "carmen", "eva", "rocio"],
+  // Los cuatro que se ven de entrada: Pablo y Carmen (WhatsApp y teléfono: así se
+  // pide cita en un salón), Marta (Instagram es el escaparate) y Rocío (las
+  // reseñas de Google pesan mucho en quién entra por la puerta). Lucía y Eva
+  // detrás: el correo y el email marketing pesan poco. Fuera Sergio (no hay
+  // vigilancia de competencia que valga aquí).
+  agentes: ["pablo", "carmen", "marta", "rocio", "lucia", "eva"],
   kpis: [
     { id: "ocupacion_semana", etiqueta: "Ocupación de la semana", ayuda: "Cuánto de tu agenda está lleno" },
     { id: "no_shows", etiqueta: "No-shows", ayuda: "Citas a las que no vinieron" },
@@ -225,7 +227,6 @@ const SALON: PerfilSector = {
     ],
     queNoVeras: [
       "Sergio (vigilancia de la competencia): en un salón se compite por trato y por agenda, no espiando webs ajenas.",
-      "Lucía (correo y bandeja de entrada): tu negocio no vive en el email, vive en WhatsApp.",
       "Cualificación de leads y embudos: aquí no hay embudo, hay agenda.",
     ],
   },

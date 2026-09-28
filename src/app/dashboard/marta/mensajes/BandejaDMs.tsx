@@ -188,6 +188,8 @@ function Conversacion({ c, t, idioma }: { c: ConversacionVista; t: T; idioma: Id
               {m.de === "nosotros" ? t("band_tu") : c.usuario ? `@${c.usuario}` : t("band_cliente")} ·{" "}
               {hora(m.ts, idioma)}
               {m.via === "automatico" && ` · ${t("band_automatico")}`}
+              {m.via === "app" && " · desde la app"}
+              {m.fallo && <span className="text-[color:var(--red)] font-bold"> · NO ENVIADO ({m.fallo})</span>}
             </div>
           </div>
         ))}

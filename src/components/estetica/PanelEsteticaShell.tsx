@@ -1,4 +1,5 @@
 "use client";
+import { esSi, esNo } from "@/lib/chat-honesto";
 
 // EL MARCO FIJO DE ESTÉTICA — mismo molde que `PanelDentalShell.tsx`: dos
 // bloques `position: sticky` apilados (la cabecera del sitio, con
@@ -135,6 +136,14 @@ export default function PanelEsteticaShell({
     const q = pregunta.trim();
     if (!q || pensando) return;
     setTexto("");
+    // Un "sí" / "no" escrito, con una propuesta a la vista, hace lo MISMO que el
+    // botón (y nunca pasa por el modelo, que se inventaba el "hecho").
+    const ultimo = hilo[hilo.length - 1];
+    if (ultimo?.pendiente && (esSi(q) || esNo(q))) {
+      setHilo((h) => [...h, { rol: "usuario", texto: q }]);
+      if (esSi(q)) void confirmar(ultimo); else descartar(ultimo);
+      return;
+    }
     const previo = hilo;
     setHilo([...previo, { rol: "usuario", texto: q }]);
     setPensando(true);
@@ -217,7 +226,7 @@ export default function PanelEsteticaShell({
           </div>
 
           <div className="mb-3">
-            <PestanasEstetica etiquetaClientas={etiquetaClientas} />
+            <PestanasEstetica etiquetaClientas={etiquetaClientas} refreshKey={refreshKey} />
           </div>
 
           <BarraChat

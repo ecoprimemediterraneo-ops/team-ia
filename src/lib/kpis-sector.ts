@@ -172,9 +172,17 @@ export async function calcularKpis(tenantId: string, perfil: PerfilSector): Prom
     const base = { id: k.id, etiqueta: k.etiqueta, ayuda: k.ayuda };
     switch (k.id) {
       case "ocupacion_semana":
+        // Salón: sin capacidad configurada (horario/personal) no hay ocupación
+        // que calcular; un 0% diría "agenda vacía" y no es lo que pasa.
+        if (perfil.id === "salon" && inf && inf.ocupacion.capacidadMin <= 0) {
+          return { ...base, valor: null, motivo: "El negocio no tiene horario o profesionales configurados, así que no hay capacidad contra la que medir." };
+        }
         return inf ? { ...base, valor: `${inf.ocupacion.pct}%` }
                    : { ...base, valor: null, motivo: "Sin motor de reservas conectado." };
       case "no_shows":
+        if (perfil.id === "salon" && inf && inf.citas.completadas + inf.citas.noShow === 0) {
+          return { ...base, valor: null, motivo: "Esta semana todavía no hay ninguna cita cerrada (completada o no-show) sobre la que contar." };
+        }
         return inf ? { ...base, valor: String(inf.citas.noShow) }
                    : { ...base, valor: null, motivo: "Sin motor de reservas conectado." };
       case "citas_semana":
@@ -232,10 +240,16 @@ export async function calcularKpis(tenantId: string, perfil: PerfilSector): Prom
           ? { ...base, valor: v }
           : { ...base, valor: null, motivo: "Todavía no se ha contestado ningún mensaje este mes." };
       }
-      case "huecos_rellenados":
+      case "huecos_rellenados": {
+        if (perfil.id === "salon" && negocio) {
+          const canc = recs.filter((r) => r.tipo !== "bloqueo" && r.estado === "cancelada" && r.canceladaEn && r.startIso.slice(0, 10) >= desde && r.startIso.slice(0, 10) <= hasta).length;
+          if (canc === 0) return { ...base, valor: null, motivo: "Esta semana no hay cancelaciones registradas que rellenar." };
+          return { ...base, valor: `${huecosRellenados(recs, desde, hasta)} de ${canc}` };
+        }
         return negocio
           ? { ...base, valor: String(huecosRellenados(recs, desde, hasta)) }
           : { ...base, valor: null, motivo: "Sin motor de reservas conectado." };
+      }
       case "leads_a_valoracion": {
         // "4 de 17" = de diecisiete leads captados, cuatro han llegado a tener
         // valoración puesta. Los descartados siguen contando en el total a

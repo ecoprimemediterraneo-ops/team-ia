@@ -46,6 +46,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { reservarSlot } from "@/lib/orchestrator";
 import { getRedirectUri } from "@/lib/gmail";
 import { resolverSalonDeLlamada, MENSAJE_SIN_SALON } from "@/lib/carmen-salon";
+import { citasActivasDeCliente } from "@/lib/booking";
+import { agenteContratado } from "@/lib/tenants";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -159,7 +161,6 @@ export async function POST(req: Request) {
   const motivo = pick<string>(body, "appointment_motivo");
   const startIso = pick<string>(body, "appointment_datetime");
   const customerPhone = pick<string>(body, "customer_phone");
-  const durationMin = Number(pick<number>(body, "duration_min")) || 30;
   const toNumber = (body.call?.to_number || body.to_number || "").trim() || undefined;
 
   if (!nombre || !motivo || !startIso) {
@@ -183,6 +184,22 @@ export async function POST(req: Request) {
     }, { status: 422 });
   }
 
+  // LA CITA YA LA HIZO CARMEN EN DIRECTO. La función `agendar_cita` reserva
+  // durante la llamada; este webhook llega al colgar con los mismos datos.
+  // Volver a reservar daba un 409 "ocupado"… ocupado por la propia cita recién
+  // hecha, y si la duración o el día venían algo distintos, una segunda cita
+  // duplicada. Si ese teléfono ya tiene cita a esa hora, no se hace nada.
+  if (customerPhone) {
+    const previas = await citasActivasDeCliente(salon.slug, customerPhone).catch(() => []);
+    const misma = previas.find((r) => r.startIso.slice(0, 16) === String(startIso).slice(0, 16));
+    if (misma) {
+      return NextResponse.json({ ok: true, yaReservada: true, bookingId: misma.id, eventId: misma.eventId });
+    }
+  }
+  if (!(await agenteContratado(salon.tenantId, "carmen"))) {
+    return NextResponse.json({ ok: false, error: "agente_no_contratado" }, { status: 422 });
+  }
+
   const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
   const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
   const redirectUri = getRedirectUri(host, proto);
@@ -195,7 +212,8 @@ export async function POST(req: Request) {
     nombre,
     motivo,
     startIso,
-    durationMin,
+    // Sin duración dicha, la del servicio (antes: 30 fijos).
+    durationMin: Number(pick<number>(body, "duration_min")) || undefined,
     agenteOrigen: "carmen",
     customerPhone,
   });

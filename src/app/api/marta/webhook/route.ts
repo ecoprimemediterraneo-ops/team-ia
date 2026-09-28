@@ -30,10 +30,13 @@ import {
   type Conversation,
 } from "@/lib/conversation-store";
 import { logEvent, makeEventId } from "@/lib/event-log";
-import { resolveTenantFromMeta, getTenantSector, getTenant } from "@/lib/tenants";
+import { agendaCitasDeTenant, resolveTenantFromMeta, getTenantSector, getTenant } from "@/lib/tenants";
 import { procesarComentario } from "@/lib/marta-comment-flow";
 import { apuntarMensaje } from "@/lib/marta-inbox";
-import { sendInstagramDM, usernameDeIgsid } from "@/lib/marta-graph";
+import { sendInstagramDMDeTenant, usernameDeIgsid } from "@/lib/marta-graph";
+import { leerConversacion } from "@/lib/marta-inbox";
+import { agenteContratado } from "@/lib/tenants";
+import { huecosCercanos, listaDeOpciones } from "@/lib/guion-huecos";
 import { kvTryLock } from "@/lib/supabase";
 import { idiomaDeTexto, type Idioma } from "@/lib/idioma";
 import { getSectorPrompt, buildEsteticaInstagramSystem } from "@/lib/sector-prompts";
@@ -108,7 +111,7 @@ async function registrarIntercambioMarta(opts: {
   await apuntarMensaje(tenantId, senderId, { de: "cliente", texto: entrante, ts: rxTs, id: mid }, username);
   // El `via` fino (cancelacion, agenda_cita_creada…) va al event-log, abajo;
   // la bandeja solo distingue manual/automático, y esto siempre es lo segundo.
-  await apuntarMensaje(tenantId, senderId, { de: "nosotros", texto: respuesta, ts: new Date().toISOString(), via: "automatico" });
+  await apuntarMensaje(tenantId, senderId, { de: "nosotros", texto: respuesta, ts: new Date().toISOString(), via: "automatico", ...(dmOk ? {} : { fallo: "no ha salido: revisa la conexión de Instagram" }) });
 
   await safeLogEvent(tenantId, {
     id: makeEventId("message_in", "marta", mid),
@@ -176,7 +179,14 @@ type IGMessagingEvent = {
     mid?: string;
     text?: string;
     is_echo?: boolean;
+    is_deleted?: boolean;
+    is_unsupported?: boolean;
+    /** Fotos, audios, vídeos, publicaciones compartidas y MENCIONES EN HISTORIAS. */
+    attachments?: Array<{ type?: string; payload?: { url?: string } }>;
+    /** Respuesta a una historia: el texto viene aquí y la historia en `reply_to.story`. */
+    reply_to?: { story?: { id?: string; url?: string }; mid?: string };
   };
+  reaction?: { mid?: string; action?: string; emoji?: string; reaction?: string };
 };
 
 type IGCommentChange = {
@@ -299,20 +309,68 @@ export async function POST(req: Request) {
 
       // --- DMs ---
       const messaging = entry.messaging ?? [];
+      if (messaging.length && !(await agenteContratado(tenantId, "marta"))) {
+        console.warn(`[marta/webhook] IGNORADO: el tenant ${tenantId} no tiene contratada a Marta.`);
+        continue;
+      }
       for (const ev of messaging) {
+        // LO QUE EL NEGOCIO CONTESTA DESDE LA APP DE INSTAGRAM. Meta lo manda
+        // como "eco". Antes se tiraba, y en la bandeja el hilo quedaba cojo: se
+        // veía la pregunta del cliente y nunca la respuesta que le dio el dueño
+        // desde el móvil. Ahora se apunta — salvo que sea el eco de lo que acaba
+        // de mandar la propia Marta, que ya está apuntado.
         if (ev.message?.is_echo === true) {
-          console.log("[marta/webhook] eco propio ignorado");
+          const cliente = ev.recipient?.id;
+          const t = ev.message.text?.trim();
+          if (cliente && t) {
+            const c = await leerConversacion(tenantId, cliente).catch(() => null);
+            const hace2min = Date.now() - 2 * 60_000;
+            const yaEsta = (c?.mensajes ?? []).some((m) => m.de === "nosotros" && m.texto.trim() === t && Date.parse(m.ts) > hace2min);
+            if (!yaEsta) {
+              await apuntarMensaje(tenantId, cliente, { de: "nosotros", texto: t, ts: new Date().toISOString(), id: ev.message.mid, via: "app" });
+              await appendTurn("marta", tenantId, cliente, "assistant", t);
+            }
+          }
           continue;
         }
         const senderId = ev.sender?.id;
-        const text = ev.message?.text;
-        if (!senderId || !text) {
-          console.log("[marta/webhook] evento sin sender/text ignorado");
+        if (!senderId) {
+          console.log("[marta/webhook] evento sin remitente ignorado");
           continue;
         }
-
         const rxTs = new Date().toISOString();
         const mid = ev.message?.mid;
+
+        // LO QUE NO ES TEXTO. Antes: "evento sin sender/text ignorado" y el
+        // mensaje desaparecía — ni en la bandeja ni contestado. Una foto, un audio
+        // o una MENCIÓN EN UNA HISTORIA son de lo más habitual en Instagram.
+        if (!ev.message?.text) {
+          if (ev.reaction || ev.message?.is_deleted || !ev.message) {
+            console.log(`[marta/webhook] ${ev.reaction ? "reacción" : "evento"} sin texto de ${senderId}: no requiere respuesta`);
+            continue;
+          }
+          if (await dmYaProcesado(mid)) continue;
+          const adj = ev.message.attachments ?? [];
+          const tipo = adj[0]?.type || (ev.message.is_unsupported ? "no_soportado" : "adjunto");
+          const LEGIBLE: Record<string, string> = {
+            story_mention: "Te ha mencionado en su historia", image: "Foto", audio: "Audio", video: "Vídeo",
+            share: "Publicación compartida", ig_reel: "Reel compartido", reel: "Reel compartido", file: "Archivo", no_soportado: "Mensaje que Instagram no deja leer",
+          };
+          const entrante = `[${LEGIBLE[tipo] ?? "Adjunto"}]`;
+          const username = await usernameDeIgsid(senderId).catch(() => undefined);
+          const respuesta =
+            tipo === "story_mention"
+              ? "Muchas gracias por mencionarnos en tu historia. Si quieres reservar o tienes cualquier duda, escríbenos por aquí."
+              : "Lo he recibido, pero por aquí todavía no puedo ver fotos ni escuchar audios. ¿Me lo cuentas por escrito?";
+          const sendResult = await sendInstagramDMDeTenant(tenantId, senderId, respuesta);
+          const dmOk = !(sendResult && typeof sendResult === "object" && ("error" in sendResult || "skipped" in sendResult || "simulado" in sendResult));
+          await apuntarMensaje(tenantId, senderId, { de: "cliente", texto: entrante, ts: rxTs, id: mid, tipo }, username);
+          await registrarIntercambioMarta({ tenantId, senderId, mid, username, entrante, respuesta, rxTs, dmOk, via: tipo === "story_mention" ? "mencion_historia" : "adjunto" });
+          continue;
+        }
+        // Respuesta a una historia: se contesta como cualquier DM, pero en la
+        // bandeja y para la IA se dice que es sobre una historia.
+        const text = ev.message.reply_to?.story ? `(Respuesta a tu historia) ${ev.message.text}` : ev.message.text;
 
         // ANTES de pedir respuesta a la IA: si esta es la segunda copia del mismo
         // mensaje, se descarta aquí y no se contesta dos veces.
@@ -341,7 +399,7 @@ export async function POST(req: Request) {
           let sectorAgenda = true;
           try {
             const sk = await getTenantSector(tenantId);
-            sectorAgenda = getSectorPrompt(sk).agendaCitas;
+            sectorAgenda = getSectorPrompt(sk).agendaCitas || (await agendaCitasDeTenant(tenantId));
           } catch { /* por defecto intentamos agendar */ }
 
           // ¿Restaurante? Se extraen personas y zona igual que en Pablo. La
@@ -372,7 +430,7 @@ export async function POST(req: Request) {
                 // —no se duplica la lógica de "una / varias / ninguna cita"— y
                 // solo se le quita el formato antes de mandarlo.
                 const resp = sinFormatoInstagram(textoCancelacionChat(caso, `${SITE}/reservas/${business.slug}`, username));
-                const sendResult = await sendInstagramDM(senderId, resp);
+                const sendResult = await sendInstagramDMDeTenant(tenantId, senderId, resp);
                 const dmOk = !(sendResult && typeof sendResult === "object" && ("error" in sendResult || "skipped" in sendResult || "simulado" in sendResult));
                 await registrarIntercambioMarta({
                   tenantId, senderId, mid, username, entrante: text, respuesta: resp,
@@ -400,7 +458,7 @@ export async function POST(req: Request) {
 
             const complete =
               intent.wantsAppointment && intent.missing.length === 0 && !!intent.fields.startIso;
-            if (complete && (await alreadyBookedForContact(tenantId, senderId, intent.fields.startIso!))) {
+            if (complete && (await alreadyBookedForContact(tenantId, `ig:${senderId}`, intent.fields.startIso!))) {
               // Ya reservada para este IGSID y esa hora: no se vuelve a
               // reservar, cae al flujo normal de Marta (Claude conversando).
               throw { __skip: true };
@@ -410,8 +468,12 @@ export async function POST(req: Request) {
               text: transcript,
               intentOverride: intent,
               agenteOrigen: "marta",
+              tenantId,
               redirectUri: `https://aiteam.marketing/api/lucia/callback`,
-              customerPhone: senderId,
+              // "ig:<igsid>": un contacto de Instagram NO es un teléfono. Antes se
+              // guardaba el IGSID pelado y la confirmación de la cita salía por
+              // WhatsApp a ese "número".
+              customerPhone: `ig:${senderId}`,
               customerNameFallback: username,
               modo: modoRest,
             });
@@ -422,7 +484,7 @@ export async function POST(req: Request) {
               // importante va en MAYÚSCULAS, como en el resto de Marta.
               const motivo = (agRes.intent.fields.motivo ?? "tu cita").toUpperCase();
               const ack = `Hecho${username ? `, ${username}` : ""}. Te dejo agendado ${motivo} el ${when}.\n\nSi necesitas cambiarla, dímelo por aquí y la movemos.`;
-              const sendResult = await sendInstagramDM(senderId, ack);
+              const sendResult = await sendInstagramDMDeTenant(tenantId, senderId, ack);
               const dmOk = !(sendResult && typeof sendResult === "object" && ("error" in sendResult || "skipped" in sendResult || "simulado" in sendResult));
               await registrarIntercambioMarta({
                 tenantId, senderId, mid, username, entrante: text, respuesta: ack,
@@ -431,11 +493,13 @@ export async function POST(req: Request) {
               continue;
             }
             if (agRes.kind === "slot_taken") {
-              const suggested = agRes.suggested
-                ? `\n\nEse hueco ya está ocupado. ¿Te viene bien el ${formatStartHumanES(agRes.suggested)}?`
-                : `\n\nEse hueco ya está ocupado. ¿Te viene bien otra hora ese día?`;
-              const respSlot = `Vale, intento agendarlo.${suggested}`;
-              const sendResult = await sendInstagramDM(senderId, respSlot);
+              // Dos huecos reales cercanos, como Pablo: nunca "no tengo" a secas.
+              const opciones = await huecosCercanos(tenantId, { startIso: agRes.intent.fields.startIso!, motivo: agRes.intent.fields.motivo || "" }).catch(() => [] as string[]);
+              const porque = agRes.motivo === "pasado" ? "Esa hora ya ha pasado." : agRes.motivo === "fuera_de_horario" ? "A esa hora no estamos abiertos." : "Ese hueco ya está ocupado.";
+              const respSlot = opciones.length
+                ? `${porque} Te puedo dar ${listaDeOpciones(opciones)}. ¿Te va bien alguna?`
+                : `${porque} ¿Qué otro día te vendría bien?`;
+              const sendResult = await sendInstagramDMDeTenant(tenantId, senderId, respSlot);
               const dmOk = !(sendResult && typeof sendResult === "object" && ("error" in sendResult || "skipped" in sendResult || "simulado" in sendResult));
               await registrarIntercambioMarta({
                 tenantId, senderId, mid, username, entrante: text,
@@ -447,7 +511,7 @@ export async function POST(req: Request) {
               const q = missingFieldsToQuestion(agRes.missing, modoRest);
               if (q) {
                 const respInc = `Vale, te agendo. ${q}`;
-                const sendResult = await sendInstagramDM(senderId, respInc);
+                const sendResult = await sendInstagramDMDeTenant(tenantId, senderId, respInc);
                 const dmOk = !(sendResult && typeof sendResult === "object" && ("error" in sendResult || "skipped" in sendResult || "simulado" in sendResult));
                 await registrarIntercambioMarta({
                   tenantId, senderId, mid, username, entrante: text,
@@ -525,7 +589,7 @@ export async function POST(req: Request) {
         // tenga alguien reutiliza `reply` tal cual.
         reply = quitarMarcadorLeadCualificado(reply);
 
-        const sendResult = await sendInstagramDM(senderId, reply);
+        const sendResult = await sendInstagramDMDeTenant(tenantId, senderId, reply);
         // Enviado SOLO si Meta lo aceptó. Además de `error`, cuentan como no
         // enviado `skipped` (falta configuración, p. ej. FACEBOOK_PAGE_ID) y
         // `simulado` (local sin Graph): mirar solo `error` pintaba "Enviado" en la
@@ -557,6 +621,8 @@ export async function POST(req: Request) {
           texto: reply,
           ts: new Date().toISOString(),
           via: "automatico",
+          // Si Meta no lo aceptó, la bandeja lo dice en vez de pintarlo como enviado.
+          ...(dmOk ? {} : { fallo: "no ha salido: revisa la conexión de Instagram" }),
         });
 
         // LOS DM EN "ACTIVIDAD RECIENTE".

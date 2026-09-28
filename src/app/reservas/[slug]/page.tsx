@@ -12,11 +12,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function ReservasPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ReservasPage({ params, searchParams }: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ servicio?: string; hora?: string; profesional?: string }>;
+}) {
   const { slug } = await params;
+  // Desde el enlace de huecos libres llega con el servicio y la hora ya elegidos.
+  const sp = await searchParams;
   return (
     <main className="min-h-screen bg-[color:var(--cream)]">
-      <BookingFlow slug={slug} />
+      <BookingFlow slug={slug} preServicio={sp.servicio} preHora={sp.hora} preProfesional={sp.profesional} />
     </main>
   );
 }

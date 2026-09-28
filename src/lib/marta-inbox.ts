@@ -32,7 +32,39 @@
 // significa nada para un peluquero.
 
 import "server-only";
-import { kvGet, kvSet, kvListByPrefix, kvDelete, supabaseEnabled } from "./supabase";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { kvGet as kvGetRemoto, kvSet as kvSetRemoto, kvListByPrefix as kvListRemoto, kvDelete as kvDeleteRemoto, supabaseEnabled } from "./supabase";
+
+// SIN SUPABASE (en local) la bandeja no guardaba NADA: `apuntarMensaje` salía
+// en la primera línea. Los DM llegaban, Marta contestaba y el panel seguía
+// vacío, así que en local no había forma de ver ni de probar la bandeja. Ahora,
+// sin Supabase, va a un fichero en `data/` como el resto de almacenes.
+const FICHERO = path.join(process.cwd(), "data", "marta-dm.json");
+async function leerLocal(): Promise<Record<string, ConversacionDm>> {
+  try { return JSON.parse(await fs.readFile(FICHERO, "utf-8")) as Record<string, ConversacionDm>; } catch { return {}; }
+}
+async function kvGet<T>(k: string): Promise<T | null> {
+  if (supabaseEnabled()) return kvGetRemoto<T>(k);
+  return ((await leerLocal())[k] as unknown as T) ?? null;
+}
+async function kvSet(k: string, v: ConversacionDm): Promise<void> {
+  if (supabaseEnabled()) return void (await kvSetRemoto(k, v));
+  const m = await leerLocal();
+  m[k] = v;
+  await fs.mkdir(path.dirname(FICHERO), { recursive: true });
+  await fs.writeFile(FICHERO, JSON.stringify(m, null, 2));
+}
+async function kvListByPrefix<T>(prefijo: string): Promise<{ key: string; value: T }[]> {
+  if (supabaseEnabled()) return kvListRemoto<T>(prefijo);
+  return Object.entries(await leerLocal()).filter(([k]) => k.startsWith(prefijo)).map(([key, value]) => ({ key, value: value as unknown as T }));
+}
+async function kvDelete(k: string): Promise<void> {
+  if (supabaseEnabled()) return void (await kvDeleteRemoto(k));
+  const m = await leerLocal();
+  delete m[k];
+  await fs.writeFile(FICHERO, JSON.stringify(m, null, 2));
+}
 import { sendInstagramMessage } from "./marta-graph";
 import { tokenInstagramDeTenant } from "./instagram-login";
 
@@ -49,8 +81,12 @@ export type MensajeDm = {
   de: "cliente" | "nosotros";
   texto: string;
   ts: string;
-  /** Cómo salió: a mano desde la bandeja, o solo (IA / comentario→DM). */
-  via?: "manual" | "automatico";
+  /** Cómo salió: a mano desde la bandeja, solo (IA / comentario→DM), o desde la app de Instagram. */
+  via?: "manual" | "automatico" | "app";
+  /** Si NO llegó a salir: por qué. Antes se pintaba como enviado un mensaje que Meta había rechazado. */
+  fallo?: string;
+  /** Lo que no es texto (foto, audio, mención en una historia…). */
+  tipo?: string;
 };
 
 export type ConversacionDm = {
@@ -91,7 +127,6 @@ export async function apuntarMensaje(
   usuario?: string,
 ): Promise<void> {
   try {
-    if (!supabaseEnabled()) return;
     const k = clave(tenantId, igsid);
     const previa = (await kvGet<ConversacionDm>(k)) ?? {
       igsid,
@@ -99,7 +134,7 @@ export async function apuntarMensaje(
       ultimoMovimientoEn: m.ts,
     };
 
-    const mensaje: MensajeDm = { id: m.id || `${m.de}_${m.ts}`, de: m.de, texto: m.texto, ts: m.ts, via: m.via };
+    const mensaje: MensajeDm = { id: m.id || `${m.de}_${m.ts}`, de: m.de, texto: m.texto, ts: m.ts, via: m.via, ...(m.fallo ? { fallo: m.fallo } : {}), ...(m.tipo ? { tipo: m.tipo } : {}) };
 
     // Idempotente por id: Meta reentrega webhooks, y sin esto el mismo DM
     // aparecería dos veces en la bandeja.
@@ -123,7 +158,6 @@ export async function apuntarMensaje(
 
 /** Las conversaciones de un cliente, la más reciente primero. */
 export async function listarConversaciones(tenantId: string): Promise<ConversacionDm[]> {
-  if (!supabaseEnabled()) return [];
   const filas = await kvListByPrefix<ConversacionDm>(`${PREFIJO}${tenantId}:`);
   return filas
     .map((f) => f.value)
@@ -132,12 +166,11 @@ export async function listarConversaciones(tenantId: string): Promise<Conversaci
 }
 
 export async function leerConversacion(tenantId: string, igsid: string): Promise<ConversacionDm | null> {
-  if (!supabaseEnabled()) return null;
   return kvGet<ConversacionDm>(clave(tenantId, igsid));
 }
 
 export async function borrarConversacion(tenantId: string, igsid: string): Promise<void> {
-  if (supabaseEnabled()) await kvDelete(clave(tenantId, igsid));
+  await kvDelete(clave(tenantId, igsid));
 }
 
 // -----------------------------------------------------------------------------

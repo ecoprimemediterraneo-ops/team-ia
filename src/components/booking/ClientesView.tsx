@@ -11,6 +11,7 @@ type ClienteAgg = {
   key: string; nombre: string; telefono?: string; email?: string;
   totalCitas: number; completadas: number; noShows: number; canceladas: number; gastoTotal: number;
   ultimaVisitaIso?: string; proximaCitaIso?: string; etiquetas: string[]; tieneNotas: boolean;
+  profesionalHabitual?: string;
 };
 type Ficha = { cliente: ClienteAgg; historial: BookingRecord[]; meta: { notas?: string; etiquetas?: string[] } };
 
@@ -18,7 +19,7 @@ const ESTADO_LBL: Record<string, string> = { pendiente: "Pendiente", confirmada:
 const EST_COLOR: Record<string, string> = { pendiente: "#8a7500", confirmada: "#5A6B3F", completada: "#111", cancelada: "#999", no_show: "#C8202A" };
 const fechaCorta = (iso?: string) => { if (!iso) return "—"; const [y, m, d] = iso.slice(0, 10).split("-"); return `${d}/${m}/${y.slice(2)}`; };
 
-export default function ClientesView({ slug }: { slug: string }) {
+export default function ClientesView({ slug, sinDormidas = false, palabra = "clientes" }: { slug: string; sinDormidas?: boolean; palabra?: string }) {
   const [q, setQ] = useState("");
   const [clientes, setClientes] = useState<ClienteAgg[] | null>(null);
   const [cargando, setCargando] = useState(false);
@@ -47,12 +48,12 @@ export default function ClientesView({ slug }: { slug: string }) {
 
   if (sel) {
     if (!ficha) return <div className="animate-pulse text-black/40 font-mono text-sm py-8 text-center">Cargando ficha…</div>;
-    return <FichaCliente slug={slug} ficha={ficha} onBack={() => { setSel(null); setFicha(null); cargarLista(q); }} />;
+    return <FichaCliente slug={slug} ficha={ficha} palabra={palabra} onBack={() => { setSel(null); setFicha(null); cargarLista(q); }} />;
   }
 
   return (
     <div>
-      <ReactivarDormidas slug={slug} />
+      {!sinDormidas && <ReactivarDormidas slug={slug} />}
       <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, teléfono o email…" className="card-hard w-full px-3 py-2.5 mb-4 bg-white" />
       {clientes === null || cargando ? (
         <div className="animate-pulse text-black/40 font-mono text-sm py-6 text-center">Cargando…</div>
@@ -77,6 +78,7 @@ function CardCliente({ c, onClick }: { c: ClienteAgg; onClick: () => void }) {
         <div className="text-xs text-black/50 truncate">
           {c.telefono || c.email || "sin contacto"}
           {c.proximaCitaIso ? ` · próxima ${fechaCorta(c.proximaCitaIso)}` : c.ultimaVisitaIso ? ` · última ${fechaCorta(c.ultimaVisitaIso)}` : ""}
+          {c.profesionalHabitual ? ` · con ${c.profesionalHabitual}` : ""}
         </div>
       </div>
       <div className="shrink-0 text-right">
@@ -87,7 +89,7 @@ function CardCliente({ c, onClick }: { c: ClienteAgg; onClick: () => void }) {
   );
 }
 
-function FichaCliente({ slug, ficha, onBack }: { slug: string; ficha: Ficha; onBack: () => void }) {
+function FichaCliente({ slug, ficha, onBack, palabra }: { slug: string; ficha: Ficha; onBack: () => void; palabra: string }) {
   const c = ficha.cliente;
   const [notas, setNotas] = useState(ficha.meta.notas || "");
   const [etiquetas, setEtiquetas] = useState<string[]>(ficha.meta.etiquetas || c.etiquetas || []);
@@ -107,9 +109,10 @@ function FichaCliente({ slug, ficha, onBack }: { slug: string; ficha: Ficha; onB
 
   return (
     <div>
-      <button onClick={onBack} className="text-xs font-mono underline text-black/50 mb-3">← clientes</button>
+      <button onClick={onBack} className="text-xs font-mono underline text-black/50 mb-3">← {palabra}</button>
       <h2 className="font-stencil text-2xl sm:text-3xl leading-none">{c.nombre}</h2>
       <div className="text-sm text-black/60 mt-1">{[c.telefono, c.email].filter(Boolean).join(" · ") || "sin contacto"}</div>
+      {c.profesionalHabitual && <div className="text-sm mt-1">Profesional habitual: <b>{c.profesionalHabitual}</b></div>}
 
       <div className="grid grid-cols-4 gap-2 my-4">
         <Stat n={c.completadas} l="visitas" />

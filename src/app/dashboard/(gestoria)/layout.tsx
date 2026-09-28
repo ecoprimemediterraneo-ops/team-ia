@@ -24,6 +24,16 @@ import { pagosSinFacturaPorCliente } from "@/lib/gestoria-conciliacion";
 import PanelGestoriaShell from "@/components/gestoria/PanelGestoriaShell";
 import PanelDentalShell from "@/components/dental/PanelDentalShell";
 import PanelEsteticaShell from "@/components/estetica/PanelEsteticaShell";
+import PanelSalonShell from "@/components/salon/PanelSalonShell";
+
+/** "Pablo y Marta · recepción del salón" con SOLO los agentes contratados (sin lista: el texto de siempre). */
+function agentesDe(contratados: string[] | undefined, papel: string): string | undefined {
+  if (!Array.isArray(contratados)) return undefined;
+  const NOMBRES: Record<string, string> = { pablo: "Pablo", carmen: "Carmen", marta: "Marta", rocio: "Rocío" };
+  const n = ["pablo", "carmen", "marta", "rocio"].filter((a) => contratados.includes(a)).map((a) => NOMBRES[a]);
+  if (!n.length) return undefined;
+  return `${n.length > 1 ? `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}` : n[0]} · ${papel}`;
+}
 
 export default async function GestoriaLayout({ children }: { children: React.ReactNode }) {
   const ctx = await contextoPanelODefecto();
@@ -75,6 +85,24 @@ export default async function GestoriaLayout({ children }: { children: React.Rea
       >
         {children}
       </PanelEsteticaShell>
+    );
+  }
+
+  // SALÓN — cuarta rama, por el mismo motivo: el chat sobrevive a cambiar de
+  // pestaña solo si su marco vive en el LAYOUT, y `/dashboard` es una única URL
+  // para todos los sectores. Sus pestañas usan rutas propias (`agenda-salon`,
+  // `clientas-salon`, `lista-espera`, `redes-salon`). Restaurante sigue con
+  // `PanelClasico`, sin tocar.
+  if (ctx.perfil.id === "salon") {
+    return (
+      <PanelSalonShell
+        tenantNombre={ctx.tenant?.name ?? "Salón"}
+        tenantId={ctx.tenantId}
+        agente={agentesDe(ctx.tenant?.agentesContratados, "recepción del salón")}
+        etiquetaClientas={ctx.vocabulario.clientePlural.charAt(0).toUpperCase() + ctx.vocabulario.clientePlural.slice(1)}
+      >
+        {children}
+      </PanelSalonShell>
     );
   }
 

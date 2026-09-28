@@ -9,7 +9,7 @@
 
 import "server-only";
 import { upsertTenant, getTenant, type Tenant } from "./tenants";
-import { saveBusiness, getBusinessBySlug, type BusinessBooking, type Horario, type DayHours } from "./booking";
+import { saveBusiness, getBusinessBySlug, type BusinessBooking, type Horario, type DayHours, type Empleado } from "./booking";
 import type { SectorNegocio } from "./sectores";
 import { DURACION_MESA_MIN, CORTESIA_MIN, TURNOS_POR_DEFECTO } from "./restaurante";
 
@@ -114,6 +114,8 @@ type PlantillaNegocio = {
   slotStepMin: number;
   leadTimeMin: number;
   cancelAntelacionMin: number;
+  /** Profesionales del negocio (solo los sectores con personal: el salón). */
+  empleados?: Empleado[];
 };
 
 const NEGOCIOS: Record<SectorNegocio, PlantillaNegocio> = {
@@ -136,6 +138,13 @@ const NEGOCIOS: Record<SectorNegocio, PlantillaNegocio> = {
     slotStepMin: 15,
     leadTimeMin: 60,
     cancelAntelacionMin: 120,
+    // Tres profesionales trabajando a la vez: es lo que distingue al salón de las
+    // clínicas, y lo que enseña la agenda por columnas.
+    empleados: [
+      { id: "emp_ana", nombre: "Ana", color: "#C8202A", activo: true, serviceIds: ["sv_corte", "sv_color", "sv_mechas"] },
+      { id: "emp_berta", nombre: "Berta", color: "#2F6FDE", activo: true, serviceIds: ["sv_manicura", "sv_pedicura"] },
+      { id: "emp_carla", nombre: "Carla", color: "#2E9E5B", activo: true, serviceIds: ["sv_corte", "sv_manicura"] },
+    ],
   },
 
   // --- ESTÉTICA: la valoración es la puerta de entrada, sin precio cerrado ---
@@ -260,7 +269,7 @@ async function sembrarNegocio(d: TenantDemo): Promise<string> {
     leadTimeMin: plantilla.leadTimeMin,
     cancelAntelacionMin: plantilla.cancelAntelacionMin,
     // Se conservan empleados y fotos si ya existían (por si alguien los tocó).
-    empleados: previo?.empleados,
+    empleados: previo?.empleados ?? plantilla.empleados,
     logoUrl: previo?.logoUrl,
     heroImageUrl: previo?.heroImageUrl,
     // Config de restauración solo donde aplica. Si ya la habían tocado a mano,

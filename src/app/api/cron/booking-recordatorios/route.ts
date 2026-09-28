@@ -2,8 +2,11 @@
 // Dispáralo por cron (Vercel es diario) o por n8n con más frecuencia.
 // Auth: ?secret=<CRON_SECRET> o header x-cron-secret (o Authorization: Bearer).
 //
-// Ventana: reservas confirmadas que empiezan dentro de [WINDOW_MIN_H, WINDOW_MAX_H]
-// horas y aún sin recordatorio → efectivamente "el día antes" con un cron diario.
+// Qué se recuerda: toda reserva confirmada de MAÑANA (fecha local del negocio) y,
+// como red, las que empiezan dentro de [WINDOW_MIN_H, WINDOW_MAX_H] horas. Una
+// sola vez por cita (`recordatorioEnviado`, con candado entre pasadas).
+// Por WhatsApp, fuera de la ventana de 24 h hace falta plantilla aprobada:
+// `BOOKING_RECORDATORIO_TEMPLATE` (ver `booking-email.ts`).
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { cronAuthError } from "@/lib/cron-auth";
@@ -65,8 +68,18 @@ async function run(req: Request) {
     }
     // startIso es hora local del negocio (sin TZ) → epoch con la zona del negocio
     // (mismo tzOffset/DST que computeFreeSlots; evita el desfase en runtime UTC).
-    const startEpoch = localToEpoch(r.startIso, business.timezone || "Europe/Madrid");
-    if (isNaN(startEpoch) || startEpoch < min || startEpoch > max) continue;
+    const tz = business.timezone || "Europe/Madrid";
+    const startEpoch = localToEpoch(r.startIso, tz);
+    if (isNaN(startEpoch) || startEpoch < now) continue;
+    // "EL DÍA ANTES" POR CALENDARIO, no por horas. Con solo la ventana de 6–30 h
+    // y el cron a las 11:00 de Madrid, una cita de mañana a las 18:00 caía fuera
+    // (31 h) y se recordaba EL MISMO DÍA a las 11:00. Ahora: toda cita de mañana
+    // (fecha local del negocio) se recuerda hoy; la ventana se queda como red
+    // para las que se reservan tarde.
+    const hoyLocal = new Date(now).toLocaleDateString("en-CA", { timeZone: tz });
+    const mananaLocal = new Date(Date.parse(`${hoyLocal}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+    const esManana = r.startIso.slice(0, 10) === mananaLocal;
+    if (!esManana && (startEpoch < min || startEpoch > max)) continue;
     // UN RECORDATORIO POR CITA, AUNQUE HAYA DOS PASADAS A LA VEZ.
     //
     // `recordatorioEnviado` se escribe DESPUÉS de enviar, así que dos pasadas

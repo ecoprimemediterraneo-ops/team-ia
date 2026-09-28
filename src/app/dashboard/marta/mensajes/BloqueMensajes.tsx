@@ -18,6 +18,26 @@ export default async function BloqueMensajes({ idioma = "es" }: { idioma?: Idiom
   const ctx = await contextoPanelODefecto();
   const conexion = await tokenInstagramDeTenant(ctx.tenantId);
 
+  // LO QUE YA HA ENTRADO SE ENSEÑA SIEMPRE. Antes, sin la cuenta conectada por
+  // "Instagram Login", la bandeja entera se escondía detrás de "conecta tu
+  // cuenta"… aunque los DM llegaran, Marta contestara y todo estuviera
+  // guardado. El dueño veía un panel vacío con mensajes dentro. Ahora, sin
+  // conexión, se enseñan las conversaciones (sin cuadro para contestar) y el
+  // aviso de conectar va encima.
+  const guardadas = conexion ? [] : await listarConversaciones(ctx.tenantId).catch(() => []);
+  if (!conexion && guardadas.length) {
+    const conversaciones = guardadas.map((c) => ({ ...c, ventanaAbierta: false, horasQueQuedan: 0 }));
+    return (
+      <div className="space-y-4">
+        <div className="card-hard bg-white p-4 border-[3px] border-[color:var(--mustard)] text-sm">
+          <b>{t("band_sin_conectar_t")}.</b> Los mensajes se reciben y se ven aquí; para contestar a mano desde el panel, conecta la cuenta.{" "}
+          <a href={conIdioma("/dashboard/marta?tab=arranque", idioma)} className="underline font-bold">{t("band_ir_arranque")}</a>
+        </div>
+        <BandejaDMs conversaciones={conversaciones} cuenta="—" idioma={idioma} />
+      </div>
+    );
+  }
+
   if (!conexion) {
     // Se distingue "no has conectado" de "te falta confirmar": son cosas
     // distintas y mandar a empezar de cero a quien ya autorizó es hacerle

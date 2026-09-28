@@ -17,6 +17,7 @@ import { PanelClasico } from "@/components/dashboard/PanelClasico";
 import ResumenDelDia from "@/components/gestoria/ResumenDelDia";
 import ContenidoHoyDental from "@/components/dental/ContenidoHoyDental";
 import ContenidoHoyEstetica from "@/components/estetica/ContenidoHoyEstetica";
+import ContenidoHoySalon from "@/components/salon/ContenidoHoySalon";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,17 @@ export default async function DashboardHome() {
   if (ctx.perfil.id === "estetica") {
     return (
       <ContenidoHoyEstetica
+        tenantId={ctx.tenantId}
+        vocCita={ctx.vocabulario.cita}
+        vocCitaPlural={ctx.vocabulario.citaPlural}
+      />
+    );
+  }
+  // Salón: la agenda del día por profesional, en columnas, y los huecos libres
+  // de cada una. El resto de sectores (restaurante) sigue con `PanelClasico`.
+  if (ctx.perfil.id === "salon") {
+    return (
+      <ContenidoHoySalon
         tenantId={ctx.tenantId}
         vocCita={ctx.vocabulario.cita}
         vocCitaPlural={ctx.vocabulario.citaPlural}

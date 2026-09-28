@@ -42,6 +42,7 @@ import {
 import {
   replyToComment,
   sendInstagramPrivateReply,
+  sendInstagramPrivateReplyDeTenant,
   type ResultadoRespuestaPublica,
 } from "./marta-graph";
 
@@ -391,7 +392,7 @@ export async function procesarComentario(
   }
 
   // 5. El primer DM, por private reply (exento de la ventana de 24 h).
-  const sendResult = await sendInstagramPrivateReply(commentId, dmTexto);
+  const sendResult = await sendInstagramPrivateReplyDeTenant(tenantId, commentId, dmTexto);
   // Enviado SOLO si Meta lo aceptó. `skipped` (falta configuración) y `simulado`
   // (local sin Graph) tampoco han salido: mirar solo `error` los daba por
   // enviados. Es el mismo fallo que ya se corrigió en el webhook de los DM.

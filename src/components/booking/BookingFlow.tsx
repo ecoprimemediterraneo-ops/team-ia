@@ -64,7 +64,7 @@ function precioServicio(s: Servicio): string {
   return typeof s.precioEUR === "number" ? `${s.precioEUR} €` : "";
 }
 
-export default function BookingFlow({ slug }: { slug: string }) {
+export default function BookingFlow({ slug, preServicio, preHora, preProfesional }: { slug: string; preServicio?: string; preHora?: string; preProfesional?: string }) {
   const [negocio, setNegocio] = useState<Negocio | null>(null);
   const [cargando, setCargando] = useState(true);
   const [errNegocio, setErrNegocio] = useState("");
@@ -111,6 +111,20 @@ export default function BookingFlow({ slug }: { slug: string }) {
     try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (s?.nombre) { setForm(s); setConocido(true); } } catch { /* */ }
     return () => { vivo = false; };
   }, [slug]);
+
+  // Viene del enlace de huecos libres con servicio y hora ya elegidos: se salta
+  // directamente a los datos (si el servicio no tiene opciones que elegir antes).
+  useEffect(() => {
+    if (!negocio || !preServicio || !preHora || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(preHora)) return;
+    const s = negocio.servicios.find((x) => x.id === preServicio);
+    if (!s || s.variantes.length) return;
+    setServicio(s);
+    if (preProfesional) setEmpleadoSel(preProfesional);
+    setFecha(preHora.slice(0, 10));
+    setSlot(preHora.length === 16 ? `${preHora}:00` : preHora.slice(0, 19));
+    setPaso(4);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [negocio]);
 
   // Acordeón: todas las categorías arrancan CERRADAS (todas pesan igual). Además, tocar
   // FUERA del acordeón cierra lo que hubiera abierto (más cómodo en móvil que volver a

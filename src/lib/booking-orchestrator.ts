@@ -71,6 +71,11 @@ export type ReservaBookingInput = {
   eventLogRef?: string;
   /** Bloqueos: ocupan agenda pero no son citas y no se cuentan como tales. */
   sinEventLog?: boolean;
+  /**
+   * El texto de la cita, calculado DESPUÉS de `revalidate`. Sirve cuando el
+   * profesional se decide dentro del candado y su nombre va en el título del evento.
+   */
+  motivoFinal?: () => string;
 };
 
 // Mutex en memoria por (slot|recurso) — serializa dentro de la misma instancia.
@@ -153,20 +158,21 @@ const simBooked = new Set<string>();
 export async function reservarSlotBooking(input: ReservaBookingInput): Promise<ReservaResult> {
   const tenantId = input.tenantId || DEFAULT_TENANT_ID;
   const durationMin = input.durationMin ?? DEFAULT_DURATION_MIN;
-  // La clave del candado es el DÍA y el profesional, no la hora exacta.
+  // UN SOLO CANDADO POR NEGOCIO Y DÍA, para cualquier reserva: la web pública, Pablo,
+  // Carmen, Marta, el chat del panel y las citas a mano, con o sin profesional
+  // elegido.
   //
-  // Con la hora exacta, las 09:00 y las 09:15 de treinta minutos eran dos
-  // claves distintas: las dos peticiones entraban a la vez, las dos veían el
-  // hueco libre y las dos se concedían. La misma persona atendiendo a dos
-  // clientes a la misma hora.
-  //
-  // El día entero es deliberadamente ancho: sigue dejando trabajar en paralelo
-  // a profesionales distintos (que es donde importa el paralelismo) y hace
-  // imposible que dos citas del mismo profesional se decidan a la vez, se
-  // solapen como se solapen. Lo que cuesta es que dos reservas del mismo día se
-  // serializan; `esperarLock` se encarga de que eso sea una espera y no un error.
+  // Antes el candado era por día Y profesional. Sonaba razonable (dos
+  // profesionales pueden trabajar a la vez) pero dejaba dos agujeros: una reserva
+  // "cualquiera" o de un agente no tenía profesional y usaba OTRO candado que la
+  // reserva online de una profesional concreta, así que podían decidirse a la vez
+  // sobre la misma hora; y elegir profesional dentro del candado exige mirar a
+  // todas. Con un solo candado, quien entra ve la agenda entera ya al día, elige a
+  // quién asignar y lo guarda antes de que entre nadie más. Lo que cuesta: dos
+  // reservas del mismo negocio y día se hacen una detrás de otra (`esperarLock`
+  // convierte eso en una espera de milisegundos y no en un error).
   const dia = input.startIso.slice(0, 10);
-  const slotKey = `${tenantId}|${dia}|${input.resourceId ?? "global"}`;
+  const slotKey = `${tenantId}|${dia}`;
 
   return withSlotMutex(slotKey, async () => {
     const lockKey = `lock:booking:${slotKey}`;
@@ -217,7 +223,7 @@ export async function reservarSlotBooking(input: ReservaBookingInput): Promise<R
         return { ok: true, eventId: fakeId, simulated: true };
       }
       const res = await agendarCita({
-        tenantId, userEmail: input.userEmail, nombre: input.nombre, motivo: input.motivo, start: input.startIso, durationMin,
+        tenantId, userEmail: input.userEmail, nombre: input.nombre, motivo: input.motivoFinal ? input.motivoFinal() : input.motivo, start: input.startIso, durationMin,
         agenteOrigen: input.agenteOrigen, customerPhone: input.customerPhone, attendees: input.attendees, location: input.location, redirectUri: input.redirectUri,
         eventLogRef: input.eventLogRef, sinEventLog: input.sinEventLog,
       });

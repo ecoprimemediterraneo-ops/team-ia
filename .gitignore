@@ -45,3 +45,8 @@ next-env.d.ts
 # producción no existe ninguna otra forma de que lleguen.
 /data/
 .env*.local
+
+# Resultados de las pruebas de punta a punta
+/e2e-resultados/
+/tests/.run/
+/tests/.data-antes-de-e2e/

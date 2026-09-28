@@ -70,7 +70,23 @@ export type Empleado = {
   activo: boolean;
   horario?: Horario; // turno propio; si ausente, usa el horario del negocio (lo usará la Fase 2b)
   serviceIds?: string[]; // servicios que realiza; vacío/ausente = todos
+  /**
+   * Vacaciones y días libres de ESTA profesional (fechas locales, ambos días
+   * incluidos). Esos días no tiene huecos, no se le asigna ninguna cita y el
+   * resto del equipo sigue trabajando normal. Antes solo había bloqueos de la
+   * agenda entera: dar una semana libre a una persona cerraba el salón.
+   */
+  ausencias?: Ausencia[];
 };
+
+export type Ausencia = { desde: string; hasta: string; motivo?: string };
+
+/** ¿Está de vacaciones / libre esa profesional ese día (YYYY-MM-DD)? */
+export function ausenteEl(e: Pick<Empleado, "ausencias"> | undefined, fecha: string): Ausencia | undefined {
+  if (!e?.ausencias?.length) return undefined;
+  const d = fecha.slice(0, 10);
+  return e.ausencias.find((a) => a.desde <= d && d <= (a.hasta || a.desde));
+}
 
 export type BusinessBooking = {
   slug: string;
@@ -508,6 +524,45 @@ async function footprintLibre(
   return { ok: true, libre: !oc.busy.some((b) => footStart < b.end && footEnd > b.start) };
 }
 
+/**
+ * Elige QUIÉN atiende una cita y comprueba que esa persona está libre. Se llama
+ * SIEMPRE dentro del candado del negocio, para cualquier reserva (web, agentes,
+ * chat del panel, cita a mano, mover una cita).
+ *
+ *   - Negocio sin personal: no hay a quién asignar; mira la agenda global.
+ *   - Con personal y `preferidoId`: solo esa persona (y que haga el servicio).
+ *   - Con personal y sin preferida ("cualquiera"): la primera que haga el servicio y
+ *     tenga el hueco libre. Una cita NUNCA queda "sin profesional" en un negocio
+ *     con personal: una cita sin asignar bloquea a TODAS y dejaría al negocio sin
+ *     nadie libre a esa hora.
+ */
+export type EleccionProfesional =
+  | { ok: true; empleado?: Empleado }
+  | { ok: false; reason: "slot_taken" | "empleado_invalido" | "no_calendar" | "error"; detail?: string };
+
+async function elegirProfesional(
+  business: BusinessBooking,
+  p: { startNorm: string; pB: number; dur: number; pA: number; redirectUri: string; serviceId?: string; preferidoId?: string; excludeId?: string },
+): Promise<EleccionProfesional> {
+  const staff = (business.empleados || []).filter((e) => e.activo);
+  if (staff.length === 0) {
+    const fl = await footprintLibre(business, p.startNorm, p.pB, p.dur, p.pA, p.redirectUri, p.excludeId);
+    if (!fl.ok) return { ok: false, reason: fl.reason === "no_calendar" ? "no_calendar" : "error", detail: fl.detail };
+    return fl.libre ? { ok: true } : { ok: false, reason: "slot_taken" };
+  }
+  const elegibles = p.serviceId ? empleadosDeServicio(business, p.serviceId) : staff;
+  const candidatos = (p.preferidoId ? elegibles.filter((e) => e.id === p.preferidoId) : elegibles)
+    // De vacaciones o con el día libre: no se le asigna nada ese día.
+    .filter((e) => !ausenteEl(e, p.startNorm));
+  if (p.preferidoId && !elegibles.some((e) => e.id === p.preferidoId)) return { ok: false, reason: "empleado_invalido" };
+  for (const e of candidatos) {
+    const fl = await footprintLibre(business, p.startNorm, p.pB, p.dur, p.pA, p.redirectUri, p.excludeId, e.id);
+    if (!fl.ok) return { ok: false, reason: fl.reason === "no_calendar" ? "no_calendar" : "error", detail: fl.detail };
+    if (fl.libre) return { ok: true, empleado: e };
+  }
+  return { ok: false, reason: "slot_taken" };
+}
+
 export async function computeFreeSlots(
   business: BusinessBooking,
   opts: DuracionFootprint,
@@ -522,7 +577,7 @@ export async function computeFreeSlots(
   const horario = empleado?.horario ?? business.horario;
   const weekday = new Date(`${dateStr}T12:00:00Z`).getUTCDay();
   const day = horario[weekday];
-  if (!day || !day.abierto || day.franjas.length === 0) {
+  if (!day || !day.abierto || day.franjas.length === 0 || ausenteEl(empleado, dateStr)) {
     return { ok: true, date: dateStr, slots: [], timezone: tz };
   }
 
@@ -664,7 +719,8 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
   const startNorm = input.startIso.length === 16 ? `${input.startIso}:00` : input.startIso;
   const asig = await validarYAsignar(business, service, sel, startNorm, dateStr, input.redirectUri, input.empleadoId);
   if (!asig.ok) return { ok: false, reason: asig.reason, detail: asig.detail };
-  const empleado = asig.empleado;
+  // El profesional se DECIDE dentro del candado (`revalidate`): aquí es solo el de partida.
+  let empleado = asig.empleado;
 
   const calendarEmail = await resolveCalendarEmail(business);
 
@@ -679,7 +735,8 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
   const eventStart = shiftLocal(startNorm, -sel.paddingBeforeMin);
   const eventDuration = sel.paddingBeforeMin + sel.durationMin + sel.paddingAfterMin;
   const nombreCompleto = [service.nombre, sel.varianteNombre].filter(Boolean).join(" · ");
-  const motivo = [nombreCompleto, ...sel.addonsSel.map((a) => `+ ${a.nombre}`)].join(" ") + (empleado ? ` · ${empleado.nombre}` : "");
+  const motivoDe = () => [nombreCompleto, ...sel.addonsSel.map((a) => `+ ${a.nombre}`)].join(" ") + (empleado ? ` · ${empleado.nombre}` : "");
+  const motivo = motivoDe();
 
   const res = await reservarSlotBooking({
     tenantId: business.tenantId,
@@ -696,13 +753,19 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
     // Multi-empleado: aísla el lock por profesional y re-valida per-staff dentro del
     // lock (en vez del findFreeSlot global, que asume un único calendario).
     resourceId: empleado?.id,
-    // La disponibilidad se vuelve a mirar SIEMPRE dentro del candado, haya
-    // profesional o no. Antes, sin profesional, se delegaba en `findFreeSlot`,
-    // que solo pregunta a Google y no ve las reservas ya guardadas aquí.
+    // La disponibilidad se vuelve a mirar SIEMPRE dentro del candado, y AQUÍ se
+    // decide quién atiende: si dos personas piden a la vez la misma hora "con
+    // cualquiera", a la segunda le toca otra profesional en vez de un "ocupado".
     revalidate: async () => {
-      const fl = await footprintLibre(business, startNorm, sel.paddingBeforeMin, sel.durationMin, sel.paddingAfterMin, input.redirectUri, undefined, empleado?.id);
-      return fl.ok && fl.libre;
+      const r = await elegirProfesional(business, {
+        startNorm, pB: sel.paddingBeforeMin, dur: sel.durationMin, pA: sel.paddingAfterMin,
+        redirectUri: input.redirectUri, serviceId: service.id, preferidoId: input.empleadoId,
+      });
+      if (!r.ok) return false;
+      empleado = r.empleado;
+      return true;
     },
+    motivoFinal: motivoDe,
     // Guardar dentro del candado: hasta que esto no termina, ninguna otra
     // reserva del mismo profesional puede mirar la agenda.
     eventLogRef: recordId,
@@ -774,6 +837,11 @@ export type RegistrarRecordInput = {
   /** Padding del servicio: sin él, la reserva guardada solo ocuparía el servicio y no su preparación. */
   paddingBeforeMin?: number;
   paddingAfterMin?: number;
+  /** Profesional que atiende (negocios con personal). Sin él, la cita bloquearía a todas. */
+  empleadoId?: string;
+  empleadoNombre?: string;
+  serviceId?: string;
+  servicioNombre?: string;
   baseUrl?: string; // origen público (para el enlace de cancelar de la confirmación al cliente)
   /** SOLO RESTAURACIÓN. Ausentes en los demás sectores, como hasta ahora. */
   comensales?: number;
@@ -803,8 +871,9 @@ export async function registrarRecordDeCita(
     token: crypto.randomBytes(16).toString("hex"),
     slug: business.slug,
     tenantId: business.tenantId,
-    serviceId: "",
-    servicioNombre: input.motivo || "Cita",
+    serviceId: input.serviceId ?? "",
+    servicioNombre: input.servicioNombre || input.motivo || "Cita",
+    ...(input.empleadoId ? { empleadoId: input.empleadoId, empleadoNombre: input.empleadoNombre } : {}),
     durationMin: input.durationMin,
     ...(input.paddingBeforeMin ? { paddingBeforeMin: input.paddingBeforeMin } : {}),
     ...(input.paddingAfterMin ? { paddingAfterMin: input.paddingAfterMin } : {}),
@@ -1060,20 +1129,19 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
     servicioNombre = input.customNombre?.trim() || "Cita";
   }
 
-  const empleado = getEmpleado(business, input.empleadoId);
-
   const startNorm = input.startIso.length === 16 ? `${input.startIso}:00` : input.startIso;
-  // Conflicto per-staff si va asignada a un profesional; global si no.
-  const libre = await footprintLibre(business, startNorm, pB, dur, pA, input.redirectUri, undefined, empleado?.id);
-  if (!libre.ok) return { ok: false, reason: libre.reason === "no_calendar" ? "no_calendar" : "error", detail: libre.detail };
-  if (!libre.libre) return { ok: false, reason: "slot_taken" };
+  // Quién atiende: la elegida, o la primera libre. Ver `elegirProfesional`.
+  const eleccion = await elegirProfesional(business, { startNorm, pB, dur, pA, redirectUri: input.redirectUri, serviceId: input.serviceId || undefined, preferidoId: input.empleadoId });
+  if (!eleccion.ok) return { ok: false, reason: eleccion.reason === "slot_taken" || eleccion.reason === "empleado_invalido" ? "slot_taken" : eleccion.reason, detail: eleccion.detail };
+  let empleado = eleccion.empleado;
 
   const calendarEmail = await resolveCalendarEmail(business);
   const recordId = nuevoId("bk"); // identidad estable de la cita (event-log)
   let record: BookingRecord | null = null; // se rellena dentro del candado, en `persistir`
   const eventStart = shiftLocal(startNorm, -pB);
   const eventDuration = pB + dur + pA;
-  const motivo = [servicioNombre, varianteNombre].filter(Boolean).join(" · ") + (empleado ? ` · ${empleado.nombre}` : "") + (input.nota ? ` — ${input.nota}` : "");
+  const motivoDe = () => [servicioNombre, varianteNombre].filter(Boolean).join(" · ") + (empleado ? ` · ${empleado.nombre}` : "") + (input.nota ? ` — ${input.nota}` : "");
+  const motivo = motivoDe();
 
   const res = await reservarSlotBooking({
     tenantId: business.tenantId,
@@ -1089,9 +1157,12 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
     simulate: process.env.BOOKING_SIMULATE === "1" ? true : undefined,
     resourceId: empleado?.id,
     revalidate: async () => {
-      const fl = await footprintLibre(business, startNorm, pB, dur, pA, input.redirectUri, undefined, empleado?.id);
-      return fl.ok && fl.libre;
+      const r = await elegirProfesional(business, { startNorm, pB, dur, pA, redirectUri: input.redirectUri, serviceId: input.serviceId || undefined, preferidoId: input.empleadoId });
+      if (!r.ok) return false;
+      empleado = r.empleado;
+      return true;
     },
+    motivoFinal: motivoDe,
     eventLogRef: recordId,
     persistir: async (cita) => {
       record = {
@@ -1138,7 +1209,8 @@ export async function crearReservaManual(input: CrearManualInput): Promise<Crear
   return { ok: true, record };
 }
 
-export type CrearBloqueoInput = { slug: string; startIso: string; durationMin: number; nota?: string; redirectUri: string };
+/** `empleadoId`: bloquea solo a esa profesional (el resto sigue con huecos). Sin él, todo el negocio. */
+export type CrearBloqueoInput = { slug: string; startIso: string; durationMin: number; nota?: string; redirectUri: string; empleadoId?: string };
 
 /** Franja no reservable (descanso/vacaciones). Se escribe en Google para bloquear de verdad. */
 export async function crearBloqueo(input: CrearBloqueoInput): Promise<CrearReservaResult> {
@@ -1146,7 +1218,9 @@ export async function crearBloqueo(input: CrearBloqueoInput): Promise<CrearReser
   if (!business) return { ok: false, reason: "not_found" };
   const dur = Math.max(5, input.durationMin);
   const startNorm = input.startIso.length === 16 ? `${input.startIso}:00` : input.startIso;
-  const libre = await footprintLibre(business, startNorm, 0, dur, 0, input.redirectUri);
+  const emp = input.empleadoId ? getEmpleado(business, input.empleadoId) : undefined;
+  if (input.empleadoId && !emp) return { ok: false, reason: "error", detail: "esa profesional no existe" };
+  const libre = await footprintLibre(business, startNorm, 0, dur, 0, input.redirectUri, undefined, emp?.id);
   if (!libre.ok) return { ok: false, reason: libre.reason === "no_calendar" ? "no_calendar" : "error", detail: libre.detail };
   if (!libre.libre) return { ok: false, reason: "slot_taken" };
 
@@ -1157,19 +1231,22 @@ export async function crearBloqueo(input: CrearBloqueoInput): Promise<CrearReser
     userEmail: calendarEmail,
     redirectUri: input.redirectUri,
     nombre: "Bloqueo",
-    motivo: `⛔ Bloqueo${input.nota ? `: ${input.nota}` : ""}`,
+    motivo: `⛔ Bloqueo${emp ? ` (${emp.nombre})` : ""}${input.nota ? `: ${input.nota}` : ""}`,
     startIso: startNorm,
     durationMin: dur,
     agenteOrigen: "booking",
     simulate: process.env.BOOKING_SIMULATE === "1" ? true : undefined,
     // Un bloqueo ocupa la agenda pero NO es una cita: no cuenta en la portada.
     sinEventLog: true,
+    resourceId: emp?.id,
     revalidate: async () => {
-      const fl = await footprintLibre(business, startNorm, 0, dur, 0, input.redirectUri);
+      const fl = await footprintLibre(business, startNorm, 0, dur, 0, input.redirectUri, undefined, emp?.id);
       return fl.ok && fl.libre;
     },
     persistir: async (cita) => {
       record = {
+        empleadoId: emp?.id,
+        empleadoNombre: emp?.nombre,
         id: nuevoId("bloq"),
         token: crypto.randomBytes(16).toString("hex"),
         slug: business.slug,
@@ -1227,11 +1304,21 @@ export async function reprogramarRecord(
   // ¿Libre el nuevo footprint? Excluyendo la PROPIA cita (permite moverla a un hueco
   // que se solape con su posición actual, p. ej. adelantarla 15 min). Per-staff si
   // la cita va asignada a un profesional.
-  const libre = await footprintLibre(business, startNorm, pB, dur, pA, redirectUri, record.id, record.empleadoId);
-  if (!libre.ok) return { ok: false, reason: libre.reason === "no_calendar" ? "no_calendar" : "error", detail: libre.detail };
-  if (!libre.libre) return { ok: false, reason: "slot_taken" };
-
+  // Un bloqueo cierra la agenda entera (mira lo global); una cita conserva a su
+  // profesional, y si no tenía y el negocio tiene personal, se le asigna una libre.
   const esBloqueo = record.tipo === "bloqueo";
+  const elegir = async (): Promise<EleccionProfesional> => {
+    if (esBloqueo) {
+      const fl = await footprintLibre(business, startNorm, pB, dur, pA, redirectUri, record.id);
+      if (!fl.ok) return { ok: false, reason: fl.reason === "no_calendar" ? "no_calendar" : "error", detail: fl.detail };
+      return fl.libre ? { ok: true } : { ok: false, reason: "slot_taken" };
+    }
+    return elegirProfesional(business, { startNorm, pB, dur, pA, redirectUri, serviceId: record.serviceId || undefined, preferidoId: record.empleadoId, excludeId: record.id });
+  };
+  const inicial = await elegir();
+  if (!inicial.ok) return { ok: false, reason: inicial.reason === "empleado_invalido" ? "slot_taken" : inicial.reason, detail: inicial.detail };
+  let asignado: Empleado | undefined = inicial.empleado;
+
   const calendarEmail = await resolveCalendarEmail(business);
   const nombre = esBloqueo ? "Bloqueo" : record.cliente?.nombre || "Cliente";
   const motivo = esBloqueo
@@ -1262,13 +1349,18 @@ export async function reprogramarRecord(
     resourceId: record.empleadoId,
     eventLogRef: record.id,
     revalidate: async () => {
-      const fl = await footprintLibre(business, startNorm, pB, dur, pA, redirectUri, record.id, record.empleadoId);
-      return fl.ok && fl.libre;
+      const r = await elegir();
+      if (!r.ok) return false;
+      asignado = r.empleado;
+      return true;
     },
     // Mover la cita también se guarda dentro del candado: si no, entre el hueco
     // concedido y el guardado otra reserva puede colarse en la hora nueva.
     persistir: async (cita) => {
-      updated = { ...record, startIso: startNorm, durationMin: dur, eventId: cita.eventId, htmlLink: cita.htmlLink, reprogramadaEn: new Date().toISOString() };
+      updated = {
+        ...record, startIso: startNorm, durationMin: dur, eventId: cita.eventId, htmlLink: cita.htmlLink, reprogramadaEn: new Date().toISOString(),
+        ...(asignado && !record.empleadoId ? { empleadoId: asignado.id, empleadoNombre: asignado.nombre } : {}),
+      };
       await saveRecord(updated);
     },
     deshacerCita: (eventId) => retirarCitaDeGoogle(calendarEmail, redirectUri, eventId),
@@ -1331,6 +1423,8 @@ export type ClienteAgg = {
   proximaCitaIso?: string;
   etiquetas: string[];
   tieneNotas: boolean;
+  /** La profesional que más la ha atendido (solo negocios con personal). */
+  profesionalHabitual?: string;
 };
 export type ClienteFicha = { cliente: ClienteAgg; historial: BookingRecord[]; meta: ClienteMeta };
 
@@ -1363,8 +1457,14 @@ export async function listClientes(slug: string, q?: string): Promise<ClienteAgg
     .sort((a, b) => b.startIso.localeCompare(a.startIso)); // recientes primero → identidad = más reciente
   const meta = await readClientesMeta();
   const map = new Map<string, ClienteAgg>();
+  const conQuien = new Map<string, Map<string, number>>(); // clienta → profesional → nº de citas
   for (const r of recs) {
     const key = clienteKey(r.cliente);
+    if (r.empleadoNombre && r.estado !== "cancelada") {
+      const m = conQuien.get(key) ?? new Map<string, number>();
+      m.set(r.empleadoNombre, (m.get(r.empleadoNombre) ?? 0) + 1);
+      conQuien.set(key, m);
+    }
     let a = map.get(key);
     if (!a) {
       const m = meta[`${slug}|${key}`] || {};
@@ -1389,6 +1489,10 @@ export async function listClientes(slug: string, q?: string): Promise<ClienteAgg
     } else if ((r.estado === "confirmada" || r.estado === "pendiente") && r.startIso.slice(0, 10) >= hoy) {
       if (!a.proximaCitaIso || r.startIso < a.proximaCitaIso) a.proximaCitaIso = r.startIso;
     }
+  }
+  for (const [k, m] of conQuien) {
+    const top = [...m.entries()].sort((x, y) => y[1] - x[1])[0];
+    if (top) map.get(k)!.profesionalHabitual = top[0];
   }
   let out = [...map.values()];
   if (q?.trim()) {
@@ -1438,6 +1542,63 @@ export type ClienteDormida = {
   diasDesdeAviso?: number;           // días desde ese último aviso
   puedeEnviar: boolean;              // false si ya se le avisó en los últimos DIAS_ANTISPAM
 };
+
+/**
+ * Clientas dormidas para la PANTALLA del salón: las mismas que `listClientesDormidas`
+ * (venían, llevan más de DIAS_DORMIDA sin venir y no tienen cita futura) pero sin
+ * exigir email — una clienta sin correo sigue siendo una clienta perdida, y a
+ * muchas se les escribe por WhatsApp. Trae con quién venía y a qué, que es lo que
+ * hace falta para escribirle algo que suene a salón y no a plantilla.
+ * El envío automático sigue siendo solo por email (`puedeEnviar` exige email).
+ */
+export type ClientaDormidaFicha = ClienteDormida & {
+  telefono?: string;
+  profesionalHabitual?: string;
+  servicioHabitual?: string;
+  visitas: number;
+};
+
+export async function listClientasDormidasCompleto(slug: string): Promise<ClientaDormidaFicha[]> {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const recs = (await listRecords()).filter((r) => r.slug === slug && r.tipo !== "bloqueo");
+  const meta = await readClientesMeta();
+  type G = { nombre: string; email?: string; telefono?: string; ultima?: string; futura: boolean; visitas: number; prof: Map<string, number>; serv: Map<string, number> };
+  const g = new Map<string, G>();
+  for (const r of recs) {
+    const key = clienteKey(r.cliente);
+    let x = g.get(key);
+    if (!x) { x = { nombre: r.cliente?.nombre || "Clienta", futura: false, visitas: 0, prof: new Map(), serv: new Map() }; g.set(key, x); }
+    if (!x.email && r.cliente?.email) x.email = r.cliente.email;
+    if (!x.telefono && r.cliente?.telefono) x.telefono = r.cliente.telefono;
+    if (x.nombre === "Clienta" && r.cliente?.nombre) x.nombre = r.cliente.nombre;
+    const dia = r.startIso.slice(0, 10);
+    if (dia >= hoy && (r.estado === "confirmada" || r.estado === "pendiente")) x.futura = true;
+    if (dia < hoy && r.estado !== "cancelada" && r.estado !== "no_show") {
+      x.visitas++;
+      if (!x.ultima || r.startIso > x.ultima) x.ultima = r.startIso;
+      if (r.empleadoNombre) x.prof.set(r.empleadoNombre, (x.prof.get(r.empleadoNombre) ?? 0) + 1);
+      if (r.servicioNombre) x.serv.set(r.servicioNombre, (x.serv.get(r.servicioNombre) ?? 0) + 1);
+    }
+  }
+  const top = (m: Map<string, number>) => [...m.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  const out: ClientaDormidaFicha[] = [];
+  for (const [key, x] of g) {
+    if (!x.ultima || x.futura) continue;
+    const dias = diasHastaHoy(x.ultima);
+    if (dias <= DIAS_DORMIDA) continue;
+    const enviada = meta[`${slug}|${key}`]?.reactivacionEnviadaIso;
+    const diasAviso = enviada ? diasHastaHoy(enviada) : undefined;
+    const conEmail = !!x.email && /.+@.+\..+/.test(x.email);
+    out.push({
+      key, nombre: x.nombre, email: x.email || "", ultimaCitaIso: x.ultima, diasSinVenir: dias,
+      reactivacionEnviadaIso: enviada, diasDesdeAviso: diasAviso,
+      puedeEnviar: conEmail && !(diasAviso !== undefined && diasAviso < DIAS_ANTISPAM),
+      telefono: x.telefono, profesionalHabitual: top(x.prof), servicioHabitual: top(x.serv), visitas: x.visitas,
+    });
+  }
+  // Primero las que más valían (más visitas) y llevan menos tiempo perdidas: son las que se recuperan.
+  return out.sort((a, b) => b.visitas - a.visitas || a.diasSinVenir - b.diasSinVenir);
+}
 
 /** Días completos entre una fecha ISO (usamos su parte YYYY-MM-DD) y hoy. */
 function diasHastaHoy(desdeIso: string): number {
@@ -1880,6 +2041,8 @@ export type DisponibilidadReserva =
   | {
       negocio: true;
       available: true;
+      /** La profesional que quedaría asignada (negocios con personal). */
+      empleado?: Empleado;
     }
   | {
       negocio: true;
@@ -1899,7 +2062,7 @@ export type DisponibilidadReserva =
  */
 export async function disponibilidadParaReserva(
   tenantId: string,
-  input: { startIso: string; durationMin: number; paddingBeforeMin?: number; paddingAfterMin?: number },
+  input: { startIso: string; durationMin: number; paddingBeforeMin?: number; paddingAfterMin?: number; serviceId?: string; preferidoId?: string },
   redirectUri: string,
 ): Promise<DisponibilidadReserva> {
   const business = await getBusinessByTenant(tenantId);
@@ -1912,16 +2075,24 @@ export async function disponibilidadParaReserva(
   const pA = input.paddingAfterMin ?? 0;
   const sel: DuracionFootprint = { durationMin: dur, paddingBeforeMin: pB, paddingAfterMin: pA };
 
-  const siguiente = async (empleadoId?: string): Promise<string | undefined> => {
+  const siguienteDe = async (empleadoId?: string): Promise<string | undefined> => {
     const r = await computeFreeSlots(business, sel, dateStr, redirectUri, undefined, empleadoId);
     return r.ok ? r.slots.find((x) => x > startNorm) : undefined;
   };
-
   const emps = (business.empleados || []).filter((e) => e.activo);
-  const candidatos: Array<Empleado | undefined> = emps.length ? emps : [undefined];
+  let elegibles = emps;
+  if (emps.length && input.serviceId) elegibles = empleadosDeServicio(business, input.serviceId);
+  if (emps.length && input.preferidoId) elegibles = elegibles.filter((e) => e.id === input.preferidoId);
+  const candidatos: Array<Empleado | undefined> = emps.length ? elegibles : [undefined];
+  // El siguiente hueco libre de CUALQUIERA de las candidatas.
+  const siguiente = async (): Promise<string | undefined> => {
+    const todos = (await Promise.all(candidatos.map((e) => siguienteDe(e?.id)))).filter((x): x is string => !!x);
+    return todos.sort()[0];
+  };
 
   let ultimoMotivo: "fuera_de_horario" | "pasado" | "ocupado" = "fuera_de_horario";
   for (const emp of candidatos) {
+    if (ausenteEl(emp, dateStr)) { ultimoMotivo = "fuera_de_horario"; continue; }
     const horario = emp?.horario ?? business.horario;
     const weekday = new Date(`${dateStr}T12:00:00Z`).getUTCDay();
     const day = horario[weekday];
@@ -1938,10 +2109,10 @@ export async function disponibilidadParaReserva(
     if (!fl.ok) {
       return { negocio: true, available: false, motivo: fl.reason === "no_calendar" ? "no_calendar" : "error", detail: fl.detail };
     }
-    if (fl.libre) return { negocio: true, available: true };
+    if (fl.libre) return { negocio: true, available: true, empleado: emp };
     ultimoMotivo = "ocupado";
   }
-  return { negocio: true, available: false, motivo: ultimoMotivo, suggested: await siguiente(emps[0]?.id) };
+  return { negocio: true, available: false, motivo: ultimoMotivo, suggested: await siguiente() };
 }
 
 /**

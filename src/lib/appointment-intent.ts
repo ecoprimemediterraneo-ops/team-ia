@@ -68,7 +68,7 @@ export type ModoExtraccion = { restaurante?: boolean; gestoria?: boolean };
 export type AgendarFromTextResult =
   | { kind: "no_intent" }
   | { kind: "incomplete"; missing: AppointmentIntent["missing"]; intent: AppointmentIntent }
-  | { kind: "slot_taken"; suggested?: string; intent: AppointmentIntent }
+  | { kind: "slot_taken"; suggested?: string; motivo?: "fuera_de_horario" | "pasado" | "ocupado" | "no_calendar"; intent: AppointmentIntent }
   | { kind: "agendada"; result: Extract<AgendarCitaResult, { ok: true }>; intent: AppointmentIntent }
   | { kind: "error"; detail: string };
 
@@ -345,7 +345,15 @@ export async function tryAgendarFromText(opts: {
   intentOverride?: AppointmentIntent; // si Carmen/Eva ya extrajeron campos, los inyectamos
   /** Modo restaurante: extrae personas y zona, y no exige "motivo". */
   modo?: ModoExtraccion;
+  /** Profesional pedida por el cliente, si la ha dicho. */
+  empleadoId?: string;
 }): Promise<AgendarFromTextResult> {
+  // EL TENANT ES OBLIGATORIO EN LA PRÁCTICA. Pablo y Marta llamaban aquí SIN
+  // tenantId, así que TODA cita pedida por WhatsApp o Instagram acababa en la
+  // agenda de la cuenta de AI-Team (el tenant por defecto), no en la del salón
+  // que la recibía: el cliente oía "listo" y en su panel no aparecía nada. Si
+  // falta, se dice en el log en vez de caer en silencio al de por defecto.
+  if (!opts.tenantId) console.warn(`[appointment-intent] reserva SIN tenantId (canal ${opts.agenteOrigen}): va a ${DEFAULT_TENANT_ID}`);
   const tenantId = opts.tenantId || DEFAULT_TENANT_ID;
   const founderEmail = opts.founderEmail || process.env.FOUNDER_EMAIL || FOUNDER_EMAIL_FALLBACK;
 
@@ -376,7 +384,13 @@ export async function tryAgendarFromText(opts: {
       // agenda y el evento de Google sigan teniendo texto, como el resto.
       motivo: intent.fields.motivo || (opts.modo?.restaurante ? "Mesa" : intent.fields.motivo!),
       startIso: intent.fields.startIso!,
-      durationMin: opts.durationMin ?? DEFAULT_DURATION_MIN,
+      // SIN duración fija. Antes se mandaba siempre 30 min, y `reservarSlot` la
+      // tomaba por buena: un color de 90 minutos pedido por WhatsApp ocupaba 30
+      // en la agenda y dejaba la hora siguiente "libre" encima de la clienta.
+      // Sin duración, el motor usa la del servicio que corresponde al motivo (y,
+      // si el tenant no tiene agenda propia, sus 30 de siempre).
+      durationMin: opts.durationMin,
+      empleadoId: opts.empleadoId,
       agenteOrigen: opts.agenteOrigen,
       customerPhone: opts.customerPhone,
       // Van como opcionales: en los otros sectores llegan undefined y todo se
@@ -391,7 +405,7 @@ export async function tryAgendarFromText(opts: {
         intent,
       };
     }
-    if (res.reason === "slot_taken") return { kind: "slot_taken", suggested: res.suggested, intent };
+    if (res.reason === "slot_taken") return { kind: "slot_taken", suggested: res.suggested, motivo: res.motivo, intent };
     if (res.reason === "locked") return { kind: "slot_taken", intent }; // otro agente reservando este hueco
     return { kind: "error", detail: res.detail };
   } catch (err) {

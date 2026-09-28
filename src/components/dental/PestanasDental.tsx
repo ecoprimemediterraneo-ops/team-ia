@@ -8,6 +8,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useDatosCambiados } from "@/components/LatidoPanel";
 
 const PESTANAS = [
   { href: "/dashboard", texto: "Hoy" },
@@ -17,13 +18,16 @@ const PESTANAS = [
   { href: "/dashboard/resenas", texto: "Reseñas" },
 ] as const;
 
-export default function PestanasDental() {
+export default function PestanasDental({ refreshKey = 0 }: { refreshKey?: number }) {
   const pathname = usePathname() || "/dashboard";
 
   // El número de la pestaña de "Presupuestos y revisiones": revisiones sin
   // avisar + presupuestos pendientes. Se pide en el navegador, como en
   // gestoría, para no retrasar el resto del panel por él.
   const [numero, setNumero] = useState<number | null>(null);
+  // Y en vivo: cuando cambia algo por cualquier canal, se vuelven a pedir.
+  const [latido, setLatido] = useState(0);
+  useDatosCambiados(() => setLatido((x) => x + 1));
   useEffect(() => {
     let vivo = true;
     (async () => {
@@ -32,7 +36,8 @@ export default function PestanasDental() {
       if (vivo && j?.ok) setNumero((j.revisionesSinAvisar ?? 0) + (j.presupuestosPendientes ?? 0));
     })();
     return () => { vivo = false; };
-  }, []);
+    // `refreshKey` cambia tras confirmar una acción del chat: el número se vuelve a pedir.
+  }, [refreshKey, latido]);
 
   return (
     <nav className="flex items-center gap-x-5 gap-y-1 flex-wrap border-b-2 border-black/10 pb-2">

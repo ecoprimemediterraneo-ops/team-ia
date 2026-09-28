@@ -44,7 +44,15 @@
 // primera ejecución real deja escrito cuál es el bueno para esta cuenta.
 
 import "server-only";
-import { baseGraph, baseGraphInstagram, simulado } from "./meta-graph-local";
+import { baseGraph, baseGraphInstagram, simulado, esLocal } from "./meta-graph-local";
+
+/**
+ * En local con el Graph de mentira (`META_GRAPH_URL`), la página y el token de
+ * la casa pueden no estar en el `.env`: se usan unos de relleno para que el
+ * envío llegue al Graph falso y se pueda comprobar. Nunca en producción.
+ */
+const modoGraphFalso = () => esLocal() && !!process.env.META_GRAPH_URL;
+const paginaDeLaCasa = () => process.env.FACEBOOK_PAGE_ID || (modoGraphFalso() ? "pagina-local" : undefined);
 
 const GRAPH_VERSION = "v21.0";
 
@@ -139,7 +147,7 @@ export async function usernameDeIgsid(igsid: string): Promise<string | undefined
   if (enCache) return enCache;
   const base = hostFacebook();
   const userToken = getSystemUserToken();
-  const pageId = process.env.FACEBOOK_PAGE_ID;
+  const pageId = paginaDeLaCasa();
   if (!base || !userToken || !pageId) return undefined;
   try {
     const pageToken = await getPageAccessToken(userToken, pageId);
@@ -239,8 +247,8 @@ export async function sendInstagramMessage(
     }
   }
 
-  const pageId = process.env.FACEBOOK_PAGE_ID;
-  const systemUserToken = getSystemUserToken();
+  const pageId = paginaDeLaCasa();
+  const systemUserToken = getSystemUserToken() || (modoGraphFalso() ? "token-local" : undefined);
 
   if (!pageId) {
     console.warn(
@@ -320,6 +328,55 @@ export async function sendInstagramMessage(
 /** DM normal a un usuario por IGSID. */
 export async function sendInstagramDM(recipientId: string, text: string): Promise<unknown> {
   return sendInstagramMessage({ id: recipientId }, text);
+}
+
+/**
+ * CON QUÉ CUENTA SE CONTESTA A UN CLIENTE.
+ *
+ * Antes el webhook contestaba SIEMPRE con la página de AI-Team
+ * (`FACEBOOK_PAGE_ID`), fuera de quien fuera el DM. Para un salón con su propio
+ * Instagram eso no puede funcionar: el IGSID de su cliente solo existe para SU
+ * cuenta, y Meta lo rechaza (o, peor, se contesta desde la cuenta que no es).
+ *
+ *   1. Si el negocio ha conectado su Instagram (token propio) → con su cuenta.
+ *   2. Si es la cuenta de la casa (o su Instagram es el de la casa) → la página
+ *      de AI-Team, como siempre.
+ *   3. Si no, NO se manda: se devuelve `skipped` y el panel lo enseña como no
+ *      enviado, en vez de fingir que salió.
+ */
+async function destinoDeTenant(tenantId: string): Promise<{ cred?: CredencialTenant } | { casa: true } | null> {
+  try {
+    const { tokenInstagramDeTenant } = await import("./instagram-login");
+    const con = await tokenInstagramDeTenant(tenantId).catch(() => null);
+    if (con && con.origen === "tenant") return { cred: { token: con.token, igUserId: con.userId } };
+    const { getTenant, DEFAULT_TENANT_ID } = await import("./tenants");
+    if (tenantId === DEFAULT_TENANT_ID || modoGraphFalso()) return { casa: true };
+    const t = await getTenant(tenantId);
+    if (t?.instagramUserId && t.instagramUserId === process.env.INSTAGRAM_USER_ID) return { casa: true };
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** DM a un cliente de ESE negocio, con la cuenta que le corresponde. */
+export async function sendInstagramDMDeTenant(tenantId: string, igsid: string, text: string): Promise<unknown> {
+  const d = await destinoDeTenant(tenantId);
+  if (!d) {
+    console.warn(`[marta/graph] NO ENVIADO: el tenant ${tenantId} no tiene su Instagram conectado y no es la cuenta de la casa.`);
+    return { skipped: "sin cuenta de Instagram conectada para este negocio" };
+  }
+  return "cred" in d ? sendInstagramMessage({ id: igsid }, text, d.cred) : sendInstagramDM(igsid, text);
+}
+
+/** Respuesta privada a un comentario, con la cuenta del negocio. */
+export async function sendInstagramPrivateReplyDeTenant(tenantId: string, commentId: string, text: string): Promise<unknown> {
+  const d = await destinoDeTenant(tenantId);
+  if (!d) {
+    console.warn(`[marta/graph] NO ENVIADO: el tenant ${tenantId} no tiene su Instagram conectado y no es la cuenta de la casa.`);
+    return { skipped: "sin cuenta de Instagram conectada para este negocio" };
+  }
+  return "cred" in d ? sendInstagramMessage({ comment_id: commentId }, text, d.cred) : sendInstagramPrivateReply(commentId, text);
 }
 
 /**
@@ -426,8 +483,8 @@ export async function replyToComment(
   commentId: string,
   text: string,
 ): Promise<ResultadoRespuestaPublica> {
-  const pageId = process.env.FACEBOOK_PAGE_ID;
-  const systemUserToken = getSystemUserToken();
+  const pageId = paginaDeLaCasa();
+  const systemUserToken = getSystemUserToken() || (modoGraphFalso() ? "token-local" : undefined);
 
   if (!systemUserToken) {
     const error = "No hay token (INSTAGRAM_ACCESS_TOKEN / WHATSAPP_ACCESS_TOKEN).";

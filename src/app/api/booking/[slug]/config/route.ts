@@ -44,6 +44,11 @@ const empleado = z.object({
   activo: z.boolean(),
   horario: z.record(z.string(), dayHours).optional(),
   serviceIds: z.array(z.string().max(40)).max(80).optional(),
+  ausencias: z.array(z.object({
+    desde: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    hasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    motivo: z.string().max(80).optional(),
+  })).max(60).optional(),
 });
 
 const schema = z.object({

@@ -12,7 +12,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import { kvGet, kvSet } from "./supabase";
+import { kvGet, kvGetEstricto, kvSet } from "./supabase";
 import type { StyleConfig } from "./image-style-presets";
 import type { SectorKey } from "./sector-prompts";
 import type { SectorNegocio } from "./sectores";
@@ -154,7 +154,42 @@ export type Tenant = {
   // Identidad visual (colores + logo) para las imágenes de Marta. Opcional:
   // si falta, se usa MARCA_DEFECTO (los tokens de AI-Team).
   marcaVisual?: MarcaVisual;
+  /**
+   * MULTI-MARCA DEL PANEL. Logo y colores con los que el cliente ve SU panel
+   * (por ejemplo, los clientes que llegan desde cristobalserrano.tech). Solo
+   * cambia el logo de la cabecera y los colores de marca: el diseño es el
+   * mismo. Sin esto, el panel es el de AI-Team de siempre.
+   */
+  marcaPanel?: MarcaPanel;
+  /**
+   * Agentes que ha comprado. Si falta, TODOS los del sector (lo de siempre).
+   * Si está, el panel solo enseña esos y los webhooks de los que no están
+   * (Pablo, Marta, Carmen) no contestan.
+   */
+  agentesContratados?: string[];
 };
+
+export type MarcaPanel = {
+  /** Nombre que sale en la cabecera en lugar de "AI-Team". */
+  nombre?: string;
+  /** URL (https o /ruta) del logo. Sin logo, sale el nombre en letras. */
+  logoUrl?: string;
+  /** Sustituye al mostaza de AI-Team (botones y resaltados). */
+  colorPrincipal?: string;
+  /** Sustituye al rojo de AI-Team (avisos y números de las pestañas). */
+  colorAcento?: string;
+};
+
+/** ¿Tiene este tenant contratado el agente? Sin lista, sí: es lo de siempre. */
+export async function agenteContratado(tenantId: string, agente: string): Promise<boolean> {
+  try {
+    const t = await getTenant(tenantId);
+    if (!t?.agentesContratados || !Array.isArray(t.agentesContratados)) return true;
+    return t.agentesContratados.includes(agente);
+  } catch {
+    return true;
+  }
+}
 
 const KV_KEY = "tenants";
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -208,18 +243,40 @@ function seedTenants(): Record<string, Tenant> {
 
 type TenantMap = Record<string, Tenant>;
 
+// Un solo escritor a la vez dentro del proceso: leer-modificar-escribir en cola.
+let colaEscritura: Promise<unknown> = Promise.resolve();
+function enCola<T>(fn: () => Promise<T>): Promise<T> {
+  const r = colaEscritura.then(fn, fn);
+  colaEscritura = r.catch(() => undefined);
+  return r;
+}
+
+/**
+ * Lee el fichero local. LO QUE BORRABA LOS NEGOCIOS: si una lectura pillaba el
+ * fichero a medio escribir, `JSON.parse` fallaba, se tomaba como "no hay nada"
+ * y se volvía a sembrar SOLO la cuenta de AI-Team, escribiéndolo encima. Ahora
+ * la escritura es atómica (temporal + rename: nunca hay un fichero a medias) y,
+ * si aun así no se puede leer, se reintenta y al final se LANZA: nunca se
+ * siembra encima de un fichero que existe.
+ */
+async function leerFicheroLocal(): Promise<TenantMap | null> {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  for (let i = 0; i < 5; i++) {
+    const raw = await fs.readFile(FILE, "utf-8").catch((e: NodeJS.ErrnoException) => (e.code === "ENOENT" ? null : ""));
+    if (raw === null) return null; // no existe: se siembra
+    if (!raw.trim()) return null;
+    try { return JSON.parse(raw) as TenantMap; } catch { await new Promise((r) => setTimeout(r, 40)); }
+  }
+  throw new Error("[tenants] data/tenants.json no se puede leer (¿corrupto?). No se sobrescribe.");
+}
+
 async function readAll(): Promise<TenantMap> {
   let data: TenantMap | null;
   if (USE_SUPABASE) {
-    data = await kvGet<TenantMap>(KV_KEY);
+    // Estricto: un fallo de lectura LANZA en vez de devolver null y sembrar encima.
+    data = await kvGetEstricto<TenantMap>(KV_KEY);
   } else {
-    try {
-      await fs.mkdir(DATA_DIR, { recursive: true });
-      const raw = await fs.readFile(FILE, "utf-8").catch(() => "");
-      data = raw.trim() ? (JSON.parse(raw) as TenantMap) : null;
-    } catch {
-      data = null;
-    }
+    data = await leerFicheroLocal();
   }
   if (!data || !data[DEFAULT_TENANT_ID]) {
     // Seed idempotente: si no existe la clave o no contiene al fundador, lo creamos.
@@ -296,7 +353,9 @@ async function writeAll(map: TenantMap): Promise<void> {
     }
   } else {
     await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(FILE, JSON.stringify(map, null, 2));
+    const tmp = `${FILE}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
+    await fs.writeFile(tmp, JSON.stringify(map, null, 2));
+    await fs.rename(tmp, FILE); // atómico: quien lea ve el fichero viejo o el nuevo, nunca uno a medias
   }
 }
 
@@ -315,10 +374,12 @@ export async function getTenant(id: string): Promise<Tenant | null> {
 }
 
 export async function upsertTenant(t: Tenant): Promise<Tenant> {
-  const all = await readAll();
-  all[t.id] = t;
-  await writeAll(all);
-  return t;
+  return enCola(async () => {
+    const all = await readAll();
+    all[t.id] = t;
+    await writeAll(all);
+    return t;
+  });
 }
 
 // -----------------------------------------------------------------------------
@@ -467,6 +528,22 @@ export async function setSectorNegocio(tenantId: string, sector: SectorNegocio):
 }
 
 /** Devuelve el sector del agente conversacional del tenant (default vendedor). */
+/**
+ * ¿Agendan los agentes citas de clientes finales en este tenant?
+ *
+ * CAUSA RAÍZ de que Pablo y Marta no guardaran citas: se miraba solo el campo
+ * ANTIGUO `sectorPrompt`. Los tenants nuevos (salón, restaurante…) solo tienen
+ * `sector`, así que caían a "vendedor" (la cuenta comercial, que no agenda) y
+ * el interceptor de reservas, el guion y cancelar/cambiar ni se ejecutaban: la
+ * IA contestaba "te tengo anotada" sin anotar nada.
+ */
+export async function agendaCitasDeTenant(tenantId: string): Promise<boolean> {
+  const t = await getTenant(tenantId);
+  if (!t) return false;
+  if (t.sector) return t.sector !== "gestoria";
+  return (t.sectorPrompt ?? "vendedor") !== "vendedor";
+}
+
 export async function getTenantSector(tenantId: string): Promise<SectorKey> {
   const t = await getTenant(tenantId);
   return t?.sectorPrompt ?? "vendedor";

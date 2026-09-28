@@ -24,6 +24,19 @@ export function getSupabase() {
 }
 
 // Lee un valor JSON del store
+/**
+ * Como `kvGet`, pero distingue "no existe" (null) de "no se ha podido leer"
+ * (LANZA). Para los almacenes que, si no encuentran nada, se siembran de cero:
+ * con `kvGet` un fallo pasajero de red devolvía null y se sobrescribía todo.
+ */
+export async function kvGetEstricto<T>(key: string): Promise<T | null> {
+  const sb = getSupabase();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (sb.from("kv_store") as any).select("value").eq("key", key).maybeSingle();
+  if (error) throw new Error(`[kv] no se ha podido leer ${key}: ${error.message}`);
+  return data ? (data.value as T) : null;
+}
+
 export async function kvGet<T>(key: string): Promise<T | null> {
   const sb = getSupabase();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

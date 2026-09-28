@@ -24,7 +24,7 @@ import {
   type Conversation,
 } from "@/lib/conversation-store";
 import { logEvent, makeEventId } from "@/lib/event-log";
-import { resolveTenantFromMeta, getTenantSector, getTenant } from "@/lib/tenants";
+import { agendaCitasDeTenant, resolveTenantFromMeta, getTenantSector, getTenant, agenteContratado } from "@/lib/tenants";
 import { resolverSector } from "@/lib/sectores";
 import { getFicha, fichaToPromptContext } from "@/lib/ficha";
 import { buildSectorSystem, getSectorPrompt } from "@/lib/sector-prompts";
@@ -38,7 +38,7 @@ import { publishProposal } from "@/lib/marta-publish-flow";
 import { classifyClientReply } from "@/lib/marta-intent";
 import { getRoute, openRoute, closeRoute } from "@/lib/wa-route";
 import { regenerateProposal, MAX_REGEN } from "@/lib/marta-regen";
-import { sendWhatsAppImage, sendWhatsAppVideo } from "@/lib/whatsapp-sender";
+import { sendWhatsAppImage, sendWhatsAppVideo, usarNumeroEmisor, numeroEmisor } from "@/lib/whatsapp-sender";
 import { kvTryLock, supabaseEnabled } from "@/lib/supabase";
 import {
   tryAgendarFromText,
@@ -56,6 +56,7 @@ import { destinoDeAdjunto } from "@/lib/gestoria-desvio";
 import { esElGestor, transcribir, entender } from "@/lib/gestoria-audio";
 import { descargarMedia } from "@/lib/gestoria-adjuntos";
 import { esIntencionCancelar, resolverCancelacion, textoCancelacionChat } from "@/lib/booking-cancel-intent";
+import { pasoGuion, gestionarCitaExistente, ofrecerAlternativas, cerrarGuion } from "@/lib/cita-por-chat";
 import { detectarUrgencia as detectarUrgenciaDental, marcarUrgencia as marcarUrgenciaDental } from "@/lib/dental-urgencias";
 import { detectarLeadCualificado, marcarLeadCualificado, quitarMarcadorLeadCualificado } from "@/lib/estetica-leads";
 import {
@@ -299,6 +300,13 @@ export async function POST(req: Request) {
         console.log(
           `[pablo/webhook] tenant resuelto=${tenantId} desde phone_number_id=${phoneNumberId ?? "(ausente)"}`,
         );
+        // Todo lo que se conteste en esta petición sale por el número que ha recibido.
+        usarNumeroEmisor(phoneNumberId);
+        // Agentes contratados (multi-marca): si este cliente no tiene a Pablo, no se contesta.
+        if (!(await agenteContratado(tenantId, "pablo"))) {
+          console.warn(`[pablo/webhook] IGNORADO: el tenant ${tenantId} no tiene contratado a Pablo.`);
+          continue;
+        }
 
         const messages = value.messages ?? [];
         const contacts = value.contacts ?? [];
@@ -669,7 +677,7 @@ export async function POST(req: Request) {
           let sectorAgenda = true;
           try {
             const sk = await getTenantSector(tenantId);
-            sectorAgenda = getSectorPrompt(sk).agendaCitas;
+            sectorAgenda = getSectorPrompt(sk).agendaCitas || (await agendaCitasDeTenant(tenantId));
           } catch { /* por defecto intentamos agendar */ }
 
           // ¿Es un RESTAURANTE? De eso depende que se extraigan personas y zona
@@ -704,10 +712,37 @@ export async function POST(req: Request) {
             marcarUrgenciaDental(tenantId, { telefono: from, nombre: customerName, texto: text }).catch(() => {});
           }
 
-          // === INTERCEPTOR: ¿la clienta quiere CANCELAR o MOVER su cita? ===
-          // Le pasamos su enlace de autocancelación web (por token) en vez de gestionarlo
-          // a mano. Va ANTES del interceptor de reserva (un "quiero cancelar" no es reservar).
-          if (sectorAgenda && esIntencionCancelar(text)) {
+          // === INTERCEPTOR: EL GUION DE HUECOS Y LAS CITAS QUE YA TIENE ===
+          // Reglas fijas, sin criterio del modelo (ver `cita-por-chat.ts`):
+          //   1. Si se le ofrecieron huecos, lo que conteste se resuelve aquí
+          //      (elige uno → se reserva; no quiere ninguno → qué días le van;
+          //      segunda ronda fallida → enlace de huecos libres).
+          //   2. Si quiere CANCELAR o CAMBIAR la hora de su cita, se hace desde
+          //      el chat: se le pregunta, contesta y queda hecho, y el hueco
+          //      vuelve a estar libre. Antes solo se le mandaba el enlace web.
+          if (sectorAgenda && !modoRest?.restaurante) {
+            try {
+              const r =
+                (await pasoGuion({ tenantId, contacto: from, texto: text, nombreCliente: customerName, agenteOrigen: "pablo" })) ??
+                (await gestionarCitaExistente({ tenantId, contacto: from, texto: text }));
+              if (r) {
+                await sendWhatsAppText(from, r.texto);
+                await appendTurn("pablo", tenantId, from, "user", text, customerName);
+                await appendTurn("pablo", tenantId, from, "assistant", r.texto, customerName);
+                await registrarIntercambio({
+                  tenantId, msgId: msg.id, from, nombre: customerName,
+                  entrante: text, respuesta: r.texto, rxTs, via: r.via,
+                });
+                continue;
+              }
+            } catch (err) {
+              console.error("[pablo/webhook] interceptor de guion/citas falló:", err);
+            }
+          }
+
+          // === INTERCEPTOR (restaurante y respaldo): CANCELAR o MOVER con enlace ===
+          // Para restauración se queda el enlace de autocancelación de siempre.
+          if (sectorAgenda && modoRest?.restaurante && esIntencionCancelar(text)) {
             try {
               const business = await getBusinessByTenant(tenantId);
               if (business) {
@@ -717,8 +752,6 @@ export async function POST(req: Request) {
                 await sendWhatsAppText(from, resp);
                 await appendTurn("pablo", tenantId, from, "user", text, customerName);
                 await appendTurn("pablo", tenantId, from, "assistant", resp, customerName);
-                // Antes aquí solo se registraba la ENTRADA: la respuesta de Pablo
-                // se perdía y el panel mostraba media conversación.
                 await registrarIntercambio({
                   tenantId, msgId: msg.id, from, nombre: customerName,
                   entrante: text, respuesta: resp, rxTs, via: "cancelacion",
@@ -813,14 +846,17 @@ export async function POST(req: Request) {
               text: transcript,
               intentOverride: intent,
               agenteOrigen: "pablo",
+              tenantId,
               redirectUri: `https://aiteam.marketing/api/lucia/callback`,
               customerPhone: from,
               customerNameFallback: customerName,
               modo: modoRest,
             });
             if (agRes.kind === "agendada") {
+              await cerrarGuion(tenantId, from);
               const when = formatStartHumanES(agRes.intent.fields.startIso!);
-              const ack = `¡Listo${customerName ? `, ${customerName.split(" ")[0]}` : ""}! 📅\n\nTe he agendado *${agRes.intent.fields.motivo}* el ${when}.\n\nSi necesitas cambiarla, dímelo y la movemos.`;
+              // Estilo de casa: sin emojis y sin signos de apertura en WhatsApp.
+              const ack = `Listo${customerName ? `, ${customerName.split(" ")[0]}` : ""}. Te he agendado *${agRes.intent.fields.motivo}* el ${when}.\n\nSi necesitas cambiarla, dimelo y la movemos.`;
               await sendWhatsAppText(from, ack);
               await appendTurn("pablo", tenantId, from, "user", text, customerName);
               await appendTurn("pablo", tenantId, from, "assistant", ack, customerName);
@@ -856,14 +892,22 @@ export async function POST(req: Request) {
                   continue;
                 }
               }
-              const suggested = agRes.suggested ? `\n\nEse hueco está ocupado. ¿Te encajaría el ${formatStartHumanES(agRes.suggested)}?` : `\n\nEse hueco está ocupado. ¿Te encajaría otra hora ese día?`;
-              const respSlot = `Vale, lo intento agendar.${suggested}`;
-              await sendWhatsAppText(from, respSlot);
+              // EL GUION: nunca "no tengo" a secas. Dos huecos reales cercanos; si
+              // no le va ninguno, qué días le vienen bien; a la segunda ronda
+              // fallida, el enlace de huecos libres. Ver `cita-por-chat.ts`.
+              const oferta = await ofrecerAlternativas({
+                tenantId, contacto: from, startIso: agRes.intent.fields.startIso!,
+                motivo: agRes.intent.fields.motivo || "cita", nombre: agRes.intent.fields.nombre || customerName,
+                porque: agRes.motivo,
+              });
+              await sendWhatsAppText(from, oferta.texto);
               await appendTurn("pablo", tenantId, from, "user", text, customerName);
-              await appendTurn("pablo", tenantId, from, "assistant", `Slot ocupado, propuesta: ${agRes.suggested ?? "—"}`, customerName);
+              // La memoria guarda LO QUE SE DIJO (las horas ofrecidas), para que la
+              // IA entienda después un "vale, la de las 12".
+              await appendTurn("pablo", tenantId, from, "assistant", oferta.texto, customerName);
               await registrarIntercambio({
                 tenantId, msgId: msg.id, from, nombre: customerName,
-                entrante: text, respuesta: respSlot, rxTs, via: "agenda_hueco_ocupado",
+                entrante: text, respuesta: oferta.texto, rxTs, via: oferta.via,
               });
               continue;
             }
@@ -1026,7 +1070,9 @@ async function generateReply(
 // Enviar mensaje vía WhatsApp Cloud API
 // -----------------------------------------------------------------------------
 async function sendWhatsAppText(to: string, body: string): Promise<unknown> {
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  // Por el número que RECIBIÓ el mensaje (lo fija el POST con `usarNumeroEmisor`),
+  // no por el de AI-Team: ver `whatsapp-sender.ts`.
+  const phoneNumberId = await numeroEmisor();
   const token = process.env.WHATSAPP_ACCESS_TOKEN;
   if (!phoneNumberId || !token) {
     console.error("[pablo/webhook] faltan WHATSAPP_PHONE_NUMBER_ID o WHATSAPP_ACCESS_TOKEN");

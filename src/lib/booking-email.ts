@@ -17,7 +17,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { getResend, RESEND_FROM } from "./resend";
-import { sendWhatsAppText } from "./whatsapp-sender";
+import { sendWhatsAppTemplate, sendWhatsAppText } from "./whatsapp-sender";
 import { kvGet, kvSet, supabaseEnabled } from "./supabase";
 import { resolveCalendarEmail } from "./booking";
 import type { BookingRecord, BusinessBooking, EsperaEntry } from "./booking";
@@ -158,10 +158,13 @@ export async function enviarEmail(to: string | undefined, subject: string, html:
   }
 }
 
-async function enviarWhatsApp(telefono: string | undefined, texto: string): Promise<NotifResult["whatsapp"]> {
+async function enviarWhatsApp(telefono: string | undefined, texto: string, tenantId?: string): Promise<NotifResult["whatsapp"]> {
   if (!telefono) return { intentado: false, enviado: false, modo: "no_intentado" };
+  // Un contacto de Instagram ("ig:<igsid>") no tiene WhatsApp.
+  if (/^ig:/i.test(telefono)) return { intentado: false, enviado: false, modo: "no_intentado" };
   try {
-    const r = await sendWhatsAppText(telefono.replace(/[^\d+]/g, ""), texto);
+    // Con el tenant, sale por EL NÚMERO DEL NEGOCIO (ver `whatsapp-sender.ts`).
+    const r = await sendWhatsAppText(telefono.replace(/[^\d+]/g, ""), texto, tenantId ? { tenantId, a: telefono, motivo: "cita" } : undefined);
     if (r.ok) return { intentado: true, enviado: true, modo: "enviado" };
     if (r.reason === "missing_credentials") return { intentado: true, enviado: false, modo: "sin_credenciales" };
     return { intentado: true, enviado: false, modo: "error", error: r.detail };
@@ -180,7 +183,7 @@ function textoWhatsApp(record: BookingRecord, business: BusinessBooking, tipo: "
 export async function enviarConfirmacion(record: BookingRecord, business: BusinessBooking, baseUrl: string): Promise<NotifResult> {
   const { subject, html } = construirConfirmacion(record, business, baseUrl);
   const email = await enviarEmail(record.cliente.email, subject, html);
-  const whatsapp = await enviarWhatsApp(record.cliente.telefono, textoWhatsApp(record, business, "confirmacion", baseUrl));
+  const whatsapp = await enviarWhatsApp(record.cliente.telefono, textoWhatsApp(record, business, "confirmacion", baseUrl), business.tenantId);
   return { email, whatsapp };
 }
 
@@ -188,7 +191,22 @@ export async function enviarConfirmacion(record: BookingRecord, business: Busine
 export async function enviarRecordatorio(record: BookingRecord, business: BusinessBooking, baseUrl: string): Promise<NotifResult> {
   const { subject, html } = construirRecordatorio(record, business, baseUrl);
   const email = await enviarEmail(record.cliente.email, subject, html);
-  const whatsapp = await enviarWhatsApp(record.cliente.telefono, textoWhatsApp(record, business, "recordatorio", baseUrl));
+  // EL RECORDATORIO LLEGA UN DÍA DESPUÉS DE LA ÚLTIMA CONVERSACIÓN, casi siempre
+  // fuera de la ventana de 24 h de WhatsApp: ahí Meta solo acepta PLANTILLAS
+  // aprobadas y rechaza el texto libre (131047). Con `BOOKING_RECORDATORIO_TEMPLATE`
+  // (plantilla con 4 variables: nombre, negocio, cuándo, servicio) sale por
+  // plantilla; sin ella se intenta el texto, que solo llega si el cliente
+  // escribió en las últimas 24 h, y el resultado lo dice.
+  const plantilla = process.env.BOOKING_RECORDATORIO_TEMPLATE;
+  const tel = record.cliente.telefono;
+  const whatsapp = plantilla && tel && !/^ig:/i.test(tel)
+    ? await (async (): Promise<NotifResult["whatsapp"]> => {
+        const r = await sendWhatsAppTemplate(tel.replace(/[^\d+]/g, ""), plantilla, process.env.BOOKING_RECORDATORIO_TEMPLATE_IDIOMA || "es",
+          [record.cliente.nombre.split(" ")[0] || "", business.nombre, fechaHumana(record.startIso), record.servicioNombre || "tu cita"],
+          { tenantId: business.tenantId, a: tel, motivo: "recordatorio" });
+        return r.ok ? { intentado: true, enviado: true, modo: "enviado" } : { intentado: true, enviado: false, modo: "error", error: r.detail };
+      })()
+    : await enviarWhatsApp(tel, textoWhatsApp(record, business, "recordatorio", baseUrl), business.tenantId);
   return { email, whatsapp };
 }
 

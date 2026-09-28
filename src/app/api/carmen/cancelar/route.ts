@@ -56,7 +56,10 @@ export async function POST(req: Request) {
 
   const fromNumber = String(call.from_number ?? "").trim() || undefined;
   const telefono = get("telefono", "customer_phone", "phone", "telefono_cliente", "numero") || fromNumber;
-  const salon = await resolverSalonDeLlamada(get("slug", "salon", "negocio", "business", "tenant", "salon_slug"));
+  // Por el número al que ha llamado, igual que al reservar (antes aquí no se
+  // miraba: con dos negocios dados de alta, Carmen no encontraba la cita).
+  const toNumber = String(call.to_number ?? "").trim() || undefined;
+  const salon = await resolverSalonDeLlamada(get("slug", "salon", "negocio", "business", "tenant", "salon_slug"), toNumber);
   if (!salon.ok) {
     return NextResponse.json({
       success: false,

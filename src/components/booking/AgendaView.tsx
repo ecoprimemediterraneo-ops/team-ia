@@ -6,10 +6,21 @@
 // MISMO calendario que el flujo público (sin dobles reservas).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDatosCambiados } from "@/components/LatidoPanel";
 import type { BookingService, BookingRecord, EstadoCita, Empleado } from "@/lib/booking";
 import EsperaBanner from "./EsperaBanner";
 
-type Props = { slug: string; nombre: string; timezone: string; servicios: BookingService[]; empleados: Empleado[]; target?: { dia: string; n: number } | null };
+type Vista = "dia" | "rejilla" | "columnas" | "semana" | "mes";
+type Props = {
+  slug: string; nombre: string; timezone: string; servicios: BookingService[]; empleados: Empleado[];
+  target?: { dia: string; n: number } | null;
+  /** Vista con la que se abre. Por defecto "dia", como siempre. */
+  vistaInicial?: Vista;
+  /** Añade la vista de MES. Apagado por defecto: los demás sectores no la tenían. */
+  conMes?: boolean;
+  /** Añade el selector de profesional (solo se pinta si hay personal). Apagado por defecto. */
+  conFiltroProfesional?: boolean;
+};
 
 // --- helpers de fecha (día "plano", sin arrastrar TZ del navegador) ----------
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
@@ -17,6 +28,15 @@ function addDays(dateStr: string, n: number): string {
   const d = new Date(`${dateStr}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
   return ymd(d);
+}
+function addMonths(dateStr: string, n: number): string {
+  const [y, m] = dateStr.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + n, 1, 12));
+  return ymd(d);
+}
+function ultimoDiaMes(dateStr: string): string {
+  const [y, m] = dateStr.split("-").map(Number);
+  return ymd(new Date(Date.UTC(y, m, 0, 12)));
 }
 function mondayOf(dateStr: string): string {
   const wd = new Date(`${dateStr}T12:00:00Z`).getUTCDay(); // 0=dom
@@ -55,9 +75,10 @@ const ACCIONES: Record<EstadoCita, [EstadoCita, string][]> = {
 /** Evento externo del Google Calendar del owner (solo lectura). */
 type EventoExterno = { id: string; titulo: string; start: string; end: string; allDay: boolean };
 
-export default function AgendaView({ slug, nombre, timezone, servicios, empleados, target }: Props) {
+export default function AgendaView({ slug, nombre, timezone, servicios, empleados, target, vistaInicial = "dia", conMes = false, conFiltroProfesional = false }: Props) {
   const empMap = useMemo(() => Object.fromEntries(empleados.map((e) => [e.id, e])) as Record<string, Empleado>, [empleados]);
-  const [vista, setVista] = useState<"dia" | "rejilla" | "columnas" | "semana">("dia");
+  const [vista, setVista] = useState<Vista>(vistaInicial === "columnas" && empleados.length === 0 ? "dia" : vistaInicial);
+  const [filtroEmp, setFiltroEmp] = useState<string>("");
   const [dia, setDia] = useState<string>(HOY());
   // Ir al día de una cita al pulsar una notificación de la campana (nonce → re-navega).
   useEffect(() => { if (target?.dia) { setDia(target.dia); setVista("dia"); } }, [target?.n, target?.dia]);
@@ -74,8 +95,12 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
 
   const lunes = useMemo(() => mondayOf(dia), [dia]);
   const semanal = vista === "semana" || vista === "rejilla";
-  const rangeFrom = semanal ? lunes : dia;
-  const rangeTo = semanal ? addDays(lunes, 6) : dia;
+  const mensual = vista === "mes";
+  const primeroMes = `${dia.slice(0, 8)}01`;
+  const inicioCuadricula = mondayOf(primeroMes);
+  const finCuadricula = addDays(mondayOf(ultimoDiaMes(dia)), 6);
+  const rangeFrom = mensual ? inicioCuadricula : semanal ? lunes : dia;
+  const rangeTo = mensual ? finCuadricula : semanal ? addDays(lunes, 6) : dia;
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -127,6 +152,8 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
   }, [slug, cargar]);
 
   useEffect(() => { cargar(); }, [cargar]);
+  // En vivo: si entra, se mueve o se cancela una cita por cualquier canal, se recarga sola.
+  useDatosCambiados(cargar);
   useEffect(() => {
     if (!aviso) return;
     const t = setTimeout(() => setAviso(null), 4000);
@@ -152,29 +179,41 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
     }
   }
 
+  // Con el filtro de profesional puesto, todas las vistas enseñan solo lo suyo. Los
+  // bloqueos (sin profesional) se siguen viendo: cierran la agenda de todas.
+  const visibles = filtroEmp ? records.filter((r) => r.empleadoId === filtroEmp || r.tipo === "bloqueo") : records;
   const delDia = (fecha: string) =>
-    records.filter((r) => r.startIso.slice(0, 10) === fecha).sort((a, b) => a.startIso.localeCompare(b.startIso));
+    visibles.filter((r) => r.startIso.slice(0, 10) === fecha).sort((a, b) => a.startIso.localeCompare(b.startIso));
 
   return (
     <div>
       {/* Controles */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <div className="inline-flex border-[3px] border-black">
-          {(empleados.length > 0 ? (["dia", "rejilla", "columnas", "semana"] as const) : (["dia", "rejilla", "semana"] as const)).map((v) => (
+          {([...(empleados.length > 0 ? (["dia", "rejilla", "columnas", "semana"] as const) : (["dia", "rejilla", "semana"] as const)), ...(conMes ? (["mes"] as const) : [])] as Vista[]).map((v) => (
             <button
               key={v}
               onClick={() => setVista(v)}
               className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest ${vista === v ? "bg-black text-white" : "bg-white hover:bg-[color:var(--cream)]"}`}
             >
-              {v === "dia" ? "Día" : v === "rejilla" ? "Rejilla" : v === "columnas" ? "Personal" : "Semana"}
+              {v === "dia" ? "Día" : v === "rejilla" ? "Rejilla" : v === "columnas" ? "Personal" : v === "mes" ? "Mes" : "Semana"}
             </button>
           ))}
         </div>
         <div className="inline-flex items-center gap-1">
-          <button onClick={() => setDia(addDays(dia, semanal ? -7 : -1))} className="w-8 h-8 border-[3px] border-black bg-white font-bold hover:bg-[color:var(--cream)]" aria-label="Anterior">‹</button>
+          <button onClick={() => setDia(mensual ? addMonths(dia, -1) : addDays(dia, semanal ? -7 : -1))} className="w-8 h-8 border-[3px] border-black bg-white font-bold hover:bg-[color:var(--cream)]" aria-label="Anterior">‹</button>
           <button onClick={() => setDia(HOY())} className="px-2 h-8 border-[3px] border-black bg-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--cream)]">Hoy</button>
-          <button onClick={() => setDia(addDays(dia, semanal ? 7 : 1))} className="w-8 h-8 border-[3px] border-black bg-white font-bold hover:bg-[color:var(--cream)]" aria-label="Siguiente">›</button>
+          <button onClick={() => setDia(mensual ? addMonths(dia, 1) : addDays(dia, semanal ? 7 : 1))} className="w-8 h-8 border-[3px] border-black bg-white font-bold hover:bg-[color:var(--cream)]" aria-label="Siguiente">›</button>
         </div>
+        {conFiltroProfesional && empleados.length > 0 && (
+          <label className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+            Profesional
+            <select value={filtroEmp} onChange={(e) => setFiltroEmp(e.target.value)} className="border-[3px] border-black bg-white px-2 py-1 text-xs font-bold normal-case tracking-normal">
+              <option value="">Todas</option>
+              {empleados.filter((e) => e.activo).map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+            </select>
+          </label>
+        )}
         <div className="ml-auto flex gap-2">
           <button onClick={() => setModal("cita")} className="btn-mustard text-xs">＋ Cita</button>
           <button onClick={() => setModal("bloqueo")} className="border-[3px] border-black bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--cream)]">＋ Bloqueo</button>
@@ -199,7 +238,7 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
       <EsperaBanner slug={slug} />
 
       <div className="mb-3 font-stencil text-2xl capitalize leading-none">
-        {semanal ? `Semana del ${humanDia(lunes, { day: "numeric", month: "long" })}` : humanDia(dia)}
+        {mensual ? humanDia(primeroMes, { month: "long", year: "numeric" }) : semanal ? `Semana del ${humanDia(lunes, { day: "numeric", month: "long" })}` : humanDia(dia)}
       </div>
 
       {aviso && (
@@ -215,7 +254,7 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
       ) : vista === "rejilla" ? (
         <RejillaSemana
           lunes={lunes}
-          records={records}
+          records={visibles}
           externos={externos}
           empMap={empMap}
           timezone={timezone}
@@ -223,8 +262,38 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
           onReprogramar={reprogramarInline}
           onSelect={setDetalle}
         />
+      ) : vista === "mes" ? (
+        <div>
+          <div className="hidden sm:grid grid-cols-7 gap-1 mb-1">
+            {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => <div key={d} className="text-[10px] font-mono uppercase tracking-widest text-black/40 px-1">{d}</div>)}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-7 gap-1">
+            {Array.from({ length: Math.round((Date.parse(`${finCuadricula}T12:00:00Z`) - Date.parse(`${inicioCuadricula}T12:00:00Z`)) / 86_400_000) + 1 }, (_, i) => addDays(inicioCuadricula, i)).map((fecha) => {
+              const recs = delDia(fecha).filter((r) => r.estado !== "cancelada");
+              const esHoy = fecha === HOY();
+              const fuera = fecha.slice(0, 7) !== primeroMes.slice(0, 7);
+              return (
+                <button key={fecha} onClick={() => { setDia(fecha); setVista(empleados.length > 0 ? "columnas" : "dia"); }}
+                  className={`text-left border-2 min-h-[78px] p-1 hover:bg-[color:var(--cream)] ${esHoy ? "border-black bg-[color:var(--mustard)]/30" : "border-black/20"} ${fuera ? "opacity-40" : ""}`}>
+                  <div className="flex items-baseline justify-between">
+                    <span className="font-stencil text-sm leading-none">{Number(fecha.slice(8))}</span>
+                    {recs.length > 0 && <span className="text-[10px] font-mono text-black/50">{recs.length}</span>}
+                  </div>
+                  <div className="mt-1 space-y-0.5">
+                    {recs.slice(0, 3).map((r) => (
+                      <div key={r.id} className="text-[10px] leading-tight truncate" style={{ borderLeft: `3px solid ${(r.empleadoId && empMap[r.empleadoId]?.color) || "#111"}`, paddingLeft: 3 }}>
+                        {hora(r.startIso)} {r.tipo === "bloqueo" ? "bloqueo" : r.cliente?.nombre || "cita"}
+                      </div>
+                    ))}
+                    {recs.length > 3 && <div className="text-[10px] text-black/40">+{recs.length - 3} más</div>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       ) : vista === "columnas" ? (
-        <ColumnasDia dia={dia} records={records} empleados={empleados} onSelect={setDetalle} />
+        <ColumnasDia dia={dia} records={visibles} empleados={filtroEmp ? empleados.filter((e) => e.id === filtroEmp) : empleados} onSelect={setDetalle} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-7 gap-2">
           {Array.from({ length: 7 }, (_, i) => addDays(lunes, i)).map((fecha) => {
@@ -251,7 +320,7 @@ export default function AgendaView({ slug, nombre, timezone, servicios, empleado
         <CitaModal slug={slug} servicios={servicios} empleados={empleados} dia={dia} onClose={() => setModal(null)} onDone={(msg) => { setModal(null); setCalDesconectado(false); setAviso({ tipo: "ok", msg }); cargar(); }} onError={(msg) => setAviso({ tipo: "err", msg })} onNoCal={() => { setModal(null); setCalDesconectado(true); }} />
       )}
       {modal === "bloqueo" && (
-        <BloqueoModal slug={slug} dia={dia} onClose={() => setModal(null)} onDone={(msg) => { setModal(null); setCalDesconectado(false); setAviso({ tipo: "ok", msg }); cargar(); }} onError={(msg) => setAviso({ tipo: "err", msg })} onNoCal={() => { setModal(null); setCalDesconectado(true); }} />
+        <BloqueoModal slug={slug} dia={dia} empleados={empleados.filter((e) => e.activo)} onClose={() => setModal(null)} onDone={(msg) => { setModal(null); setCalDesconectado(false); setAviso({ tipo: "ok", msg }); cargar(); }} onError={(msg) => setAviso({ tipo: "err", msg })} onNoCal={() => { setModal(null); setCalDesconectado(true); }} />
       )}
       {reprog && (
         <ReprogramarModal slug={slug} record={reprog} onClose={() => setReprog(null)} onDone={(msg) => { setReprog(null); setCalDesconectado(false); setAviso({ tipo: "ok", msg }); cargar(); }} onError={(msg) => setAviso({ tipo: "err", msg })} onNoCal={() => { setReprog(null); setCalDesconectado(true); }} />
@@ -692,13 +761,15 @@ function CitaModal({ slug, servicios, empleados, dia, onClose, onDone, onError, 
 // -----------------------------------------------------------------------------
 // Modal: bloqueo
 // -----------------------------------------------------------------------------
-function BloqueoModal({ slug, dia, onClose, onDone, onError, onNoCal }: {
-  slug: string; dia: string; onClose: () => void; onDone: (msg: string) => void; onError: (msg: string) => void; onNoCal: () => void;
+function BloqueoModal({ slug, dia, empleados = [], onClose, onDone, onError, onNoCal }: {
+  slug: string; dia: string; empleados?: Empleado[]; onClose: () => void; onDone: (msg: string) => void; onError: (msg: string) => void; onNoCal: () => void;
 }) {
   const [fecha, setFecha] = useState(dia);
   const [hora, setHora] = useState("14:00");
   const [dur, setDur] = useState(60);
   const [nota, setNota] = useState("");
+  // Quién: todo el negocio (lo de siempre) o una sola profesional — el resto sigue con huecos.
+  const [quien, setQuien] = useState("");
   const [enviando, setEnviando] = useState(false);
 
   async function enviar() {
@@ -706,7 +777,7 @@ function BloqueoModal({ slug, dia, onClose, onDone, onError, onNoCal }: {
     try {
       const r = await fetch(`/api/booking/${slug}/agenda`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "bloqueo", startIso: `${fecha}T${hora}:00`, durationMin: dur, nota: nota || undefined }),
+        body: JSON.stringify({ action: "bloqueo", startIso: `${fecha}T${hora}:00`, durationMin: dur, nota: nota || undefined, empleadoId: quien || undefined }),
       });
       const j = await r.json();
       if (r.ok && j.ok) onDone("Bloqueo creado.");
@@ -737,6 +808,15 @@ function BloqueoModal({ slug, dia, onClose, onDone, onError, onNoCal }: {
           <input type="number" min={5} step={5} value={dur} onChange={(e) => setDur(Math.max(5, +e.target.value || 60))} className="card-hard w-20 px-3 py-2 bg-white" />
         </div>
       </div>
+      {empleados.length > 0 && (
+        <div className="mb-3">
+          <label className="block text-xs font-bold uppercase tracking-widest mb-1">Para</label>
+          <select value={quien} onChange={(e) => setQuien(e.target.value)} className="card-hard w-full px-3 py-2 bg-white">
+            <option value="">Todo el negocio</option>
+            {empleados.map((e) => <option key={e.id} value={e.id}>Solo {e.nombre}</option>)}
+          </select>
+        </div>
+      )}
       <input value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Motivo (opcional)" className="card-hard w-full px-3 py-2 mb-4 bg-white" />
       <button onClick={enviar} disabled={enviando} className="btn-mustard w-full disabled:opacity-60">{enviando ? "Bloqueando…" : "Bloquear"}</button>
     </Overlay>

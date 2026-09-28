@@ -11,6 +11,7 @@
 // resultado de haberlo hecho hasta que de verdad se ha hecho.
 
 import "server-only";
+import { sinInventar, pideConfirmarEnTexto, NUDGE } from "./chat-honesto";
 import { anthropic, MODELS } from "./claude";
 import {
   getBusinessesForTenant,
@@ -295,6 +296,8 @@ export async function preguntarDental(opts: {
     mensajes.push({ role: h.rol === "usuario" ? "user" : "assistant", content: h.texto });
   }
   mensajes.push({ role: "user", content: opts.pregunta });
+  let forzar = false;
+  let reintentado = false;
 
   let pendiente: { resumen: string; accion: AccionPendiente } | null = null;
 
@@ -306,12 +309,14 @@ export async function preguntarDental(opts: {
           max_tokens: 900,
           system: SISTEMA(hoyISO()),
           tools: HERRAMIENTAS as never,
+          ...(forzar ? { tool_choice: { type: "any" as const } } : {}),
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           messages: mensajes as any,
         },
         { timeout: 45_000 },
       );
 
+      forzar = false;
       const usos = res.content.filter((b) => b.type === "tool_use");
       if (!usos.length) {
         const texto = res.content
@@ -319,8 +324,18 @@ export async function preguntarDental(opts: {
           .map((b) => (b as { text: string }).text)
           .join("")
           .trim();
+        // Pide confirmar en texto sin haber llamado a la herramienta: no hay
+        // recuadro, y el "sí" siguiente se lo inventaría. Se le obliga UNA vez a
+        // llamar a la herramienta; si aun así no, `sinInventar` lo desmiente.
+        if (!pendiente && !reintentado && pideConfirmarEnTexto(texto)) {
+          reintentado = true;
+          forzar = true;
+          mensajes.push({ role: "assistant", content: texto });
+          mensajes.push({ role: "user", content: NUDGE });
+          continue;
+        }
         return {
-          texto: texto || "No he sabido contestar a eso.",
+          texto: sinInventar(texto || "No he sabido contestar a eso.", !!pendiente),
           // Con una propuesta encima de la mesa no se ofrecen atajos a otras
           // pantallas: lo único que toca es decir sí o no.
           acciones: pendiente ? [] : accionesDe(`${opts.pregunta} ${texto}`),

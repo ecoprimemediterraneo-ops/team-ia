@@ -8,7 +8,39 @@
 //   - WHATSAPP_PHONE_NUMBER_ID
 //   - WHATSAPP_ACCESS_TOKEN
 
+import { AsyncLocalStorage } from "node:async_hooks";
 import { esTelefonoFicticio } from "./telefonos-demo";
+
+// -----------------------------------------------------------------------------
+// DESDE QUÉ NÚMERO SE CONTESTA
+// -----------------------------------------------------------------------------
+// Antes todo salía de `WHATSAPP_PHONE_NUMBER_ID`, el número de AI-Team. Con un
+// salón que tiene su propio número, Pablo recibía por el del salón y contestaba
+// por el de AI-Team: el cliente veía la respuesta en OTRO chat, de un número que
+// no conoce. Ahora el webhook fija el número que recibió el mensaje
+// (`usarNumeroEmisor`) y todo lo que se mande en esa petición sale por él. Para
+// lo que no nace de un mensaje (recordatorios, avisos), si se pasa el tenant en
+// el `rastro` se usa el número de ese tenant. Si no hay ninguno, el de siempre.
+const emisor = new AsyncLocalStorage<string>();
+
+/** Fija, para el resto de esta petición, el número (phone_number_id) desde el que se contesta. */
+export function usarNumeroEmisor(phoneNumberId?: string | null): void {
+  if (phoneNumberId) emisor.enterWith(phoneNumberId);
+}
+
+/** El número desde el que sale un envío ahora mismo. */
+export async function numeroEmisor(tenantId?: string): Promise<string | undefined> {
+  const fijado = emisor.getStore();
+  if (fijado) return fijado;
+  if (tenantId) {
+    try {
+      const { getTenant } = await import("./tenants");
+      const t = await getTenant(tenantId);
+      if (t?.whatsappPhoneNumberId) return t.whatsappPhoneNumberId;
+    } catch { /* se cae al de siempre */ }
+  }
+  return process.env.WHATSAPP_PHONE_NUMBER_ID;
+}
 
 const GRAPH_VERSION = "v21.0";
 
@@ -114,8 +146,12 @@ async function postGraph(payload: unknown, rastro?: Rastro, tipo = "texto"): Pro
     await registrar(rastro, bloqueado, tipo);
     return bloqueado;
   }
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const phoneNumberId = await numeroEmisor(rastro?.tenantId || undefined);
   const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  // Un contacto de Instagram (`ig:<igsid>`) no tiene WhatsApp: nunca se le escribe por aquí.
+  if (para && /^ig:/i.test(para)) {
+    return { ok: false, reason: "graph_error", detail: "contacto de Instagram: no tiene WhatsApp" };
+  }
   if (!phoneNumberId || !token) {
     return {
       ok: false,

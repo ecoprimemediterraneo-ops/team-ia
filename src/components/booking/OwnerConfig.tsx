@@ -16,7 +16,8 @@ type Servicio = {
 type Franja = { desde: string; hasta: string };
 type DayHours = { abierto: boolean; franjas: Franja[] };
 type Horario = Record<number, DayHours>;
-type Empleado = { id: string; nombre: string; color?: string; activo: boolean; horario?: Horario; serviceIds?: string[] };
+type Ausencia = { desde: string; hasta: string; motivo?: string };
+type Empleado = { id: string; nombre: string; color?: string; activo: boolean; horario?: Horario; serviceIds?: string[]; ausencias?: Ausencia[] };
 type Negocio = {
   slug: string; nombre: string; descripcion?: string; logoUrl?: string; heroImageUrl?: string; galeria?: string[]; direccion?: string; telefono?: string; timezone: string;
   slotStepMin: number; leadTimeMin: number; cancelAntelacionMin: number;
@@ -84,6 +85,9 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
   const setEmp = (i: number, patch: Partial<Empleado>) => setEmpleados((p) => p.map((e, idx) => (idx === i ? { ...e, ...patch } : e)));
   const addEmp = () => setEmpleados((p) => [...p, { id: uid("emp"), nombre: "", color: COLORES[p.length % COLORES.length], activo: true, serviceIds: [] }]);
   const delEmp = (i: number) => setEmpleados((p) => p.filter((_, idx) => idx !== i));
+  // Vacaciones y días libres de cada profesional: esos días no tiene huecos y el resto del equipo sigue.
+  const addAusencia = (i: number, a: Ausencia) => setEmpleados((p) => p.map((e, idx) => (idx === i ? { ...e, ausencias: [...(e.ausencias || []), a].sort((x, y) => x.desde.localeCompare(y.desde)) } : e)));
+  const delAusencia = (i: number, j: number) => setEmpleados((p) => p.map((e, idx) => (idx === i ? { ...e, ausencias: (e.ausencias || []).filter((_, k) => k !== j) } : e)));
   const toggleEmpSvc = (i: number, svcId: string) => setEmpleados((p) => p.map((e, idx) => (idx === i ? { ...e, serviceIds: (e.serviceIds || []).includes(svcId) ? (e.serviceIds || []).filter((x) => x !== svcId) : [...(e.serviceIds || []), svcId] } : e)));
 
   // ── horario ──
@@ -288,7 +292,7 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
       {/* Personal */}
       <section>
         <div className="flex items-center justify-between mb-2"><h2 className="font-stencil text-2xl">Personal</h2><button onClick={addEmp} className="btn-mustard text-xs px-3 py-2">+ Añadir</button></div>
-        <p className="text-xs text-black/50 mb-2">Cada profesional y qué servicios realiza. Si no marcas ninguno, hace todos. La disponibilidad y elección por empleado en la web llega en la próxima entrega (Fase 2b).</p>
+        <p className="text-xs text-black/50 mb-2">Cada profesional, qué servicios realiza (si no marcas ninguno, hace todos) y sus vacaciones o días libres: esos días no se le dan citas y el resto del equipo sigue normal.</p>
         <div className="space-y-3">
           {empleados.map((e, i) => (
             <div key={e.id} className={`card-hard bg-white p-3 ${e.activo ? "" : "opacity-50"}`}>
@@ -314,6 +318,7 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
                   })}
                 </div>
               </div>
+              <Vacaciones ausencias={e.ausencias || []} onAdd={(a) => addAusencia(i, a)} onDel={(j) => delAusencia(i, j)} inp={inp} />
             </div>
           ))}
           {empleados.length === 0 && <p className="text-xs text-black/40">Sin personal. Con 0 profesionales el negocio funciona como agenda única (como hasta ahora).</p>}
@@ -433,6 +438,45 @@ function ImagenCampo({ titulo, ayuda, url, subiendo, onFile, onQuitar, forma }: 
         </div>
       </div>
       <span className="block text-[10px] text-black/40 mt-1">JPG, PNG o WEBP · máx 5 MB</span>
+    </div>
+  );
+}
+
+/** Vacaciones y días libres de una profesional. Un día suelto: mismo "desde" y "hasta". */
+function Vacaciones({ ausencias, onAdd, onDel, inp }: { ausencias: Ausencia[]; onAdd: (a: Ausencia) => void; onDel: (j: number) => void; inp: string }) {
+  const [desde, setDesde] = useState("");
+  const [hasta, setHasta] = useState("");
+  const [motivo, setMotivo] = useState("");
+  const hoy = new Date().toISOString().slice(0, 10);
+  const fmt = (f: string) => { const [y, m, d] = f.split("-"); return `${d}/${m}/${y}`; };
+  return (
+    <div className="mt-2">
+      <div className="text-[11px] text-black/50 mb-1">Vacaciones y días libres</div>
+      <div className="flex flex-wrap gap-1 mb-1">
+        {ausencias.filter((a) => (a.hasta || a.desde) >= hoy).map((a) => {
+          const j = ausencias.indexOf(a);
+          return (
+            <span key={`${a.desde}-${j}`} className="text-[11px] border-2 border-black px-2 py-0.5 bg-[color:var(--cream)] flex items-center gap-1">
+              {a.desde === a.hasta ? fmt(a.desde) : `${fmt(a.desde)} → ${fmt(a.hasta)}`}{a.motivo ? ` · ${a.motivo}` : ""}
+              <button onClick={() => onDel(j)} className="text-[color:var(--red)] font-bold" aria-label="Quitar">✕</button>
+            </span>
+          );
+        })}
+        {ausencias.every((a) => (a.hasta || a.desde) < hoy) && <span className="text-[11px] text-black/40">Ninguno previsto.</span>}
+      </div>
+      <div className="flex flex-wrap items-center gap-1">
+        <input type="date" value={desde} min={hoy} onChange={(ev) => { setDesde(ev.target.value); if (!hasta || hasta < ev.target.value) setHasta(ev.target.value); }} className={`text-xs ${inp}`} aria-label="Desde" />
+        <span className="text-xs">→</span>
+        <input type="date" value={hasta} min={desde || hoy} onChange={(ev) => setHasta(ev.target.value)} className={`text-xs ${inp}`} aria-label="Hasta" />
+        <input value={motivo} onChange={(ev) => setMotivo(ev.target.value)} placeholder="Motivo (opcional)" className={`text-xs w-36 ${inp}`} />
+        <button
+          disabled={!desde}
+          onClick={() => { onAdd({ desde, hasta: hasta && hasta >= desde ? hasta : desde, ...(motivo.trim() ? { motivo: motivo.trim() } : {}) }); setDesde(""); setHasta(""); setMotivo(""); }}
+          className="text-xs border-2 border-black px-2 py-1 bg-white disabled:opacity-40"
+        >
+          + Añadir días
+        </button>
+      </div>
     </div>
   );
 }

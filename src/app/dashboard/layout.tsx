@@ -11,6 +11,7 @@ import EnlaceAgente from "@/components/EnlaceAgente";
 import MarcoPanel from "@/components/MarcoPanel";
 import T, { EnlaceIdioma } from "@/components/TextoIdioma";
 import BotonSalir from "@/components/BotonSalir";
+import LatidoPanel from "@/components/LatidoPanel";
 
 // Las tarjetas de agente NO llevan insignia de estado. Había un "LIVE" verde en los
 // conectados y un "PRÓXIMAMENTE" en Carmen y Rocío: al cliente no le dice nada útil y
@@ -28,25 +29,47 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // Si el tenant es la cuenta comercial de AI-Team (sector null), se enseñan
   // todos, como hasta ahora.
   const ctx = await contextoPanelODefecto();
-  const visibles: typeof agents = ctx.sector
+  const visiblesSector: typeof agents = ctx.sector
     ? ctx.perfil.agentes.map((slug) => agentBySlug[slug]).filter(Boolean)
     : agents;
+  // AGENTES CONTRATADOS: si el cliente compró solo algunos (p. ej. llega desde
+  // cristobalserrano.tech con Pablo y Marta), el panel enseña solo esos.
+  const contratados = ctx.tenant?.agentesContratados;
+  const visibles = Array.isArray(contratados) ? visiblesSector.filter((a) => contratados.includes(a.slug)) : visiblesSector;
+  // MARCA DEL CLIENTE: su logo en la cabecera y sus colores en lugar del
+  // mostaza y el rojo de AI-Team. El diseño no cambia: solo logo y colores.
+  const marca = ctx.tenant?.marcaPanel;
+  const color = (c?: string) => (c && /^#[0-9a-f]{3,8}$/i.test(c) ? c : undefined);
+  const estiloMarca = {
+    ...(color(marca?.colorPrincipal) ? { "--mustard": color(marca?.colorPrincipal) } : {}),
+    ...(color(marca?.colorAcento) ? { "--red": color(marca?.colorAcento) } : {}),
+  } as React.CSSProperties;
   const v = ctx.vocabulario;
   // Solo los sectores con panel rediseñado (ChatGPT/Claude-style, pedido
-  // explícitamente para gestoría, dental y estética) clavan la cabecera
+  // explícitamente para gestoría, dental, estética y salón) clavan la cabecera
   // arriba del todo. El resto sigue con la cabecera en flujo normal, tal cual
   // estaba — sin `panelFijo` no se añade ninguna clase nueva.
   const panelFijo =
-    ctx.perfil.id === "gestoria" || ctx.perfil.id === "dental" || ctx.perfil.id === "estetica";
+    ctx.perfil.id === "gestoria" || ctx.perfil.id === "dental" || ctx.perfil.id === "estetica" || ctx.perfil.id === "salon";
 
   return (
-    <div className="min-h-screen bg-[color:var(--cream)]">
+    <div id="marca-tenant" className="min-h-screen bg-[color:var(--cream)]" style={estiloMarca}>
+      <LatidoPanel />
       <header
         id="cabecera-ai-team"
         className={`border-b-[3px] border-black bg-white ${panelFijo ? "sticky top-0 z-50" : ""}`}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between px-5 py-3">
-          <EnlaceIdioma href="/dashboard"><Logo size="sm" /></EnlaceIdioma>
+          <EnlaceIdioma href="/dashboard">
+            {marca?.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={marca.logoUrl} alt={marca.nombre || "Logo"} className="h-9 w-auto max-w-[180px] object-contain" />
+            ) : marca?.nombre ? (
+              <span className="font-stencil text-2xl leading-none">{marca.nombre}</span>
+            ) : (
+              <Logo size="sm" />
+            )}
+          </EnlaceIdioma>
           <div className="flex items-center gap-4 text-sm">
             {session.dev && (
               <span className="text-[9px] uppercase tracking-widest font-bold bg-[color:var(--mustard)] border-2 border-black px-1.5 py-0.5" title="Sesión de desarrollo local (sin login). En producción exige magic link.">DEV</span>

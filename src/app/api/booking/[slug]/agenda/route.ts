@@ -6,9 +6,8 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { authorizeOwner, ownerRedirectUri } from "@/lib/booking-owner";
-import { listRecordsForRange, cambiarEstadoRecord, crearReservaManual, crearBloqueo, reprogramarRecord, notificarEsperaSiLibre } from "@/lib/booking";
-import { enviarAvisoEspera } from "@/lib/booking-email";
-import { procesarHuecoLiberado } from "@/lib/booking-waitlist";
+import { listRecordsForRange, cambiarEstadoRecord, crearReservaManual, crearBloqueo, reprogramarRecord } from "@/lib/booking";
+import { avisarHuecoLiberado } from "@/lib/booking-liberado";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -55,6 +54,7 @@ const bloqueoSchema = z.object({
   startIso: z.string().regex(RE_DATETIME),
   durationMin: z.number().int().min(5).max(1440),
   nota: z.string().max(200).optional(),
+  empleadoId: z.string().max(40).optional(),
 });
 const reprogramarSchema = z.object({
   action: z.literal("reprogramar"),
@@ -96,26 +96,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     if (!res.ok) return NextResponse.json({ ok: false, reason: res.reason, detail: res.detail }, { status: statusFor(res.reason) });
     // Cancelar libera un hueco → avisar a la lista de espera de ese día (best-effort).
     if (d.estado === "cancelada") {
-      try {
-        const h = await headers();
-        const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
-        const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
-        await notificarEsperaSiLibre(slug, res.record.startIso.slice(0, 10), redirectUri, (entry, biz) => enviarAvisoEspera(entry, biz, `${proto}://${host}`));
-      } catch (e) {
-        console.error("[agenda] aviso lista de espera falló (no crítico):", e);
-      }
-      // Lista de espera INTELIGENTE (WhatsApp): ofrecer el hueco liberado a UNA clienta.
-      // Gateado por WAITLIST_SEND_ENABLED (off por defecto → solo registra, no envía).
-      try {
-        await procesarHuecoLiberado(slug, {
-          startIso: res.record.startIso,
-          serviceId: res.record.serviceId,
-          servicioNombre: res.record.servicioNombre,
-          empleadoId: res.record.empleadoId,
-        }, redirectUri);
-      } catch (e) {
-        console.error("[agenda] oferta lista de espera WhatsApp falló (no crítico):", e);
-      }
+      const h = await headers();
+      const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
+      const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
+      await avisarHuecoLiberado(res.record, `${proto}://${host}`, redirectUri);
     }
     return NextResponse.json({ ok: true, record: res.record });
   }
@@ -139,7 +123,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   }
 
   if (d.action === "bloqueo") {
-    const res = await crearBloqueo({ slug, startIso: d.startIso, durationMin: d.durationMin, nota: d.nota, redirectUri });
+    const res = await crearBloqueo({ slug, startIso: d.startIso, durationMin: d.durationMin, nota: d.nota, redirectUri, empleadoId: d.empleadoId });
     if (!res.ok) return NextResponse.json({ ok: false, reason: res.reason, detail: res.detail }, { status: statusFor(res.reason) });
     return NextResponse.json({ ok: true, record: res.record });
   }

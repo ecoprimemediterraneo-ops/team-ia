@@ -20,6 +20,7 @@
 // inventada no vuelve a usar el chat, y hace bien.
 
 import "server-only";
+import { sinInventar, pideConfirmarEnTexto, NUDGE } from "./chat-honesto";
 import { anthropic, MODELS } from "./claude";
 import { hoyMadrid, diasHasta } from "./gestoria-hoy";
 import { construirAgenda } from "./gestoria-obligaciones";
@@ -382,6 +383,8 @@ export async function preguntar(opts: {
     mensajes.push({ role: h.rol === "usuario" ? "user" : "assistant", content: h.texto });
   }
   mensajes.push({ role: "user", content: opts.pregunta });
+  let forzar = false;
+  let reintentado = false;
 
   try {
     for (let vuelta = 0; vuelta < MAX_VUELTAS; vuelta++) {
@@ -391,6 +394,7 @@ export async function preguntar(opts: {
           max_tokens: 1200,
           system: SISTEMA(hoyMadrid(), opts.gestoria),
           tools: HERRAMIENTAS as never,
+          ...(forzar ? { tool_choice: { type: "any" as const } } : {}),
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           messages: mensajes as any,
         },
@@ -403,6 +407,7 @@ export async function preguntar(opts: {
         entrada: res.usage.input_tokens, salida: res.usage.output_tokens,
       }).catch(() => {});
 
+      forzar = false;
       const usos = res.content.filter((b) => b.type === "tool_use");
       if (!usos.length) {
         const texto = res.content
@@ -410,11 +415,21 @@ export async function preguntar(opts: {
           .map((b) => (b as { text: string }).text)
           .join("")
           .trim();
+        // Pide confirmar en texto sin haber llamado a la herramienta: no hay
+        // recuadro, y el "sí" siguiente se lo inventaría. Se le obliga UNA vez a
+        // llamar a la herramienta; si aun así no, `sinInventar` lo desmiente.
+        if (!pendiente && !reintentado && pideConfirmarEnTexto(texto)) {
+          reintentado = true;
+          forzar = true;
+          mensajes.push({ role: "assistant", content: texto });
+          mensajes.push({ role: "user", content: NUDGE });
+          continue;
+        }
         return {
           // ÚLTIMO FILTRO. Da igual quién haya escrito la fecha —una función de
           // consulta, una de acción, o el propio modelo copiando algo mal—: por
           // aquí pasa todo lo que va a leer el gestor, y aquí no salen guiones.
-          texto: fechasEnCristiano(texto || "No he sabido contestar a eso."),
+          texto: fechasEnCristiano(sinInventar(texto || "No he sabido contestar a eso.", !!pendiente)),
           // Con una propuesta encima de la mesa NO se ofrecen atajos a otras
           // pantallas: lo único que toca es decir sí o no.
           acciones: pendiente ? [] : accionesDe(opts.pregunta, texto),

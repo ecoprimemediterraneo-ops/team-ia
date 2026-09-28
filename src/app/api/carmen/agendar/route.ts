@@ -40,8 +40,11 @@ import { NextResponse } from "next/server";
 import { resolverSalonDeLlamada, MENSAJE_SIN_SALON } from "@/lib/carmen-salon";
 import { headers } from "next/headers";
 import { timingSafeEqual } from "node:crypto";
-import * as chrono from "chrono-node";
-import { crearReservaManual } from "@/lib/booking";
+import { normalizarFecha, PASADO } from "@/lib/fecha-es";
+import { getBusinessBySlug } from "@/lib/booking";
+import { reservarSlot } from "@/lib/orchestrator";
+import { agenteContratado } from "@/lib/tenants";
+import { huecosCercanos, listaDeOpciones } from "@/lib/guion-huecos";
 import { getRedirectUri } from "@/lib/gmail";
 
 export const dynamic = "force-dynamic";
@@ -83,118 +86,6 @@ function formatoHumano(iso: string): string {
   // Día de la semana: mediodía UTC de esa fecha (evita líos de DST).
   const wd = new Date(`${y}-${mo}-${d}T12:00:00Z`).getUTCDay();
   return `el ${DIAS[wd]} ${parseInt(d, 10)} de ${MESES[parseInt(mo, 10) - 1]} a las ${hh}:${mm}`;
-}
-
-const PAD = (n: number) => String(n).padStart(2, "0");
-
-/** Componentes de "ahora" en Europe/Madrid (para resolver relativos: mañana, jueves…). */
-function madridNow(): { y: number; mo: number; d: number; h: number; mi: number } {
-  const p = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Europe/Madrid", hour12: false,
-    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
-  })
-    .formatToParts(new Date())
-    .reduce((a, x) => ((a[x.type] = x.value), a), {} as Record<string, string>);
-  return { y: +p.year, mo: +p.month, d: +p.day, h: p.hour === "24" ? 0 : +p.hour, mi: +p.minute };
-}
-
-const DIACRITICS = new RegExp("[\\u0300-\\u036f]", "g");
-const sinTildes = (x: string) => x.normalize("NFD").replace(DIACRITICS, "");
-const NUM_ES: Record<string, number> = {
-  una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7,
-  ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12,
-};
-
-/**
- * Extrae la HORA de una expresión española y la devuelve en 24h. Cubre lo que
- * chrono.es NO resuelve bien: meridiano ("de la tarde/noche/mañana/madrugada"),
- * números escritos ("a las cinco"), "y media/cuarto", "mediodía/medianoche".
- * Solo la considera hora si va anclada a "a las…" o lleva meridiano → no confunde
- * el número de un día ("el 10 de julio"). Devuelve null si no hay hora clara.
- */
-function parseHoraEs(textLow: string): { hour: number; min: number } | null {
-  const t = sinTildes(textLow);
-  if (/\bmediodia\b/.test(t)) return { hour: 12, min: 0 };
-  if (/\bmedianoche\b/.test(t)) return { hour: 0, min: 0 };
-  const num = Object.keys(NUM_ES).join("|");
-  const meridiem = "(?:\\s+(?:de\\s+la|del|de)\\s+(manana|tarde|noche|madrugada|mediodia))?";
-  const cuerpo = `\\b(\\d{1,2}|${num})\\b(?:\\s*[:.h]\\s*(\\d{2}))?(?:\\s+y\\s+(media|cuarto|treinta|quince))?${meridiem}`;
-  // 1) "a las 4 [de la tarde]"  2) "4 de la tarde" (meridiano explícito).
-  let m = t.match(new RegExp(`(?:a\\s+las?\\s+)${cuerpo}`));
-  if (!m) m = t.match(new RegExp(`${cuerpo.replace(meridiem, "")}\\s+(?:de\\s+la|del|de)\\s+(manana|tarde|noche|madrugada|mediodia)`));
-  if (!m) return null;
-  let hour = /^\d+$/.test(m[1]) ? parseInt(m[1], 10) : NUM_ES[m[1]];
-  if (hour == null || hour > 23) return null;
-  let min = m[2] ? parseInt(m[2], 10) : 0;
-  if (m[3]) min = /media|treinta/.test(m[3]) ? 30 : 15;
-  const mer = m[4];
-  if (mer) {
-    if (mer === "tarde") { if (hour >= 1 && hour < 12) hour += 12; }
-    else if (mer === "noche") { if (hour >= 1 && hour < 12) hour += 12; else if (hour === 12) hour = 0; }
-    else if (mer === "madrugada") { if (hour === 12) hour = 0; } // "12 de la madrugada" = 00:00
-    // "de la mañana": AM tal cual; "las 12 de la mañana" = mediodía → se queda 12.
-    else if (mer === "mediodia") hour = 12;
-  }
-  if (min > 59) return null;
-  return { hour, min };
-}
-
-/**
- * Convierte la fecha a "YYYY-MM-DDTHH:MM:SS" (hora local Europe/Madrid) aceptando:
- *   - ISO ya formado ("2026-07-10T10:00[:00]") o con espacio → passthrough.
- *   - Lenguaje natural español: "mañana a las 10", "el 10 de julio a las 11",
- *     "jueves a las 4 de la tarde", "pasado mañana", "el lunes que viene a las 9:30"…
- * chrono.es resuelve la FECHA (forwardDate); la HORA la fija parseHoraEs (meridiano
- * español) y prevalece sobre la de chrono. SIEMPRE futuro (guardia anti-pasado).
- * Devuelve "" si no logra fecha CON hora (el llamador pedirá repetir).
- */
-function normalizarFecha(raw: string): string {
-  let s = String(raw).trim();
-  if (!s) return "";
-  // Ya viene en ISO (o con espacio en vez de T): determinista, no tocamos.
-  if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(s)) return s.replace(" ", "T");
-
-  const now = madridNow();
-  const low = s.toLowerCase();
-
-  // "pasado mañana" → chrono.es no siempre lo cubre: lo sustituimos por su fecha.
-  if (/\bpasado\s+ma[nñ]ana\b/.test(low)) {
-    const t = new Date(Date.UTC(now.y, now.mo - 1, now.d + 2));
-    s = low.replace(/\bpasado\s+ma[nñ]ana\b/, `${t.getUTCFullYear()}-${PAD(t.getUTCMonth() + 1)}-${PAD(t.getUTCDate())}`);
-  }
-
-  // Referencia = "ahora" en Madrid codificado como UTC → chrono opera sobre los
-  // mismos números de calendario; solo usamos los COMPONENTES del resultado (TZ-safe).
-  const ref = new Date(Date.UTC(now.y, now.mo - 1, now.d, now.h, now.mi));
-  let results: ReturnType<typeof chrono.es.parse>;
-  try {
-    results = chrono.es.parse(s, ref, { forwardDate: true });
-  } catch {
-    return "";
-  }
-  if (!results.length) return "";
-  const c = results[0].start;
-  const y = c.get("year");
-  const mo = c.get("month");
-  const d = c.get("day");
-
-  // HORA: parseHoraEs (español) manda; si no la detecta, la de chrono.
-  const horaEs = parseHoraEs(low);
-  const hh = horaEs ? horaEs.hour : c.get("hour");
-  const mi = horaEs ? horaEs.min : (c.get("minute") ?? 0);
-  if (!y || !mo || !d || hh === null || hh === undefined) return ""; // sin hora → que pida repetir
-
-  // Guardia "nunca en el pasado": si quedó antes de ahora (Madrid), empuja al futuro
-  // más cercano — mismo día ya pasado → +1 día; fecha absoluta ya pasada este año → +1 año.
-  const nowMs = Date.UTC(now.y, now.mo - 1, now.d, now.h, now.mi);
-  if (Date.UTC(y, mo - 1, d, hh, mi) < nowMs) {
-    if (y === now.y && mo === now.mo && d === now.d) {
-      const t = new Date(Date.UTC(y, mo - 1, d + 1, hh, mi));
-      return `${t.getUTCFullYear()}-${PAD(t.getUTCMonth() + 1)}-${PAD(t.getUTCDate())}T${PAD(hh)}:${PAD(mi)}:00`;
-    }
-    return `${y + 1}-${PAD(mo)}-${PAD(d)}T${PAD(hh)}:${PAD(mi)}:00`;
-  }
-  return `${y}-${PAD(mo)}-${PAD(d)}T${PAD(hh)}:${PAD(mi)}:00`;
 }
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
@@ -268,7 +159,9 @@ export async function POST(req: Request) {
   const fromNumber = String(call.from_number ?? "").trim() || undefined;
   const toNumber = String(call.to_number ?? "").trim() || undefined;
   const telefono = get("telefono", "customer_phone", "phone", "telefono_cliente", "numero") || fromNumber;
-  const durationMin = Number(get("duracion_min", "duration_min", "duracion", "minutos")) || 30;
+  // Solo si Retell la dice. Sin ella manda la duración del servicio (un color no dura 30 min).
+  const durationMin = Number(get("duracion_min", "duration_min", "duracion", "minutos")) || undefined;
+  const profesionalPedida = get("profesional", "empleado", "estilista", "con", "con_quien");
   // Salón (tenant) al que pertenece la cita. Ver `carmen-salon.ts`: PRIMERO
   // por el número al que ha llamado (`call.to_number`, igual que Pablo
   // resuelve por `phone_number_id` de WhatsApp); si no se puede saber de qué
@@ -283,6 +176,11 @@ export async function POST(req: Request) {
     });
   }
   const slug = salon.slug;
+  // Multi-marca: si este negocio no ha contratado a Carmen, no reserva.
+  if (!(await agenteContratado(salon.tenantId, "carmen"))) {
+    console.warn(`[carmen/agendar] el tenant ${salon.tenantId} no tiene contratada a Carmen`);
+    return NextResponse.json({ success: false, reason: "agente_no_contratado", message: MENSAJE_SIN_SALON });
+  }
 
   console.log("[carmen/agendar] parsed:", JSON.stringify({ nombre, motivo, fechaRaw, telefono, durationMin, slug, call: call.call_id }).slice(0, 800));
 
@@ -296,6 +194,19 @@ export async function POST(req: Request) {
     });
   }
   const startIso = normalizarFecha(fechaRaw);
+  const negocio = await getBusinessBySlug(slug);
+  const ofrecer = async (desde: string) => {
+    const opciones = await huecosCercanos(salon.tenantId, { startIso: desde, motivo }).catch(() => [] as string[]);
+    return opciones.length ? ` Te puedo ofrecer ${listaDeOpciones(opciones)}. ¿Cuál te viene mejor?` : " ¿Qué otro día te vendría bien?";
+  };
+  if (startIso === PASADO) {
+    const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+    return NextResponse.json({
+      success: false,
+      reason: "pasado",
+      message: `Esa hora de hoy ya ha pasado.${await ofrecer(`${hoy}T23:59:00`)}`,
+    });
+  }
   if (!ISO_RE.test(startIso) || isNaN(new Date(startIso).getTime())) {
     return NextResponse.json({
       success: false,
@@ -304,40 +215,55 @@ export async function POST(req: Request) {
     });
   }
 
-  // 4) Reservar por el MOTOR DE BOOKING (crearReservaManual) → crea un BookingRecord
-  // con `slug`, así la cita sale en /dashboard/clientes del salón, en el MISMO Google
-  // Calendar (sin duplicar el evento) y con el anti-doble-reserva del booking.
-  const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
-  const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
+  // 4) Reservar por el ORQUESTADOR, igual que Pablo y Marta.
+  //
+  // ANTES iba por `crearReservaManual`, que es la cita que mete el dueño a mano:
+  // NO mira el horario ni la antelación (se podía reservar a las 3 de la mañana,
+  // un domingo cerrado o una hora ya pasada), guardaba el motivo como un servicio
+  // inventado de 30 minutos (un color de 90 ocupaba 30) y, al no saber el
+  // servicio, asignaba a cualquier profesional aunque no lo hiciera. Ahora pasa
+  // por `reservarSlot`: horario, antelación, servicio real con su duración,
+  // profesional que lo hace, y el MISMO candado por negocio y día que el resto.
+  const h2 = await headers();
+  const host = h2.get("x-forwarded-host") || h2.get("host") || "localhost:3000";
+  const proto = h2.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
   const redirectUri = getRedirectUri(host, proto);
+  const norm = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const emp = profesionalPedida
+    ? (negocio?.empleados || []).find((e) => e.activo && norm(e.nombre).split(/\s+/)[0] === norm(profesionalPedida).split(/\s+/)[0])
+    : undefined;
 
-  const result = await crearReservaManual({
-    slug,
-    startIso,
-    cliente: { nombre, telefono: telefono || "" },
-    customNombre: motivo,
-    customDurationMin: durationMin,
+  const result = await reservarSlot({
+    tenantId: salon.tenantId,
+    userEmail: process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com",
     redirectUri,
+    nombre,
+    motivo,
+    startIso,
+    durationMin,
+    agenteOrigen: "carmen",
+    customerPhone: telefono,
+    empleadoId: emp?.id,
   });
 
-  // 5) Traducir el resultado a algo que Carmen pueda decir (misma forma que antes)
   if (result.ok) {
     return NextResponse.json({
       success: true,
-      message: `Perfecto, te he agendado ${formatoHumano(result.record.startIso)}. ¡Te esperamos!`,
-      eventId: result.record.eventId,
-      htmlLink: result.record.htmlLink,
-      bookingId: result.record.id,
+      message: `Perfecto, te he agendado ${formatoHumano(startIso)}. ¡Te esperamos!`,
+      eventId: result.eventId,
+      htmlLink: result.htmlLink,
     });
   }
-
   if (result.reason === "slot_taken") {
+    const porque =
+      result.motivo === "pasado" ? "Esa hora ya ha pasado o es demasiado pronto para reservarla."
+      : result.motivo === "fuera_de_horario" ? "A esa hora no estamos abiertos."
+      : "Ese hueco está ocupado.";
     return NextResponse.json({
       success: false,
       reason: "slot_taken",
-      message: result.suggested
-        ? `Ese hueco está ocupado. Te puedo ofrecer ${formatoHumano(result.suggested)}. ¿Te viene bien?`
-        : "Ese hueco está ocupado y no me queda otro libre ese día. ¿Probamos otro día?",
+      motivo: result.motivo,
+      message: `${porque}${await ofrecer(startIso)}`,
       suggested: result.suggested,
     });
   }
@@ -348,7 +274,6 @@ export async function POST(req: Request) {
       message: "Dame un segundo, estoy confirmando ese hueco. ¿Te lo confirmo en un momento?",
     });
   }
-  // error (incluye agenda no conectada / sin tokens de Google, o salón no encontrado)
   return NextResponse.json({
     success: false,
     reason: "error",
