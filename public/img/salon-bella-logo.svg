@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" role="img" aria-label="Salón Bella">
+  <rect width="360" height="120" fill="#FBF7F4"/>
+  <circle cx="60" cy="60" r="40" fill="none" stroke="#8A5A64" stroke-width="3"/>
+  <text x="60" y="73" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="36" fill="#8A5A64">SB</text>
+  <text x="118" y="62" font-family="Georgia, 'Times New Roman', serif" font-size="40" fill="#3B2A2E">Salón Bella</text>
+  <text x="120" y="88" font-family="Helvetica, Arial, sans-serif" font-size="13" letter-spacing="3" fill="#8A5A64">BELLEZA · MARBELLA</text>
+</svg>

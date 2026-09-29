@@ -16,7 +16,7 @@ RETELL_API_KEY=… node scripts/carmen-retell-publicar.mjs --publicar # copia, c
   versión publicada nueva y comprueba la transferencia.
 - El texto está en `scripts/carmen-retell-config.mjs`: prompt de salón, frases de espera y
   frase de la transferencia.
-- Estado a 29/09/2026: **publicada la versión 6**.
+- Estado a 29/09/2026: **publicada la versión 8**.
 
 ## 1. Identidad: el salón, con los datos de su ficha
 - Carmen habla en nombre del negocio de agenda del tenant (`tenant.negocioAgenda`). En la

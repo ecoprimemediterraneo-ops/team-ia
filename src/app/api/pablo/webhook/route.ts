@@ -24,6 +24,9 @@ import {
   type Conversation,
 } from "@/lib/conversation-store";
 import { logEvent, makeEventId } from "@/lib/event-log";
+import { esUrgencia, configCarmen, avisarAlDueno, idiomaDe } from "@/lib/carmen-llamadas";
+import { pideUnaPersona, textoAvisoAlDueno, textoCitaGuardada, textoServicioNoDisponible, textoNoGuardada, preguntaFaltante, confirmaCitaSinGuardar } from "@/lib/pablo-respuestas";
+import { diaDeTexto } from "@/lib/fecha-es";
 import { agendaCitasDeTenant, resolveTenantFromMeta, getTenantSector, getTenant, agenteContratado } from "@/lib/tenants";
 import { resolverSector } from "@/lib/sectores";
 import { getFicha, fichaToPromptContext } from "@/lib/ficha";
@@ -444,8 +447,8 @@ export async function POST(req: Request) {
                 // NUNCA callado. Si no se ha podido escuchar, se dice y se pide
                 // por escrito: el silencio se lee como "esto está roto".
                 const respuesta = esGestoria
-                  ? "no he podido escuchar ese audio. me lo escribes, o me mandas la foto de la factura?"
-                  : "no he podido escuchar ese audio. me lo escribes?";
+                  ? "No he podido escuchar ese audio. Me lo escribes, o me mandas la foto de la factura?"
+                  : "No he podido escuchar ese audio. Me lo escribes?";
                 console.warn(`[pablo/webhook] audio de ${msg.from} sin transcribir: ${"error" in tr ? tr.error : "vacío"}`);
                 await sendWhatsAppText(msg.from, respuesta);
                 await registrarIntercambio({
@@ -459,7 +462,7 @@ export async function POST(req: Request) {
             } catch (err) {
               // Un fallo aquí tampoco puede dejar al cliente sin respuesta.
               console.error("[pablo/webhook] no se pudo atender el audio:", err);
-              const respuesta = "no he podido escuchar ese audio. me lo escribes?";
+              const respuesta = "No he podido escuchar ese audio. Me lo escribes?";
               await sendWhatsAppText(msg.from, respuesta).catch(() => {});
               continue;
             }
@@ -712,6 +715,39 @@ export async function POST(req: Request) {
             marcarUrgenciaDental(tenantId, { telefono: from, nombre: customerName, texto: text }).catch(() => {});
           }
 
+          // === INTERCEPTOR: PIDE UNA PERSONA O TIENE UNA URGENCIA ===
+          // Como en Carmen: se avisa al WhatsApp del DUEÑO (plantilla de urgencia)
+          // y al cliente se le dice la verdad: si el aviso ha salido, que le
+          // contactarán; si no, que queda anotado. Antes Pablo contestaba "te
+          // atiendo yo" o le ofrecía cita a quien tenía una reacción alérgica.
+          if (sectorAgenda) try {
+            const tAviso = await getTenant(tenantId);
+            const urgente = !!esUrgencia(text, configCarmen(tAviso).urgencias);
+            if (urgente || pideUnaPersona(text)) {
+              const idiomaAviso = idiomaDe(text) === "en" ? "en" : "es";
+              const quien = `${customerName ? `${customerName} ` : ""}(+${from.replace(/\D/g, "")})`;
+              const aviso = await avisarAlDueno(tenantId,
+                `${urgente ? "URGENCIA" : "Un cliente quiere hablar con una persona"} por WhatsApp\nCliente: ${quien}\n${text.slice(0, 400)}`,
+                process.env.CARMEN_URGENCIA_TEMPLATE ? { nombre: process.env.CARMEN_URGENCIA_TEMPLATE, variables: [quien, `${urgente ? "" : "Pide hablar con una persona. "}${text}`.slice(0, 500)] } : undefined);
+              const avisado = aviso.enviado && !/simulado/.test(aviso.modo);
+              const resp = textoAvisoAlDueno({ avisado, urgente, idioma: idiomaAviso });
+              await sendWhatsAppText(from, resp);
+              await appendTurn("pablo", tenantId, from, "user", text, customerName);
+              await appendTurn("pablo", tenantId, from, "assistant", resp, customerName);
+              await logEvent(tenantId, {
+                id: makeEventId("pablo_aviso_dueno", msg.id), type: "handoff_human", channel: "pablo", senderId: from,
+                meta: { kind: urgente ? "urgencia" : "pide_persona", texto: text.slice(0, 300), aviso: aviso.modo, avisado },
+              }).catch(() => {});
+              await registrarIntercambio({
+                tenantId, msgId: msg.id, from, nombre: customerName,
+                entrante: text, respuesta: resp, rxTs, via: urgente ? "urgencia_aviso_dueno" : "persona_aviso_dueno",
+              });
+              continue;
+            }
+          } catch (err) {
+            console.error("[pablo/webhook] aviso al dueño falló (sigue el flujo normal):", err);
+          }
+
           // === INTERCEPTOR: EL GUION DE HUECOS Y LAS CITAS QUE YA TIENE ===
           // Reglas fijas, sin criterio del modelo (ver `cita-por-chat.ts`):
           //   1. Si se le ofrecieron huecos, lo que conteste se resuelve aquí
@@ -842,6 +878,7 @@ export async function POST(req: Request) {
               throw { __skip: true };
             }
 
+            const idiomaCita = idiomaDe(text) === "en" ? "en" : "es";
             const agRes = await tryAgendarFromText({
               text: transcript,
               intentOverride: intent,
@@ -851,12 +888,38 @@ export async function POST(req: Request) {
               customerPhone: from,
               customerNameFallback: customerName,
               modo: modoRest,
+              // La confirmación va en ESTE mensaje (uno solo, no dos).
+              confirmacionEnConversacion: true,
             });
+            // Lo que se contesta en las ramas que no improvisan (y se corta el flujo).
+            const contestar = async (resp: string, via: string) => {
+              await sendWhatsAppText(from, resp);
+              await appendTurn("pablo", tenantId, from, "user", text, customerName);
+              await appendTurn("pablo", tenantId, from, "assistant", resp, customerName);
+              await registrarIntercambio({ tenantId, msgId: msg.id, from, nombre: customerName, entrante: text, respuesta: resp, rxTs, via });
+            };
+            if (agRes.kind === "servicio_no_disponible") {
+              const negocioSv = await getBusinessByTenant(tenantId);
+              if (negocioSv) {
+                await contestar(textoServicioNoDisponible(negocioSv, agRes.intent.fields.motivo, idiomaCita), "agenda_servicio_no_disponible");
+                continue;
+              }
+            }
+            if (agRes.kind === "error" && agRes.detail === "no_guardada") {
+              await contestar(textoNoGuardada(idiomaCita), "agenda_no_guardada");
+              continue;
+            }
             if (agRes.kind === "agendada") {
               await cerrarGuion(tenantId, from);
               const when = formatStartHumanES(agRes.intent.fields.startIso!);
+              const negocioAck = agRes.record ? await getBusinessByTenant(tenantId) : null;
+              // UN mensaje con la cita tal como ha quedado GUARDADA (servicio real,
+              // profesional, dirección y enlace para anular). El nombre, el que ha
+              // dicho en la conversación antes que el de su perfil de WhatsApp.
               // Estilo de casa: sin emojis y sin signos de apertura en WhatsApp.
-              const ack = `Listo${customerName ? `, ${customerName.split(" ")[0]}` : ""}. Te he agendado *${agRes.intent.fields.motivo}* el ${when}.\n\nSi necesitas cambiarla, dimelo y la movemos.`;
+              const ack = agRes.record && negocioAck
+                ? textoCitaGuardada({ record: agRes.record, negocio: negocioAck, nombre: agRes.intent.fields.nombre || customerName, idioma: idiomaCita })
+                : `Listo${customerName ? `, ${customerName.split(" ")[0]}` : ""}. Te he agendado *${agRes.intent.fields.motivo}* el ${when}.\n\nSi necesitas cambiarla, dimelo y la movemos.`;
               await sendWhatsAppText(from, ack);
               await appendTurn("pablo", tenantId, from, "user", text, customerName);
               await appendTurn("pablo", tenantId, from, "assistant", ack, customerName);
@@ -898,7 +961,7 @@ export async function POST(req: Request) {
               const oferta = await ofrecerAlternativas({
                 tenantId, contacto: from, startIso: agRes.intent.fields.startIso!,
                 motivo: agRes.intent.fields.motivo || "cita", nombre: agRes.intent.fields.nombre || customerName,
-                porque: agRes.motivo,
+                porque: agRes.motivo, idioma: idiomaCita,
               });
               await sendWhatsAppText(from, oferta.texto);
               await appendTurn("pablo", tenantId, from, "user", text, customerName);
@@ -910,6 +973,32 @@ export async function POST(req: Request) {
                 entrante: text, respuesta: oferta.texto, rxTs, via: oferta.via,
               });
               continue;
+            }
+            if (agRes.kind === "incomplete" && !modoRest?.restaurante) {
+              // Ha dicho el servicio y el DÍA pero no la hora ("¿qué horas tenéis
+              // el viernes?"): se le ofrecen huecos REALES de ese día, no se le
+              // vuelve a preguntar el día. Con el servicio comprobado antes.
+              const dia = agRes.missing.includes("fecha_hora") && agRes.intent.fields.motivo ? diaDeTexto(text) || diaDeTexto(transcript.split("\n").slice(-3).join(" ")) : "";
+              const negocioDia = dia ? await getBusinessByTenant(tenantId) : null;
+              if (dia && negocioDia) {
+                const { servicioPedido } = await import("@/lib/booking");
+                if (!servicioPedido(negocioDia, agRes.intent.fields.motivo!)) {
+                  await contestar(textoServicioNoDisponible(negocioDia, agRes.intent.fields.motivo, idiomaCita), "agenda_servicio_no_disponible");
+                  continue;
+                }
+                const oferta = await ofrecerAlternativas({
+                  tenantId, contacto: from, startIso: `${dia}T00:00:00`, motivo: agRes.intent.fields.motivo!,
+                  nombre: agRes.intent.fields.nombre || customerName, porque: "sin_hora", idioma: idiomaCita,
+                });
+                await contestar(oferta.texto, oferta.via);
+                continue;
+              }
+              const q = idiomaCita === "en" ? preguntaFaltante(agRes.missing, "en") : missingFieldsToQuestion(agRes.missing, modoRest);
+              if (q) {
+                const respInc = idiomaCita === "en" ? `Sure, I'll book it for you. ${q}` : `Perfecto, te agendo cita. ${q}`;
+                await contestar(respInc, "agenda_faltan_datos");
+                continue;
+              }
             }
             if (agRes.kind === "incomplete") {
               const q = missingFieldsToQuestion(agRes.missing, modoRest);
@@ -958,6 +1047,15 @@ export async function POST(req: Request) {
             console.error("[pablo/webhook] no se pudo componer la persona, uso default:", err);
           }
           let reply = await generateReply(text, customerName, isNew, conv, sectorSystem);
+          // NUNCA SE CONFIRMA LO QUE NO SE HA GUARDADO. Aquí (respuesta libre del
+          // modelo) no se ha reservado nada en este mensaje: si el modelo dice
+          // "te he agendado", es falso y se cambia por la pregunta que falta.
+          if (sectorAgenda && confirmaCitaSinGuardar(reply)) {
+            console.warn(`[pablo/webhook] respuesta que confirmaba una cita SIN guardarla, cambiada: "${reply.slice(0, 160)}"`);
+            reply = idiomaDe(text) === "en"
+              ? "To book it I need the service, the day and the time. Which would you like?"
+              : "Para dejarte la cita guardada necesito el servicio, el día y la hora. Qué te viene bien?";
+          }
           console.log(`[pablo/webhook] AI reply: "${reply}"`);
 
           // === LEAD CUALIFICADO: solo estética. No intercepta nada — Pablo

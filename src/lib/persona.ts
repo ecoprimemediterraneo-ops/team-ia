@@ -170,6 +170,10 @@ function bloqueIdentidad(id: IdentidadNegocio, perfil: PerfilSector): string {
   ];
   if (id.servicios?.length) {
     lineas.push(`${cap(v.servicioPlural)} que ofrece: ${id.servicios.join("; ")}.`);
+    if (id.direccion) {
+      // Identidad sacada de la ficha del negocio: la lista es la carta completa.
+      lineas.push(`Nombra los ${v.servicioPlural} SOLO con esos nombres exactos. No los agrupes ni inventes categorías (nada de "tratamientos faciales o corporales"), y no ofrezcas nada que no esté en la lista.`);
+    }
   }
   if (id.direccion) lineas.push(`Dirección: ${id.direccion}.`);
   if (id.horario) lineas.push(`Horario: ${id.horario}.`);

@@ -361,6 +361,9 @@ async function cambiarLocal<T>(file: string, fn: (actual: T) => T | Promise<T>):
   }
 }
 
+/** Logo y portada neutros del salón de demostración (sin marca de ningún cliente). */
+const LOGO_DEMO = "/img/salon-bella-logo.svg";
+const PORTADA_DEMO = "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1600&h=600&q=70";
 const cacheConfigs = cacheCorta<ConfigMap>(ttlDatosFijos(supabaseEnabled()), leerConfigsDelAlmacen);
 const readConfigs = (): Promise<ConfigMap> => cacheConfigs.leer();
 
@@ -379,6 +382,17 @@ async function leerConfigsDelAlmacen(): Promise<ConfigMap> {
   if (d && (d.galeria || []).some((g) => g.includes("picsum"))) {
     const seed = seedBusinesses();
     if (seed.demo) { data.demo = seed.demo; await writeConfigs(data); }
+  }
+  // Logo y portada de la demo: si apuntan a imágenes subidas que ya no existen
+  // (las de cuando la demo se llamaba "BENDITO ARTE" daban 404 en /reservas/demo),
+  // se ponen las neutras de Salón Bella. Solo la demo y solo esas URLs.
+  if (d && [d.logoUrl, d.heroImageUrl].some((u) => u?.includes("/api/admin/marta-image/"))) {
+    data.demo = {
+      ...d,
+      logoUrl: d.logoUrl?.includes("/api/admin/marta-image/") ? LOGO_DEMO : d.logoUrl,
+      heroImageUrl: d.heroImageUrl?.includes("/api/admin/marta-image/") ? PORTADA_DEMO : d.heroImageUrl,
+    };
+    await writeConfigs(data);
   }
   // Alta ÚNICA del salón fundador "Bendito Arte". Se inyecta una sola vez: si ya
   // está en configs no se toca (respeta ediciones del dueño); si se borró alguna
@@ -2248,6 +2262,8 @@ function seedBusinesses(): ConfigMap {
     slug: "demo",
     tenantId: DEFAULT_TENANT_ID,
     nombre: "Salón Bella",
+    logoUrl: LOGO_DEMO,
+    heroImageUrl: PORTADA_DEMO,
     descripcion: "Salón de belleza en Marbella: facial, uñas, pestañas, cejas, masajes y depilación. Reserva online en segundos — cancelación gratis, sin comisiones.",
     galeria: [
       "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=640&h=440&fit=crop&q=80",
@@ -2390,8 +2406,25 @@ export function servicioPedido(business: BusinessBooking, texto: string): Bookin
   const norm = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const q = norm(texto || "").trim();
   if (!q) return undefined;
-  const palabras = q.split(/[^a-z0-9]+/).filter((w) => w.length > 3);
+  // Palabras que, solas, no identifican un servicio ("corte de PELO" no es
+  // "Extensiones de pestañas pelo a pelo"; "un TRATAMIENTO" no es cualquiera).
+  const GENERICAS = new Set(["pelo", "cita", "servicio", "servicios", "tratamiento", "tratamientos", "sesion", "sesiones", "quiero", "para", "hacer", "algo", "cuanto", "cuesta", "precio", "treatment", "session", "book", "appointment"]);
+  const palabras = q.split(/[^a-z0-9]+/).filter((w) => w.length > 3 && !GENERICAS.has(w));
   const exacto = activos.find((s) => norm(s.nombre).includes(q) || q.includes(norm(s.nombre)));
   if (exacto) return exacto;
-  return activos.find((s) => palabras.some((w) => norm(s.nombre).split(/[^a-z0-9]+/).some((x) => x.length > 3 && (x.startsWith(w) || w.startsWith(x)))));
+  const parecida = (w: string, x: string) =>
+    x.length > 3 && (x.startsWith(w) || w.startsWith(x) || (w.length >= 6 && x.length >= 6 && distancia(w, x) <= 2));
+  // Palabra a palabra, también con una o dos letras de diferencia: "manicure",
+  // "pedicure", "massage" (quien escribe en inglés) o una errata.
+  return activos.find((s) => palabras.some((w) => norm(s.nombre).split(/[^a-z0-9]+/).some((x) => parecida(w, x))));
+}
+
+/** Distancia de edición (Levenshtein) entre dos palabras cortas. */
+function distancia(a: string, b: string): number {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++)
+    for (let j = 1; j <= b.length; j++)
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length];
 }

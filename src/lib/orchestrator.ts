@@ -97,6 +97,8 @@ export type ReservaInput = {
    * aviso al dueño sí sale al momento.
    */
   confirmarAlColgar?: boolean;
+  /** La confirmación va en la respuesta de la conversación (Pablo): sin el aviso automático al cliente. */
+  confirmacionEnConversacion?: boolean;
 };
 
 export type ReservaResult =
@@ -379,7 +381,7 @@ async function reservarConNegocio(input: ReservaInput, tenantId: string): Promis
     if (guardada) {
       let baseUrl: string | undefined;
       try { baseUrl = new URL(input.redirectUri).origin; } catch { baseUrl = undefined; }
-      avisosDeCitaNuevaTrasResponder(record!, baseUrl, { sinConfirmacionCliente: input.confirmarAlColgar });
+      avisosDeCitaNuevaTrasResponder(record!, baseUrl, { sinConfirmacionCliente: input.confirmarAlColgar || input.confirmacionEnConversacion });
     }
     return { ...res, ...(guardada && res.ok ? { recordId: guardada.id } : {}) } as ReservaResult;
   }

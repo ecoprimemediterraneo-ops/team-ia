@@ -69,7 +69,9 @@ export type AgendarFromTextResult =
   | { kind: "no_intent" }
   | { kind: "incomplete"; missing: AppointmentIntent["missing"]; intent: AppointmentIntent }
   | { kind: "slot_taken"; suggested?: string; motivo?: "fuera_de_horario" | "pasado" | "ocupado" | "no_calendar"; intent: AppointmentIntent }
-  | { kind: "agendada"; result: Extract<AgendarCitaResult, { ok: true }>; intent: AppointmentIntent }
+  | { kind: "agendada"; result: Extract<AgendarCitaResult, { ok: true }>; intent: AppointmentIntent; /** La cita GUARDADA (negocios con agenda propia). */ record?: import("./booking").BookingRecord }
+  /** El servicio pedido no existe en el negocio: se dice y se ofrecen los reales. */
+  | { kind: "servicio_no_disponible"; servicios: string[]; intent: AppointmentIntent }
   | { kind: "error"; detail: string };
 
 // -----------------------------------------------------------------------------
@@ -347,6 +349,12 @@ export async function tryAgendarFromText(opts: {
   modo?: ModoExtraccion;
   /** Profesional pedida por el cliente, si la ha dicho. */
   empleadoId?: string;
+  /**
+   * La confirmación va en la PROPIA respuesta de la conversación (Pablo por
+   * WhatsApp): no se manda además la confirmación automática al cliente, que
+   * llegaba como un segundo mensaje casi igual.
+   */
+  confirmacionEnConversacion?: boolean;
 }): Promise<AgendarFromTextResult> {
   // EL TENANT ES OBLIGATORIO EN LA PRÁCTICA. Pablo y Marta llamaban aquí SIN
   // tenantId, así que TODA cita pedida por WhatsApp o Instagram acababa en la
@@ -368,6 +376,14 @@ export async function tryAgendarFromText(opts: {
 
   if (intent.missing.length > 0) {
     return { kind: "incomplete", missing: intent.missing, intent };
+  }
+
+  // SERVICIO ESTRICTO (como Carmen): si el negocio tiene agenda propia y no
+  // ofrece lo que se pide, no se reserva "otro" ni el primero de la lista.
+  const booking = await import("./booking");
+  const negocio = opts.modo?.restaurante ? null : await booking.getBusinessByTenant(tenantId).catch(() => null);
+  if (negocio && intent.fields.motivo && !booking.servicioPedido(negocio, intent.fields.motivo)) {
+    return { kind: "servicio_no_disponible", servicios: negocio.servicios.filter((x) => x.activo).map((x) => x.nombre), intent };
   }
 
   // Reserva a través del ORQUESTADOR central (verifica hueco + lock + log).
@@ -397,12 +413,23 @@ export async function tryAgendarFromText(opts: {
       // comporta igual que antes.
       comensales: intent.fields.comensales,
       zona: intent.fields.zona,
+      confirmacionEnConversacion: opts.confirmacionEnConversacion,
     });
     if (res.ok) {
+      // Éxito DE VERDAD = la cita está guardada en la agenda del negocio.
+      let record: import("./booking").BookingRecord | undefined;
+      if (negocio) {
+        if (!(await booking.citaGuardada(res.recordId, intent.fields.startIso!))) {
+          console.error(`[appointment-intent] RESERVA SIN GUARDAR (${opts.agenteOrigen}): ${res.recordId ?? "sin id"} en ${negocio.slug}`);
+          return { kind: "error", detail: "no_guardada" };
+        }
+        record = (await booking.getRecord(res.recordId!)) ?? undefined;
+      }
       return {
         kind: "agendada",
         result: { ok: true, eventId: res.eventId, htmlLink: res.htmlLink, eventLogId: res.eventLogId ?? "" },
         intent,
+        record,
       };
     }
     if (res.reason === "slot_taken") return { kind: "slot_taken", suggested: res.suggested, motivo: res.motivo, intent };

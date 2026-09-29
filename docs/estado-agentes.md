@@ -8,7 +8,7 @@
 **Funciona en producción**
 - Atiende como **Salón Bella** (el negocio de agenda `demo` de la cuenta propia), con
   dirección, horario y servicios de su ficha. Se presenta como asistente virtual.
-  Es la **versión 6 de CARMEN v2**, publicada.
+  Es la **versión 8 de CARMEN v2**, publicada.
 - Coge, cambia y anula citas en la llamada, con el mismo motor y el mismo candado que Pablo
   y el panel. Si no hay hueco, ofrece los 2 más cercanos. Nunca dice «cerrado» por un error
   de agenda ni promete llamadas que nadie va a hacer.
@@ -58,35 +58,50 @@
 
 ## Pablo (WhatsApp)
 
-**Funciona en producción**
-- Reserva con huecos reales, cambia y cancela por WhatsApp.
-- Los recordatorios del día antes salen una sola vez.
-- La cita aparece en el panel en vivo.
-- Si Pablo y Carmen piden el mismo hueco a la vez, entra una sola.
-- Las confirmaciones y recordatorios salen con las plantillas aprobadas y el nombre de la
-  ficha del negocio. Desde el 29/09 la ficha `demo` se llama **Salón Bella**; antes decía
-  «BENDITO ARTE».
+Auditoría del 29/09/2026 con 12 conversaciones simuladas (webhook firmado como Meta, envío
+simulado) contra la cuenta propia → **Salón Bella**. Ahora pasan las 12; están en
+`tests/e2e/pablo.spec.ts` (P1–P11) y las reglas fijas en `tests/unitarias/t14-pablo-reglas.ts`.
 
-**En local (pendiente de desplegar)**
-- En la cuenta propia (`tenant_aiteam`, con `negocioAgenda=demo`), Pablo deja la persona
-  comercial de AI-Team y atiende como Salón Bella, con nombre, dirección, horario y
-  servicios con precio sacados de la ficha. También agenda citas.
-- **Ojo:** al desplegar, el WhatsApp de la cuenta propia dejará de contestar como
-  comercial de AI-Team.
+| Caso | Antes | Ahora (en local, pendiente de desplegar) |
+|---|---|---|
+| Cita con día y hora | 2 mensajes (confirmación automática + «Listo, Cliente») | **1 mensaje** con la cita tal como quedó guardada: servicio real, día, profesional, dirección y enlace para anular |
+| Cita sin hora («¿qué horas tenéis el viernes?») | volvía a preguntar el día; con «la primera» decía «no estamos abiertos» | ofrece 2 huecos **reales** de ese día (mañana y tarde) y reserva el elegido |
+| Hueco ocupado | 2 alternativas reales | igual |
+| Domingo / fuera de horario | «a esa hora no estamos abiertos» | «ese día estamos cerrados» / «a esa hora no…» + 2 huecos reales |
+| Servicio que no existe | **guardaba** «blanqueamiento dental» | dice que no, lista los servicios **reales** de la ficha y no guarda nada |
+| Cambiar / anular | funcionaba (anular pide «sí») | igual, con redacción corregida |
+| Precio, horario, dirección | correcto, de la ficha | igual |
+| Inglés | contestaba en español y guardaba el servicio inventado «manicure» | contesta en inglés y guarda **Manicura** |
+| Pide una persona | «te atiendo yo» (sin avisar a nadie) | **avisa al WhatsApp del dueño** (plantilla de urgencia) y se lo dice al cliente |
+| Urgencia (reacción alérgica…) | le ofrecía cita | **avisa al dueño** y le recomienda ir al médico si empeora |
+| Nota de voz ilegible | pide que lo escriba | igual |
+| Mensaje a las 3:00 | contesta a cualquier hora; «mañana» se calcula en hora de España | igual (sin cambios) |
 
-**Falta**
-- Desplegar.
-- El negocio `bendito-arte` sigue dado de alta en la cuenta propia (semilla del salón
-  fundador): sus propias citas, si las hay, seguirán diciendo «Bendito Arte», que es lo
-  correcto para ese negocio.
-- Revisar el logo y la portada de la ficha `demo`: se subieron cuando se llamaba BENDITO
-  ARTE y desde fuera del panel no se pueden ver.
+**Reglas nuevas (las mismas que Carmen):**
+- Solo se confirma una cita que está **guardada** en la agenda (`citaGuardada`).
+- Si la respuesta libre del modelo dice «te he agendado» sin haber guardado nada, se sustituye por
+  la pregunta de los datos que faltan.
+- Servicio estricto (`servicioPedido`): acepta inglés y erratas («manicure», «massage»), pero nunca
+  cae en el primero de la lista, y palabras sueltas como «pelo» o «tratamiento» no bastan.
+- Los avisos (al dueño, email) salen **después** de responder.
+- Pablo y Carmen nombran solo servicios de la ficha, nunca categorías como «tratamientos faciales
+  o corporales». Para Carmen, esa regla está publicada en la versión 8.
 
-**Cómo probarlo**
-- Recorridos 1, 3 y 4 de Playwright.
-- `t5-salon-chat` y `t12-carmen-cierre` (identidad).
-- Tras desplegar: escribir al WhatsApp de la cuenta propia «hola, ¿qué horario tenéis?» y
-  comprobar que contesta como Salón Bella.
+**Producción ahora (commit 2fb9d2d):**
+- Ya responde como Salón Bella.
+- Los arreglos de esta tabla llegan con el próximo despliegue.
+
+**Logo y portada de Salón Bella** (daban 404 porque apuntaban a imágenes borradas de cuando se
+llamaba BENDITO ARTE):
+- Logo neutro `public/img/salon-bella-logo.svg` y portada de salón de stock.
+- La ficha `demo` se corrige sola al leerse tras el despliegue.
+
+**Cómo probarlo tras el despliegue** (desde tu móvil al WhatsApp del negocio):
+1. «Hola, soy Cristóbal. ¿Qué horas tenéis para una manicura el jueves?» → 2 horas reales. Contesta
+   «la primera» → UN mensaje de cita guardada.
+2. «Quiero un blanqueamiento dental el viernes a las 11» → no se hace, lista de servicios reales,
+   nada en la agenda.
+3. «Quiero hablar con una persona» → te llega el aviso al WhatsApp del dueño, que es tu móvil.
 
 ## Marta (Instagram)
 

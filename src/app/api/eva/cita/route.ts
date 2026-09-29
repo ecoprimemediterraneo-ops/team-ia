@@ -146,6 +146,9 @@ export async function POST(req: Request) {
   if (ag.kind === "error") {
     return NextResponse.json({ ok: false, error: ag.detail }, { status: 500 });
   }
+  if (ag.kind === "servicio_no_disponible") {
+    return NextResponse.json({ ok: false, error: "servicio_no_disponible", servicios: ag.servicios }, { status: 422 });
+  }
   // agendada
   return NextResponse.json({
     ok: true,

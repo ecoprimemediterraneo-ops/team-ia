@@ -16,7 +16,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { kvGet, kvSet, supabaseEnabled } from "./supabase";
 import {
-  getBusinessByTenant, citasActivasDeCliente, cambiarEstadoRecord, reprogramarRecord, getRecord, getEmpleado, ausenteEl,
+  getBusinessByTenant, citasActivasDeCliente, cambiarEstadoRecord, reprogramarRecord, getRecord, getEmpleado, ausenteEl, citaGuardada,
   localToEpoch, type BookingRecord, type BusinessBooking,
 } from "./booking";
 import { reservarSlot } from "./orchestrator";
@@ -46,27 +46,50 @@ export type Respuesta = { texto: string; via: string };
  */
 export async function ofrecerAlternativas(o: {
   tenantId: string; contacto: string; startIso: string; motivo: string; nombre?: string; empleadoId?: string;
-  porque?: "pasado" | "fuera_de_horario" | "ocupado" | "no_calendar";
+  /** "sin_hora": ha dicho el día pero no la hora → se le ofrecen los primeros huecos de ese día. */
+  porque?: "pasado" | "fuera_de_horario" | "ocupado" | "no_calendar" | "sin_hora";
+  idioma?: "es" | "en";
 }): Promise<Respuesta> {
   const negocio = await getBusinessByTenant(o.tenantId);
   const previo = await leerGuion(o.tenantId, o.contacto);
   // Pedir otra hora concreta que tampoco está libre, con una oferta ya hecha, es una ronda fallida.
-  const rondas = previo ? previo.rondasFallidas + 1 : 0;
+  const rondas = previo && o.porque !== "sin_hora" ? previo.rondasFallidas + 1 : 0;
+  const en = o.idioma === "en";
+  const diaCerrado = !!negocio && (() => {
+    const wd = new Date(`${o.startIso.slice(0, 10)}T12:00:00Z`).getUTCDay();
+    const h = negocio.horario?.[wd as keyof typeof negocio.horario];
+    return !h?.abierto || !h.franjas?.length;
+  })();
   const intro =
-    o.porque === "pasado" ? "Esa hora ya ha pasado."
-    : o.porque === "fuera_de_horario" ? "A esa hora no estamos abiertos."
-    : `A las ${o.startIso.slice(11, 16)} no me queda hueco.`;
+    o.porque === "sin_hora" ? (diaCerrado ? (en ? "We're closed that day." : "Ese día estamos cerrados.") : "")
+    : o.porque === "pasado" ? (en ? "That time has already passed." : "Esa hora ya ha pasado.")
+    : o.porque === "fuera_de_horario" ? (diaCerrado ? (en ? "We're closed that day." : "Ese día estamos cerrados.") : (en ? "We're not open at that time." : "A esa hora no estamos abiertos."))
+    : (en ? `${o.startIso.slice(11, 16)} is already taken.` : `A las ${o.startIso.slice(11, 16)} no me queda hueco.`);
 
   if (rondas >= 2 && negocio) return enlace(o.tenantId, o.contacto, negocio, o.motivo, intro);
 
-  const opciones = await huecosCercanos(o.tenantId, { startIso: o.startIso, motivo: o.motivo, empleadoId: o.empleadoId });
+  let opciones = await huecosCercanos(o.tenantId, { startIso: o.startIso, motivo: o.motivo, empleadoId: o.empleadoId, n: o.porque === "sin_hora" ? 40 : 2 });
+  if (o.porque === "sin_hora" && opciones.length > 2) {
+    // Día sin hora: el primer hueco y otro al menos 3 h después (mañana y tarde),
+    // no dos seguidos de 15 en 15.
+    const mismoDia = opciones.filter((x) => x.slice(0, 10) === opciones[0].slice(0, 10));
+    const tarde = mismoDia.find((x) => Date.parse(`${x}Z`) - Date.parse(`${opciones[0]}Z`) >= 3 * 3600_000);
+    opciones = [opciones[0], tarde ?? mismoDia[mismoDia.length - 1] ?? opciones[1]].filter((x, i, a) => a.indexOf(x) === i);
+  }
   if (!opciones.length) {
     await guardarGuion(o.tenantId, o.contacto, { fase: "preguntado", rondasFallidas: Math.max(1, rondas), ofrecidos: [], motivo: o.motivo, nombre: o.nombre, empleadoId: o.empleadoId, ts: Date.now() });
     return { texto: `${intro} Esa semana lo tengo complicado: dime que dias y a que horas te vienen bien y te lo busco.`, via: "agenda_guion_pregunta" };
   }
   await guardarGuion(o.tenantId, o.contacto, { fase: "ofrecido", rondasFallidas: rondas, ofrecidos: opciones, motivo: o.motivo, nombre: o.nombre, empleadoId: o.empleadoId, ts: Date.now() });
+  if (en) {
+    const { cuando } = await import("./pablo-respuestas");
+    return {
+      texto: `${intro ? `${intro} ` : ""}I can offer you ${opciones.map((x) => cuando(x, "en")).join(" or ")}. Does ${opciones.length > 1 ? "either" : "that"} work for you?`,
+      via: "agenda_guion_oferta",
+    };
+  }
   return {
-    texto: `${intro} Te puedo dar ${listaDeOpciones(opciones)}. Te va bien ${opciones.length > 1 ? "alguna" : "esa"}?`,
+    texto: `${intro ? `${intro} ` : ""}Te puedo dar ${listaDeOpciones(opciones)}. Te va bien ${opciones.length > 1 ? "alguna" : "esa"}?`,
     via: "agenda_guion_oferta",
   };
 }
@@ -95,15 +118,22 @@ export async function pasoGuion(o: {
       tenantId: o.tenantId, userEmail: FUNDADOR(), redirectUri: REDIRECT,
       nombre: g.nombre || o.nombreCliente || "Cliente", motivo: g.motivo, startIso: elegido,
       agenteOrigen: o.agenteOrigen, customerPhone: o.contacto, empleadoId: g.empleadoId,
+      // La confirmación va en ESTA respuesta: un solo mensaje, no dos.
+      confirmacionEnConversacion: true,
     });
+    const { textoCitaGuardada, textoNoGuardada } = await import("./pablo-respuestas");
     if (res.ok) {
       await guardarGuion(o.tenantId, o.contacto, null);
-      return { texto: `Hecho, te dejo ${g.motivo} ${cuandoHablado(elegido)}. Si necesitas cambiarla, dimelo por aqui.`, via: "agenda_cita_creada" };
+      // Solo se confirma lo que está GUARDADO en la agenda.
+      const r = (await citaGuardada(res.recordId, elegido)) ? await getRecord(res.recordId!) : null;
+      if (!r) return { texto: textoNoGuardada(), via: "agenda_no_guardada" };
+      return { texto: textoCitaGuardada({ record: r, negocio, nombre: g.nombre || o.nombreCliente }), via: "agenda_cita_creada" };
     }
     if (res.reason === "slot_taken" || res.reason === "locked") {
       return ofrecerAlternativas({ tenantId: o.tenantId, contacto: o.contacto, startIso: elegido, motivo: g.motivo, nombre: g.nombre, empleadoId: g.empleadoId, porque: "ocupado" });
     }
-    return null;
+    // Error al guardar: se dice. Si se devolviera null, la IA contestaría libre y podría "confirmar".
+    return { texto: textoNoGuardada(), via: "agenda_no_guardada" };
   }
 
   // 2) Se le preguntó qué le viene bien → se busca en toda la semana con eso.
@@ -175,7 +205,7 @@ export function esIntencionMover(t: string): boolean {
 
 async function cancelar(tenantId: string, r: BookingRecord): Promise<Respuesta> {
   const res = await cambiarEstadoRecord(r.id, "cancelada", REDIRECT, r.slug);
-  if (!res.ok) return { texto: "No he podido cancelarla ahora mismo. Te la cancela alguien del equipo en un momento.", via: "cancelacion_fallida" };
+  if (!res.ok) return { texto: "No he podido cancelarla ahora mismo. Lo intento otra vez?", via: "cancelacion_fallida" };
   // Lista de espera: el mismo aviso que el botón de la agenda.
   await avisarHuecoLiberado(res.record, SITE(), REDIRECT).catch(() => {});
   void tenantId;
@@ -202,9 +232,9 @@ async function mover(tenantId: string, contacto: string, r: BookingRecord, nuevo
       await guardarP(tenantId, contacto, null);
       // El hueco viejo queda libre: aviso a la lista de espera, como en la agenda.
       await avisarHuecoLiberado({ ...r }, SITE(), REDIRECT).catch(() => {});
-      return { texto: `Hecho, te paso ${servicioDe(r)} a ${cuandoHablado(nuevo)}${r.empleadoNombre ? ` con ${r.empleadoNombre}` : ""}. Te esperamos.`, via: "cambio_hecho" };
+      return { texto: `Hecho, te paso ${servicioDe(r)} ${cuandoHablado(nuevo).replace(/^el /, "al ").replace(/^(hoy|mañana) /, "para $1 ")}${r.empleadoNombre ? ` con ${r.empleadoNombre}` : ""}. Te esperamos.`, via: "cambio_hecho" };
     }
-    if (res.reason !== "slot_taken" && res.reason !== "locked") return { texto: "No he podido moverla ahora mismo. Te escribe alguien del equipo.", via: "cambio_fallido" };
+    if (res.reason !== "slot_taken" && res.reason !== "locked") return { texto: "No he podido moverla ahora mismo. Lo intento otra vez o prefieres otra hora?", via: "cambio_fallido" };
     porque = "ocupado";
   }
   const opciones = await huecosCercanos(tenantId, { startIso: nuevo, motivo: r.servicioNombre || "", empleadoId: r.empleadoId });

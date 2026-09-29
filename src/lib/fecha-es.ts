@@ -133,3 +133,23 @@ export function normalizarFecha(raw: string, opts: { fechaBase?: string } = {}):
   return `${y}-${PAD(mo)}-${PAD(d)}T${PAD(hh)}:${PAD(mi)}:00`;
 }
 
+
+/**
+ * El DÍA de una frase que no dice hora ("el viernes 2 de octubre", "mañana",
+ * "el jueves"), como "YYYY-MM-DD" en Europe/Madrid; "" si no hay día. Sirve para
+ * ofrecer huecos de ese día cuando el cliente pregunta "¿qué horas tenéis?".
+ */
+export function diaDeTexto(raw: string): string {
+  const low = sinTildes(String(raw).toLowerCase());
+  const now = madridNow();
+  const base = new Date(Date.UTC(now.y, now.mo - 1, now.d, 12));
+  const fmt = (d: Date) => `${d.getUTCFullYear()}-${PAD(d.getUTCMonth() + 1)}-${PAD(d.getUTCDate())}`;
+  if (/\bpasado\s+manana\b/.test(low)) return fmt(new Date(base.getTime() + 2 * 86_400_000));
+  if (/\bmanana\b/.test(low) && !/\bde\s+la\s+manana\b|\bpor\s+la\s+manana\b/.test(low)) return fmt(new Date(base.getTime() + 86_400_000));
+  if (/\bhoy\b/.test(low)) return fmt(base);
+  const r = chrono.es.parse(String(raw), new Date(Date.UTC(now.y, now.mo - 1, now.d, 10)), { forwardDate: true })[0]
+    ?? chrono.en.parse(String(raw), new Date(Date.UTC(now.y, now.mo - 1, now.d, 10)), { forwardDate: true })[0];
+  if (!r || !r.start.isCertain("day") && !r.start.isCertain("weekday")) return "";
+  const y = r.start.get("year"), m = r.start.get("month"), d = r.start.get("day");
+  return y && m && d ? `${y}-${PAD(m)}-${PAD(d)}` : "";
+}
