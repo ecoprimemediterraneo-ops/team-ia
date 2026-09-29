@@ -217,6 +217,28 @@ export async function enviarConfirmacion(record: BookingRecord, business: Busine
   return { email, whatsapp };
 }
 
+/**
+ * Aviso de cita ANULADA por WhatsApp (p.ej. el cliente la anula hablando con
+ * Carmen). Con `BOOKING_ANULACION_TEMPLATE` sale por plantilla (5 variables:
+ * nombre, negocio, cuándo, servicio, enlace para reservar otra); sin ella, texto
+ * libre, que solo llega si el cliente escribió por WhatsApp en las últimas 24 h.
+ */
+export async function enviarAnulacion(record: BookingRecord, business: BusinessBooking, baseUrl: string): Promise<NotifResult["whatsapp"]> {
+  const tel = record.cliente.telefono;
+  if (!tel || /^ig:/i.test(tel)) return { intentado: false, enviado: false, modo: "no_intentado" };
+  const reservar = `${baseUrl.replace(/\/$/, "")}/reservas/${business.slug}`;
+  const plantilla = process.env.BOOKING_ANULACION_TEMPLATE;
+  if (plantilla) {
+    const r = await sendWhatsAppTemplate(tel.replace(/[^\d+]/g, ""), plantilla, record.idioma === "en" ? "en" : "es",
+      [record.cliente.nombre.split(" ")[0] || "", business.nombre, fechaHumana(record.startIso), record.servicioNombre || "tu cita", reservar],
+      { tenantId: business.tenantId, a: tel, motivo: plantilla });
+    return r.ok ? { intentado: true, enviado: true, modo: "enviado" } : { intentado: true, enviado: false, modo: "error", error: r.detail };
+  }
+  return enviarWhatsApp(tel,
+    `Cita anulada en *${business.nombre}*\n${record.servicioNombre} · ${fechaHumana(record.startIso)}\n\nSi quieres otra, reserva aquí: ${reservar}`,
+    business.tenantId);
+}
+
 /** Recordatorio antes de la cita (lo dispara el cron/n8n). */
 export async function enviarRecordatorio(record: BookingRecord, business: BusinessBooking, baseUrl: string): Promise<NotifResult> {
   const { subject, html } = construirRecordatorio(record, business, baseUrl);

@@ -13,6 +13,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { kvGet, kvGetEstricto, kvSet } from "./supabase";
+import { cacheCorta, ttlDatosFijos } from "./cache-corta";
 import type { StyleConfig } from "./image-style-presets";
 import type { SectorKey } from "./sector-prompts";
 import type { SectorNegocio } from "./sectores";
@@ -278,7 +279,10 @@ async function leerFicheroLocal(): Promise<TenantMap | null> {
   throw new Error("[tenants] data/tenants.json no se puede leer (¿corrupto?). No se sobrescribe.");
 }
 
-async function readAll(): Promise<TenantMap> {
+const cacheTenants = cacheCorta<TenantMap>(ttlDatosFijos(USE_SUPABASE), leerTodoDelAlmacen);
+const readAll = (): Promise<TenantMap> => cacheTenants.leer();
+
+async function leerTodoDelAlmacen(): Promise<TenantMap> {
   let data: TenantMap | null;
   if (USE_SUPABASE) {
     // Estricto: un fallo de lectura LANZA en vez de devolver null y sembrar encima.
@@ -346,6 +350,7 @@ function reconciliarCuentaPropia(data: TenantMap): TenantMap | null {
 }
 
 async function writeAll(map: TenantMap): Promise<void> {
+  cacheTenants.olvidar();
   if (USE_SUPABASE) {
     await kvSet(KV_KEY, map);
     // Y se vuelve a leer. `kvSet` no lanza excepción cuando falla —a propósito,
@@ -549,6 +554,8 @@ export async function agendaCitasDeTenant(tenantId: string): Promise<boolean> {
   const t = await getTenant(tenantId);
   if (!t) return false;
   if (t.sector) return t.sector !== "gestoria";
+  // Con negocio de agenda fijado, Pablo atiende como ese negocio y agenda.
+  if (t.negocioAgenda) return true;
   return (t.sectorPrompt ?? "vendedor") !== "vendedor";
 }
 

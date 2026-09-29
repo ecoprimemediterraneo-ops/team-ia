@@ -21,10 +21,11 @@
 // ordena.
 
 import "server-only";
-import { getPerfilSector, resolverSector, type PerfilSector, type SectorNegocio } from "./sectores";
+import { getPerfilSector, resolverSector, SECTOR_POR_DEFECTO, type PerfilSector, type SectorNegocio } from "./sectores";
 import { getTenant } from "./tenants";
 import { getFicha } from "./ficha";
-import type { Ficha } from "./tenants";
+import type { Ficha, Tenant } from "./tenants";
+import type { BusinessBooking } from "./booking";
 import type { AgentSlug } from "./agents";
 
 export type Canal = "whatsapp" | "voz" | "instagram" | "email" | "panel";
@@ -87,6 +88,9 @@ export type IdentidadNegocio = {
   promos?: string[];
   publico?: string;
   notas?: string;
+  direccion?: string;
+  horario?: string;
+  telefono?: string;
 };
 
 function identidadDesdeFicha(f: Ficha | null, perfil: PerfilSector): IdentidadNegocio {
@@ -102,6 +106,62 @@ function identidadDesdeFicha(f: Ficha | null, perfil: PerfilSector): IdentidadNe
   };
 }
 
+const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+
+/** Horario de la ficha en palabras: "lunes a sábado de 09:00 a 20:00; domingo cerrado". */
+export function horarioHablado(h: BusinessBooking["horario"] | undefined): string {
+  if (!h) return "";
+  const txt = (d: number) => {
+    const x = h[d as keyof typeof h];
+    return x?.abierto && x.franjas?.length ? x.franjas.map((f) => `de ${f.desde} a ${f.hasta}`).join(" y ") : "cerrado";
+  };
+  // Se agrupan los días seguidos (lunes→sábado, y el domingo al final) con el mismo horario.
+  const orden = [1, 2, 3, 4, 5, 6, 0];
+  const grupos: { desde: number; hasta: number; t: string }[] = [];
+  for (const d of orden) {
+    const t = txt(d);
+    const u = grupos[grupos.length - 1];
+    if (u && u.t === t) u.hasta = d; else grupos.push({ desde: d, hasta: d, t });
+  }
+  return grupos.map((g) => `${g.desde === g.hasta ? DIAS[g.desde] : `${DIAS[g.desde]} a ${DIAS[g.hasta]}`} ${g.t}`).join("; ");
+}
+
+/** Servicios activos de la ficha con precio y duración: "Manicura (18 €, 30 min)". */
+export function serviciosHablados(b: Pick<BusinessBooking, "servicios"> | null | undefined): string[] {
+  return (b?.servicios || []).filter((x) => x.activo !== false).map((x) => {
+    const d = [x.precioEUR ? `${x.precioEUR} €` : "", x.durationMin ? `${x.durationMin} min` : ""].filter(Boolean).join(", ");
+    return d ? `${x.nombre} (${d})` : x.nombre;
+  });
+}
+
+/**
+ * Identidad sacada de la FICHA DEL NEGOCIO de agenda (nombre, dirección,
+ * horario, servicios con precio). Es la que usan Pablo y Carmen cuando el
+ * tenant se presenta como ese negocio (`tenant.negocioAgenda`): así lo que
+ * dicen coincide siempre con lo que ve el cliente al reservar, sin textos fijos.
+ */
+export function identidadDesdeNegocio(b: BusinessBooking, perfil: PerfilSector): IdentidadNegocio {
+  const partes = (b.direccion || "").split(",").map((x) => x.trim()).filter(Boolean);
+  const ciudad = partes.length > 1 ? partes[partes.length - 2].replace(/^\d{5}\s*/, "") : undefined;
+  return {
+    nombre: b.nombre?.trim() || "este negocio",
+    sectorLabel: perfil.label,
+    ciudad,
+    servicios: serviciosHablados(b),
+    direccion: b.direccion?.trim() || undefined,
+    horario: horarioHablado(b.horario) || undefined,
+    telefono: b.telefono?.trim() || undefined,
+  };
+}
+
+/** El negocio de agenda del tenant si el tenant se presenta como él (tiene `negocioAgenda` y es suyo). */
+export async function negocioDeIdentidad(tenant: Tenant | null): Promise<BusinessBooking | null> {
+  if (!tenant?.negocioAgenda) return null;
+  const { getBusinessBySlug } = await import("./booking");
+  const b = await getBusinessBySlug(tenant.negocioAgenda).catch(() => null);
+  return b && b.tenantId === tenant.id ? b : null;
+}
+
 function bloqueIdentidad(id: IdentidadNegocio, perfil: PerfilSector): string {
   const v = perfil.vocabulario;
   const lineas = [
@@ -111,6 +171,9 @@ function bloqueIdentidad(id: IdentidadNegocio, perfil: PerfilSector): string {
   if (id.servicios?.length) {
     lineas.push(`${cap(v.servicioPlural)} que ofrece: ${id.servicios.join("; ")}.`);
   }
+  if (id.direccion) lineas.push(`Dirección: ${id.direccion}.`);
+  if (id.horario) lineas.push(`Horario: ${id.horario}.`);
+  if (id.telefono) lineas.push(`Teléfono: ${id.telefono}.`);
   if (id.promos?.length) lineas.push(`Ofertas vigentes: ${id.promos.join("; ")}.`);
   if (id.publico) lineas.push(`A quién atiende: ${id.publico}.`);
   if (id.tono) lineas.push(`Tono de la marca: ${id.tono}`);
@@ -311,9 +374,13 @@ export async function resolverPersona(opts: {
 }): Promise<PersonaResuelta> {
   const { tenantId, agente, canal, extra } = opts;
   const tenant = await getTenant(tenantId);
-  const sector = tenant ? resolverSector(tenant) : null;
+  // Pablo y Carmen hablan en nombre del negocio de agenda cuando el tenant tiene
+  // uno fijado (`negocioAgenda`): la cuenta propia se presenta como el salón de
+  // demo, no como la persona comercial de AI-Team.
+  const negocio = agente === "pablo" || agente === "carmen" ? await negocioDeIdentidad(tenant) : null;
+  const sector = tenant ? (resolverSector(tenant) ?? (negocio ? SECTOR_POR_DEFECTO : null)) : null;
   const perfil = getPerfilSector(sector);
-  const ficha = await getFicha(tenantId);
+  const ficha = negocio ? null : await getFicha(tenantId);
 
   return {
     sector,
@@ -323,7 +390,7 @@ export async function resolverPersona(opts: {
       nombreAgente: NOMBRE_AGENTE[agente],
       canal,
       perfil,
-      identidad: identidadDesdeFicha(ficha, perfil),
+      identidad: negocio ? identidadDesdeNegocio(negocio, perfil) : identidadDesdeFicha(ficha, perfil),
       extra,
     }),
   };

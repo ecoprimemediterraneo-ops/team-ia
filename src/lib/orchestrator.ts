@@ -90,10 +90,17 @@ export type ReservaInput = {
   paddingAfterMin?: number;
   /** Profesional pedida (negocios con personal). Sin ella se asigna la primera libre que haga el servicio. */
   empleadoId?: string;
+  /**
+   * Cita cogida EN UNA LLAMADA de Carmen: la confirmación al cliente (WhatsApp
+   * con plantilla) no sale ahora, sino al colgar, desde el webhook de fin de
+   * llamada, junto con cualquier cambio o anulación de esa misma llamada. El
+   * aviso al dueño sí sale al momento.
+   */
+  confirmarAlColgar?: boolean;
 };
 
 export type ReservaResult =
-  | { ok: true; eventId: string; htmlLink?: string; eventLogId?: string; simulated?: boolean }
+  | { ok: true; eventId: string; htmlLink?: string; eventLogId?: string; simulated?: boolean; /** La cita GUARDADA en la agenda del negocio (si lo tiene). */ recordId?: string }
   | { ok: false; reason: "slot_taken"; suggested?: string; motivo?: "fuera_de_horario" | "pasado" | "ocupado" | "no_calendar" }
   | { ok: false; reason: "locked" }
   | { ok: false; reason: "error"; detail: string };
@@ -295,7 +302,7 @@ export async function reservarSlot(input: ReservaInput): Promise<ReservaResult> 
 }
 
 async function reservarConNegocio(input: ReservaInput, tenantId: string): Promise<ReservaResult | null> {
-  const { getBusinessByTenant, resolveCalendarEmail, servicioParaTexto, resolverServicio, disponibilidadParaReserva, registrarRecordDeCita, avisosDeCitaNueva } =
+  const { getBusinessByTenant, resolveCalendarEmail, servicioPedido, resolverServicio, disponibilidadParaReserva, registrarRecordDeCita, avisosDeCitaNuevaTrasResponder } =
     await import("./booking");
   const business = await getBusinessByTenant(tenantId);
   if (!business) return null;
@@ -305,7 +312,8 @@ async function reservarConNegocio(input: ReservaInput, tenantId: string): Promis
   let durationMin = input.durationMin;
   let pB = input.paddingBeforeMin ?? 0;
   let pA = input.paddingAfterMin ?? 0;
-  const svPedido = servicioParaTexto(business, input.motivo);
+  // El servicio PEDIDO; si el negocio no lo tiene, ninguno (nunca el primero de la lista).
+  const svPedido = servicioPedido(business, input.motivo);
   let asignado: { id: string; nombre: string } | undefined;
   if (!durationMin) {
     const sv = svPedido;
@@ -336,6 +344,13 @@ async function reservarConNegocio(input: ReservaInput, tenantId: string): Promis
     attendees: input.attendees,
     location: input.location,
     simulate: process.env.BOOKING_SIMULATE === "1" ? true : undefined,
+    googleDespues: true,
+    alCrearEvento: async (eventId, htmlLink) => {
+      const guardada = record as { id: string } | null;
+      if (!guardada || eventId.startsWith("int_")) return;
+      const { actualizarRecord } = await import("./booking");
+      await actualizarRecord(guardada.id, "google-despues", (f) => (f.eventId?.startsWith("int_") ? { ...f, eventId, htmlLink } : null));
+    },
     revalidate: async () => {
       ultima = await disponibilidadParaReserva(tenantId, { startIso: startNorm, durationMin: durationMin!, paddingBeforeMin: pB, paddingAfterMin: pA, serviceId: svPedido?.id, preferidoId: input.empleadoId }, input.redirectUri);
       if (ultima.negocio && ultima.available) asignado = ultima.empleado ? { id: ultima.empleado.id, nombre: ultima.empleado.nombre } : undefined;
@@ -352,18 +367,21 @@ async function reservarConNegocio(input: ReservaInput, tenantId: string): Promis
         cliente: { nombre: input.nombre, telefono: input.customerPhone || "", email: input.attendees?.[0] },
         eventId: cita.eventId, htmlLink: cita.htmlLink, baseUrl,
         comensales: input.comensales, zona: input.zona,
-      }, { sinAvisos: true });
+      }, { sinAvisos: true, nueva: true });
     },
   });
 
   if (res.ok) {
     // Fuera del candado: los avisos tardan y no deben retener la agenda.
-    if (record) {
+    // Y DESPUÉS de responder: aviso al dueño, WhatsApp y email no retienen a
+    // quien reserva (Carmen esperaba 11 s). Si fallan, quedan pendientes y se reintentan.
+    const guardada = record as { id: string } | null;
+    if (guardada) {
       let baseUrl: string | undefined;
       try { baseUrl = new URL(input.redirectUri).origin; } catch { baseUrl = undefined; }
-      await avisosDeCitaNueva(record, baseUrl).catch((e) => console.error("[orchestrator] avisos de cita (no crítico):", e));
+      avisosDeCitaNuevaTrasResponder(record!, baseUrl, { sinConfirmacionCliente: input.confirmarAlColgar });
     }
-    return res;
+    return { ...res, ...(guardada && res.ok ? { recordId: guardada.id } : {}) } as ReservaResult;
   }
   if (res.reason === "slot_taken") {
     const u = ultima as Awaited<ReturnType<typeof disponibilidadParaReserva>> | null;

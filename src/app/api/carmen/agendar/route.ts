@@ -41,7 +41,7 @@ import { resolverSalonDeLlamada, MENSAJE_SIN_SALON } from "@/lib/carmen-salon";
 import { headers } from "next/headers";
 import { timingSafeEqual } from "node:crypto";
 import { normalizarFecha, PASADO } from "@/lib/fecha-es";
-import { getBusinessBySlug } from "@/lib/booking";
+import { getBusinessBySlug, citaGuardada, servicioPedido } from "@/lib/booking";
 import { reservarSlot } from "@/lib/orchestrator";
 import { agenteContratado } from "@/lib/tenants";
 import { huecosCercanos, listaDeOpciones } from "@/lib/guion-huecos";
@@ -154,7 +154,11 @@ export async function POST(req: Request) {
     return undefined;
   };
 
-  const nombre = get("nombre", "customer_name", "name", "cliente", "nombre_cliente");
+  // OJO: "name" NO es el nombre del cliente. En la raíz del cuerpo Retell manda
+  // `name: "agendar_cita"` (el nombre de la FUNCIÓN): si Carmen no pasaba el
+  // nombre, la cita se guardaba a nombre de "agendar_cita" (llamada del 29/09).
+  const nombreCrudo = get("nombre", "customer_name", "cliente", "nombre_cliente");
+  const nombre = nombreCrudo && !/^(agendar_cita|gestionar_cita|cancelar|urgencia)$/i.test(nombreCrudo) ? nombreCrudo : undefined;
   // INGLÉS: Retell manda `idioma: "en"` (o se deduce de lo que ha dicho el
   // cliente). Lo que Carmen lee en voz alta sale en su idioma.
   const idiomaPedido = (get("idioma", "language", "lang") || "").toLowerCase();
@@ -236,7 +240,9 @@ async function agendarEnLlamada(o: {
     return responder({
       success: false,
       reason: "missing_fields",
-      message: "Me faltan datos para agendar: necesito el nombre, el motivo y la fecha con la hora.",
+      message: !nombre && motivo && fechaRaw
+        ? "¿A nombre de quién pongo la cita?"
+        : "Me faltan datos para agendar: necesito el nombre, el motivo y la fecha con la hora.",
       missing: { nombre: !nombre, motivo: !motivo, fecha_hora: !fechaRaw },
     });
   }
@@ -301,6 +307,23 @@ async function agendarEnLlamada(o: {
     ? (negocio?.empleados || []).find((e) => e.activo && norm(e.nombre).split(/\s+/)[0] === norm(profesionalPedida).split(/\s+/)[0])
     : undefined;
 
+  // SERVICIO QUE EL SALÓN NO TIENE: se dice y se ofrecen los que sí hay. Nunca se
+  // guarda "por defecto" el primero de la lista (29/09: un "blanqueamiento" acabó
+  // guardado como "Depilación de cejas").
+  if (negocio && !servicioPedido(negocio, motivo!)) {
+    const hay = negocio.servicios.filter((x) => x.activo).map((x) => x.nombre);
+    return responder({
+      success: false,
+      reason: "servicio_no_disponible",
+      message: L(
+        `Eso no lo hacemos en ${negocio.nombre}. Lo que sí tenemos es: ${hay.join(", ")}. ¿Te interesa alguno?`,
+        `We don't offer that at ${negocio.nombre}. What we do offer: ${hay.join(", ")}. Would any of these suit you?`,
+      ),
+      servicios: hay,
+      nota_para_carmen: "El servicio pedido no existe en este negocio: NO confirmes ninguna cita. Ofrece los servicios de la lista y, si elige uno, vuelve a llamar a agendar_cita con ese servicio.",
+    });
+  }
+
   const pedir = () => reservarSlot({
     tenantId: salon.tenantId,
     userEmail: process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com",
@@ -312,6 +335,7 @@ async function agendarEnLlamada(o: {
     agenteOrigen: "carmen",
     customerPhone: telefono,
     empleadoId: emp?.id,
+    confirmarAlColgar: true,
   });
   let result = await pedir();
   // Un fallo técnico o la agenda ocupada un instante: se reintenta UNA vez antes de decir nada.
@@ -321,9 +345,24 @@ async function agendarEnLlamada(o: {
     result = await pedir();
   }
 
+  // ÉXITO DE VERDAD = la cita está GUARDADA en la agenda del negocio. Si no se
+  // puede comprobar, Carmen no confirma: una cita que no queda guardada no existe.
+  if (result.ok && negocio) {
+    if (!(await citaGuardada(result.recordId, startIso))) {
+      console.error(`[carmen/agendar] RESERVA SIN GUARDAR: ok del orquestador pero la cita ${result.recordId ?? "(sin id)"} no está en la agenda de ${negocio.slug} (evento ${result.eventId}).`);
+      return responder({
+        success: false,
+        reason: "no_guardada",
+        message: L("Perdona, no he podido dejar la cita guardada, así que todavía no está confirmada. ¿Lo intento otra vez?", "Sorry, I couldn't save the appointment, so it isn't confirmed yet. Shall I try again?"),
+        nota_para_carmen: "La cita NO ha quedado guardada: no la confirmes ni digas que le llegará confirmación.",
+      });
+    }
+  }
   if (result.ok) {
     return responder({
       success: true,
+      confirmada: true,
+      recordId: result.recordId,
       message: L(`Perfecto, te he agendado ${formatoHumano(startIso)}. ¡Te esperamos!`, `Perfect, you're booked for ${startIso.slice(0, 10)} at ${startIso.slice(11, 16)}. See you then!`),
       eventId: result.eventId,
       htmlLink: result.htmlLink,

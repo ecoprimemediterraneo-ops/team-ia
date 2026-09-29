@@ -79,7 +79,7 @@ export async function POST(req: Request) {
   if (!telefono) return responder(false, "No tengo tu número para buscar la cita. ¿Me lo dices, por favor?", { reason: "no_phone" });
 
   const citas = await citasActivasDeCliente(salon.slug, telefono).catch(() => null);
-  if (!citas) return responder(false, "Ahora mismo no puedo consultar la agenda. ¿Te llamamos en un momento para cerrarlo?", { reason: "error" });
+  if (!citas) return responder(false, "Ahora mismo no me carga la agenda. ¿Me das un segundo y lo vuelvo a mirar?", { reason: "error" });
   if (!citas.length) return responder(false, "No encuentro ninguna cita a tu nombre con este teléfono. ¿Puede estar con otro número?", { reason: "sin_citas" });
 
   const pedida = get("cita", "cita_actual", "fecha_cita");
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
 
   if (accion === "cancelar") {
     const r = await cambiarEstadoRecord(cita.id, "cancelada", redirectUri, salon.slug);
-    if (!r.ok) return responder(false, "No he podido cancelarla ahora mismo. Te la cancela alguien del equipo en un momento.", { reason: r.reason });
+    if (!r.ok) return responder(false, "No he podido cancelarla ahora mismo. ¿Lo intento otra vez?", { reason: r.reason });
     return responder(true, `Hecho, he cancelado tu cita de ${describir(cita)}. ¿Quieres que te busque otro día?`, { citaCancelada: cita.startIso });
   }
 
@@ -123,7 +123,7 @@ export async function POST(req: Request) {
       });
     }
     if (r.reason === "no_movible") return responder(false, "Esa cita ya no está activa, así que no la puedo mover. ¿Te busco una nueva?", { reason: "no_movible" });
-    return responder(false, "No he podido cambiarla ahora mismo. Te llamamos en un momento para cerrarlo.", { reason: r.reason });
+    return responder(false, "No he podido cambiarla ahora mismo. ¿Lo intento otra vez o prefieres otra hora?", { reason: r.reason });
   }
 
   return responder(false, "¿Quieres cancelar la cita o cambiarla de hora?", { reason: "accion_desconocida" });

@@ -182,6 +182,17 @@ export async function POST(req: Request) {
     }).catch(() => {});
   }
   }
+  // AL COLGAR: WhatsApp al cliente con lo que se ha hecho en la llamada (cita
+  // cogida, cambiada o anulada). Sin cambios, no se manda nada.
+  if ((body as { event?: string }).event === "call_ended" && body.call) {
+    const { whatsappAlColgar } = await import("@/lib/carmen-al-colgar");
+    const alColgar = await whatsappAlColgar(body.call as import("@/lib/carmen-al-colgar").LlamadaRetell).catch((e) => ({
+      ok: false, motivo: e instanceof Error ? e.message : String(e), avisos: [],
+    }));
+    console.log("[carmen/webhook] al colgar:", JSON.stringify({ motivo: alColgar.motivo, avisos: alColgar.avisos.map((a) => `${a.tipo}:${a.enviado ? "enviado" : a.modo}`) }));
+    return NextResponse.json({ ok: true, alColgar });
+  }
+
   // Lo normal: la llamada acaba sin cita que registrar aquí (las citas se cogen
   // en directo con agendar_cita, y Retell avisa también de call_started y de
   // llamadas sin reserva). Se contesta 200: con un 4xx Retell reintenta en bucle.

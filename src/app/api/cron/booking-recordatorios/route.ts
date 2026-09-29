@@ -10,7 +10,7 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { cronAuthError } from "@/lib/cron-auth";
-import { listRecords, getBusinessBySlug, getRecord, actualizarRecord, localToEpoch } from "@/lib/booking";
+import { listRecords, getBusinessBySlug, getRecord, actualizarRecord, localToEpoch, reintentarAvisosPendientes } from "@/lib/booking";
 import crypto from "node:crypto";
 import { agendaTryLock, agendaUnlock } from "@/lib/booking-orchestrator";
 import { enviarRecordatorio } from "@/lib/booking-email";
@@ -136,8 +136,15 @@ async function run(req: Request) {
     return null;
   });
 
+  // Avisos de citas nuevas que no salieron al reservar (Meta caído, plantilla
+  // rechazada…): se reintentan aquí, hasta 6 veces.
+  const avisosPendientes = await reintentarAvisosPendientes().catch((e) => {
+    console.error("[booking-recordatorios] reintento de avisos falló (no crítico):", e);
+    return null;
+  });
+
   return NextResponse.json({
-    ok: true, enviados, fallidos, revisados: all.length, detalle, espera,
+    ok: true, enviados, fallidos, revisados: all.length, detalle, espera, avisosPendientes,
     // Cuántas reservas de restaurante se han dejado pasar por tener el
     // interruptor apagado. Un cero aquí con reservas de mesa en la ventana
     // significa que el flag ya está encendido.

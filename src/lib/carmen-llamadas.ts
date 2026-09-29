@@ -200,9 +200,16 @@ export type InformeCarmen = { desde: string; hasta: string; llamadas: number; ci
 export async function informeSemanal(tenantId: string, ahora = new Date()): Promise<InformeCarmen> {
   const hasta = new Date(ahora);
   const desde = new Date(ahora.getTime() - 7 * 86_400_000);
-  const meses = [...new Set([monthKey(desde), monthKey(hasta)])];
+  // Las citas se guardan en el mes de la CITA (su `ts`), que puede ser semanas
+  // después de la llamada: se leen también los 3 meses siguientes y se cuentan
+  // por el momento en que se cerraron (`meta.agendadaEn`; las antiguas, sin él,
+  // por su `ts` como siempre).
+  const mesSig = (d: Date, n: number) => monthKey(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1)));
+  const meses = [...new Set([monthKey(desde), monthKey(hasta), mesSig(hasta, 1), mesSig(hasta, 2), mesSig(hasta, 3)])];
+  const dentro = (iso?: string) => { const t = Date.parse(iso || ""); return t >= desde.getTime() && t <= hasta.getTime(); };
+  const cuando = (e: AnalyticsEvent) => (e.type === "appointment_set" && (e.meta as { agendadaEn?: string } | undefined)?.agendadaEn) || e.ts;
   const ev = (await Promise.all(meses.map((m) => getMonthEvents(tenantId, m).catch(() => [] as AnalyticsEvent[])))).flat()
-    .filter((e) => e.channel === "carmen" && Date.parse(e.ts) >= desde.getTime() && Date.parse(e.ts) <= hasta.getTime());
+    .filter((e) => e.channel === "carmen" && dentro(cuando(e)));
   const llamadas = ev.filter((e) => e.type === "message_in" && (e.meta as { kind?: string } | undefined)?.kind === "llamada").length;
   const citasEv = ev.filter((e) => e.type === "appointment_set");
   const salientes = new Set(ev.filter((e) => (e.meta as { kind?: string } | undefined)?.kind === "llamada_saliente").map((e) => cola9(e.senderId || "")));

@@ -11,6 +11,7 @@
 //   BOOKING_RECORDATORIO_TEMPLATE=aiteam_cita_recordatorio
 //   CARMEN_INFORME_TEMPLATE=aiteam_informe_semanal
 //   CARMEN_URGENCIA_TEMPLATE=aiteam_urgencia_dueno
+//   BOOKING_AVISO_DUENO_TEMPLATE=aiteam_aviso_dueno_cita (es el valor por defecto)
 const token = process.env.WHATSAPP_ACCESS_TOKEN;
 const waba = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID || "1409997207694647";
 if (!token) { console.error("Falta WHATSAPP_ACCESS_TOKEN"); process.exit(1); }
@@ -25,6 +26,7 @@ const P = [
   ["aiteam_cita_recordatorio", "en", "Hi {{1}}, this is a reminder of your appointment at {{2}} tomorrow: {{3}} ({{4}}). Address: {{5}}. Reply YES to confirm.", EJ5, "Cancel or change"],
   ["aiteam_informe_semanal", "es", "Resumen semanal de Carmen: {{1}} llamadas atendidas, {{2}} citas cerradas, {{3}} perdidas rescatadas y {{4}} euros recuperados.", ["12", "5", "2", "180"]],
   ["aiteam_informe_semanal", "en", "Carmen's weekly summary: {{1}} calls answered, {{2}} appointments booked, {{3}} missed calls recovered and {{4}} euros recovered.", ["12", "5", "2", "180"]],
+  ["aiteam_aviso_dueno_cita", "es", "Tienes una nueva cita reservada en {{1}}. La ha pedido {{2}} para el servicio {{3}}, el {{4}}. Si necesitas contactar con el cliente, su teléfono es {{5}}. Puedes verla y gestionarla desde tu panel de citas.", ["Salón Marina", "Laura", "Corte y peinado", "martes 6 de octubre a las 10:30", "+34600000000"]],
   ["aiteam_urgencia_dueno", "es", "Urgencia en una llamada de Carmen. Cliente: {{1}}. Resumen: {{2}}. Llámale en cuanto puedas.", ["+34600000000", "dolor fuerte tras el tratamiento"]],
   ["aiteam_urgencia_dueno", "en", "Urgent call handled by Carmen. Customer: {{1}}. Summary: {{2}}. Please call them back as soon as possible.", ["+34600000000", "strong pain after the treatment"]],
 ];

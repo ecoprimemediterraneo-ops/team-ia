@@ -26,6 +26,8 @@ import { getTenant, DEFAULT_TENANT_ID } from "./tenants";
 import { freeBusyQuery, deleteEvent, esEventoInterno } from "./calendar";
 import { reservarSlotBooking, conAgenda, agendaTryLock, agendaUnlock } from "./booking-orchestrator";
 import { benditoArteSeed } from "./booking-seed-bendito";
+import { cacheCorta, ttlDatosFijos } from "./cache-corta";
+import { despuesDeResponder, guardarPendiente, listarPendientes, quitarPendiente } from "./segundo-plano";
 import { configRestaurante, estadoInicialReserva } from "./restaurante";
 import { logEvent, makeEventId } from "./event-log";
 
@@ -177,6 +179,8 @@ export type BookingRecord = {
   creadaEn: string;
   canceladaEn?: string;
   reprogramadaEn?: string; // última vez que se movió/reprogramó (para la campanita)
+  /** WhatsApps ya enviados al colgar una llamada de Carmen: "<callId>:<tipo>" (para no repetir). */
+  avisosAlColgar?: string[];
   recordatorioEnviado?: boolean;
   /** Cuándo salió el recordatorio (para llamar si en 3 h no confirma). */
   recordatorioEnviadoEn?: string;
@@ -357,7 +361,10 @@ async function cambiarLocal<T>(file: string, fn: (actual: T) => T | Promise<T>):
   }
 }
 
-async function readConfigs(): Promise<ConfigMap> {
+const cacheConfigs = cacheCorta<ConfigMap>(ttlDatosFijos(supabaseEnabled()), leerConfigsDelAlmacen);
+const readConfigs = (): Promise<ConfigMap> => cacheConfigs.leer();
+
+async function leerConfigsDelAlmacen(): Promise<ConfigMap> {
   let data: ConfigMap | null = null;
   if (supabaseEnabled()) data = await kvGet<ConfigMap>(KV_CONFIGS);
   else data = await readLocal<ConfigMap>(CONFIGS_FILE);
@@ -387,6 +394,7 @@ async function readConfigs(): Promise<ConfigMap> {
   return data;
 }
 async function writeConfigs(map: ConfigMap): Promise<void> {
+  cacheConfigs.olvidar();
   if (supabaseEnabled()) await kvSet(KV_CONFIGS, map);
   else await writeLocal(CONFIGS_FILE, map);
 }
@@ -977,13 +985,15 @@ export type RegistrarRecordInput = {
  */
 export async function registrarRecordDeCita(
   input: RegistrarRecordInput,
-  opts?: { sinAvisos?: boolean },
+  opts?: { sinAvisos?: boolean; nueva?: boolean },
 ): Promise<BookingRecord | null> {
   const business = await getBusinessBySlug(input.slug);
   if (!business) return null;
-  // Idempotencia: si ya existe un record con este eventId, no dupliques.
-  if (input.eventId) {
-    const existente = (await listRecords()).find((r) => r.eventId === input.eventId && r.estado !== "cancelada");
+  // Idempotencia: si ya existe un record con este eventId, no dupliques. Con
+  // `nueva` el id se acaba de inventar dentro del candado: no puede existir.
+  if (input.eventId && !opts?.nueva) {
+    // Solo las citas de ESE negocio (antes leía todas las de todos los negocios).
+    const existente = (await listRecordsDeNegocio(business.slug)).find((r) => r.eventId === input.eventId && r.estado !== "cancelada");
     if (existente) return existente;
   }
   const startNorm = input.startIso.length === 16 ? `${input.startIso}:00` : input.startIso;
@@ -1025,10 +1035,32 @@ export async function registrarRecordDeCita(
 }
 
 /** Aviso al dueño y confirmación al cliente de una cita agendada por un agente. Best-effort. */
-export async function avisosDeCitaNueva(record: BookingRecord, baseUrl?: string): Promise<void> {
+/**
+ * ¿Está la cita DE VERDAD en la agenda? Guardada, activa y a la hora pedida.
+ * Carmen solo confirma si esto es cierto (llamada del 29/09: confirmó una cita
+ * que no aparecía en la agenda).
+ */
+export async function citaGuardada(recordId: string | undefined, startIso: string): Promise<boolean> {
+  if (!recordId) return false;
+  const r = await getRecord(recordId).catch(() => null);
+  return !!r && r.estado !== "cancelada" && r.startIso.slice(0, 16) === startIso.slice(0, 16);
+}
+
+export async function avisosDeCitaNueva(
+  record: BookingRecord,
+  baseUrl?: string,
+  opts?: { sinConfirmacionCliente?: boolean; solo?: { dueno?: boolean; cliente?: boolean } },
+): Promise<{ faltan: { dueno?: boolean; cliente?: boolean } }> {
+  const faltan: { dueno?: boolean; cliente?: boolean } = {};
   const business = await getBusinessBySlug(record.slug).catch(() => null);
-  if (!business) return;
-  await notificarDueno(record, "nueva");
+  if (!business) return { faltan };
+  const toca = (p: "dueno" | "cliente") => !opts?.solo || !!opts.solo[p];
+  if (toca("dueno")) {
+    const d = await notificarDueno(record, "nueva");
+    if (!d.ok) faltan.dueno = true;
+  }
+  // Cita de una llamada de Carmen: la confirmación al cliente sale al colgar (carmen-al-colgar.ts).
+  if (opts?.sinConfirmacionCliente || !toca("cliente")) return { faltan };
   // Confirmación al CLIENTE (email + WhatsApp con enlace de cancelar/reprogramar).
   // Cuando la cita la agenda un agente (Pablo por WhatsApp, Carmen, Eva, Lucía), la
   // clienta recibe la MISMA confirmación con enlace que en la reserva online. Reutiliza
@@ -1036,10 +1068,54 @@ export async function avisosDeCitaNueva(record: BookingRecord, baseUrl?: string)
   try {
     const base = baseUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://aiteam.marketing";
     const { enviarConfirmacion } = await import("./booking-email");
-    await enviarConfirmacion(record, business, base);
+    const r = await enviarConfirmacion(record, business, base);
+    if (r.whatsapp.modo === "error") faltan.cliente = true;
   } catch (e) {
     console.error("[booking] confirmación al cliente (whatsapp/email) falló (no crítico):", e);
+    faltan.cliente = true;
   }
+  return { faltan };
+}
+
+/**
+ * Los avisos de una cita nueva, DESPUÉS de responder (segundo-plano.ts): quien
+ * reserva —Carmen al teléfono, Pablo por WhatsApp— no espera a Meta ni al
+ * correo. Lo que no sale queda en la cola de pendientes y se reintenta.
+ */
+export function avisosDeCitaNuevaTrasResponder(record: BookingRecord, baseUrl?: string, opts?: { sinConfirmacionCliente?: boolean }): void {
+  despuesDeResponder(`avisos de ${record.id}`, async () => {
+      let faltan: { dueno?: boolean; cliente?: boolean } = { dueno: true, cliente: !opts?.sinConfirmacionCliente };
+      let error: string | undefined;
+      try {
+        faltan = (await avisosDeCitaNueva(record, baseUrl, opts)).faltan;
+      } catch (e) {
+        error = e instanceof Error ? e.message : String(e);
+      }
+      if (faltan.dueno || faltan.cliente) {
+        await guardarPendiente({
+          id: record.id, tipo: "avisos_cita_nueva", recordId: record.id, baseUrl, sinConfirmacionCliente: opts?.sinConfirmacionCliente,
+          faltan, intentos: 1, desde: new Date().toISOString(), ultimoError: error,
+        });
+      }
+    });
+}
+
+/** Reintenta los avisos que no salieron (lo llama el cron de recordatorios). */
+export async function reintentarAvisosPendientes(): Promise<{ reintentados: number; enviados: number; abandonados: number }> {
+  const out = { reintentados: 0, enviados: 0, abandonados: 0 };
+  for (const a of await listarPendientes()) {
+    const r = await getRecord(a.recordId).catch(() => null);
+    if (!r || r.estado === "cancelada") { await quitarPendiente(a.id); continue; }
+    out.reintentados++;
+    const { faltan } = await avisosDeCitaNueva(r, a.baseUrl, { sinConfirmacionCliente: a.sinConfirmacionCliente, solo: a.faltan }).catch(() => ({ faltan: a.faltan }));
+    if (!faltan.dueno && !faltan.cliente) { await quitarPendiente(a.id); out.enviados++; continue; }
+    if (a.intentos + 1 >= 6) {
+      console.error(`[booking] AVISO ABANDONADO tras 6 intentos: cita ${a.recordId}, faltan ${JSON.stringify(faltan)}`);
+      await quitarPendiente(a.id); out.abandonados++; continue;
+    }
+    await guardarPendiente({ ...a, faltan, intentos: a.intentos + 1 });
+  }
+  return out;
 }
 
 /**
@@ -1050,9 +1126,9 @@ export async function avisosDeCitaNueva(record: BookingRecord, baseUrl?: string)
  *   - WhatsApp de plantilla   → flag OWNER_WHATSAPP_ENABLED (plantilla aviso_dueno_cita).
  * Dynamic import para evitar ciclos estáticos con booking-email/booking-owner-whatsapp.
  */
-async function notificarDueno(record: BookingRecord, tipo: "nueva" | "cancelada"): Promise<void> {
+async function notificarDueno(record: BookingRecord, tipo: "nueva" | "cancelada"): Promise<{ ok: boolean }> {
   const business = await getBusinessBySlug(record.slug).catch(() => null);
-  if (!business) return;
+  if (!business) return { ok: true };
   // Canal 1 — email (self-gated por OWNER_NOTIFY_ENABLED; dedup interno).
   try {
     const { ownerNotifyEnabled, enviarAvisoDueno } = await import("./booking-email");
@@ -1061,11 +1137,14 @@ async function notificarDueno(record: BookingRecord, tipo: "nueva" | "cancelada"
     console.error("[booking] aviso al dueño (email) falló (no crítico):", e);
   }
   // Canal 2 — WhatsApp de plantilla (self-gated por OWNER_WHATSAPP_ENABLED; fail-safe).
+  // Es el que cuenta para reintentar: si Meta lo rechaza, queda pendiente.
   try {
     const { enviarAvisoDuenoWhatsApp } = await import("./booking-owner-whatsapp");
-    await enviarAvisoDuenoWhatsApp(record, business, tipo);
+    const r = await enviarAvisoDuenoWhatsApp(record, business, tipo);
+    return { ok: r.enviado || !["graph_error", "error", "missing_credentials"].includes(r.modo) };
   } catch (e) {
     console.error("[booking] aviso al dueño (whatsapp) falló (no crítico):", e);
+    return { ok: false };
   }
 }
 
@@ -2168,8 +2247,8 @@ function seedBusinesses(): ConfigMap {
   const demo: BusinessBooking = {
     slug: "demo",
     tenantId: DEFAULT_TENANT_ID,
-    nombre: "Clínica Bella (demo)",
-    descripcion: "Centro de estética y belleza. Reserva online en segundos — cancelación gratis, sin comisiones.",
+    nombre: "Salón Bella",
+    descripcion: "Salón de belleza en Marbella: facial, uñas, pestañas, cejas, masajes y depilación. Reserva online en segundos — cancelación gratis, sin comisiones.",
     galeria: [
       "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=640&h=440&fit=crop&q=80",
       "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=640&h=440&fit=crop&q=80",
@@ -2296,12 +2375,23 @@ export async function disponibilidadParaReserva(
  * hay coincidencia — que es el mismo con el que se calcula la lista de huecos.
  */
 export function servicioParaTexto(business: BusinessBooking, texto: string): BookingService | undefined {
+  return servicioPedido(business, texto) ?? business.servicios.filter((s) => s.activo)[0];
+}
+
+/**
+ * El servicio que el cliente ha PEDIDO, o undefined si el negocio no lo ofrece.
+ * Sin caer al primero de la lista: una llamada pidió "blanqueamiento" en un
+ * salón y se guardó como "Depilación de cejas" (29/09/2026). Para RESERVAR se usa
+ * esta; `servicioParaTexto` (con el primero por defecto) queda solo para listas
+ * de huecos orientativas.
+ */
+export function servicioPedido(business: BusinessBooking, texto: string): BookingService | undefined {
   const activos = business.servicios.filter((s) => s.activo);
   const norm = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const q = norm(texto || "");
+  const q = norm(texto || "").trim();
+  if (!q) return undefined;
   const palabras = q.split(/[^a-z0-9]+/).filter((w) => w.length > 3);
-  const exacto = activos.find((s) => q && (norm(s.nombre).includes(q) || q.includes(norm(s.nombre))));
+  const exacto = activos.find((s) => norm(s.nombre).includes(q) || q.includes(norm(s.nombre)));
   if (exacto) return exacto;
-  const parcial = activos.find((s) => palabras.some((w) => norm(s.nombre).includes(w)));
-  return parcial ?? activos[0];
+  return activos.find((s) => palabras.some((w) => norm(s.nombre).split(/[^a-z0-9]+/).some((x) => x.length > 3 && (x.startsWith(w) || w.startsWith(x)))));
 }

@@ -128,7 +128,29 @@ async function writeBucket(tenantId: string, month: string, events: AnalyticsEve
   const raw = await fs.readFile(FILE, "utf-8").catch(() => "{}");
   const all = raw.trim() ? (JSON.parse(raw) as Record<string, AnalyticsEvent[]>) : {};
   all[k] = events;
-  await fs.writeFile(FILE, JSON.stringify(all, null, 2));
+  // Atómico: primero a un temporal y luego se renombra (quien lea a la vez ve el
+  // fichero viejo o el nuevo entero, nunca uno a medias).
+  const tmp = `${FILE}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
+  await fs.writeFile(tmp, JSON.stringify(all, null, 2));
+  await fs.rename(tmp, FILE);
+}
+
+// Leer-añadir-escribir un bucket, de uno en uno dentro del proceso: con los
+// avisos y registros que ahora van "después de responder", dos eventos del
+// mismo mes llegaban a la vez y el segundo pisaba al primero.
+const colaLocal = { p: Promise.resolve() as Promise<unknown> };
+const colaPorBucket = new Map<string, Promise<unknown>>();
+function enColaBucket<T>(clave: string, fn: () => Promise<T>): Promise<T> {
+  // En local los buckets comparten fichero: una sola cola para todos.
+  const k = USE_SUPABASE ? clave : "__fichero__";
+  const previa = (USE_SUPABASE ? colaPorBucket.get(k) : colaLocal.p) ?? Promise.resolve();
+  const r = previa.then(fn, fn);
+  const cola = r.catch(() => undefined);
+  if (USE_SUPABASE) {
+    colaPorBucket.set(k, cola);
+    void cola.then(() => { if (colaPorBucket.get(k) === cola) colaPorBucket.delete(k); });
+  } else colaLocal.p = cola;
+  return r;
 }
 
 // -----------------------------------------------------------------------------
@@ -175,11 +197,13 @@ export async function logEvent(
   };
 
   const month = monthKey(ts);
-  const bucket = await readBucket(tenantId, month);
-  if (bucket.some((e) => e.id === id)) return event; // dedup
-  bucket.push(event);
-  await writeBucket(tenantId, month, bucket);
-  return event;
+  return enColaBucket(kvKey(tenantId, month), async () => {
+    const bucket = await readBucket(tenantId, month);
+    if (bucket.some((e) => e.id === id)) return event; // dedup
+    bucket.push(event);
+    await writeBucket(tenantId, month, bucket);
+    return event;
+  });
 }
 
 /** Devuelve TODOS los eventos del tenant en el mes pedido ("YYYY-MM"). */

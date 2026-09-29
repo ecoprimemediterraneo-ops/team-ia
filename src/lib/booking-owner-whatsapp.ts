@@ -11,17 +11,17 @@
 // -----------------------------------------------------------------------------
 
 import "server-only";
-import { sendWhatsAppTemplate } from "./whatsapp-sender";
+import { sendWhatsAppTemplate, sendWhatsAppText } from "./whatsapp-sender";
 import { getTenant } from "./tenants";
 import type { BookingRecord, BusinessBooking } from "./booking";
 
-// Plantilla utility APROBADA en Meta (idioma es). Texto real:
-//   "AI-Team · Nueva cita / Cliente: {{1}} / Servicio: {{2}} / Cuándo: {{3}} / ..."
-// Variables del cuerpo, EN ORDEN:
-//   {{1}} cliente · {{2}} servicio · {{3}} cuándo (fecha y hora juntas)
-// OJO: el texto dice "Nueva cita" → SOLO sirve para citas nuevas, no cancelaciones.
-// Si en Meta el orden/nº de variables cambiara, ajústalo SOLO aquí.
-export const OWNER_TEMPLATE_NAME = "aviso_dueno_cita";
+// Plantilla utility del aviso al dueño (creada con scripts/whatsapp-plantillas.mjs):
+//   "Tienes una nueva cita reservada en {{1}}. La ha pedido {{2}} para el servicio
+//    {{3}}, el {{4}}. Si necesitas contactar con el cliente, su teléfono es {{5}}. …"
+// La antigua `aviso_dueno_cita` NO existe en Meta (error 132001 el 29/09/2026).
+// Mientras la nueva no esté aprobada, el aviso sale como TEXTO LIBRE (llega si el
+// dueño ha escrito al número del negocio en las últimas 24 h).
+export const OWNER_TEMPLATE_NAME = process.env.BOOKING_AVISO_DUENO_TEMPLATE || "aiteam_aviso_dueno_cita";
 export const OWNER_TEMPLATE_LANG = "es";
 
 /** Interruptor del aviso por WhatsApp al dueño. Off por defecto. */
@@ -71,11 +71,17 @@ function cuandoLargoES(iso: string): string {
  * Variables del cuerpo de la plantilla aviso_dueno_cita, en el orden de Meta:
  *   {{1}} cliente · {{2}} servicio · {{3}} cuándo (fecha y hora juntas)
  */
-export function construirParamsAvisoDueno(record: BookingRecord): string[] {
+export function construirParamsAvisoDueno(record: BookingRecord, business?: Pick<BusinessBooking, "nombre">): string[] {
   const servicio = [record.servicioNombre, record.varianteNombre].filter(Boolean).join(" · ") || "Cita";
   const cliente = record.cliente?.nombre || "Cliente";
   const cuando = cuandoLargoES(record.startIso);
-  return [cliente, servicio, cuando];
+  return [business?.nombre || "tu negocio", cliente, servicio, cuando, record.cliente?.telefono || "—"];
+}
+
+/** El mismo aviso en texto libre (mientras la plantilla no esté aprobada). */
+export function textoAvisoDueno(record: BookingRecord, business: Pick<BusinessBooking, "nombre">): string {
+  const [negocio, cliente, servicio, cuando, tel] = construirParamsAvisoDueno(record, business);
+  return `Nueva cita en ${negocio}\nCliente: ${cliente}\nServicio: ${servicio}\nCuándo: ${cuando}\nTeléfono: ${tel}`;
 }
 
 export type OwnerWaResult = { enviado: boolean; modo: string; detail?: string };
@@ -96,11 +102,17 @@ export async function enviarAvisoDuenoWhatsApp(
   const to = await resolveOwnerPhone(business);
   if (!to) return { enviado: false, modo: "sin_telefono_dueno" };
 
-  const params = construirParamsAvisoDueno(record);
-  const r = await sendWhatsAppTemplate(to, OWNER_TEMPLATE_NAME, OWNER_TEMPLATE_LANG, params);
-  if (!r.ok) {
-    console.error(`[booking] WhatsApp al dueño (nueva) falló: ${r.reason} — ${r.detail}`);
-    return { enviado: false, modo: r.reason, detail: r.detail };
+  const params = construirParamsAvisoDueno(record, business);
+  const rastro = { tenantId: business.tenantId, a: to, motivo: "aviso_dueno_cita" };
+  const r = await sendWhatsAppTemplate(to, OWNER_TEMPLATE_NAME, OWNER_TEMPLATE_LANG, params, rastro);
+  if (r.ok) return { enviado: true, modo: "plantilla" };
+  // Plantilla que no existe o aún no está aprobada (132000/132001/132015…): texto libre.
+  if (/\(#13200\d|\(#132015|does not exist|not approved|pending/i.test(r.detail || "")) {
+    const t = await sendWhatsAppText(to, textoAvisoDueno(record, business), rastro);
+    if (t.ok) return { enviado: true, modo: "texto_sin_plantilla" };
+    console.error(`[booking] WhatsApp al dueño (texto) falló: ${t.reason} — ${t.detail}`);
+    return { enviado: false, modo: t.reason, detail: t.detail };
   }
-  return { enviado: true, modo: "enviado" };
+  console.error(`[booking] WhatsApp al dueño (nueva) falló: ${r.reason} — ${r.detail}`);
+  return { enviado: false, modo: r.reason, detail: r.detail };
 }

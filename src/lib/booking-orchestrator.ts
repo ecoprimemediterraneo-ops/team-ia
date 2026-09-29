@@ -14,6 +14,7 @@
 //     findFreeSlot contra Google como el motor compartido (negocio de agenda única).
 // =============================================================================
 
+import { despuesDeResponder } from "./segundo-plano";
 import "server-only";
 import { agendarCita } from "./calendar";
 import { findFreeSlot } from "./appointment-intent";
@@ -78,7 +79,15 @@ export type ReservaBookingInput = {
   /** Identidad estable de la cita en el event-log. Ver `agendarCita`. */
   eventLogRef?: string;
   /** Bloqueos: ocupan agenda pero no son citas y no se cuentan como tales. */
-  sinEventLog?: boolean;
+sinEventLog?: boolean;
+  /**
+   * Crear el evento de Google DESPUÉS de responder. Dentro del candado solo se
+   * GUARDA la cita (con un id interno `int_…`): eso es lo que ocupa el hueco y
+   * lo que protege de la doble reserva. El evento de Google (1-2 s) se crea
+   * después y `alCrearEvento` apunta su id en la cita.
+   */
+  googleDespues?: boolean;
+  alCrearEvento?: (eventId: string, htmlLink?: string) => Promise<void>;
   /**
    * El texto de la cita, calculado DESPUÉS de `revalidate`. Sirve cuando el
    * profesional se decide dentro del candado y su nombre va en el título del evento.
@@ -288,8 +297,13 @@ export async function reservarSlotBooking(input: ReservaBookingInput): Promise<R
     const lockKey = `lock:booking:${slotKey}`;
     const baseLog = { agenteOrigen: input.agenteOrigen, nombre: input.nombre, motivo: input.motivo, startIso: input.startIso, durationMin };
     const dueno = `${input.agenteOrigen}:${crypto.randomUUID()}`;
+    // Dónde se va el tiempo de una reserva (sale en el log de Vercel).
+    const t0 = Date.now();
+    const ms: Record<string, number> = {};
+    const marca = (fase: string) => { ms[fase] = Date.now() - t0 - Object.values(ms).reduce((a, b) => a + b, 0); };
 
     const got = await esperarLock(lockKey, dueno);
+    marca("candado");
     if (!got) {
       await logDecision(tenantId, "locked", baseLog);
       return { ok: false, reason: "locked" };
@@ -318,6 +332,7 @@ export async function reservarSlotBooking(input: ReservaBookingInput): Promise<R
         }
       }
 
+      marca("disponibilidad");
       // 2) Crear la cita.
       if (input.simulate) {
         const fakeId = `sim_${input.startIso}${input.resourceId ? "_" + input.resourceId : ""}`;
@@ -330,14 +345,36 @@ export async function reservarSlotBooking(input: ReservaBookingInput): Promise<R
             return { ok: false, reason: "error", detail: `La cita no se pudo guardar (${detalle}).` };
           }
         }
-        await logDecision(tenantId, "booked", { ...baseLog, eventId: fakeId, simulated: true });
+        despuesDeResponder("decisión booked (simulada)", () => logDecision(tenantId, "booked", { ...baseLog, eventId: fakeId, simulated: true }).then(() => undefined));
         return { ok: true, eventId: fakeId, simulated: true };
       }
-      const res = await agendarCita({
+      const datosCita = {
         tenantId, userEmail: input.userEmail, nombre: input.nombre, motivo: input.motivoFinal ? input.motivoFinal() : input.motivo, start: input.startIso, durationMin,
         agenteOrigen: input.agenteOrigen, customerPhone: input.customerPhone, attendees: input.attendees, location: input.location, redirectUri: input.redirectUri,
         eventLogRef: input.eventLogRef, sinEventLog: input.sinEventLog,
-      });
+      };
+      if (input.googleDespues && input.persistir) {
+        // Se guarda YA con id interno; Google (y el registro del informe) después.
+        const interno = `int_${input.startIso}_${crypto.randomBytes(3).toString("hex")}`;
+        const fallo = await guardarConReintentos(() => input.persistir!({ eventId: interno }));
+        marca("guardar");
+        if (fallo) {
+          await logDecision(tenantId, "error", { ...baseLog, detail: `no se pudo guardar: ${fallo}` });
+          return { ok: false, reason: "error", detail: "No hemos podido registrar la cita. Vuelve a intentarlo." };
+        }
+        despuesDeResponder(`google ${input.startIso}`, async () => {
+          const g = await agendarCita(datosCita);
+          if (!g.ok) {
+            console.error(`[booking-orch] la cita ${interno} está GUARDADA pero no se ha podido crear en Google: ${g.detail}`);
+          } else if (g.eventId && input.alCrearEvento) {
+            await input.alCrearEvento(g.eventId, g.htmlLink);
+          }
+          await logDecision(tenantId, "booked", { ...baseLog, eventId: g.ok ? g.eventId : interno });
+        });
+        return { ok: true, eventId: interno };
+      }
+      const res = await agendarCita(datosCita);
+      marca("google");
       if (!res.ok) {
         await logDecision(tenantId, "error", { ...baseLog, detail: res.detail });
         return { ok: false, reason: "error", detail: res.detail };
@@ -390,10 +427,14 @@ export async function reservarSlotBooking(input: ReservaBookingInput): Promise<R
           };
         }
       }
-      await logDecision(tenantId, "booked", { ...baseLog, eventId: res.eventId });
+      marca("guardar");
+      // El registro de la decisión (informe) no hace falta para responder.
+      despuesDeResponder("decisión booked", () => logDecision(tenantId, "booked", { ...baseLog, eventId: res.eventId }).then(() => undefined));
       return { ok: true, eventId: res.eventId, htmlLink: res.htmlLink, eventLogId: res.eventLogId };
     } finally {
       await agendaUnlock(lockKey, dueno);
+      marca("soltar");
+      console.log(`[reserva] ${input.agenteOrigen} ${input.startIso} ms ${JSON.stringify({ ...ms, total: Date.now() - t0 })}`);
     }
   });
 }

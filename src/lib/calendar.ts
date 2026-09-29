@@ -419,6 +419,8 @@ export async function agendarCita(input: AgendarCitaInput): Promise<AgendarCitaR
       ...(input.customerPhone ? { senderId: input.customerPhone } : {}),
       meta: {
         tipo: "cita_agendada",
+        // Cuándo se CERRÓ la cita (el `ts` del evento es la hora de la cita).
+        agendadaEn: new Date().toISOString(),
         nombre: input.nombre,
         motivo: input.motivo,
         fechaIso: input.start,
