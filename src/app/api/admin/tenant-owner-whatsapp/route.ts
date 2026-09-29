@@ -5,6 +5,8 @@
 //   GET                                lista los tenants y si tienen dueño con WhatsApp
 //   GET ?tenant=<id>&numero=<n>        lo pone (dígitos con prefijo de país, p.ej. 34600000000)
 //   GET ?tenant=<id>&quitar=1          lo borra
+//   POST {tenant, numero}              lo pone sin que el número pase por la URL
+//                                      (ni por los logs ni por el historial)
 //
 // El número NUNCA se devuelve entero: solo principio y final. Poner un número
 // tampoco manda nada: los avisos los gobiernan sus propios interruptores
@@ -55,5 +57,22 @@ export async function GET(req: Request) {
     avisoDiario: interruptor,
     tenants: await estado(),
     comoSePone: "GET /api/admin/tenant-owner-whatsapp?tenant=tenant_demo_gestoria&numero=34600000000",
+  });
+}
+
+export async function POST(req: Request) {
+  const auth = await requireFounder();
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if (!(req.headers.get("content-type") || "").includes("application/json")) {
+    return NextResponse.json({ error: "Manda JSON: {tenant, numero}." }, { status: 415 });
+  }
+  const b = (await req.json().catch(() => ({}))) as { tenant?: string; numero?: string };
+  if (!b.tenant || !b.numero) return NextResponse.json({ error: "Faltan tenant y numero." }, { status: 400 });
+  const r = await fijarOwnerWhatsapp(b.tenant, String(b.numero));
+  if (!r.ok) return NextResponse.json({ error: r.error }, { status: r.status });
+  return NextResponse.json({
+    ok: true,
+    veredicto: `WhatsApp del dueño de "${b.tenant}" puesto: ${enmascarar(r.valor.ownerWhatsapp)}.`,
+    ...(r.aviso ? { aviso: r.aviso } : {}),
   });
 }
