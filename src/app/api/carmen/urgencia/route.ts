@@ -31,7 +31,19 @@ export async function POST(req: Request) {
     const r = await avisarAlDueno(salon.tenantId, `URGENCIA en llamada de Carmen\nCliente: ${telefono || "sin número"}\n${resumen}\nNo has podido coger la llamada: llámale en cuanto puedas.`,
       process.env.CARMEN_URGENCIA_TEMPLATE ? { nombre: process.env.CARMEN_URGENCIA_TEMPLATE, variables: [telefono || "—", resumen.slice(0, 500)] } : undefined);
     await logEvent(salon.tenantId, { id: makeEventId("carmen_urgencia", telefono, String(Date.now())), type: "handoff_human", channel: "carmen", senderId: telefono, meta: { kind: "urgencia_sin_respuesta", resumen, whatsapp: r.modo } }).catch(() => {});
-    return NextResponse.json({ success: true, aviso_whatsapp: r, message: en ? "I've passed your details to the owner, who'll call you back as soon as possible." : "Le he pasado tus datos al responsable y te llamará lo antes posible." });
+    // Solo se promete una llamada si el aviso HA LLEGADO al dueño. Sin su WhatsApp
+    // configurado (o si falla), queda anotado en la actividad del panel, pero no
+    // se avisa a nadie: prometer "te llamará" sería mentir al cliente.
+    const avisado = r.enviado && !/simulado/.test(r.modo);
+    return NextResponse.json({
+      success: true,
+      aviso_whatsapp: r,
+      avisado,
+      message: avisado
+        ? (en ? "I've passed your details to the owner, who'll call you back as soon as possible." : "Le he pasado tus datos al responsable y te llamará lo antes posible.")
+        : (en ? "I've noted it for the team. Is there anything else I can help you with now?" : "Lo dejo anotado para el equipo. ¿Te puedo ayudar en algo más ahora?"),
+      nota_para_carmen: avisado ? undefined : "No se ha podido avisar al responsable: NO prometas que llamarán. Si el cliente quería cita, vuelve a llamar a agendar_cita y ofrécele los huecos que devuelva.",
+    });
   }
 
   const palabra = esUrgencia(texto, configCarmen(tenant).urgencias);

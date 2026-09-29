@@ -43,11 +43,30 @@ export function getSupabase() {
  * con `kvGet` un fallo pasajero de red devolvía null y se sobrescribía todo.
  */
 export async function kvGetEstricto<T>(key: string): Promise<T | null> {
-  const sb = getSupabase();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (sb.from("kv_store") as any).select("value").eq("key", key).maybeSingle();
-  if (error) throw new Error(`[kv] no se ha podido leer ${key}: ${error.message}`);
-  return data ? (data.value as T) : null;
+  return conReintento(`leer ${key}`, async () => {
+    const sb = getSupabase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (sb.from("kv_store") as any).select("value").eq("key", key).maybeSingle();
+    if (error) throw new Error(`[kv] no se ha podido leer ${key}: ${error.message}`);
+    return data ? (data.value as T) : null;
+  });
+}
+
+/**
+ * Un corte de red o una petición que se pasa de tiempo se reintenta UNA vez
+ * antes de dar error. Pasó en una llamada de Carmen: la primera lectura de los
+ * tenants tardó más de 8 s y la reserva se perdió con un 500; la segunda iba bien.
+ */
+async function conReintento<T>(que: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!/timeout|aborted|fetch failed|network|ECONNRESET|ETIMEDOUT|socket/i.test(msg)) throw err;
+    console.warn(`[supabase] ${que}: ${msg} — reintento`);
+    await new Promise((r) => setTimeout(r, 300));
+    return fn();
+  }
 }
 
 export async function kvGet<T>(key: string): Promise<T | null> {
@@ -104,10 +123,16 @@ export async function kvListByPrefixEstricto<T>(prefix: string, donde?: { campo:
   const sb = getSupabase();
   const out: { key: string; value: T }[] = [];
   for (let desde = 0; ; desde += PAGINA) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let q = (sb.from("kv_store") as any).select("key,value").like("key", `${prefix}%`);
-    if (donde) q = q.eq(`value->>${donde.campo}`, donde.valor);
-    const { data, error } = await q.order("key").range(desde, desde + PAGINA - 1);
+    // La consulta se construye DENTRO del reintento: el constructor de consultas
+    // no se puede reutilizar (repetiría el orden y el rango en la URL).
+    const { data, error } = await conReintento(`listar ${prefix}*`, async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let q = (sb.from("kv_store") as any).select("key,value").like("key", `${prefix}%`);
+      if (donde) q = q.eq(`value->>${donde.campo}`, donde.valor);
+      const r = await q.order("key").range(desde, desde + PAGINA - 1);
+      if (r.error && /timeout|aborted|fetch failed|network/i.test(r.error.message || "")) throw new Error(r.error.message);
+      return r;
+    });
     if (error) throw new Error(`[kv] no se ha podido listar ${prefix}*: ${error.message}`);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filas = (data as any[]) || [];

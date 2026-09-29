@@ -185,3 +185,23 @@ test("16. El recordatorio del día antes sale una vez aunque el cron se dispare 
   await fetch(`${BASE}/api/cron/booking-recordatorios`);
   expect((await whatsappsA(movil)).length - antes).toBe(nuevos);
 });
+
+test("17. La llamada que falló: el modelo manda una fecha pasada y Carmen no dice 'cerrado' ni promete llamar", async () => {
+  const pasado = await carmenAgendar({ nombre: "Fecha Vieja", motivo: "manicura", fecha_hora: "2026-06-07T10:00:00" });
+  const j = pasado.json as { success: boolean; reason: string; message: string; opciones?: string[]; hoy?: string };
+  expect(pasado.status, "nunca un 500").toBe(200);
+  expect(j.success).toBe(false);
+  expect(j.reason, JSON.stringify(j)).toBe("fecha_pasada");
+  expect(j.hoy, "le dice qué día es hoy").toContain(hoyMadrid());
+  expect(j.message).not.toMatch(/cerrad|no estamos abiertos|te llamar|llamaremos/i);
+  expect(j.opciones?.length, `ofrece 2 huecos: ${j.message}`).toBe(2);
+  for (const o of j.opciones!) expect(o.slice(0, 10) >= hoyMadrid(), `${o} es de hoy en adelante`).toBeTruthy();
+
+  // Con lo que dijo el cliente ("mañana…") manda eso, aunque el modelo calcule mal la fecha.
+  const D = diaLaborable(9);
+  const dias = diasHasta(D);
+  const dicho = dias === 1 ? "mañana a las 11" : `${fechaHablada(D).replace(/^el /, "el ")} a las 11`;
+  const bien = await carmenAgendar({ nombre: "Fecha Dicha", motivo: "manicura", fecha_hora: "2026-06-07T11:00:00", fecha_texto: dicho });
+  expect(bien.json.success, `«${dicho}» → ${JSON.stringify(bien.json)}`).toBe(true);
+  expect((await citas()).find((c) => c.cliente.nombre === "Fecha Dicha")?.startIso.slice(0, 16)).toBe(`${D}T11:00`);
+});

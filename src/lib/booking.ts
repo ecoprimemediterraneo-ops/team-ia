@@ -2261,6 +2261,11 @@ export async function disponibilidadParaReserva(
   };
 
   let ultimoMotivo: "fuera_de_horario" | "pasado" | "ocupado" = "fuera_de_horario";
+  // Una hora que ya ha pasado es "pasado", no "cerrado": se mira antes que el
+  // horario (una fecha de junio que cae en domingo daba "no estamos abiertos").
+  if (localToEpoch(startNorm, tz) < Date.now() + (business.leadTimeMin ?? 60) * 60_000) {
+    return { negocio: true, available: false, motivo: "pasado", suggested: await siguiente() };
+  }
   for (const emp of candidatos) {
     if (ausenteEl(emp, dateStr)) { ultimoMotivo = "fuera_de_horario"; continue; }
     const horario = emp?.horario ?? business.horario;

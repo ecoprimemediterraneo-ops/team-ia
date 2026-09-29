@@ -188,9 +188,52 @@ export async function POST(req: Request) {
 
   console.log("[carmen/agendar] parsed:", JSON.stringify({ nombre, motivo, fechaRaw, telefono, durationMin, slug, call: call.call_id }).slice(0, 800));
 
-  // 3) Validaciones → respuestas hablables (200, para que Carmen siga la conversación)
-  if (!nombre || !motivo || !fechaRaw) {
+  // Todo lo que sigue va dentro de un try: Carmen NUNCA recibe un 500. Un error
+  // técnico (Supabase lento, por ejemplo) se convierte en una frase que puede
+  // decir y en un reintento, no en "no estamos abiertos" ni en "ya te llamaremos".
+  try {
+    return await agendarEnLlamada({ req, get, nombre, motivo, fechaRaw, telefono, durationMin, profesionalPedida, idiomaPedido, salon, slug, callId: String(call.call_id ?? "") });
+  } catch (err) {
+    console.error("[carmen/agendar] error inesperado:", err);
     return NextResponse.json({
+      success: false,
+      reason: "error_temporal",
+      hoy: hoyHablado(),
+      message: "Perdona, se me ha trabado la agenda un segundo. ¿Me repites el día y la hora y lo vuelvo a mirar?",
+    });
+  }
+}
+
+/** "martes 29 de septiembre de 2026" (hoy, en Madrid). Va en TODAS las respuestas: Carmen no sabe qué día es. */
+function hoyHablado(): string {
+  const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+  const d = new Date(`${hoy}T12:00:00Z`);
+  return `${DIAS[d.getUTCDay()]} ${d.getUTCDate()} de ${MESES[d.getUTCMonth()]} de ${d.getUTCFullYear()} (${hoy})`;
+}
+
+async function agendarEnLlamada(o: {
+  req: Request; get: (...k: string[]) => string | undefined; nombre?: string; motivo?: string; fechaRaw?: string; telefono?: string;
+  durationMin?: number; profesionalPedida?: string; idiomaPedido: string; salon: { tenantId: string; slug: string }; slug: string; callId: string;
+}): Promise<NextResponse> {
+  const { get, nombre, motivo, telefono, durationMin, profesionalPedida, idiomaPedido, salon, slug } = o;
+  let fechaRaw = o.fechaRaw;
+  const hoy = hoyHablado();
+  const hoyIso = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+  const responder = (b: Record<string, unknown>) => NextResponse.json({ ...b, hoy });
+
+  // 3) Validaciones → respuestas hablables (200, para que Carmen siga la conversación)
+  // LO QUE DIJO EL CLIENTE manda sobre la fecha que calcula el modelo de voz: el
+  // modelo no sabe qué día es hoy y convertía "mañana" en una fecha de junio.
+  const fechaTexto = get("fecha_texto", "lo_que_dijo", "fecha_dicha", "cuando_dijo");
+  if (fechaTexto) {
+    const deTexto = normalizarFecha(fechaTexto);
+    if (deTexto && deTexto !== PASADO && ISO_RE.test(deTexto) && (!fechaRaw || !ISO_RE.test(fechaRaw) || deTexto.slice(0, 10) !== fechaRaw.slice(0, 10))) {
+      console.log(`[carmen/agendar] fecha corregida por lo que dijo el cliente: "${fechaTexto}" → ${deTexto} (el modelo mandó ${fechaRaw ?? "nada"})`);
+      fechaRaw = fechaRaw && ISO_RE.test(fechaRaw) && !parseHoraOk(deTexto) ? `${deTexto.slice(0, 10)}T${fechaRaw.slice(11, 19)}` : deTexto;
+    } else if (deTexto === PASADO) fechaRaw = deTexto;
+  }
+  if (!nombre || !motivo || !fechaRaw) {
+    return responder({
       success: false,
       reason: "missing_fields",
       message: "Me faltan datos para agendar: necesito el nombre, el motivo y la fecha con la hora.",
@@ -201,23 +244,42 @@ export async function POST(req: Request) {
   const L = (es: string, ing: string) => (en ? ing : es);
   const startIso = normalizarFecha(fechaRaw);
   const negocio = await getBusinessBySlug(slug);
+  // Siempre DOS huecos libres de verdad, los más cercanos (mismo día o siguientes),
+  // en texto para decirlos y en ISO para reservar el elegido sin volver a calcular la fecha.
   const ofrecer = async (desde: string) => {
     const opciones = await huecosCercanos(salon.tenantId, { startIso: desde, motivo }).catch(() => [] as string[]);
-    return opciones.length ? L(` Te puedo ofrecer ${listaDeOpciones(opciones)}. ¿Cuál te viene mejor?`, ` I can offer ${opciones.map((o) => `${o.slice(0, 10)} at ${o.slice(11, 16)}`).join(" or ")}. Which suits you?`) : L(" ¿Qué otro día te vendría bien?", " What other day would suit you?");
+    const texto = opciones.length
+      ? L(` Te puedo ofrecer ${listaDeOpciones(opciones)}. ¿Cuál te viene mejor?`, ` I can offer ${opciones.map((x) => `${x.slice(0, 10)} at ${x.slice(11, 16)}`).join(" or ")}. Which suits you?`)
+      : L(" ¿Qué otro día te vendría bien?", " What other day would suit you?");
+    return { texto, opciones };
   };
   if (startIso === PASADO) {
-    const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
-    return NextResponse.json({
+    const of = await ofrecer(`${hoyIso}T23:59:00`);
+    return responder({
       success: false,
       reason: "pasado",
-      message: `${L("Esa hora de hoy ya ha pasado.", "That time today has already passed.")}${await ofrecer(`${hoy}T23:59:00`)}`,
+      opciones: of.opciones,
+      message: `${L("Esa hora de hoy ya ha pasado.", "That time today has already passed.")}${of.texto}`,
     });
   }
   if (!ISO_RE.test(startIso) || isNaN(new Date(startIso).getTime())) {
-    return NextResponse.json({
+    return responder({
       success: false,
       reason: "bad_datetime",
       message: L("No he entendido bien la fecha y la hora. ¿Me la repites con día y hora?", "Sorry, I didn't catch the date and time. Could you repeat the day and the time?"),
+    });
+  }
+  // FECHA YA PASADA (un día anterior a hoy): casi siempre es el modelo de voz, que
+  // no sabe qué día es. NUNCA se dice "cerrado": se le recuerda qué día es hoy y
+  // se ofrecen los dos huecos libres más cercanos a partir de hoy.
+  if (startIso.slice(0, 10) < hoyIso) {
+    const of = await ofrecer(`${hoyIso}T${startIso.slice(11, 19)}`);
+    return responder({
+      success: false,
+      reason: "fecha_pasada",
+      opciones: of.opciones,
+      nota_para_carmen: `La fecha ${startIso.slice(0, 10)} ya ha pasado: hoy es ${hoy}. Vuelve a calcular la fecha que ha dicho el cliente a partir de hoy (mañana es ${new Date(Date.parse(`${hoyIso}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10)}) y llama otra vez a agendar_cita, pasando también fecha_texto con sus palabras.`,
+      message: L(`Perdona, déjame confirmar el día: hoy es ${hoy.replace(/ \(.*\)$/, "")}.${of.texto}`, `Sorry, let me check the day: today is ${hoyIso}.${of.texto}`),
     });
   }
 
@@ -239,21 +301,28 @@ export async function POST(req: Request) {
     ? (negocio?.empleados || []).find((e) => e.activo && norm(e.nombre).split(/\s+/)[0] === norm(profesionalPedida).split(/\s+/)[0])
     : undefined;
 
-  const result = await reservarSlot({
+  const pedir = () => reservarSlot({
     tenantId: salon.tenantId,
     userEmail: process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com",
     redirectUri,
-    nombre,
-    motivo,
+    nombre: nombre!,
+    motivo: motivo!,
     startIso,
     durationMin,
     agenteOrigen: "carmen",
     customerPhone: telefono,
     empleadoId: emp?.id,
   });
+  let result = await pedir();
+  // Un fallo técnico o la agenda ocupada un instante: se reintenta UNA vez antes de decir nada.
+  if (!result.ok && (result.reason === "error" || result.reason === "locked")) {
+    console.warn(`[carmen/agendar] reintento tras ${result.reason}${result.reason === "error" ? `: ${result.detail}` : ""}`);
+    await new Promise((r) => setTimeout(r, 800));
+    result = await pedir();
+  }
 
   if (result.ok) {
-    return NextResponse.json({
+    return responder({
       success: true,
       message: L(`Perfecto, te he agendado ${formatoHumano(startIso)}. ¡Te esperamos!`, `Perfect, you're booked for ${startIso.slice(0, 10)} at ${startIso.slice(11, 16)}. See you then!`),
       eventId: result.eventId,
@@ -261,29 +330,36 @@ export async function POST(req: Request) {
     });
   }
   if (result.reason === "slot_taken") {
+    // "Cerrado" SOLO si de verdad ese día/hora está fuera del horario del negocio.
     const porque =
       result.motivo === "pasado" ? L("Esa hora ya ha pasado o es demasiado pronto para reservarla.", "That time has passed or is too soon to book.")
-      : result.motivo === "fuera_de_horario" ? L("A esa hora no estamos abiertos.", "We're not open at that time.")
+      : result.motivo === "fuera_de_horario" ? L("A esa hora no tenemos hueco.", "We don't have availability at that time.")
       : L("Ese hueco está ocupado.", "That slot is taken.");
-    return NextResponse.json({
+    const of = await ofrecer(startIso);
+    return responder({
       success: false,
       reason: "slot_taken",
       motivo: result.motivo,
-      message: `${porque}${await ofrecer(startIso)}`,
+      opciones: of.opciones,
+      message: `${porque}${of.texto}`,
       suggested: result.suggested,
     });
   }
-  if (result.reason === "locked") {
-    return NextResponse.json({
-      success: false,
-      reason: "locked",
-      message: "Dame un segundo, estoy confirmando ese hueco. ¿Te lo confirmo en un momento?",
-    });
-  }
-  return NextResponse.json({
+  // Error técnico que persiste tras el reintento: se ofrecen igualmente huecos si se
+  // pueden calcular, y si no, se pide repetir. Nunca "cerrado" ni "ya te llamaremos".
+  const of = await ofrecer(startIso).catch(() => ({ texto: "", opciones: [] as string[] }));
+  return responder({
     success: false,
-    reason: "error",
-    message: "Ahora mismo no puedo acceder a la agenda. Tomo tus datos y te confirmamos enseguida.",
-    detail: result.detail,
+    reason: result.reason === "locked" ? "locked" : "error",
+    opciones: of.opciones,
+    message: of.opciones.length
+      ? L(`Perdona, esa hora no me deja cerrarla ahora mismo.${of.texto}`, `Sorry, I can't confirm that time right now.${of.texto}`)
+      : L("Perdona, se me ha trabado la agenda un segundo. ¿Me repites el día y la hora y lo vuelvo a mirar?", "Sorry, the diary got stuck for a second. Could you repeat the day and time?"),
+    detail: result.reason === "error" ? result.detail : undefined,
   });
+}
+
+/** ¿Trae hora la fecha resuelta de lo que dijo el cliente? (si no, se conserva la del modelo). */
+function parseHoraOk(iso: string): boolean {
+  return /T\d{2}:\d{2}/.test(iso) && iso.slice(11, 16) !== "00:00";
 }
