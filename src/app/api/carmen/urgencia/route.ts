@@ -25,11 +25,14 @@ export async function POST(req: Request) {
   const texto = get("texto", "motivo", "resumen") || "";
   const telefono = get("telefono") || String(call.from_number ?? "");
   const en = idiomaDe(texto) === "en";
+  // Fuera de la ventana de 24 h, Meta solo entrega PLANTILLAS: si hay plantilla
+  // de urgencia configurada, los avisos van siempre por ella.
+  const plantillaUrgencia = (resumen: string) =>
+    process.env.CARMEN_URGENCIA_TEMPLATE ? { nombre: process.env.CARMEN_URGENCIA_TEMPLATE, variables: [telefono || "—", resumen.slice(0, 500)] } : undefined;
 
   if (get("accion") === "sin_respuesta") {
     const resumen = get("resumen", "texto") || "(sin resumen)";
-    const r = await avisarAlDueno(salon.tenantId, `URGENCIA en llamada de Carmen\nCliente: ${telefono || "sin número"}\n${resumen}\nNo has podido coger la llamada: llámale en cuanto puedas.`,
-      process.env.CARMEN_URGENCIA_TEMPLATE ? { nombre: process.env.CARMEN_URGENCIA_TEMPLATE, variables: [telefono || "—", resumen.slice(0, 500)] } : undefined);
+    const r = await avisarAlDueno(salon.tenantId, `URGENCIA en llamada de Carmen\nCliente: ${telefono || "sin número"}\n${resumen}\nNo has podido coger la llamada: llámale en cuanto puedas.`, plantillaUrgencia(resumen));
     await logEvent(salon.tenantId, { id: makeEventId("carmen_urgencia", telefono, String(Date.now())), type: "handoff_human", channel: "carmen", senderId: telefono, meta: { kind: "urgencia_sin_respuesta", resumen, whatsapp: r.modo } }).catch(() => {});
     // Solo se promete una llamada si el aviso HA LLEGADO al dueño. Sin su WhatsApp
     // configurado (o si falla), queda anotado en la actividad del panel, pero no
@@ -50,9 +53,11 @@ export async function POST(req: Request) {
   const movil = tenant?.ownerWhatsapp ? `+${tenant.ownerWhatsapp.replace(/\D/g, "")}` : "";
   if (!palabra) return NextResponse.json({ success: true, urgente: false });
   await logEvent(salon.tenantId, { id: makeEventId("carmen_urgencia", telefono, String(Date.now())), type: "handoff_human", channel: "carmen", senderId: telefono, meta: { kind: "urgencia", palabra, texto: texto.slice(0, 300) } }).catch(() => {});
+  // El dueño recibe el WhatsApp SIEMPRE que hay urgencia, también cuando se le
+  // pasa la llamada: si no la coge (o salta su buzón) el aviso ya le ha llegado.
+  const r = await avisarAlDueno(salon.tenantId, `URGENCIA en llamada de Carmen\nCliente: ${telefono || "sin número"}\n${texto.slice(0, 400)}`, plantillaUrgencia(texto));
   if (!movil) {
-    const r = await avisarAlDueno(salon.tenantId, `URGENCIA: ${telefono} — ${texto.slice(0, 400)}`);
     return NextResponse.json({ success: true, urgente: true, transferir_a: "", aviso_whatsapp: r, message: en ? "I'll let the team know right now so they can call you back." : "Aviso ahora mismo al equipo para que te llame." });
   }
-  return NextResponse.json({ success: true, urgente: true, transferir_a: movil, message: en ? "I'm putting you through to someone from the team right now." : "Te paso ahora mismo con el responsable." });
+  return NextResponse.json({ success: true, urgente: true, transferir_a: movil, aviso_whatsapp: r, message: en ? "I'm putting you through to someone from the team right now." : "Te paso ahora mismo con el responsable." });
 }

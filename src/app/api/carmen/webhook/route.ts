@@ -111,6 +111,13 @@ function authRetell(req: Request, h: Headers, rawBody: string): string | null {
   // Vía 1 — firma nativa de Retell
   const sig = h.get("x-retell-signature") || "";
   if (retellKey && sig) {
+    // Formato actual de Retell: "v=<ms>,d=<hex>", con HMAC(rawBody + ms) y
+    // como mucho 5 minutos de antigüedad.
+    const m = /^v=(\d+),d=([0-9a-f]+)$/i.exec(sig.trim());
+    if (m && Math.abs(Date.now() - Number(m[1])) <= 5 * 60_000) {
+      const d = createHmac("sha256", retellKey).update(rawBody + m[1]).digest("hex");
+      if (safeEqual(m[2].toLowerCase(), d)) return null;
+    }
     const expectedSig = createHmac("sha256", retellKey).update(rawBody).digest("hex");
     // Retell puede prefijar el algoritmo; comparamos contra hex puro y v=hex.
     if (safeEqual(sig, expectedSig) || safeEqual(sig.replace(/^v=?/, ""), expectedSig)) {
