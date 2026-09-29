@@ -182,12 +182,15 @@ export async function POST(req: Request) {
     }).catch(() => {});
   }
   }
+  // Lo normal: la llamada acaba sin cita que registrar aquí (las citas se cogen
+  // en directo con agendar_cita, y Retell avisa también de call_started y de
+  // llamadas sin reserva). Se contesta 200: con un 4xx Retell reintenta en bucle.
   if (!nombre || !motivo || !startIso) {
     return NextResponse.json({
-      ok: false,
-      error: "Faltan campos requeridos en la extracción de Retell",
+      ok: true,
+      sinCita: true,
       missing: { nombre: !nombre, motivo: !motivo, startIso: !startIso },
-    }, { status: 422 });
+    });
   }
 
   // A qué negocio pertenece la llamada — por el número al que ha llamado
@@ -200,7 +203,7 @@ export async function POST(req: Request) {
       ok: false,
       error: salon.motivo === "no_existe" ? "salon_desconocido" : "salon_ambiguo",
       message: MENSAJE_SIN_SALON,
-    }, { status: 422 });
+    }); // 200: recibido; reintentar no lo arregla
   }
 
   // LA CITA YA LA HIZO CARMEN EN DIRECTO. La función `agendar_cita` reserva
