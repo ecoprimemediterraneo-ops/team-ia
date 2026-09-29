@@ -2,6 +2,10 @@ import { createClient } from "@supabase/supabase-js";
 
 const URL = process.env.SUPABASE_URL!;
 const KEY = process.env.SUPABASE_SERVICE_KEY!;
+/** Tiempo máximo de cualquier petición a Supabase. */
+const SUPABASE_TIMEOUT_MS = 8_000;
+/** Filas por página al listar (PostgREST corta en 1000 por defecto). */
+const PAGINA = 1000;
 
 let _client: ReturnType<typeof createClient> | null = null;
 
@@ -18,7 +22,16 @@ export function getSupabase() {
     // lenguaje, así que el host se saca a mano.
     const host = URL.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
     console.log(`[supabase] proyecto: ${host}`);
-    _client = createClient(URL, KEY);
+    // NINGUNA PETICIÓN SIN LÍMITE DE TIEMPO. Sin esto, un Supabase lento dejaba
+    // la reserva colgada hasta que Vercel mataba la función (y Retell o Meta
+    // veían un "fallo de conexión" sin rastro en ningún log). Con el límite,
+    // la petición falla en seco, se reintenta o se contesta "no puedo ahora".
+    _client = createClient(URL, KEY, {
+      global: {
+        fetch: (input: RequestInfo | globalThis.URL, init?: RequestInit) =>
+          fetch(input, { ...init, signal: init?.signal ?? AbortSignal.timeout(SUPABASE_TIMEOUT_MS) }),
+      },
+    });
   }
   return _client;
 }
@@ -64,17 +77,43 @@ export async function kvSet(key: string, value: unknown): Promise<void> {
   }
 }
 
-// Lista los valores cuyas claves empiezan por `prefix`. Para colecciones
-// pequeñas (propuestas de Marta, ≤ pocas decenas). Devuelve [{key, value}].
+// Lista los valores cuyas claves empiezan por `prefix`. Devuelve [{key, value}].
+//
+// Pagina de 1000 en 1000: PostgREST corta cada consulta en 1000 filas SIN
+// avisar, así que a partir de la reserva 1001 la agenda "no veía" citas y
+// ofrecía como libres huecos ocupados. Y si falla, lo deja escrito: antes
+// devolvía [] en silencio. Esta versión sigue devolviendo [] (la usan módulos
+// para los que una lista vacía es aceptable); la agenda usa la ESTRICTA.
 export async function kvListByPrefix<T>(prefix: string): Promise<{ key: string; value: T }[]> {
+  try {
+    return await kvListByPrefixEstricto<T>(prefix);
+  } catch (err) {
+    console.error(`[supabase] no se ha podido listar "${prefix}*": ${err instanceof Error ? err.message : err}`);
+    return [];
+  }
+}
+
+/**
+ * Como `kvListByPrefix`, pero LANZA si no se puede leer. Para todo lo que
+ * decide si un hueco está libre: "no he podido leer las citas" nunca puede
+ * convertirse en "no hay citas".
+ * `donde` filtra por un campo del JSON (p. ej. `{ campo: "slug", valor: "x" }`)
+ * para no traerse las citas de todos los negocios en cada consulta.
+ */
+export async function kvListByPrefixEstricto<T>(prefix: string, donde?: { campo: string; valor: string }): Promise<{ key: string; value: T }[]> {
   const sb = getSupabase();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (sb.from("kv_store") as any)
-    .select("key,value")
-    .like("key", `${prefix}%`);
-  if (error || !data) return [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data as any[]).map((r) => ({ key: r.key as string, value: r.value as T }));
+  const out: { key: string; value: T }[] = [];
+  for (let desde = 0; ; desde += PAGINA) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q = (sb.from("kv_store") as any).select("key,value").like("key", `${prefix}%`);
+    if (donde) q = q.eq(`value->>${donde.campo}`, donde.valor);
+    const { data, error } = await q.order("key").range(desde, desde + PAGINA - 1);
+    if (error) throw new Error(`[kv] no se ha podido listar ${prefix}*: ${error.message}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const filas = (data as any[]) || [];
+    for (const r of filas) out.push({ key: r.key as string, value: r.value as T });
+    if (filas.length < PAGINA) return out;
+  }
 }
 
 const USE_SUPABASE = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
@@ -85,11 +124,15 @@ export function supabaseEnabled(): boolean {
 }
 
 /**
- * Lock distribuido best-effort sobre kv_store.
+ * Lock distribuido sobre kv_store.
  *  - Sin Supabase (local): devuelve true siempre (se confía en el mutex en memoria).
- *  - Con Supabase: intenta INSERT atómico (la PK `key` da unicidad). Si la clave
- *    ya existe y el lock sigue fresco (exp > now) → false. Si está caducado → lo
- *    roba (upsert) y devuelve true.
+ *    La agenda NO usa esto en local: usa `agendaTryLock` (fichero), que sí
+ *    aguanta varios procesos a la vez.
+ *  - Con Supabase: INSERT atómico (la PK `key` da unicidad). Si la clave ya
+ *    existe, solo se puede ROBAR si ha caducado, y el robo es atómico: un UPDATE
+ *    condicionado a que siga caducada. Antes se leía y se sobrescribía en dos
+ *    pasos, así que dos instancias que llegaban a la vez a un candado caducado
+ *    se lo quedaban LAS DOS (y entraban dos citas al mismo hueco).
  */
 export async function kvTryLock(key: string, ttlMs: number, owner: string): Promise<boolean> {
   if (!USE_SUPABASE) return true;
@@ -103,11 +146,24 @@ export async function kvTryLock(key: string, ttlMs: number, owner: string): Prom
     updated_at: new Date().toISOString(),
   });
   if (!ins.error) return true; // adquirido limpio
-  // La clave existe — ¿sigue fresco el lock?
-  const cur = await kvGet<{ exp: number }>(key);
-  if (cur && cur.exp > now) return false; // en manos de otro, aún válido
-  await kvSet(key, value); // caducado → robar
-  return true;
+  // 23505 = clave duplicada: el candado existe. Cualquier otro error (red,
+  // tiempo agotado) NO es "lo tiene otro": es que no sabemos. No se entra.
+  if (ins.error.code && ins.error.code !== "23505") {
+    console.error(`[supabase] candado "${key}" no consultable: ${ins.error.message}`);
+    return false;
+  }
+  // exp tiene siempre 13 cifras (ms), así que comparar como texto es correcto.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const robo = await (sb.from("kv_store") as any)
+    .update({ value, updated_at: new Date().toISOString() })
+    .eq("key", key)
+    .lt("value->>exp", String(now))
+    .select("key");
+  if (robo.error) {
+    console.error(`[supabase] candado "${key}": no se ha podido comprobar si ha caducado: ${robo.error.message}`);
+    return false;
+  }
+  return Array.isArray(robo.data) && robo.data.length === 1;
 }
 
 /**
@@ -120,6 +176,18 @@ export async function kvDelete(key: string): Promise<void> {
   const sb = getSupabase();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (sb.from("kv_store") as any).delete().eq("key", key);
+}
+
+/**
+ * Suelta un candado SOLO si sigue siendo de `owner`. Si caducó y lo cogió otro,
+ * no se toca (antes se borraba igual y se le quitaba el candado al siguiente).
+ */
+export async function kvUnlockDe(key: string, owner: string): Promise<void> {
+  if (!USE_SUPABASE) return;
+  const sb = getSupabase();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (sb.from("kv_store") as any).delete().eq("key", key).eq("value->>owner", owner);
+  if (error) console.error(`[supabase] no se ha podido soltar el candado "${key}": ${error.message} (caducará solo)`);
 }
 
 export async function kvUnlock(key: string): Promise<void> {

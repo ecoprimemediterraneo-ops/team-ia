@@ -10,8 +10,9 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { cronAuthError } from "@/lib/cron-auth";
-import { listRecords, getBusinessBySlug, getRecord, saveRecord, localToEpoch } from "@/lib/booking";
-import { kvTryLock, kvUnlock } from "@/lib/supabase";
+import { listRecords, getBusinessBySlug, getRecord, actualizarRecord, localToEpoch } from "@/lib/booking";
+import crypto from "node:crypto";
+import { agendaTryLock, agendaUnlock } from "@/lib/booking-orchestrator";
 import { enviarRecordatorio } from "@/lib/booking-email";
 import { restauranteRecordatorioEnabled } from "@/lib/restaurante";
 import { barrerOfertasCaducadas } from "@/lib/booking-waitlist";
@@ -88,7 +89,10 @@ async function run(req: Request) {
     // WhatsApps y dos correos a la misma persona. Comprobado. El candado las
     // serializa; la segunda encuentra la cita ya marcada y se la salta.
     const lockCita = `lock:recordatorio:${r.id}`;
-    if (!(await kvTryLock(lockCita, LOCK_RECORDATORIO_MS, "booking-recordatorios"))) {
+    // Candado con dueño único y que también vale en local entre procesos (antes
+    // en local no había candado: dos pasadas a la vez mandaban dos recordatorios).
+    const duenoLock = `booking-recordatorios:${crypto.randomUUID()}`;
+    if (!(await agendaTryLock(lockCita, LOCK_RECORDATORIO_MS, duenoLock))) {
       console.log(`[booking-recordatorios] cita ${r.id} en manos de otra pasada; se salta`);
       continue;
     }
@@ -97,14 +101,17 @@ async function run(req: Request) {
       const fresco = await getRecord(r.id);
       if (!fresco || fresco.recordatorioEnviado || fresco.estado !== "confirmada") continue;
       const notif = await enviarRecordatorio(fresco, business, baseUrl);
-      await saveRecord({ ...fresco, recordatorioEnviado: true, recordatorioEnviadoEn: new Date().toISOString() });
+      // Solo se apunta el recordatorio, sobre la versión guardada AHORA: antes se
+      // guardaba la copia leída antes de enviar, y una cancelación hecha mientras
+      // tanto se deshacía (la cita volvía a salir confirmada).
+      await actualizarRecord(fresco.id, "recordatorio", (c) => ({ ...c, recordatorioEnviado: true, recordatorioEnviadoEn: new Date().toISOString() }));
       enviados++;
       detalle.push({ id: r.id, email: notif.email.modo, whatsapp: notif.whatsapp.modo });
     } catch (err) {
       fallidos++;
       console.error("[booking-recordatorios] fallo:", err);
     } finally {
-      await kvUnlock(lockCita);
+      await agendaUnlock(lockCita, duenoLock);
     }
   }
   // Lista de espera inteligente: caduca ofertas sin respuesta y reoferta a la siguiente.

@@ -261,20 +261,39 @@ export async function avisarAlDueno(tenantId: string, texto: string, plantilla?:
 // (`confirmadaPorClienteEn`) ya no se le llama.
 
 export async function pasadaLlamadasRecordatorio(ahora = new Date()): Promise<{ llamadas: number; prueba: number; saltadas: string[] }> {
-  const { listRecords: lr, saveRecord, getBusinessBySlug, localToEpoch } = await import("./booking");
+  const { listRecords: lr, actualizarRecord, getBusinessBySlug, localToEpoch } = await import("./booking");
   const { agenteContratado } = await import("./tenants");
   const out = { llamadas: 0, prueba: 0, saltadas: [] as string[] };
+  const pendiente = (x: { tipo?: string; estado: string; recordatorioEnviadoEn?: string; confirmadaPorClienteEn?: string; llamadaRecordatorioEn?: string }) =>
+    x.tipo !== "bloqueo" && x.estado === "confirmada" && !!x.recordatorioEnviadoEn && !x.confirmadaPorClienteEn && !x.llamadaRecordatorioEn &&
+    Date.parse(x.recordatorioEnviadoEn) <= ahora.getTime() - 3 * 3600_000;
   for (const r of await lr()) {
-    if (r.tipo === "bloqueo" || r.estado !== "confirmada" || !r.recordatorioEnviadoEn || r.confirmadaPorClienteEn || r.llamadaRecordatorioEn) continue;
-    if (Date.parse(r.recordatorioEnviadoEn) > ahora.getTime() - 3 * 3600_000) continue;
+    if (!pendiente(r)) continue;
     const tel = r.cliente?.telefono || "";
     if (!tel || /^ig:/i.test(tel)) continue;
     const b = await getBusinessBySlug(r.slug);
     if (!b || localToEpoch(r.startIso, b.timezone || "Europe/Madrid") < ahora.getTime()) continue;
     if (!(await agenteContratado(b.tenantId, "carmen"))) continue;
+    // UNA SOLA LLAMADA POR CITA. Se "reserva" la llamada ANTES de hacerla, con el
+    // candado de la agenda y sobre la cita tal como está ahora: si dos pasadas
+    // coinciden (n8n cada hora + una a mano), solo una la consigue; y si el
+    // cliente ha confirmado o cancelado mientras tanto, no se llama. Antes se
+    // apuntaba DESPUÉS de llamar, con la copia vieja: dos pasadas llamaban dos
+    // veces, y una cancelación hecha durante la llamada se deshacía.
+    const marca = ahora.toISOString();
+    const reservada = await actualizarRecord(r.id, "llamada-recordatorio", (fresca) =>
+      pendiente(fresca) ? { ...fresca, llamadaRecordatorioEn: marca } : null,
+    );
+    if (!reservada.ok || !reservada.record) continue;
     const res = await lanzarLlamada({ tenantId: b.tenantId, telefono: tel, motivo: "recordatorio", ahora, variables: { cliente: r.cliente.nombre, servicio: r.servicioNombre || "", cuando: r.startIso.slice(0, 16).replace("T", " "), anular: r.token } });
-    if (!res.ok) { out.saltadas.push(`${r.id}: ${res.motivo}`); continue; }
-    await saveRecord({ ...r, llamadaRecordatorioEn: ahora.toISOString() });
+    if (!res.ok) {
+      // No se ha llamado: se quita la marca para que la siguiente pasada lo intente.
+      await actualizarRecord(r.id, "llamada-recordatorio", (fresca) =>
+        fresca.llamadaRecordatorioEn === marca ? { ...fresca, llamadaRecordatorioEn: undefined } : null,
+      );
+      out.saltadas.push(`${r.id}: ${res.motivo}`);
+      continue;
+    }
     if (res.modo === "real") out.llamadas++; else out.prueba++;
   }
   return out;

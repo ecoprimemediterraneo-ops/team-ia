@@ -19,14 +19,22 @@ import { agendarCita } from "./calendar";
 import { findFreeSlot } from "./appointment-intent";
 import { logEvent, makeEventId, type EventChannel } from "./event-log";
 import { DEFAULT_TENANT_ID } from "./tenants";
-import { kvTryLock, kvUnlock } from "./supabase";
+import fs from "node:fs/promises";
+import path from "node:path";
+import crypto from "node:crypto";
+import { kvTryLock, kvUnlockDe, supabaseEnabled } from "./supabase";
 import type { ReservaResult } from "./orchestrator";
 
 const DEFAULT_DURATION_MIN = 30;
 const LOCK_TTL_MS = 30_000;
 // Cuánto se espera a que otra reserva del mismo profesional suelte el candado
 // antes de rendirse. Ver `esperarLock`.
-const LOCK_ESPERA_MS = 5_000;
+// Con 20 peticiones a la vez sobre el mismo día cada una espera su turno; cada
+// turno dura poco (mirar la agenda y guardar), pero en producción son varias
+// idas y vueltas a Supabase. 5 s dejaba a las últimas con un "no puedo ahora"
+// en vez de un "ocupado, te ofrezco…". 20 s cubre ese caso con margen y sigue
+// muy por debajo del límite de Retell y de la función (60 s).
+const LOCK_ESPERA_MS = 20_000;
 const LOCK_REINTENTO_MS = 120;
 // Guardar la reserva se reintenta: un corte de un segundo en Supabase no puede
 // costar una cita que YA existe en la agenda de Google.
@@ -88,24 +96,126 @@ function withSlotMutex<T>(key: string, fn: () => Promise<T>): Promise<T> {
   return run;
 }
 
+// -----------------------------------------------------------------------------
+// EL CANDADO DE LA AGENDA
+//
+// Producción (Supabase): una fila en kv_store (ver `kvTryLock`), que vale entre
+// varias instancias de Vercel a la vez.
+// Local (sin Supabase): un directorio en data/.candados. `mkdir` es atómico en
+// el sistema de ficheros, así que también vale entre VARIOS PROCESOS: antes en
+// local no había candado real entre procesos (solo el mutex en memoria) y la
+// prueba de concurrencia solo podía hacerse dentro de un proceso.
+// El candado lleva un dueño único: soltarlo solo borra el SUYO. Antes se borraba
+// por clave: si un candado caducaba y otro lo cogía, el primero al terminar le
+// quitaba el candado al segundo.
+// -----------------------------------------------------------------------------
+const CANDADOS_DIR = path.join(process.cwd(), "data", ".candados");
+const nombreCandado = (k: string) => path.join(CANDADOS_DIR, crypto.createHash("sha1").update(k).digest("hex"));
+
+async function candadoLocal(key: string, ttlMs: number, dueno: string): Promise<boolean> {
+  await fs.mkdir(CANDADOS_DIR, { recursive: true });
+  const dir = nombreCandado(key);
+  const coger = async () => {
+    try {
+      await fs.mkdir(dir);
+      await fs.writeFile(path.join(dir, "dueno.json"), JSON.stringify({ dueno, exp: Date.now() + ttlMs }));
+      return true;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === "EEXIST") return false;
+      throw e;
+    }
+  };
+  if (await coger()) return true;
+  // ¿Caducado? El robo pasa por un segundo candado ("robo") para que dos no roben a la vez.
+  let exp = 0;
+  try {
+    exp = JSON.parse(await fs.readFile(path.join(dir, "dueno.json"), "utf-8")).exp || 0;
+  } catch {
+    // Recién creado y aún sin escribir el dueño: si el directorio es de hace nada, es de otro.
+    const st = await fs.stat(dir).catch(() => null);
+    if (st && Date.now() - st.mtimeMs < ttlMs) return false;
+  }
+  if (exp > Date.now()) return false;
+  const robo = `${dir}.robo`;
+  try {
+    await fs.mkdir(robo);
+  } catch {
+    const st = await fs.stat(robo).catch(() => null);
+    if (st && Date.now() - st.mtimeMs > 10_000) await fs.rm(robo, { recursive: true, force: true });
+    return false;
+  }
+  try {
+    const actual = JSON.parse(await fs.readFile(path.join(dir, "dueno.json"), "utf-8").catch(() => "{}"));
+    if ((actual.exp || 0) > Date.now()) return false;
+    await fs.rm(dir, { recursive: true, force: true });
+    return await coger();
+  } finally {
+    await fs.rm(robo, { recursive: true, force: true });
+  }
+}
+async function soltarLocal(key: string, dueno: string): Promise<void> {
+  const dir = nombreCandado(key);
+  try {
+    const actual = JSON.parse(await fs.readFile(path.join(dir, "dueno.json"), "utf-8"));
+    if (actual.dueno !== dueno) return; // ya no es nuestro: no se toca
+  } catch {
+    return;
+  }
+  await fs.rm(dir, { recursive: true, force: true });
+}
+
+/** Coge un candado de agenda (varias instancias / procesos). */
+export async function agendaTryLock(key: string, ttlMs: number, dueno: string): Promise<boolean> {
+  return supabaseEnabled() ? kvTryLock(key, ttlMs, dueno) : candadoLocal(key, ttlMs, dueno);
+}
+/** Suelta un candado de agenda, solo si sigue siendo de `dueno`. */
+export async function agendaUnlock(key: string, dueno: string): Promise<void> {
+  if (supabaseEnabled()) await kvUnlockDe(key, dueno);
+  else await soltarLocal(key, dueno);
+}
+
 /**
  * Coge el candado esperando un poco si está cogido, en vez de rendirse al
  * primer intento.
  *
- * El candado pasó a cubrir TODO EL DÍA de ese profesional (antes cubría solo la
+ * El candado pasó a cubrir TODO EL DÍA de ese negocio (antes cubría solo la
  * hora exacta de inicio, que es justo lo que dejaba pasar dos citas solapadas).
  * Con un candado más ancho, dos personas reservando a la vez horas distintas
- * del mismo profesional se cruzan a menudo — y rendirse ahí les daría un error
- * por algo que no es un conflicto real. Así que se espera: lo normal es que el
- * de delante tarde menos de un segundo.
+ * se cruzan a menudo — y rendirse ahí les daría un error por algo que no es un
+ * conflicto real. Así que se espera: lo normal es que el de delante tarde
+ * menos de un segundo.
  */
-async function esperarLock(lockKey: string, quien: string): Promise<boolean> {
+async function esperarLock(lockKey: string, dueno: string): Promise<boolean> {
   const limite = Date.now() + LOCK_ESPERA_MS;
   for (;;) {
-    if (await kvTryLock(lockKey, LOCK_TTL_MS, quien)) return true;
+    if (await agendaTryLock(lockKey, LOCK_TTL_MS, dueno)) return true;
     if (Date.now() >= limite) return false;
-    await new Promise((r) => setTimeout(r, LOCK_REINTENTO_MS));
+    // Un poco de azar: si no, los que esperan reintentan todos a la vez.
+    await new Promise((r) => setTimeout(r, LOCK_REINTENTO_MS + Math.floor(Math.random() * LOCK_REINTENTO_MS)));
   }
+}
+
+/**
+ * Ejecuta `fn` con la agenda de ESE negocio y ESE día cerrada para los demás:
+ * es el MISMO candado que usan las reservas. Todo lo que cambia una cita
+ * (cancelar, cambiar de estado, apuntar un recordatorio) pasa por aquí, para
+ * que nunca se pisen dos cambios: antes cancelar y mover guardaban la cita
+ * entera sin candado, y si coincidían, la última escritura resucitaba la cita
+ * cancelada o deshacía el cambio de hora.
+ * Devuelve `{ ok: false, reason: "locked" }` si no consigue el candado a tiempo.
+ */
+export async function conAgenda<T>(tenantId: string, dia: string, quien: string, fn: () => Promise<T>): Promise<{ ok: true; valor: T } | { ok: false; reason: "locked" }> {
+  const slotKey = `${tenantId || DEFAULT_TENANT_ID}|${dia.slice(0, 10)}`;
+  return withSlotMutex(slotKey, async () => {
+    const lockKey = `lock:booking:${slotKey}`;
+    const dueno = `${quien}:${crypto.randomUUID()}`;
+    if (!(await esperarLock(lockKey, dueno))) return { ok: false as const, reason: "locked" as const };
+    try {
+      return { ok: true as const, valor: await fn() };
+    } finally {
+      await agendaUnlock(lockKey, dueno);
+    }
+  });
 }
 
 /**
@@ -177,8 +287,9 @@ export async function reservarSlotBooking(input: ReservaBookingInput): Promise<R
   return withSlotMutex(slotKey, async () => {
     const lockKey = `lock:booking:${slotKey}`;
     const baseLog = { agenteOrigen: input.agenteOrigen, nombre: input.nombre, motivo: input.motivo, startIso: input.startIso, durationMin };
+    const dueno = `${input.agenteOrigen}:${crypto.randomUUID()}`;
 
-    const got = await esperarLock(lockKey, input.agenteOrigen);
+    const got = await esperarLock(lockKey, dueno);
     if (!got) {
       await logDecision(tenantId, "locked", baseLog);
       return { ok: false, reason: "locked" };
@@ -282,7 +393,7 @@ export async function reservarSlotBooking(input: ReservaBookingInput): Promise<R
       await logDecision(tenantId, "booked", { ...baseLog, eventId: res.eventId });
       return { ok: true, eventId: res.eventId, htmlLink: res.htmlLink, eventLogId: res.eventLogId };
     } finally {
-      await kvUnlock(lockKey);
+      await agendaUnlock(lockKey, dueno);
     }
   });
 }

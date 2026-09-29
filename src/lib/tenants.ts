@@ -122,6 +122,12 @@ export type Tenant = {
    * ha llamado, no por configuración ni por ser el único negocio dado de alta.
    */
   carmenPhoneNumber?: string;
+  /**
+   * Qué negocio de reservas (slug) es LA agenda de este tenant cuando tiene
+   * varios. Carmen, Pablo y el panel reservan y leen en éste. Sin él, se usa el
+   * primero dado de alta (y se avisa en el log si hay más de uno).
+   */
+  negocioAgenda?: string;
   plan: TenantPlan;
   pricing: { monthlyEUR: number };
   startedAt: string;                       // ISO
@@ -641,12 +647,22 @@ export async function resolveTenantFromMeta(input: {
  * número de la llamada, saber de qué negocio es deja de depender de
  * configuración o de que solo haya un cliente.
  */
+/** Dos teléfonos son el mismo si coinciden sus 9 últimas cifras (España). */
+export function mismoTelefono(a: string, b: string): boolean {
+  const c = (x: string) => (x || "").replace(/\D/g, "").slice(-9);
+  return c(a).length === 9 && c(a) === c(b);
+}
+
 export async function resolveTenantFromCarmenNumber(toNumber: string): Promise<string | null> {
   const numero = (toNumber || "").trim();
   if (!numero) return null;
   const all = await readAll();
   for (const t of Object.values(all)) {
-    if (t.carmenPhoneNumber && t.carmenPhoneNumber === numero) return t.id;
+    // Se comparan las cifras (los 9 últimos): Retell manda "+34951870605" y en
+    // el alta puede estar como "+34 951 870 605" o "951870605". Antes se
+    // comparaba el texto tal cual y esa diferencia de espacios dejaba a Carmen
+    // sin negocio ("no puedo acceder a la agenda").
+    if (t.carmenPhoneNumber && mismoTelefono(t.carmenPhoneNumber, numero)) return t.id;
   }
   const conocidos = Object.values(all)
     .map((t) => `${t.id}:${t.carmenPhoneNumber || "—"}`)

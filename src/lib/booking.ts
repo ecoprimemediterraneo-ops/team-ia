@@ -21,10 +21,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
-import { kvGet, kvSet, kvListByPrefix, supabaseEnabled } from "./supabase";
+import { kvGet, kvGetEstricto, kvSet, kvListByPrefix, kvListByPrefixEstricto, supabaseEnabled } from "./supabase";
 import { getTenant, DEFAULT_TENANT_ID } from "./tenants";
 import { freeBusyQuery, deleteEvent, esEventoInterno } from "./calendar";
-import { reservarSlotBooking } from "./booking-orchestrator";
+import { reservarSlotBooking, conAgenda, agendaTryLock, agendaUnlock } from "./booking-orchestrator";
 import { benditoArteSeed } from "./booking-seed-bendito";
 import { configRestaurante, estadoInicialReserva } from "./restaurante";
 import { logEvent, makeEventId } from "./event-log";
@@ -297,18 +297,64 @@ const KV_REC_PREFIX = "booking:rec:";
 type ConfigMap = Record<string, BusinessBooking>;
 type RecordMap = Record<string, BookingRecord>;
 
+/**
+ * Lee un fichero de datos local. Si no existe, vacío. Si existe y NO se puede
+ * leer (a medio escribir, corrupto), se reintenta y, si sigue mal, LANZA.
+ * Antes devolvía {} en cualquier error: una lectura que coincidía con una
+ * escritura veía "no hay citas", ofrecía como libres horas ocupadas y, si
+ * después guardaba, reescribía el fichero solo con su cita (borrando el resto).
+ */
 async function readLocal<T>(file: string): Promise<T> {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    const raw = await fs.readFile(file, "utf-8");
-    return raw.trim() ? (JSON.parse(raw) as T) : ({} as T);
-  } catch {
-    return {} as T;
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  let ultimo: unknown;
+  for (let i = 0; i < 5; i++) {
+    let raw: string;
+    try {
+      raw = await fs.readFile(file, "utf-8");
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === "ENOENT") return {} as T;
+      ultimo = e;
+      await new Promise((r) => setTimeout(r, 30 * (i + 1)));
+      continue;
+    }
+    if (!raw.trim()) return {} as T;
+    try {
+      return JSON.parse(raw) as T;
+    } catch (e) {
+      ultimo = e;
+      await new Promise((r) => setTimeout(r, 30 * (i + 1)));
+    }
   }
+  throw new Error(`[booking] no se puede leer ${path.basename(file)}: ${ultimo instanceof Error ? ultimo.message : ultimo}`);
 }
+/**
+ * Escribe de golpe: primero a un temporal y luego se renombra (atómico). Quien
+ * lea a la vez ve el fichero viejo entero o el nuevo entero, nunca uno a medias.
+ */
 async function writeLocal(file: string, data: unknown): Promise<void> {
   await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(file, JSON.stringify(data, null, 2));
+  const tmp = `${file}.${process.pid}.${crypto.randomBytes(4).toString("hex")}.tmp`;
+  await fs.writeFile(tmp, JSON.stringify(data, null, 2));
+  await fs.rename(tmp, file);
+}
+/**
+ * Leer-cambiar-escribir un fichero local con un candado de fichero: dos procesos
+ * (o dos peticiones) que guardan citas distintas a la vez ya no se pisan (antes
+ * la última escritura borraba la cita de la otra).
+ */
+async function cambiarLocal<T>(file: string, fn: (actual: T) => T | Promise<T>): Promise<void> {
+  const clave = `lock:fichero:${path.basename(file)}`;
+  const dueno = `fichero:${crypto.randomUUID()}`;
+  const limite = Date.now() + 15_000;
+  while (!(await agendaTryLock(clave, 10_000, dueno))) {
+    if (Date.now() > limite) throw new Error(`[booking] ${path.basename(file)} ocupado demasiado tiempo`);
+    await new Promise((r) => setTimeout(r, 15 + Math.floor(Math.random() * 25)));
+  }
+  try {
+    await writeLocal(file, await fn(await readLocal<T>(file)));
+  } finally {
+    await agendaUnlock(clave, dueno);
+  }
 }
 
 async function readConfigs(): Promise<ConfigMap> {
@@ -371,9 +417,24 @@ export async function saveBusiness(b: BusinessBooking): Promise<BusinessBooking>
  * a uno solo.
  */
 export async function getBusinessesForTenant(tenantId: string): Promise<BusinessBooking[]> {
-  const all = Object.values(await readConfigs());
-  return all.filter((b) => b.tenantId === tenantId);
+  const all = Object.values(await readConfigs()).filter((b) => b.tenantId === tenantId);
+  if (all.length < 2) return all;
+  // Con varios negocios, el PRIMERO es la agenda del tenant: la que usan Carmen,
+  // Pablo y el panel (todos toman el primero). Si el tenant dice cuál
+  // (`negocioAgenda`), va ése delante; si no, se deja el orden de alta y se avisa.
+  const t = await getTenant(tenantId);
+  const elegido = t?.negocioAgenda;
+  if (elegido && all.some((b) => b.slug === elegido)) return [...all.filter((b) => b.slug === elegido), ...all.filter((b) => b.slug !== elegido)];
+  if (!avisadosVarios.has(tenantId)) {
+    avisadosVarios.add(tenantId);
+    console.warn(
+      `[booking] el tenant ${tenantId} tiene ${all.length} negocios (${all.map((b) => b.slug).join(", ")}) y no dice cuál es su agenda ` +
+        `(tenant.negocioAgenda). Carmen, Pablo y el panel usan "${all[0].slug}".`,
+    );
+  }
+  return all;
 }
+const avisadosVarios = new Set<string>();
 
 /**
  * ⚠️ Resuelve por email del calendario. NO usar para decidir qué ve un panel:
@@ -392,25 +453,67 @@ export async function getBusinessesForOwner(email: string): Promise<BusinessBook
 
 export async function saveRecord(rec: BookingRecord): Promise<void> {
   if (supabaseEnabled()) {
-    await kvSet(KV_REC_PREFIX + rec.id, rec);
+    await kvSetEstricto(KV_REC_PREFIX + rec.id, rec);
   } else {
-    const map = await readLocal<RecordMap>(RECORDS_FILE);
-    map[rec.id] = rec;
-    await writeLocal(RECORDS_FILE, map);
+    await cambiarLocal<RecordMap>(RECORDS_FILE, (map) => ({ ...map, [rec.id]: rec }));
   }
 }
+/** Guardar una cita y ENTERARSE si no se ha guardado (kvSet solo lo deja en el log). */
+async function kvSetEstricto(key: string, value: unknown): Promise<void> {
+  const { getSupabase } = await import("./supabase");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (getSupabase().from("kv_store") as any).upsert({ key, value, updated_at: new Date().toISOString() });
+  if (error) throw new Error(`[booking] no se ha podido guardar ${key}: ${error.message ?? JSON.stringify(error)}`);
+}
 export async function getRecord(id: string): Promise<BookingRecord | null> {
-  if (supabaseEnabled()) return kvGet<BookingRecord>(KV_REC_PREFIX + id);
+  if (supabaseEnabled()) return kvGetEstricto<BookingRecord>(KV_REC_PREFIX + id);
   const map = await readLocal<RecordMap>(RECORDS_FILE);
   return map[id] || null;
 }
+/**
+ * TODAS las citas. LANZA si no se pueden leer: "no he podido leer la agenda"
+ * nunca puede tratarse como "la agenda está vacía".
+ */
 export async function listRecords(): Promise<BookingRecord[]> {
   if (supabaseEnabled()) {
-    const rows = await kvListByPrefix<BookingRecord>(KV_REC_PREFIX);
+    const rows = await kvListByPrefixEstricto<BookingRecord>(KV_REC_PREFIX);
     return rows.map((r) => r.value);
   }
   const map = await readLocal<RecordMap>(RECORDS_FILE);
   return Object.values(map);
+}
+/** Las citas de UN negocio (en producción filtra en la base de datos: menos datos, menos espera). */
+export async function listRecordsDeNegocio(slug: string): Promise<BookingRecord[]> {
+  if (supabaseEnabled()) {
+    const rows = await kvListByPrefixEstricto<BookingRecord>(KV_REC_PREFIX, { campo: "slug", valor: slug });
+    return rows.map((r) => r.value);
+  }
+  return (await listRecords()).filter((r) => r.slug === slug);
+}
+
+/**
+ * Cambia una cita DENTRO DEL CANDADO de su día, partiendo SIEMPRE de la versión
+ * guardada en ese momento (no de una copia leída antes). `cambio` devuelve la
+ * cita nueva, o null para no tocar nada. Es la única forma segura de modificar
+ * una cita que ya existe: cancelar, cambiar de estado, apuntar un recordatorio…
+ */
+export async function actualizarRecord(
+  id: string,
+  quien: string,
+  cambio: (actual: BookingRecord) => BookingRecord | null | Promise<BookingRecord | null>,
+): Promise<{ ok: true; record: BookingRecord | null } | { ok: false; reason: "not_found" | "locked" }> {
+  const previa = await getRecord(id);
+  if (!previa) return { ok: false, reason: "not_found" };
+  const r = await conAgenda(previa.tenantId || DEFAULT_TENANT_ID, previa.startIso, quien, async () => {
+    const actual = await getRecord(id);
+    if (!actual) return { encontrada: false as const };
+    const nueva = await cambio(actual);
+    if (nueva) await saveRecord(nueva);
+    return { encontrada: true as const, record: nueva };
+  });
+  if (!r.ok) return { ok: false, reason: "locked" };
+  if (!r.valor.encontrada) return { ok: false, reason: "not_found" };
+  return { ok: true, record: r.valor.record };
 }
 export async function getRecordByToken(token: string): Promise<BookingRecord | null> {
   const all = await listRecords();
@@ -431,6 +534,8 @@ type Ocupado = { start: number; end: number };
 
 export const MENSAJE_CALENDARIO_DESCONECTADO =
   "El calendario de Google de este negocio se ha desconectado. Vuelve a conectarlo en Agenda → «Reconectar Google Calendar» para ver los huecos.";
+/** Lo que se dice cuando no se han podido leer las citas (no es culpa de Google). */
+export const MENSAJE_AGENDA_NO_LEIDA = "Ahora mismo no puedo consultar la agenda. Inténtalo de nuevo en un momento.";
 export const MENSAJE_CALENDARIO_ERROR =
   "No se ha podido consultar el calendario ahora mismo. Vuelve a intentarlo en un minuto.";
 
@@ -493,8 +598,17 @@ async function reunirOcupado(
     }
   }
 
+  let recs: BookingRecord[];
   try {
-    const recs = await listRecords();
+    recs = await listRecordsDeNegocio(business.slug);
+  } catch (err) {
+    // SIN LAS CITAS NO SE SABE QUÉ ESTÁ LIBRE. Antes esto era "no crítico" y
+    // seguía con la agenda vacía: un corte de Supabase = todas las horas libres
+    // = dos citas en el mismo hueco. Ahora se dice que no se puede consultar.
+    console.error(`[booking] no se han podido leer las citas de ${business.slug}:`, err);
+    return { ok: false, reason: "error", detail: MENSAJE_AGENDA_NO_LEIDA };
+  }
+  {
     for (const r of recs) {
       if (r.slug !== business.slug || !ocupaAgenda(r.estado) || r.id === excludeId) continue;
       // Modo per-staff: las reservas de OTRO empleado no bloquean a éste. Las sin
@@ -506,8 +620,6 @@ async function reunirOcupado(
       const re = localToEpoch(r.startIso, tz) + (r.durationMin + pAr) * 60_000;
       if (re > fromEpoch && rs < toEpoch) busy.push({ start: rs, end: re });
     }
-  } catch {
-    /* no crítico */
   }
   return { ok: true, busy };
 }
@@ -830,8 +942,9 @@ export async function crearReserva(input: CrearReservaInput): Promise<CrearReser
 
 /** Primer negocio (BusinessBooking) de un tenant. null si el tenant no tiene ninguno. */
 export async function getBusinessByTenant(tenantId: string): Promise<BusinessBooking | null> {
-  const all = await listBusinesses();
-  return all.find((b) => b.tenantId === tenantId) ?? null;
+  // La MISMA regla que el panel (`getBusinessesForTenant(...)[0]`): así Carmen,
+  // Pablo y el panel siempre miran la misma agenda.
+  return (await getBusinessesForTenant(tenantId))[0] ?? null;
 }
 
 export type RegistrarRecordInput = {
@@ -978,29 +1091,43 @@ export type CancelarResult =
   | { ok: false; reason: "not_found" | "too_late" | "error"; detail?: string; limiteIso?: string };
 
 export async function cancelarReservaPorToken(token: string, redirectUri: string): Promise<CancelarResult> {
-  const record = await getRecordByToken(token);
-  if (!record) return { ok: false, reason: "not_found" };
-  if (record.estado === "cancelada") return { ok: true, record }; // idempotente
+  const encontrada = await getRecordByToken(token);
+  if (!encontrada) return { ok: false, reason: "not_found" };
+  if (encontrada.estado === "cancelada") return { ok: true, record: encontrada }; // idempotente
 
-  const business = await getBusinessBySlug(record.slug);
+  const business = await getBusinessBySlug(encontrada.slug);
   const tz = business?.timezone || "Europe/Madrid";
   const antelacion = business?.cancelAntelacionMin ?? 0;
-  // ¿Demasiado tarde para cancelar (dentro de la ventana de antelación)?
-  if (antelacion > 0) {
-    const startEpoch = localToEpoch(record.startIso, tz);
-    if (Date.now() > startEpoch - antelacion * 60_000) {
-      return { ok: false, reason: "too_late", limiteIso: record.startIso };
+  let fallo: CancelarResult | null = null;
+  let recienCancelada = false;
+  // Dentro del candado del día y sobre la versión guardada: si a la vez se está
+  // moviendo o confirmando, no se pisan.
+  const r = await actualizarRecord(encontrada.id, "cancelar-enlace", async (record) => {
+    if (record.estado === "cancelada") return null;
+    if (antelacion > 0 && Date.now() > localToEpoch(record.startIso, tz) - antelacion * 60_000) {
+      fallo = { ok: false, reason: "too_late", limiteIso: record.startIso };
+      return null;
     }
+    const del = await borrarEventoGoogle(record, redirectUri);
+    if (!del.ok) {
+      fallo = { ok: false, reason: "error", detail: del.detail };
+      return null;
+    }
+    recienCancelada = true;
+    return { ...record, estado: "cancelada", canceladaEn: new Date().toISOString() };
+  });
+  if (fallo) return fallo;
+  if (!r.ok) return r.reason === "not_found" ? { ok: false, reason: "not_found" } : { ok: false, reason: "error", detail: MENSAJE_AGENDA_OCUPADA };
+  const final = r.record ?? (await getRecord(encontrada.id)) ?? encontrada;
+  if (recienCancelada) {
+    await registrarCitaCancelada(final);
+    await notificarDueno(final, "cancelada");
   }
-
-  const del = await borrarEventoGoogle(record, redirectUri);
-  if (!del.ok) return { ok: false, reason: "error", detail: del.detail };
-  const updated: BookingRecord = { ...record, estado: "cancelada", canceladaEn: new Date().toISOString() };
-  await saveRecord(updated);
-  await registrarCitaCancelada(updated);
-  await notificarDueno(updated, "cancelada");
-  return { ok: true, record: updated };
+  return { ok: true, record: final };
 }
+
+/** Cuando la agenda de ese día está bloqueada demasiado tiempo por otras operaciones. */
+export const MENSAJE_AGENDA_OCUPADA = "La agenda está muy ocupada ahora mismo. Inténtalo de nuevo en unos segundos.";
 
 // -----------------------------------------------------------------------------
 // Panel del negocio (Biz) — agenda, máquina de estados, citas manuales, bloqueos.
@@ -1010,7 +1137,7 @@ export async function cancelarReservaPorToken(token: string, redirectUri: string
 
 /** Citas + bloqueos de un negocio en un rango de días [fromDate, toDate] (YYYY-MM-DD), ordenados. */
 export async function listRecordsForRange(slug: string, fromDate: string, toDate: string): Promise<BookingRecord[]> {
-  const all = await listRecords();
+  const all = await listRecordsDeNegocio(slug);
   return all
     .filter((r) => r.slug === slug && r.startIso.slice(0, 10) >= fromDate && r.startIso.slice(0, 10) <= toDate)
     .sort((a, b) => a.startIso.localeCompare(b.startIso));
@@ -1056,27 +1183,41 @@ async function registrarCitaCancelada(record: BookingRecord, cuandoIso?: string)
 }
 
 export async function cambiarEstadoRecord(id: string, nuevoEstado: EstadoCita, redirectUri: string, expectSlug?: string): Promise<CambiarEstadoResult> {
-  const record = await getRecord(id);
-  if (!record || (expectSlug && record.slug !== expectSlug)) return { ok: false, reason: "not_found" };
-  if (record.estado === nuevoEstado) return { ok: true, record }; // idempotente
-  if (!puedeTransicionar(record.estado, nuevoEstado)) {
-    return { ok: false, reason: "transicion_invalida", detail: `${record.estado} → ${nuevoEstado}` };
+  let fallo: CambiarEstadoResult | null = null;
+  let cambiada = false;
+  const r = await actualizarRecord(id, "cambiar-estado", async (record) => {
+    if (expectSlug && record.slug !== expectSlug) {
+      fallo = { ok: false, reason: "not_found" };
+      return null;
+    }
+    if (record.estado === nuevoEstado) return null; // idempotente
+    if (!puedeTransicionar(record.estado, nuevoEstado)) {
+      fallo = { ok: false, reason: "transicion_invalida", detail: `${record.estado} → ${nuevoEstado}` };
+      return null;
+    }
+    if (nuevoEstado === "cancelada") {
+      const del = await borrarEventoGoogle(record, redirectUri);
+      if (!del.ok) {
+        fallo = { ok: false, reason: "error", detail: del.detail };
+        return null;
+      }
+    }
+    cambiada = true;
+    return {
+      ...record,
+      estado: nuevoEstado,
+      ...(nuevoEstado === "cancelada" ? { canceladaEn: new Date().toISOString() } : {}),
+    };
+  });
+  if (fallo) return fallo;
+  if (!r.ok) return r.reason === "not_found" ? { ok: false, reason: "not_found" } : { ok: false, reason: "error", detail: MENSAJE_AGENDA_OCUPADA };
+  const final = r.record ?? (await getRecord(id));
+  if (!final) return { ok: false, reason: "not_found" };
+  if (cambiada && nuevoEstado === "cancelada") {
+    await registrarCitaCancelada(final);
+    await notificarDueno(final, "cancelada");
   }
-  if (nuevoEstado === "cancelada") {
-    const del = await borrarEventoGoogle(record, redirectUri);
-    if (!del.ok) return { ok: false, reason: "error", detail: del.detail };
-  }
-  const updated: BookingRecord = {
-    ...record,
-    estado: nuevoEstado,
-    ...(nuevoEstado === "cancelada" ? { canceladaEn: new Date().toISOString() } : {}),
-  };
-  await saveRecord(updated);
-  if (nuevoEstado === "cancelada") {
-    await registrarCitaCancelada(updated);
-    await notificarDueno(updated, "cancelada");
-  }
-  return { ok: true, record: updated };
+  return { ok: true, record: final };
 }
 
 export type CrearManualInput = {
@@ -1345,6 +1486,9 @@ export async function reprogramarRecord(
   if (!del.ok) return { ok: false, reason: "error", detail: del.detail };
 
   let updated: BookingRecord | null = null; // se rellena dentro del candado, en `persistir`
+  // Si mientras tanto la han cancelado (por WhatsApp, por teléfono, desde el
+  // panel), NO se mueve: moverla la resucitaba con la copia leída al principio.
+  let yaNoActiva = false;
   const mesOriginal = record.startIso.slice(0, 7); // para compensar el event-log si cambia de mes
   const registroOriginal = record;
 
@@ -1357,6 +1501,11 @@ export async function reprogramarRecord(
     resourceId: record.empleadoId,
     eventLogRef: record.id,
     revalidate: async () => {
+      const fresca = await getRecord(record.id);
+      if (!fresca || !ocupaAgenda(fresca.estado)) {
+        yaNoActiva = true;
+        return false;
+      }
       const r = await elegir();
       if (!r.ok) return false;
       asignado = r.empleado;
@@ -1365,14 +1514,23 @@ export async function reprogramarRecord(
     // Mover la cita también se guarda dentro del candado: si no, entre el hueco
     // concedido y el guardado otra reserva puede colarse en la hora nueva.
     persistir: async (cita) => {
+      const fresca = await getRecord(record.id);
+      if (!fresca || !ocupaAgenda(fresca.estado)) {
+        yaNoActiva = true;
+        throw new Error("la cita se ha cancelado mientras se movía");
+      }
       updated = {
-        ...record, startIso: startNorm, durationMin: dur, eventId: cita.eventId, htmlLink: cita.htmlLink, reprogramadaEn: new Date().toISOString(),
+        ...fresca, startIso: startNorm, durationMin: dur, eventId: cita.eventId, htmlLink: cita.htmlLink, reprogramadaEn: new Date().toISOString(),
         ...(asignado && !record.empleadoId ? { empleadoId: asignado.id, empleadoNombre: asignado.nombre } : {}),
       };
       await saveRecord(updated);
     },
     deshacerCita: (eventId) => retirarCitaDeGoogle(calendarEmail, redirectUri, eventId),
   });
+  if (!res.ok && yaNoActiva) {
+    // Cancelada entre medias: ni se mueve ni se restaura el evento viejo.
+    return { ok: false, reason: "no_movible" };
+  }
   if (!res.ok) {
     if (oldEventId) {
       const restore = await reservarSlotBooking({
@@ -1389,7 +1547,11 @@ export async function reprogramarRecord(
             }
           : undefined,
       });
-      if (restore.ok) await saveRecord({ ...record, eventId: restore.eventId, htmlLink: restore.htmlLink });
+      if (restore.ok) {
+        await actualizarRecord(record.id, "reprogramar-restaurar", (fresca) =>
+          ocupaAgenda(fresca.estado) ? { ...fresca, eventId: restore.eventId, htmlLink: restore.htmlLink } : null,
+        );
+      }
     }
     if (res.reason === "slot_taken") return { ok: false, reason: "slot_taken", suggested: res.suggested };
     if (res.reason === "locked") return { ok: false, reason: "locked" };
@@ -1727,7 +1889,7 @@ export async function setNotifSeen(slug: string, ownerEmail: string, iso: string
 export async function citasActivasDeCliente(slug: string, telefono: string): Promise<BookingRecord[]> {
   const hoy = new Date().toISOString().slice(0, 10);
   const key = clienteKey({ telefono });
-  return (await listRecords())
+  return (await listRecordsDeNegocio(slug))
     .filter((r) =>
       r.slug === slug &&
       r.tipo !== "bloqueo" &&

@@ -21,7 +21,7 @@
 //   4. Si tampoco, y solo hay UN negocio dado de alta, se usa ése.
 //   5. Si hay varios y no sabemos cuál, NO se adivina.
 
-import { getBusinessBySlug, listBusinesses, type BusinessBooking } from "./booking";
+import { getBusinessBySlug, getBusinessByTenant, listBusinesses, type BusinessBooking } from "./booking";
 import { resolveTenantFromCarmenNumber } from "./tenants";
 
 export type SalonResuelto =
@@ -29,8 +29,8 @@ export type SalonResuelto =
   | { ok: false; motivo: "no_existe" | "ambiguo" };
 
 async function primerNegocioDeTenant(tenantId: string): Promise<BusinessBooking | null> {
-  const todos = await listBusinesses();
-  return todos.find((b) => b.tenantId === tenantId) ?? null;
+  // La misma regla que Pablo y el panel (ver `getBusinessByTenant`).
+  return getBusinessByTenant(tenantId);
 }
 
 export async function resolverSalonDeLlamada(

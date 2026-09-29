@@ -230,8 +230,14 @@ export async function gestionarCitaExistente(o: { tenantId: string; contacto: st
   if (!p && esSi(o.texto)) {
     const pendientes = (await citasActivasDeCliente(negocio.slug, o.contacto)).filter((c) => c.recordatorioEnviadoEn && !c.confirmadaPorClienteEn);
     if (pendientes.length) {
-      const { saveRecord } = await import("./booking");
-      for (const c of pendientes) await saveRecord({ ...c, confirmadaPorClienteEn: new Date().toISOString() });
+      const { actualizarRecord } = await import("./booking");
+      // Sobre la versión guardada y con el candado del día: si a la vez la han
+      // cancelado o movido, no se deshace ese cambio.
+      for (const c of pendientes) {
+        await actualizarRecord(c.id, "confirmar-recordatorio", (fresca) =>
+          fresca.estado === "confirmada" && !fresca.confirmadaPorClienteEn ? { ...fresca, confirmadaPorClienteEn: new Date().toISOString() } : null,
+        );
+      }
       return { texto: `Perfecto, confirmada: ${describir(pendientes[0])}. Te esperamos.`, via: "recordatorio_confirmado" };
     }
   }
