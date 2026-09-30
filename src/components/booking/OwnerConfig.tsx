@@ -19,7 +19,7 @@ type Horario = Record<number, DayHours>;
 type Ausencia = { desde: string; hasta: string; motivo?: string };
 type Empleado = { id: string; nombre: string; color?: string; activo: boolean; horario?: Horario; serviceIds?: string[]; ausencias?: Ausencia[] };
 type Negocio = {
-  slug: string; nombre: string; descripcion?: string; logoUrl?: string; heroImageUrl?: string; galeria?: string[]; direccion?: string; telefono?: string; timezone: string;
+  slug: string; nombre: string; descripcion?: string; logoUrl?: string; heroImageUrl?: string; galeria?: string[]; direccion?: string; telefono?: string; resenaUrl?: string; timezone: string;
   slotStepMin: number; leadTimeMin: number; cancelAntelacionMin: number;
   categorias: Categoria[]; servicios: Servicio[]; empleados?: Empleado[]; horario: Horario;
 };
@@ -46,6 +46,7 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
   const [galeria, setGaleria] = useState<string[]>(base.galeria || []);
   const [direccion, setDireccion] = useState(base.direccion || "");
   const [telefono, setTelefono] = useState(base.telefono || "");
+  const [resenaUrl, setResenaUrl] = useState(base.resenaUrl || "");
   const [categorias, setCategorias] = useState<Categoria[]>(base.categorias);
   const [servicios, setServicios] = useState<Servicio[]>(base.servicios);
   const [empleados, setEmpleados] = useState<Empleado[]>(base.empleados || []);
@@ -60,7 +61,7 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
 
   function cambiarNegocio(s: string) {
     const n = negocios.find((x) => x.slug === s)!;
-    setSlug(s); setNombre(n.nombre); setDescripcion(n.descripcion || ""); setLogoUrl(n.logoUrl || ""); setHeroUrl(n.heroImageUrl || ""); setErrImg(""); setGaleria(n.galeria || []); setDireccion(n.direccion || ""); setTelefono(n.telefono || "");
+    setSlug(s); setNombre(n.nombre); setDescripcion(n.descripcion || ""); setLogoUrl(n.logoUrl || ""); setHeroUrl(n.heroImageUrl || ""); setErrImg(""); setGaleria(n.galeria || []); setDireccion(n.direccion || ""); setTelefono(n.telefono || ""); setResenaUrl(n.resenaUrl || "");
     setCategorias(n.categorias); setServicios(n.servicios); setEmpleados(n.empleados || []); setHorario(normHorario(n.horario));
     setSlotStepMin(n.slotStepMin); setLeadTimeMin(n.leadTimeMin); setCancelAntelacionMin(n.cancelAntelacionMin ?? 120); setMsg("");
   }
@@ -105,7 +106,7 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
           nombre: nombre.trim(), descripcion: descripcion.trim(),
           logoUrl, heroImageUrl: heroUrl, // "" = quitar · URL = poner
           galeria: galeria.filter((g) => g.trim()),
-          direccion: direccion.trim(), telefono: telefono.trim(),
+          direccion: direccion.trim(), telefono: telefono.trim(), resenaUrl: resenaUrl.trim(),
           slotStepMin, leadTimeMin, cancelAntelacionMin,
           categorias: categorias.filter((c) => c.nombre.trim()),
           servicios: servicios.filter((s) => s.nombre.trim()).map((s) => ({
@@ -181,6 +182,9 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
             <span className="block text-[11px] text-black/40 mt-1">Sale como mapa en la web de reserva.</span></label>
           <label className="block"><span className="block text-sm font-bold mb-1">Teléfono</span>
             <input value={telefono} onChange={(e) => setTelefono(e.target.value)} className={`w-full ${inp}`} placeholder="+34 600 000 000" type="tel" /></label>
+          <label className="block sm:col-span-2"><span className="block text-sm font-bold mb-1">Enlace de reseñas de Google</span>
+            <input value={resenaUrl} onChange={(e) => setResenaUrl(e.target.value)} className={`w-full ${inp}`} placeholder="https://g.page/r/…/review" type="url" />
+            <span className="block text-[11px] text-black/40 mt-1">Pablo lo manda al día siguiente de cada cita realizada (una vez cada 90 días por clienta). Sin enlace, no se pide reseña.</span></label>
         </div>
         <div>
           <div className="flex items-center justify-between mb-1"><span className="text-sm font-bold">Galería (URLs de fotos)</span><button onClick={() => setGaleria((g) => [...g, ""])} className="text-xs font-mono underline text-black/50">+ foto</button></div>

@@ -111,7 +111,9 @@ const confirmo = await mkCita("32", "11:00");
 const cancelo = await mkCita("33", "12:00");
 await B.actualizarRecord(confirmo, "test", (x: any) => ({ ...x, confirmadaPorClienteEn: new Date().toISOString() }));
 await B.cambiarEstadoRecord(cancelo, "cancelada", REDIR, slug);
-const [p1, p2] = await Promise.all([L.pasadaLlamadasRecordatorio(), L.pasadaLlamadasRecordatorio()]);
+// A una hora de llamar (11:00 en España): la prueba no puede depender de a qué hora se lance.
+const once = new Date(`${new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" })}T11:00:00+02:00`);
+const [p1, p2] = await Promise.all([L.pasadaLlamadasRecordatorio(once), L.pasadaLlamadasRecordatorio(once)]);
 const llamadas = p1.prueba + p1.llamadas + p2.prueba + p2.llamadas;
 assert(llamadas === 1, `dos pasadas a la vez → Carmen llama UNA vez (${llamadas}); en local, en modo prueba`);
 assert(!!(await B.getRecord(sinContestar)).llamadaRecordatorioEn, "queda apuntada la llamada");

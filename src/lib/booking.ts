@@ -1671,7 +1671,11 @@ export async function reprogramarRecord(
 // No hay entidad Cliente separada: se agrega por teléfono (o email/nombre).
 // -----------------------------------------------------------------------------
 
-export type ClienteMeta = { notas?: string; etiquetas?: string[]; reactivacionEnviadaIso?: string };
+export type ClienteMeta = {
+  notas?: string; etiquetas?: string[]; reactivacionEnviadaIso?: string;
+  /** Lo que Pablo y Carmen recuerdan de ella (ver memoria-clienta.ts). */
+  memoria?: import("./memoria-clienta").MemoriaGuardada;
+};
 export type ClienteAgg = {
   key: string;
   nombre: string;
@@ -1779,6 +1783,10 @@ export async function getClienteFicha(slug: string, key: string): Promise<Client
   if (!cliente) return null;
   const meta = (await readClientesMeta())[`${slug}|${key}`] || {};
   return { cliente, historial, meta };
+}
+
+export async function getClienteMeta(slug: string, key: string): Promise<ClienteMeta> {
+  return (await readClientesMeta())[`${slug}|${key}`] || {};
 }
 
 export async function saveClienteMeta(slug: string, key: string, patch: ClienteMeta): Promise<void> {

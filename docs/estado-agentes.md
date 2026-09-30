@@ -103,6 +103,60 @@ llamaba BENDITO ARTE):
    nada en la agenda.
 3. «Quiero hablar con una persona» → te llega el aviso al WhatsApp del dueño, que es tu móvil.
 
+## Memoria de clienta (Pablo y Carmen) — en local, pendiente de desplegar
+
+- **Qué recuerda:** va por negocio y por teléfono (`src/lib/memoria-clienta.ts`). Guarda:
+  - su nombre y su idioma;
+  - su franja preferida («prefiero por la tarde»);
+  - las preferencias que dice ella («me gusta el esmalte nude»).
+
+  De sus citas se calcula (no se duplica) lo siguiente:
+  - sus últimos servicios con fecha;
+  - «lo de siempre», es decir, el servicio que más repite y su profesional habitual.
+- **Pablo:**
+  - la saluda por su nombre;
+  - si no dice qué quiere, propone «¿Lo de siempre, manicura con Ana?»;
+  - al reservar ofrece primero su profesional y, si pide día sin hora, su franja.
+- **Carmen:**
+  - la ruta entrante ya da `{{cliente_nombre}}`, `{{lo_de_siempre}}` y `{{preferencias_cliente}}`;
+  - agendar_cita entiende «lo de siempre»;
+  - el prompt ya está en el repo, pero se publica al desplegar
+    (`scripts/carmen-retell-publicar.mjs --publicar`). Hace falta poner en el número el
+    *Inbound call webhook* `/api/carmen/entrante`.
+- **Panel:** la ficha de cada clienta tiene el bloque «Memoria de Pablo y Carmen». La dueña
+  puede corregir el nombre, la franja, el idioma y las preferencias, y tiene un botón
+  «Olvidar a esta clienta».
+- **RGPD:**
+  - Nunca se guardan datos de salud: alergias, embarazo, medicación, enfermedades… Se
+    descarta la frase entera, lo diga la clienta o lo escriba la dueña.
+  - Si la clienta escribe «olvídame» o «borrad mis datos»:
+    - se borra su memoria y la conversación guardada;
+    - Pablo se lo confirma;
+    - ya no se usa nada anterior.
+  - Sus citas siguen en la agenda.
+- **Pruebas:** `t15-memoria-resenas` y Playwright P12 (nombre, «lo de siempre», sin salud) y
+  P13 (olvido).
+
+## Reseña de Google al día siguiente — en local, APAGADO
+
+- **Cuándo se envía:**
+  - al día siguiente de una cita **realizada**: completada, o confirmada que ya pasó;
+  - nunca si fue anulada, no se presentó o estaba pendiente;
+  - entre las 10 y las 20 h, desde el cron horario de recordatorios.
+- **Contenido:** gracias y el enlace directo de Google del negocio. Es el campo nuevo
+  «Enlace de reseñas de Google» de la ficha; sin enlace, no se envía nada.
+- **Límites:** una petición por clienta cada **90 días**.
+- **Si contesta con una queja:**
+  - no se le insiste;
+  - se avisa a la dueña por WhatsApp;
+  - no se le vuelve a pedir en un año.
+- **Plantilla:** `aiteam_pedir_resena` (es + en), solicitada a Meta como MARKETING (así
+  clasifica Meta las peticiones de reseña).
+  - Estado: **PENDING**.
+  - Al aprobarse: `REVIEW_REQUEST_ENABLED=true` en Vercel. Ahora está apagado.
+- **Pruebas:** `t15-memoria-resenas` (solo realizadas, 90 días, queja, sin enlace) y
+  Playwright P14 (queja → aviso a la dueña).
+
 ## Marta (Instagram)
 
 **Funciona** (según los recorridos de Playwright)

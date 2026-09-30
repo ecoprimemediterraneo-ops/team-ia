@@ -13,7 +13,12 @@ type ClienteAgg = {
   ultimaVisitaIso?: string; proximaCitaIso?: string; etiquetas: string[]; tieneNotas: boolean;
   profesionalHabitual?: string;
 };
-type Ficha = { cliente: ClienteAgg; historial: BookingRecord[]; meta: { notas?: string; etiquetas?: string[] } };
+type Memoria = {
+  nombre?: string; idioma?: "es" | "en"; franja?: "mañana" | "tarde"; preferencias?: { texto: string; desde: string }[]; olvidadaEn?: string;
+  ultimos: { servicio: string; fecha: string; profesional?: string }[];
+  habitual?: { servicio: string; profesional?: string };
+};
+type Ficha = { cliente: ClienteAgg; historial: BookingRecord[]; meta: { notas?: string; etiquetas?: string[] }; memoria?: Memoria };
 
 const ESTADO_LBL: Record<string, string> = { pendiente: "Pendiente", confirmada: "Confirmada", completada: "Completada", cancelada: "Cancelada", no_show: "No vino" };
 const EST_COLOR: Record<string, string> = { pendiente: "#8a7500", confirmada: "#5A6B3F", completada: "#111", cancelada: "#999", no_show: "#C8202A" };
@@ -89,6 +94,75 @@ function CardCliente({ c, onClick }: { c: ClienteAgg; onClick: () => void }) {
   );
 }
 
+// Lo que Pablo (WhatsApp) y Carmen (teléfono) recuerdan de ella. La dueña lo
+// corrige aquí; lo que sea de salud no se guarda (lo rechaza el servidor).
+function MemoriaClienta({ slug, clave, inicial }: { slug: string; clave: string; inicial: Memoria }) {
+  const [nombre, setNombre] = useState(inicial.nombre || "");
+  const [franja, setFranja] = useState<string>(inicial.franja || "");
+  const [idioma, setIdioma] = useState<string>(inicial.idioma || "");
+  const [prefs, setPrefs] = useState<string[]>((inicial.preferencias || []).map((p) => p.texto));
+  const [nueva, setNueva] = useState("");
+  const [aviso, setAviso] = useState("");
+  const [olvidada, setOlvidada] = useState(!!inicial.olvidadaEn && !inicial.nombre && !(inicial.preferencias || []).length);
+
+  async function guardar(cambios: { nombre?: string; franja?: string; idioma?: string; preferencias?: string[] }) {
+    setAviso("Guardando…");
+    try {
+      const r = await fetch(`/api/booking/${slug}/clientes`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: clave, memoria: cambios }) });
+      const j = await r.json().catch(() => ({}));
+      if (j.rechazadas?.length) {
+        setPrefs((p) => p.filter((x) => !j.rechazadas.includes(x)));
+        setAviso("No guardado: es un dato de salud y no se guarda.");
+      } else setAviso(r.ok ? "✓ Guardado" : "No se ha podido guardar");
+      setOlvidada(false);
+    } catch { setAviso("No se ha podido guardar"); }
+  }
+  function addPref() {
+    const t = nueva.trim();
+    if (!t || prefs.includes(t)) { setNueva(""); return; }
+    const next = [...prefs, t]; setPrefs(next); setNueva(""); guardar({ preferencias: next });
+  }
+  async function olvidar() {
+    if (!confirm("Se borra lo que Pablo y Carmen recuerdan de ella (nombre, preferencias y la conversación). Sus citas no se tocan. ¿Seguir?")) return;
+    const r = await fetch(`/api/booking/${slug}/clientes`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: clave, olvidar: true }) });
+    if (r.ok) { setNombre(""); setFranja(""); setIdioma(""); setPrefs([]); setOlvidada(true); setAviso("Memoria borrada."); }
+  }
+
+  return (
+    <div className="card-hard bg-white p-3 mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-xs font-bold uppercase tracking-widest">Memoria de Pablo y Carmen</div>
+        <button onClick={olvidar} className="text-[11px] font-mono underline text-black/50">Olvidar a esta clienta</button>
+      </div>
+      {olvidada && <div className="text-xs text-black/50 mb-2">Pidió que la olvidaran: no se usa nada anterior.</div>}
+      {inicial.habitual && !olvidada && (
+        <div className="text-sm mb-2">Lo de siempre: <b>{inicial.habitual.servicio}{inicial.habitual.profesional ? ` con ${inicial.habitual.profesional}` : ""}</b></div>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+        <label className="block"><span className="block text-[11px] font-bold mb-0.5">Cómo llamarla</span>
+          <input value={nombre} onChange={(e) => setNombre(e.target.value)} onBlur={() => guardar({ nombre })} className="border-2 border-black px-2 py-1 text-sm w-full bg-white" /></label>
+        <label className="block"><span className="block text-[11px] font-bold mb-0.5">Franja preferida</span>
+          <select value={franja} onChange={(e) => { setFranja(e.target.value); guardar({ franja: e.target.value }); }} className="border-2 border-black px-2 py-1 text-sm w-full bg-white">
+            <option value="">Sin preferencia</option><option value="mañana">Mañana</option><option value="tarde">Tarde</option>
+          </select></label>
+        <label className="block"><span className="block text-[11px] font-bold mb-0.5">Idioma</span>
+          <select value={idioma} onChange={(e) => { setIdioma(e.target.value); guardar({ idioma: e.target.value }); }} className="border-2 border-black px-2 py-1 text-sm w-full bg-white">
+            <option value="">Español</option><option value="en">Inglés</option>
+          </select></label>
+      </div>
+      <div className="text-[11px] font-bold mb-1">Lo que ella ha dicho que le gusta</div>
+      <div className="flex flex-wrap gap-1.5 items-center">
+        {prefs.map((p) => (
+          <span key={p} className="text-xs bg-[color:var(--mustard)] border border-black px-2 py-0.5 flex items-center gap-1">{p}
+            <button onClick={() => { const next = prefs.filter((x) => x !== p); setPrefs(next); guardar({ preferencias: next }); }} className="text-black/50 hover:text-black">✕</button></span>
+        ))}
+        <input value={nueva} onChange={(e) => setNueva(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPref(); } }} placeholder="+ preferencia" className="border-2 border-black px-2 py-0.5 text-xs w-40 bg-white" />
+      </div>
+      <div className="text-[11px] text-black/40 mt-2">{aviso || "Solo datos útiles para atenderla. Nunca datos de salud."}</div>
+    </div>
+  );
+}
+
 function FichaCliente({ slug, ficha, onBack, palabra }: { slug: string; ficha: Ficha; onBack: () => void; palabra: string }) {
   const c = ficha.cliente;
   const [notas, setNotas] = useState(ficha.meta.notas || "");
@@ -132,9 +206,11 @@ function FichaCliente({ slug, ficha, onBack, palabra }: { slug: string; ficha: F
         </div>
       </div>
 
+      {ficha.memoria && <MemoriaClienta slug={slug} clave={c.key} inicial={ficha.memoria} />}
+
       <div className="mb-5">
         <div className="text-xs font-bold uppercase tracking-widest mb-1">Notas internas</div>
-        <textarea value={notas} onChange={(e) => setNotas(e.target.value)} onBlur={() => guardar(etiquetas, notas)} rows={3} placeholder="Alergias, preferencias, incidencias…" className="card-hard w-full px-3 py-2 bg-white text-sm" />
+        <textarea value={notas} onChange={(e) => setNotas(e.target.value)} onBlur={() => guardar(etiquetas, notas)} rows={3} placeholder="Incidencias, cómo le gusta que la atiendan…" className="card-hard w-full px-3 py-2 bg-white text-sm" />
         <div className="text-[11px] text-black/40 mt-1">{estado === "guardando" ? "Guardando…" : estado === "ok" ? "✓ Guardado" : "Se guarda al salir del campo."}</div>
       </div>
 

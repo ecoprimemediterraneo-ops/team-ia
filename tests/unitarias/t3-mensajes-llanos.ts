@@ -19,14 +19,16 @@ const sv = negocio.servicios.find((s: any) => s.activo); const sel = B.resolverS
 const email = "demo-dental@aiteam.local";
 fs.mkdirSync("data", { recursive: true });
 fs.writeFileSync("data/users.json", JSON.stringify({ [email]: { email, createdAt: new Date().toISOString(), chats: {}, gmailTokens: { refreshToken: "roto", scope: "x" } } }));
-const r = await Promise.race([B.computeFreeSlots(negocio, sel, suma(3), REDIR), new Promise((res) => setTimeout(() => res("TIMEOUT"), 20000))]) as any;
+// Un día LABORABLE (un sábado o domingo cerrado no llega a consultar Google).
+let dLab = 3; while ([0, 6].includes(new Date(`${suma(dLab)}T12:00:00Z`).getUTCDay())) dLab++;
+const r = await Promise.race([B.computeFreeSlots(negocio, sel, suma(dLab), REDIR), new Promise((res) => setTimeout(() => res("TIMEOUT"), 20000))]) as any;
 assert(r !== "TIMEOUT", "la consulta con Google roto no se queda colgada");
 assert(r.ok === false, "con Google conectado pero roto NO se inventa una agenda interna (los eventos de Google seguirían sin verse)");
 assert(!TECNICO.test(r.detail || "") || /desconectado|Reconectar/.test(r.detail), `el detalle que ve la pantalla no lleva texto técnico: «${r.detail}»`);
 assert(!/Sin tokens|invalid_grant|insufficient/i.test(r.detail || ""), "ni «Sin tokens para este usuario» ni códigos de Google");
 
 // Reservar con Google roto → mensaje llano y NO se crea nada
-const slotFalso = `${suma(3)}T10:00:00`;
+const slotFalso = `${suma(dLab)}T10:00:00`;
 const res = await O.reservarSlot({ tenantId, userEmail: "x", redirectUri: REDIR, nombre: "N", motivo: sv.nombre, startIso: slotFalso, agenteOrigen: "dashboard" });
 assert(!res.ok, "con Google roto no se reserva a ciegas");
 const texto = T.textoFalloReserva(res as any);

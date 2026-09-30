@@ -27,6 +27,7 @@ import { logEvent, makeEventId } from "@/lib/event-log";
 import { esUrgencia, configCarmen, avisarAlDueno, idiomaDe } from "@/lib/carmen-llamadas";
 import { pideUnaPersona, textoAvisoAlDueno, textoCitaGuardada, textoServicioNoDisponible, textoNoGuardada, preguntaFaltante, confirmaCitaSinGuardar } from "@/lib/pablo-respuestas";
 import { diaDeTexto } from "@/lib/fecha-es";
+import { pideOlvido, olvidarClienta, aprenderDeMensaje, leerMemoria, contextoDeMemoria, type MemoriaClienta } from "@/lib/memoria-clienta";
 import { agendaCitasDeTenant, resolveTenantFromMeta, getTenantSector, getTenant, agenteContratado } from "@/lib/tenants";
 import { resolverSector } from "@/lib/sectores";
 import { getFicha, fichaToPromptContext } from "@/lib/ficha";
@@ -715,6 +716,50 @@ export async function POST(req: Request) {
             marcarUrgenciaDental(tenantId, { telefono: from, nombre: customerName, texto: text }).catch(() => {});
           }
 
+          // === MEMORIA DE CLIENTA (ver memoria-clienta.ts) ===
+          // "Olvídame" va primero y corta el flujo. Si no, se aprende de lo que
+          // dice (idioma, franja, preferencias; nunca salud) y se lee lo que se
+          // sabe de ella para el saludo, "lo de siempre" y los huecos.
+          let memoria: MemoriaClienta | null = null;
+          let negocioMemoria: Awaited<ReturnType<typeof getBusinessByTenant>> = null;
+          if (sectorAgenda) try {
+            negocioMemoria = await getBusinessByTenant(tenantId);
+            if (negocioMemoria) {
+              if (pideOlvido(text)) {
+                await olvidarClienta({ slug: negocioMemoria.slug, tenantId, telefono: from });
+                const resp = idiomaDe(text) === "en"
+                  ? "Done: I've deleted what I remembered about you (name and preferences). Your upcoming appointments stay in the salon's diary so you can still come."
+                  : "Hecho: he borrado lo que recordaba de ti (nombre y preferencias). Tus próximas citas siguen en la agenda del salón para que puedas venir.";
+                await sendWhatsAppText(from, resp);
+                await registrarIntercambio({ tenantId, msgId: msg.id, from, nombre: undefined, entrante: text, respuesta: resp, rxTs, via: "memoria_olvidada" });
+                continue;
+              }
+              // ¿Contesta a la petición de reseña con una QUEJA? No se le insiste,
+              // se avisa a la dueña y no se le vuelve a pedir reseña en un año.
+              const R = await import("@/lib/resena-whatsapp");
+              if (R.esQueja(text) && (await R.pedidaHaceNada(negocioMemoria.slug, from))) {
+                const quien = `${customerName ? `${customerName} ` : ""}(+${from.replace(/\D/g, "")})`;
+                const aviso = await avisarAlDueno(tenantId,
+                  `QUEJA tras pedir reseña en ${negocioMemoria.nombre}\nCliente: ${quien}\n${text.slice(0, 400)}`,
+                  process.env.CARMEN_URGENCIA_TEMPLATE ? { nombre: process.env.CARMEN_URGENCIA_TEMPLATE, variables: [quien, `Queja tras pedir reseña: ${text}`.slice(0, 500)] } : undefined);
+                await R.marcarQueja(negocioMemoria.slug, from);
+                const avisado = aviso.enviado && !/simulado/.test(aviso.modo);
+                const resp = idiomaDe(text) === "en"
+                  ? `I'm really sorry it wasn't what you expected. ${avisado ? "I've passed it straight to the manager so they can sort it out with you." : "I've noted it for the team."}`
+                  : `Siento mucho que no fuera como esperabas. ${avisado ? "Se lo acabo de pasar a la responsable para que lo vea contigo." : "Lo dejo anotado para el equipo."}`;
+                await sendWhatsAppText(from, resp);
+                await appendTurn("pablo", tenantId, from, "user", text, customerName);
+                await appendTurn("pablo", tenantId, from, "assistant", resp, customerName);
+                await registrarIntercambio({ tenantId, msgId: msg.id, from, nombre: customerName, entrante: text, respuesta: resp, rxTs, via: "resena_queja_aviso_dueno" });
+                continue;
+              }
+              await aprenderDeMensaje(negocioMemoria.slug, from, text, idiomaDe(text) === "en" ? "en" : undefined).catch(() => {});
+              memoria = await leerMemoria(negocioMemoria.slug, from);
+            }
+          } catch (err) {
+            console.error("[pablo/webhook] memoria de clienta (no crítico):", err);
+          }
+
           // === INTERCEPTOR: PIDE UNA PERSONA O TIENE UNA URGENCIA ===
           // Como en Carmen: se avisa al WhatsApp del DUEÑO (plantilla de urgencia)
           // y al cliente se le dice la verdad: si el aviso ha salido, que le
@@ -863,6 +908,16 @@ export async function POST(req: Request) {
 
             // Detección única sobre el transcript.
             const intent = await detectAppointmentIntent(transcript, new Date(), modoRest);
+            // "Lo de siempre" (o sin decir servicio, cuando ya se le propuso): su servicio habitual.
+            if (memoria?.habitual && (!intent.fields.motivo || /\b(lo de siempre|lo mismo|lo habitual|como siempre|the usual)\b/i.test(intent.fields.motivo))
+              && /\b(lo de siempre|lo mismo|lo habitual|como siempre|the usual)\b/i.test(transcript)) {
+              intent.fields.motivo = memoria.habitual.servicio;
+              intent.missing = intent.missing.filter((m) => m !== "motivo");
+            }
+            if (!intent.fields.nombre && memoria?.nombre) {
+              intent.fields.nombre = memoria.nombre;
+              intent.missing = intent.missing.filter((m) => m !== "nombre");
+            }
             if (!intent.fields.nombre && customerName) {
               intent.fields.nombre = customerName;
               intent.missing = intent.missing.filter((m) => m !== "nombre");
@@ -890,6 +945,8 @@ export async function POST(req: Request) {
               modo: modoRest,
               // La confirmación va en ESTE mensaje (uno solo, no dos).
               confirmacionEnConversacion: true,
+              // Su profesional de siempre, primero (si está libre; si no, otra).
+              empleadoId: memoria?.habitual?.empleadoId && intent.fields.motivo && memoria.habitual.servicio === intent.fields.motivo ? memoria.habitual.empleadoId : undefined,
             });
             // Lo que se contesta en las ramas que no improvisan (y se corta el flujo).
             const contestar = async (resp: string, via: string) => {
@@ -987,7 +1044,8 @@ export async function POST(req: Request) {
                   continue;
                 }
                 const oferta = await ofrecerAlternativas({
-                  tenantId, contacto: from, startIso: `${dia}T00:00:00`, motivo: agRes.intent.fields.motivo!,
+                  // Su franja preferida primero ("prefiero por la tarde").
+                  tenantId, contacto: from, startIso: `${dia}T${memoria?.franja === "tarde" ? "16:00:00" : "00:00:00"}`, motivo: agRes.intent.fields.motivo!,
                   nombre: agRes.intent.fields.nombre || customerName, porque: "sin_hora", idioma: idiomaCita,
                 });
                 await contestar(oferta.texto, oferta.via);
@@ -995,7 +1053,19 @@ export async function POST(req: Request) {
               }
               const q = idiomaCita === "en" ? preguntaFaltante(agRes.missing, "en") : missingFieldsToQuestion(agRes.missing, modoRest);
               if (q) {
-                const respInc = idiomaCita === "en" ? `Sure, I'll book it for you. ${q}` : `Perfecto, te agendo cita. ${q}`;
+                // Clienta conocida: por su nombre y, si no ha dicho qué, "¿lo de siempre?".
+                const primer = memoria?.nombre?.split(" ")[0];
+                // Si en ESTE mensaje no nombra servicio (lo que dijo antes puede ser de otra cita).
+                const { servicioPedido: svDelMensaje } = await import("@/lib/booking");
+                const siempre = memoria?.habitual && negocioMemoria && !svDelMensaje(negocioMemoria, text)
+                  ? `${memoria.habitual.servicio.toLowerCase()}${memoria.habitual.profesional ? ` con ${memoria.habitual.profesional}` : ""}` : "";
+                const respInc = siempre
+                  ? (idiomaCita === "en"
+                    ? `Hi${primer ? ` ${primer}` : ""}! The usual, ${siempre}? Tell me which day and time suit you.`
+                    : `Hola${primer ? ` ${primer}` : ""}! ¿Lo de siempre, ${siempre}? Dime qué día y a qué hora te viene bien.`)
+                  : idiomaCita === "en"
+                    ? `${primer ? `Hi ${primer}! ` : ""}Sure, I'll book it for you. ${q}`
+                    : `${primer ? `Hola ${primer}! ` : ""}Perfecto, te agendo cita. ${q}`;
                 await contestar(respInc, "agenda_faltan_datos");
                 continue;
               }
@@ -1035,7 +1105,8 @@ export async function POST(req: Request) {
           // prompt de venta de siempre — no es un negocio de cliente.
           let sectorSystem = PABLO_SYSTEM;
           try {
-            const persona = await resolverPersona({ tenantId, agente: "pablo", canal: "whatsapp" });
+            const extraMemoria = memoria ? contextoDeMemoria(memoria, negocioMemoria ?? undefined) : "";
+            const persona = await resolverPersona({ tenantId, agente: "pablo", canal: "whatsapp", extra: extraMemoria || undefined });
             if (persona.sector) {
               sectorSystem = persona.system;
             } else {

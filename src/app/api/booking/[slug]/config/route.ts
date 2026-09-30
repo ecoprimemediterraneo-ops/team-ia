@@ -61,6 +61,8 @@ const schema = z.object({
   galeria: z.array(z.string().url().max(500)).max(12).optional(),
   direccion: z.string().max(200).optional(),
   telefono: z.string().max(40).optional(),
+  // Enlace directo de reseñas de Google. "" = quitarlo.
+  resenaUrl: z.string().url().max(600).optional().or(z.literal("")),
   lat: z.number().optional(),
   lng: z.number().optional(),
   slotStepMin: z.number().int().min(5).max(60).optional(),
@@ -105,6 +107,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     lat: parsed.data.lat ?? cur.lat,
     lng: parsed.data.lng ?? cur.lng,
     telefono: parsed.data.telefono ?? cur.telefono,
+    resenaUrl: parsed.data.resenaUrl !== undefined ? (parsed.data.resenaUrl || undefined) : cur.resenaUrl,
     slotStepMin: parsed.data.slotStepMin ?? cur.slotStepMin,
     leadTimeMin: parsed.data.leadTimeMin ?? cur.leadTimeMin,
     cancelAntelacionMin: parsed.data.cancelAntelacionMin ?? cur.cancelAntelacionMin,

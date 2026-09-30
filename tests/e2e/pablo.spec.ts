@@ -156,3 +156,64 @@ test("P11. Nota de voz que no se puede escuchar: pide que lo escriba", async () 
   const r = await escribir(movilNuevo(), { type: "audio", audio: { id: "media-demo", mime_type: "audio/ogg; codecs=opus" } });
   expect(r.join(" ")).toMatch(/No he podido escuchar ese audio/);
 });
+
+// ─── MEMORIA DE CLIENTA ──────────────────────────────────────────────────────
+const memoriaDe = (movil: string) => {
+  const meta = fs.existsSync(path.join(DATA, "booking-clientes-meta.json")) ? leer("booking-clientes-meta.json") : {};
+  return (meta[`demo|t:${movil.slice(-9)}`] || {}).memoria || {};
+};
+
+test("P12. Memoria: la saluda por su nombre, «lo de siempre» y nada de salud", async () => {
+  const m = movilNuevo();
+  const D1 = diaLaborable(6), D2 = diaLaborable(7);
+  // Primera visita: una manicura, y cuenta sus preferencias (una de salud).
+  await escribir(m, `Hola, soy Carla Memoria. Quiero una manicura ${fechaHablada(D1)} a las 17:00`);
+  expect(activas(m).length).toBe(1);
+  const suProfesional = activas(m)[0].empleadoId;
+  await escribir(m, "Por cierto, me gusta el esmalte nude. Soy alérgica al látex. Prefiero por la tarde.");
+  const mem = memoriaDe(m);
+  expect(JSON.stringify(mem.preferencias || [])).toContain("esmalte nude");
+  expect(JSON.stringify(mem), "nunca datos de salud").not.toMatch(/l[aá]tex|al[eé]rgica/i);
+  expect(mem.franja).toBe("tarde");
+  // Otro día escribe sin más: la saluda por su nombre.
+  const r1 = await escribir(m, "Hola! Quería pedir otra cita");
+  expect(r1.join(" "), "la saluda por su nombre").toMatch(/Carla/);
+  expect(r1.join(" ").toLowerCase(), "le propone lo de siempre").toMatch(/manicura/);
+  // «Lo de siempre»: manicura, y con su profesional si está libre.
+  const r2 = await escribir(m, `Sí, lo de siempre, ${fechaHablada(D2)} a las 17:00`);
+  expect(r2.join(" ")).toMatch(/Te he guardado la cita en \*Salón Bella\*: \*Manicura\*/);
+  const nueva = activas(m).find((c) => c.startIso.startsWith(D2));
+  expect(nueva?.servicioNombre).toBe("Manicura");
+  expect(nueva?.empleadoId, "con su profesional de siempre").toBe(suProfesional);
+});
+
+test("P13. «Olvídame»: borra su memoria y ya no la trata como conocida", async () => {
+  const m = movilNuevo();
+  await escribir(m, `Hola, soy Olga Olvido. Quiero una pedicura ${fechaHablada(diaLaborable(8))} a las 11:00. Me gusta el esmalte rojo.`);
+  expect(JSON.stringify(memoriaDe(m).preferencias || [])).toContain("rojo");
+  const r = await escribir(m, "Olvidadme, por favor, borrad mis datos");
+  expect(r.join(" ")).toMatch(/he borrado lo que recordaba de ti/);
+  const mem = memoriaDe(m);
+  expect(mem.olvidadaEn).toBeTruthy();
+  expect(mem.preferencias || []).toEqual([]);
+  const r2 = await escribir(m, "Hola");
+  expect(r2.join(" "), "ya no la llama por su nombre").not.toMatch(/Olga/);
+});
+
+// ─── RESEÑA ─────────────────────────────────────────────────────────────────
+test("P14. Queja tras pedir reseña: no insiste y avisa a la dueña", async () => {
+  const m = movilNuevo();
+  // Se le pidió reseña ayer (lo que habría hecho el cron).
+  const f = path.join(DATA, "resenas-pedidas.json");
+  const pedidas = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf-8")) : {};
+  pedidas.demo = { ...(pedidas.demo || {}), [m]: new Date(Date.now() - 86_400_000).toISOString() };
+  fs.writeFileSync(f, JSON.stringify(pedidas, null, 2));
+  const alDueno = async () => (await llamadasGraph()).filter((l) => (l.cuerpo as { to?: string })?.to === DUENO).length;
+  const n0 = await alDueno();
+  const r = await escribir(m, "La verdad es que no me gustó nada, me dejaron esperando media hora");
+  expect(r.join(" ")).toMatch(/Siento mucho/);
+  expect(r.join(" ").toLowerCase()).not.toMatch(/reseña|google/);
+  expect(await alDueno(), "aviso a la dueña").toBe(n0 + 1);
+  const quejas = JSON.parse(fs.readFileSync(path.join(DATA, "resenas-quejas.json"), "utf-8"));
+  expect(quejas.demo?.[m], "no se le vuelve a pedir").toBeTruthy();
+});

@@ -22,9 +22,9 @@ import {
 } from "./gestoria";
 import { listBusinesses, listRecords } from "./booking";
 import {
-  peticionesDeHoy, listarPedidas, marcarPedida, resenaSendEnabled, enlaceResena,
+  peticionesDeHoy, listarPedidas, marcarPedida, resenaSendEnabled, enlaceResena, listarQuejas, plantillaResena, variablesPeticion, horaEspana, HORA_DESDE, HORA_HASTA,
 } from "./resena-whatsapp";
-import { sendWhatsAppText } from "./whatsapp-sender";
+import { sendWhatsAppText, sendWhatsAppTemplate } from "./whatsapp-sender";
 import { logEvent, makeEventId } from "./event-log";
 
 // -----------------------------------------------------------------------------
@@ -124,6 +124,8 @@ export async function pasadaResenas(): Promise<ResultadoResenas> {
   const negocios = await listBusinesses().catch(() => []);
   const todos = await listRecords().catch(() => []);
   const enviar = resenaSendEnabled();
+  // El cron es horario: solo se manda entre las 10 y las 20 h de España.
+  const enHora = horaEspana() >= HORA_DESDE && horaEspana() < HORA_HASTA;
 
   let sinEnlace = 0, candidatos = 0, enviados = 0;
 
@@ -134,12 +136,15 @@ export async function pasadaResenas(): Promise<ResultadoResenas> {
 
     const suyos = todos.filter((r) => r.slug === business.slug);
     const pedidas = await listarPedidas(business.slug).catch(() => ({}));
-    const peticiones = peticionesDeHoy({ business, records: suyos, pedidas });
+    const quejas = await listarQuejas(business.slug).catch(() => ({}));
+    const peticiones = peticionesDeHoy({ business, records: suyos, pedidas, quejas });
     candidatos += peticiones.length;
-    if (!enviar) continue;
+    if (!enviar || !enHora) continue;
 
     for (const p of peticiones) {
-      const res = await sendWhatsAppText(p.telefono, p.texto).catch(() => ({ ok: false }));
+      // Fuera de la ventana de 24 h: SOLO por plantilla aprobada (aiteam_pedir_resena).
+      const res = await sendWhatsAppTemplate(p.telefono.replace(/[^\d+]/g, ""), plantillaResena(), p.record.idioma === "en" ? "en" : "es",
+        variablesPeticion(business, p.record.cliente?.nombre || ""), { tenantId: business.tenantId, a: p.telefono, motivo: "pedir_resena" }).catch(() => ({ ok: false }));
       if (!res.ok) continue;
       enviados++;
       // El registro de "ya se le pidió" es lo que garantiza el tope de una vez
@@ -154,7 +159,7 @@ export async function pasadaResenas(): Promise<ResultadoResenas> {
     sinEnlace,
     candidatos,
     enviados,
-    modo: enviar ? "encendido" : "APAGADO (RESENA_SEND_ENABLED)",
+    modo: !enviar ? "APAGADO (REVIEW_REQUEST_ENABLED)" : enHora ? "encendido" : `encendido, fuera de hora (${HORA_DESDE}–${HORA_HASTA} h)`,
   };
 }
 

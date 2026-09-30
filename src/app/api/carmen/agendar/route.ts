@@ -219,7 +219,8 @@ async function agendarEnLlamada(o: {
   req: Request; get: (...k: string[]) => string | undefined; nombre?: string; motivo?: string; fechaRaw?: string; telefono?: string;
   durationMin?: number; profesionalPedida?: string; idiomaPedido: string; salon: { tenantId: string; slug: string }; slug: string; callId: string;
 }): Promise<NextResponse> {
-  const { get, nombre, motivo, telefono, durationMin, profesionalPedida, idiomaPedido, salon, slug } = o;
+  const { get, nombre, telefono, durationMin, profesionalPedida, idiomaPedido, salon, slug } = o;
+  let motivo = o.motivo;
   let fechaRaw = o.fechaRaw;
   const hoy = hoyHablado();
   const hoyIso = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
@@ -253,7 +254,7 @@ async function agendarEnLlamada(o: {
   // Siempre DOS huecos libres de verdad, los más cercanos (mismo día o siguientes),
   // en texto para decirlos y en ISO para reservar el elegido sin volver a calcular la fecha.
   const ofrecer = async (desde: string) => {
-    const opciones = await huecosCercanos(salon.tenantId, { startIso: desde, motivo }).catch(() => [] as string[]);
+    const opciones = await huecosCercanos(salon.tenantId, { startIso: desde, motivo: motivo || "" }).catch(() => [] as string[]);
     const texto = opciones.length
       ? L(` Te puedo ofrecer ${listaDeOpciones(opciones)}. ¿Cuál te viene mejor?`, ` I can offer ${opciones.map((x) => `${x.slice(0, 10)} at ${x.slice(11, 16)}`).join(" or ")}. Which suits you?`)
       : L(" ¿Qué otro día te vendría bien?", " What other day would suit you?");
@@ -307,6 +308,17 @@ async function agendarEnLlamada(o: {
     ? (negocio?.empleados || []).find((e) => e.activo && norm(e.nombre).split(/\s+/)[0] === norm(profesionalPedida).split(/\s+/)[0])
     : undefined;
 
+  // "LO DE SIEMPRE": su servicio habitual y, si no pide otra, su profesional.
+  let profesionalHabitualId: string | undefined;
+  if (negocio && telefono && /\b(lo de siempre|lo mismo|lo habitual|como siempre|the usual)\b/i.test(motivo || "")) {
+    const { leerMemoria } = await import("@/lib/memoria-clienta");
+    const mem = await leerMemoria(negocio.slug, telefono).catch(() => null);
+    if (mem?.habitual) {
+      motivo = mem.habitual.servicio;
+      profesionalHabitualId = mem.habitual.empleadoId;
+    }
+  }
+
   // SERVICIO QUE EL SALÓN NO TIENE: se dice y se ofrecen los que sí hay. Nunca se
   // guarda "por defecto" el primero de la lista (29/09: un "blanqueamiento" acabó
   // guardado como "Depilación de cejas").
@@ -334,7 +346,7 @@ async function agendarEnLlamada(o: {
     durationMin,
     agenteOrigen: "carmen",
     customerPhone: telefono,
-    empleadoId: emp?.id,
+    empleadoId: emp?.id ?? profesionalHabitualId,
     confirmarAlColgar: true,
   });
   let result = await pedir();

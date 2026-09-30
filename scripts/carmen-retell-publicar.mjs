@@ -68,6 +68,10 @@ const vars = {
   servicios: serviciosHablados(ficha),
   telefono_negocio: ficha.telefono || "",
   palabras_urgencia: PALABRAS_URGENCIA,
+  // Memoria de la clienta: las rellena /api/carmen/entrante en cada llamada; por defecto, vacías.
+  cliente_nombre: "",
+  lo_de_siempre: "",
+  preferencias_cliente: "",
 };
 
 // 3) Funciones: frases de espera, frase de la transferencia y textos de salón

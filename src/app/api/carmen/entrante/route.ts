@@ -17,6 +17,7 @@ import { getTenant, agenteContratado } from "@/lib/tenants";
 import { configCarmen } from "@/lib/carmen-llamadas";
 import { carmenAutorizada } from "@/lib/carmen-auth";
 import { horarioHablado, serviciosHablados } from "@/lib/persona";
+import { leerMemoria } from "@/lib/memoria-clienta";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +31,10 @@ export async function POST(req: Request) {
   const tenant = salon.ok ? await getTenant(salon.tenantId) : null;
   const nombre = negocio?.nombre || tenant?.name || "el negocio";
   const activa = salon.ok ? await agenteContratado(salon.tenantId, "carmen") : false;
+  // Memoria de la clienta que llama (por su número): nombre, lo de siempre y preferencias.
+  const desde = body.call_inbound?.from_number || "";
+  const mem = negocio && desde ? await leerMemoria(negocio.slug, desde).catch(() => null) : null;
+  const loDeSiempre = mem?.habitual ? `${mem.habitual.servicio}${mem.habitual.profesional ? ` con ${mem.habitual.profesional}` : ""}` : "";
   return NextResponse.json({
     call_inbound: {
       dynamic_variables: {
@@ -43,6 +48,9 @@ export async function POST(req: Request) {
         horario: horarioHablado(negocio?.horario),
         servicios: serviciosHablados(negocio).join("; "),
         telefono_negocio: negocio?.telefono || "",
+        cliente_nombre: mem?.nombre?.split(" ")[0] || "",
+        lo_de_siempre: loDeSiempre,
+        preferencias_cliente: [mem?.franja ? `prefiere por la ${mem.franja}` : "", ...(mem?.preferencias || []).map((p) => p.texto)].filter(Boolean).join("; "),
         slug: salon.ok ? salon.slug : "",
         carmen_activa: activa ? "sí" : "no",
       },
