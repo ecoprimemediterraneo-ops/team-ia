@@ -1,4 +1,4 @@
-# Estado de los agentes: Carmen, Pablo y Marta (29/09/2026)
+# Estado de los agentes: Carmen, Pablo y Marta (30/09/2026)
 
 «En producción» es lo que está funcionando en aiteam.marketing y en Retell ahora.
 «En local» es código probado en verde, **pendiente de desplegar**.
@@ -87,9 +87,10 @@ simulado) contra la cuenta propia → **Salón Bella**. Ahora pasan las 12; est�
 - Pablo y Carmen nombran solo servicios de la ficha, nunca categorías como «tratamientos faciales
   o corporales». Para Carmen, esa regla está publicada en la versión 8.
 
-**Producción ahora (commit 2fb9d2d):**
-- Ya responde como Salón Bella.
-- Los arreglos de esta tabla llegan con el próximo despliegue.
+**Producción ahora (commit 3cd84ef, 30/09):** los arreglos de esta tabla, la memoria de clienta y
+las reseñas están desplegados. Carmen v2 publicada en la **versión 9**, con el *Inbound call
+webhook* `/api/carmen/entrante` puesto en el número (saluda como Salón Bella, con nombre y «lo de
+siempre»). Transferencia warm activa (persona y urgencias) hacia el móvil …373.
 
 **Logo y portada de Salón Bella** (daban 404 porque apuntaban a imágenes borradas de cuando se
 llamaba BENDITO ARTE):
@@ -103,7 +104,7 @@ llamaba BENDITO ARTE):
    nada en la agenda.
 3. «Quiero hablar con una persona» → te llega el aviso al WhatsApp del dueño, que es tu móvil.
 
-## Memoria de clienta (Pablo y Carmen) — en local, pendiente de desplegar
+## Memoria de clienta (Pablo y Carmen) — EN PRODUCCIÓN (commit 3cd84ef, 30/09)
 
 - **Qué recuerda:** va por negocio y por teléfono (`src/lib/memoria-clienta.ts`). Guarda:
   - su nombre y su idioma;
@@ -137,7 +138,7 @@ llamaba BENDITO ARTE):
 - **Pruebas:** `t15-memoria-resenas` y Playwright P12 (nombre, «lo de siempre», sin salud) y
   P13 (olvido).
 
-## Reseña de Google al día siguiente — en local, APAGADO
+## Reseña de Google al día siguiente — en producción, APAGADO
 
 - **Cuándo se envía:**
   - al día siguiente de una cita **realizada**: completada, o confirmada que ya pasó;
@@ -156,6 +157,24 @@ llamaba BENDITO ARTE):
   - Al aprobarse: `REVIEW_REQUEST_ENABLED=true` en Vercel. Ahora está apagado.
 - **Pruebas:** `t15-memoria-resenas` (solo realizadas, 90 días, queja, sin enlace) y
   Playwright P14 (queja → aviso a la dueña).
+
+## Lote de Pablo (30/09/2026) — en local, PENDIENTE de desplegar
+
+Todo con envío simulado en las pruebas; en producción cada cosa detrás de su interruptor.
+
+| Qué | Cómo funciona | Interruptor / plantilla |
+|---|---|---|
+| **Lista de espera** | Si la hora que pide está llena, Pablo ofrece apuntarla («apúntame» → queda en la lista con día y hora). Al anularse una cita se escribe **por orden** (quien se apuntó antes) a todas las de ese servicio, ese día y esa franja (mañana/tarde); la primera que dice «sí» se lo queda y a las demás se les avisa de que ya está cogido. La lista caduca el día del hueco. Reutiliza la FASE 2 (`booking-waitlist.ts`, `ofrecerALaLista` + `responderHuecoPorWhatsapp`). | `WAITLIST_SEND_ENABLED` (apagado) |
+| **Pausar a Pablo** | Solo desde el `ownerWhatsapp`: «para con Laura / 600…» (hasta «sigue con…» o 24 h), «para todo» / «sigue», «mueve la cita de Laura al jueves a las 12» (pregunta y solo mueve con «sí»). En pausa, los mensajes se guardan en el panel sin contestar. Cualquier otro número que escriba eso es una clienta más. `pablo-dueno.ts` | — |
+| **Cumpleaños** | Campo «Cumpleaños» (día y mes) en la ficha de la clienta. Ese día, entre 10 y 20 h, felicitación por WhatsApp, una vez al año. | `BIRTHDAY_ENABLED` (apagado) + `BIRTHDAY_TEMPLATE=aiteam_cumpleanos` (MARKETING, **PENDING** en Meta) |
+| **Resumen diario** | 8:30: citas del día (hora, clienta, servicio, profesional), huecos libres por profesional y anulaciones de ayer, al WhatsApp de la dueña. | `DAILY_SUMMARY_ENABLED` (apagado) + `DAILY_SUMMARY_TEMPLATE=aiteam_resumen_diario` (UTILITY, **PENDING**) |
+| **Citas en serie** | En cada servicio: «Sesiones del tratamiento» y «Cada cuántos días». Al reservar la 1ª, Pablo y Carmen reservan todas a la misma hora y con la misma profesional; si una fecha no tiene hueco, la más cercana, y se dice. `citas-en-serie.ts` | — |
+
+**Crons nuevos (n8n, con CRON_SECRET, sin crear todavía):** `/api/cron/avisos-diarios?que=resumen`
+a las 8:30 y `/api/cron/avisos-diarios?que=cumpleanos` a las 10:00 (hora de España).
+
+**Pruebas:** `tests/unitarias/t16-lote-pablo.ts` (38 comprobaciones). Total: 16 suites y 30 recorridos
+de Playwright.
 
 ## Marta (Instagram)
 

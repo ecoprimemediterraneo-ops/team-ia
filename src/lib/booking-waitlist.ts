@@ -62,7 +62,8 @@ export type WaitlistOfferEstado =
   | "aceptada" // clienta dijo que sí → cita reasignada
   | "rechazada" // clienta dijo que no
   | "expirada" // no respondió a tiempo → pasa a la siguiente
-  | "registrada_sin_enviar"; // no se envió (flag off, fuera de ventana, tope…)
+  | "registrada_sin_enviar" // no se envió (flag off, fuera de ventana, tope…)
+  | "cogido"; // otra clienta de la lista contestó antes: se le avisa de que ya está cogido
 
 export type WaitlistOffer = {
   id: string;
@@ -74,7 +75,7 @@ export type WaitlistOffer = {
   huecoServiceId: string;
   huecoServicioNombre: string;
   empleadoId?: string;
-  recordActualId: string; // cita lejana de la clienta que se adelantaría
+  recordActualId: string; // cita lejana de la clienta que se adelantaría ("" = no tiene: sería una cita nueva)
   recordActualStartIso: string;
   mensaje: string; // texto exacto del WhatsApp
   estado: WaitlistOfferEstado;
@@ -409,4 +410,147 @@ export async function barrerOfertasCaducadas(redirectUri: string): Promise<{ cad
     }
   }
   return { caducadas, reofertadas };
+}
+
+
+// =============================================================================
+// LA LISTA COMPLETA: se escribe POR ORDEN a todas las de ese servicio y franja,
+// y se lo queda la PRIMERA que contesta que sí. A las demás se les avisa de que
+// ya está cogido. La lista caduca el propio día del hueco.
+//
+// Mismos frenos que la oferta de una en una (WAITLIST_SEND_ENABLED, ventana
+// 9–21, topes): con el interruptor apagado todo queda REGISTRADO y no sale nada.
+// =============================================================================
+
+const MAX_A_LA_VEZ = num(process.env.WAITLIST_MAX_A_LA_VEZ, 5);
+const franjaDe = (hhmm?: string) => (!hhmm ? undefined : Number(hhmm.slice(0, 2)) < 14 ? "mañana" : "tarde");
+
+export function textoHuecoLibre(a: { nombre: string; salon: string; servicio: string; huecoStartIso: string; tieneCita?: string }): string {
+  const first = (a.nombre || "").trim().split(/\s+/)[0] || "";
+  return [
+    `Hola${first ? " " + first : ""}, te escribo de *${a.salon}*.`,
+    `Se ha liberado un hueco *${fmt(a.huecoStartIso)}* para *${a.servicio}*${a.tieneCita ? ` (tu cita actual es el ${fmt(a.tieneCita)})` : ""}.`,
+    `Si lo quieres, contesta *SI* y es tuyo. Se lo queda la primera que conteste.`,
+  ].join("\n");
+}
+
+export async function ofrecerALaLista(
+  slug: string,
+  freed: FreedSlot,
+  _redirectUri: string,
+  opts: { ahora?: Date } = {},
+): Promise<{ ofrecidas: WaitlistOffer[]; caducadas: number }> {
+  void _redirectUri;
+  const business = await getBusinessBySlug(slug);
+  if (!business) return { ofrecidas: [], caducadas: 0 };
+  const tz = business.timezone || "Europe/Madrid";
+  const ahora = opts.ahora ?? new Date();
+  const hoy = fechaDe(ahora, tz);
+  const diaHueco = freed.startIso.slice(0, 10);
+  if (diaHueco < hoy) return { ofrecidas: [], caducadas: 0 };
+  const offers = await listOffers(slug);
+  const yaOfrecidas = new Set(offers.filter((o) => o.huecoStartIso === freed.startIso).map((o) => o.esperaId));
+  // Si alguien ya se lo ha quedado, no se vuelve a ofrecer.
+  if (offers.some((o) => o.huecoStartIso === freed.startIso && o.estado === "aceptada")) return { ofrecidas: [], caducadas: 0 };
+
+  let caducadas = 0;
+  const lista = (await listEspera(slug)).filter((e) => e.estado === "esperando");
+  for (const e of lista) if (e.fecha < hoy) { await cancelarEspera(slug, e.id); caducadas++; }
+  const franjaHueco = franjaDe(freed.startIso.slice(11, 16));
+  const candidatas = lista
+    .filter((e) => e.fecha === diaHueco && e.serviceId === freed.serviceId)
+    .filter((e) => !e.empleadoId || !freed.empleadoId || e.empleadoId === freed.empleadoId)
+    .filter((e) => !e.horaPedida || franjaDe(e.horaPedida) === franjaHueco)
+    .filter((e) => !yaOfrecidas.has(e.id))
+    .sort((a, b) => a.creadaEn.localeCompare(b.creadaEn))
+    .slice(0, MAX_A_LA_VEZ);
+
+  const h = Number(new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", hour12: false }).format(ahora));
+  const out: WaitlistOffer[] = [];
+  for (const e of candidatas) {
+    const actual = await citaActualPosterior(slug, e.cliente.telefono, freed.startIso, freed.serviceId);
+    const servicio = freed.servicioNombre || e.servicioNombre;
+    const mensaje = textoHuecoLibre({ nombre: e.cliente.nombre, salon: business.nombre, servicio, huecoStartIso: freed.startIso, tieneCita: actual?.startIso });
+    const offer: WaitlistOffer = {
+      id: offerId(slug, e.id, freed.startIso), slug, esperaId: e.id, clienteNombre: e.cliente.nombre, clienteTelefono: e.cliente.telefono,
+      huecoStartIso: freed.startIso, huecoServiceId: freed.serviceId, huecoServicioNombre: servicio, empleadoId: freed.empleadoId,
+      recordActualId: actual?.id ?? "", recordActualStartIso: actual?.startIso ?? "", mensaje,
+      estado: "registrada_sin_enviar", enviado: false, ofrecidoEn: ahora.toISOString(),
+    };
+    if (h < VENTANA_DESDE || h >= VENTANA_HASTA) offer.motivoNoEnvio = "fuera_de_ventana";
+    else if (!waitlistSendEnabled()) offer.motivoNoEnvio = "flag_off";
+    else {
+      const r = await sendWhatsAppText(e.cliente.telefono, mensaje, { tenantId: business.tenantId, a: e.cliente.telefono, motivo: "lista_espera" });
+      if (r.ok) { offer.estado = "ofrecida"; offer.enviado = true; offer.mensajeId = r.messageId; }
+      else offer.motivoNoEnvio = `${r.reason}:${r.detail}`.slice(0, 200);
+    }
+    await saveOffer(offer);
+    out.push(offer);
+  }
+  return { ofrecidas: out, caducadas };
+}
+
+/**
+ * La clienta contesta por WhatsApp a una oferta de hueco. Devuelve lo que Pablo
+ * le dice, o null si no tiene ninguna oferta abierta (y sigue el flujo normal).
+ */
+export async function responderHuecoPorWhatsapp(
+  slug: string,
+  telefono: string,
+  texto: string,
+  redirectUri: string,
+  opts: { esSi: (t: string) => boolean; esNo: (t: string) => boolean },
+): Promise<{ texto: string; via: string } | null> {
+  const key = clienteKey({ telefono });
+  const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+  const mias = (await listOffers(slug)).filter(
+    (o) => o.estado === "ofrecida" && clienteKey({ telefono: o.clienteTelefono }) === key && o.huecoStartIso.slice(0, 10) >= hoy,
+  );
+  if (!mias.length) return null;
+  const o = mias[mias.length - 1];
+  if (opts.esNo(texto)) {
+    o.estado = "rechazada"; o.resueltoEn = new Date().toISOString();
+    await saveOffer(o);
+    return { texto: "Vale, no pasa nada. Sigues en la lista por si se libera otro.", via: "espera_rechaza" };
+  }
+  if (!opts.esSi(texto)) return null;
+
+  // ¿Alguien contestó antes?
+  const todas = await listOffers(slug);
+  if (todas.some((x) => x.huecoStartIso === o.huecoStartIso && x.estado === "aceptada")) {
+    o.estado = "cogido"; o.resueltoEn = new Date().toISOString();
+    await saveOffer(o);
+    return { texto: "Lo siento, ese hueco ya lo ha cogido otra persona. Sigues en la lista por si se libera otro.", via: "espera_cogido" };
+  }
+  const business = await getBusinessBySlug(slug);
+  if (!business) return null;
+  let ok = false;
+  if (o.recordActualId) {
+    const rep = await reprogramarRecord(o.recordActualId, o.huecoStartIso, undefined, redirectUri, slug);
+    ok = rep.ok;
+  } else {
+    const { reservarSlot } = await import("./orchestrator");
+    const r = await reservarSlot({
+      tenantId: business.tenantId, userEmail: process.env.FOUNDER_EMAIL || "ecoprimemediterraneo@gmail.com", redirectUri,
+      nombre: o.clienteNombre, motivo: o.huecoServicioNombre, startIso: o.huecoStartIso, agenteOrigen: "pablo",
+      customerPhone: telefono, empleadoId: o.empleadoId,
+    });
+    ok = r.ok;
+  }
+  if (!ok) {
+    o.estado = "cogido"; o.resueltoEn = new Date().toISOString();
+    await saveOffer(o);
+    return { texto: "Lo siento, ese hueco acaba de ocuparse. Sigues en la lista por si se libera otro.", via: "espera_cogido" };
+  }
+  o.estado = "aceptada"; o.resueltoEn = new Date().toISOString();
+  await saveOffer(o);
+  await cancelarEspera(slug, o.esperaId);
+  // A las demás de ese hueco: ya está cogido.
+  for (const x of todas.filter((x) => x.huecoStartIso === o.huecoStartIso && x.id !== o.id && (x.estado === "ofrecida" || x.estado === "registrada_sin_enviar"))) {
+    const avisada = x.estado === "ofrecida";
+    x.estado = "cogido"; x.resueltoEn = new Date().toISOString();
+    await saveOffer(x);
+    if (avisada) await sendWhatsAppText(x.clienteTelefono, `Hola, el hueco ${fmt(x.huecoStartIso)} de ${business.nombre} ya lo ha cogido otra persona. Sigues en la lista por si se libera otro.`, { tenantId: business.tenantId, a: x.clienteTelefono, motivo: "lista_espera_cogido" }).catch(() => null);
+  }
+  return { texto: `Hecho, el hueco ${fmt(o.huecoStartIso)} para ${o.huecoServicioNombre} es tuyo. Te esperamos en ${business.nombre}.`, via: "espera_acepta" };
 }

@@ -10,7 +10,7 @@
 import "server-only";
 import { notificarEsperaSiLibre, type BookingRecord } from "./booking";
 import { enviarAvisoEspera } from "./booking-email";
-import { procesarHuecoLiberado } from "./booking-waitlist";
+import { ofrecerALaLista } from "./booking-waitlist";
 
 export async function avisarHuecoLiberado(record: BookingRecord, baseUrl: string, redirectUri: string): Promise<void> {
   try {
@@ -19,7 +19,8 @@ export async function avisarHuecoLiberado(record: BookingRecord, baseUrl: string
     console.error("[cancelar] aviso lista de espera falló (no crítico):", e);
   }
   try {
-    await procesarHuecoLiberado(record.slug, {
+    // A TODA la lista de ese servicio y franja, por orden; se lo queda la primera que diga sí.
+    await ofrecerALaLista(record.slug, {
       startIso: record.startIso,
       serviceId: record.serviceId,
       servicioNombre: record.servicioNombre,

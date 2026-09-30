@@ -60,6 +60,10 @@ import { destinoDeAdjunto } from "@/lib/gestoria-desvio";
 import { esElGestor, transcribir, entender } from "@/lib/gestoria-audio";
 import { descargarMedia } from "@/lib/gestoria-adjuntos";
 import { esIntencionCancelar, resolverCancelacion, textoCancelacionChat } from "@/lib/booking-cancel-intent";
+import { esDuena, ordenDeLaDuena, pabloEnPausa } from "@/lib/pablo-dueno";
+import { completarSerie, textoSerie } from "@/lib/citas-en-serie";
+import { responderHuecoPorWhatsapp } from "@/lib/booking-waitlist";
+import { esSi as esSiTexto, esNo as esNoTexto } from "@/lib/chat-honesto";
 import { pasoGuion, gestionarCitaExistente, ofrecerAlternativas, cerrarGuion } from "@/lib/cita-por-chat";
 import { detectarUrgencia as detectarUrgenciaDental, marcarUrgencia as marcarUrgenciaDental } from "@/lib/dental-urgencias";
 import { detectarLeadCualificado, marcarLeadCualificado, quitarMarcadorLeadCualificado } from "@/lib/estetica-leads";
@@ -497,6 +501,27 @@ export async function POST(req: Request) {
             `[pablo/webhook] RX from=${from} name=${customerName ?? "?"} text="${text}"`,
           );
 
+          // === LA DUEÑA MANDA (solo desde su número) Y LAS PAUSAS ===
+          // Ver `pablo-dueno.ts`. Desde otro número, «para todo» es un mensaje
+          // más de una clienta. Con Pablo en pausa para este número, el mensaje
+          // se guarda en el panel y no se contesta: lo lleva la dueña.
+          try {
+            if (await esDuena(tenantId, from)) {
+              const orden = await ordenDeLaDuena(tenantId, text);
+              if (orden) {
+                await sendWhatsAppText(from, orden);
+                await registrarIntercambio({ tenantId, msgId: msg.id, from, nombre: customerName, entrante: text, respuesta: orden, rxTs, via: "orden_duena" });
+                continue;
+              }
+            } else if (await pabloEnPausa(tenantId, from)) {
+              console.log(`[pablo/webhook] PAUSA de la dueña: no se contesta a ${from}`);
+              await registrarIntercambio({ tenantId, msgId: msg.id, from, nombre: customerName, entrante: text, respuesta: undefined, rxTs, via: "pausado_por_duena" });
+              continue;
+            }
+          } catch (err) {
+            console.error("[pablo/webhook] órdenes de la dueña / pausa fallaron:", err);
+          }
+
           // Recuerda lo ÚLTIMO que se le ha dicho al cliente en este mensaje.
           // Los interceptores de Rocío y Marta responden desde muchas ramas
           // distintas; en vez de registrar en cada una (y olvidarse en la
@@ -803,7 +828,10 @@ export async function POST(req: Request) {
           //      vuelve a estar libre. Antes solo se le mandaba el enlace web.
           if (sectorAgenda && !modoRest?.restaurante) {
             try {
+              const negH = await getBusinessByTenant(tenantId);
               const r =
+                // Contesta «sí» a un hueco de la lista de espera → se lo queda la primera.
+                (negH ? await responderHuecoPorWhatsapp(negH.slug, from, text, "https://aiteam.marketing/api/lucia/callback", { esSi: esSiTexto, esNo: esNoTexto }) : null) ??
                 (await pasoGuion({ tenantId, contacto: from, texto: text, nombreCliente: customerName, agenteOrigen: "pablo" })) ??
                 (await gestionarCitaExistente({ tenantId, contacto: from, texto: text }));
               if (r) {
@@ -977,14 +1005,17 @@ export async function POST(req: Request) {
               const ack = agRes.record && negocioAck
                 ? textoCitaGuardada({ record: agRes.record, negocio: negocioAck, nombre: agRes.intent.fields.nombre || customerName, idioma: idiomaCita })
                 : `Listo${customerName ? `, ${customerName.split(" ")[0]}` : ""}. Te he agendado *${agRes.intent.fields.motivo}* el ${when}.\n\nSi necesitas cambiarla, dimelo y la movemos.`;
-              await sendWhatsAppText(from, ack);
+              // Tratamiento de varias sesiones: Pablo reserva todas de una vez y lo dice en el MISMO mensaje.
+              const serie = await completarSerie({ tenantId, primeraIso: agRes.intent.fields.startIso!, motivo: agRes.intent.fields.motivo || "", nombre: agRes.intent.fields.nombre || customerName || "Cliente", telefono: from, empleadoId: agRes.record?.empleadoId, agenteOrigen: "pablo" }).catch(() => null);
+              const ackFinal = serie ? `${ack}\n\n${textoSerie(serie, idiomaCita === "en" ? "en" : "es")}` : ack;
+              await sendWhatsAppText(from, ackFinal);
               await appendTurn("pablo", tenantId, from, "user", text, customerName);
-              await appendTurn("pablo", tenantId, from, "assistant", ack, customerName);
+              await appendTurn("pablo", tenantId, from, "assistant", ackFinal, customerName);
               // Aquí sí se registraba, pero sin el texto: en el panel salía que
               // hubo mensajes y no cuáles. Ahora va por el mismo sitio que el resto.
               await registrarIntercambio({
                 tenantId, msgId: msg.id, from, nombre: customerName,
-                entrante: text, respuesta: ack, rxTs, via: "agenda_cita_creada",
+                entrante: text, respuesta: ackFinal, rxTs, via: "agenda_cita_creada",
               });
               continue;
             }

@@ -80,16 +80,19 @@ export async function ofrecerAlternativas(o: {
     await guardarGuion(o.tenantId, o.contacto, { fase: "preguntado", rondasFallidas: Math.max(1, rondas), ofrecidos: [], motivo: o.motivo, nombre: o.nombre, empleadoId: o.empleadoId, ts: Date.now() });
     return { texto: `${intro} Esa semana lo tengo complicado: dime que dias y a que horas te vienen bien y te lo busco.`, via: "agenda_guion_pregunta" };
   }
-  await guardarGuion(o.tenantId, o.contacto, { fase: "ofrecido", rondasFallidas: rondas, ofrecidos: opciones, motivo: o.motivo, nombre: o.nombre, empleadoId: o.empleadoId, ts: Date.now() });
+  // LISTA DE ESPERA: si la hora que pidió está LLENA (no cerrada ni pasada), se
+  // le ofrece apuntarse; si se anula una cita a esa hora, se le escribe.
+  const lleno = o.porque === "ocupado";
+  await guardarGuion(o.tenantId, o.contacto, { fase: "ofrecido", rondasFallidas: rondas, ofrecidos: opciones, motivo: o.motivo, nombre: o.nombre, empleadoId: o.empleadoId, pedido: lleno ? o.startIso : undefined, ts: Date.now() });
   if (en) {
     const { cuando } = await import("./pablo-respuestas");
     return {
-      texto: `${intro ? `${intro} ` : ""}I can offer you ${opciones.map((x) => cuando(x, "en")).join(" or ")}. Does ${opciones.length > 1 ? "either" : "that"} work for you?`,
+      texto: `${intro ? `${intro} ` : ""}I can offer you ${opciones.map((x) => cuando(x, "en")).join(" or ")}. Does ${opciones.length > 1 ? "either" : "that"} work for you?${lleno ? " If you'd rather have that time, I can put you on the waiting list and message you if it frees up." : ""}`,
       via: "agenda_guion_oferta",
     };
   }
   return {
-    texto: `${intro ? `${intro} ` : ""}Te puedo dar ${listaDeOpciones(opciones)}. Te va bien ${opciones.length > 1 ? "alguna" : "esa"}?`,
+    texto: `${intro ? `${intro} ` : ""}Te puedo dar ${listaDeOpciones(opciones)}. Te va bien ${opciones.length > 1 ? "alguna" : "esa"}?${lleno ? " Si prefieres esa hora, te apunto en la lista de espera y te escribo si se libera." : ""}`,
     via: "agenda_guion_oferta",
   };
 }
@@ -110,6 +113,22 @@ export async function pasoGuion(o: {
   if (!g) return null;
   const negocio = await getBusinessByTenant(o.tenantId);
   if (!negocio) return null;
+
+  // 0) «Apúntame en la lista de espera» para la hora que estaba llena.
+  if (g.pedido && /apunt|lista de espera|av[ií]same|avisame|waiting ?list|put me on|let me know/i.test(o.texto)) {
+    const { crearEspera, servicioParaTexto } = await import("./booking");
+    const sv = servicioParaTexto(negocio, g.motivo);
+    if (sv) {
+      const r = await crearEspera({
+        slug: negocio.slug, serviceId: sv.id, empleadoId: g.empleadoId, fecha: g.pedido.slice(0, 10), horaPedida: g.pedido.slice(11, 16),
+        cliente: { nombre: g.nombre || o.nombreCliente || "Cliente", telefono: o.contacto },
+      });
+      if (r.ok) {
+        await guardarGuion(o.tenantId, o.contacto, null);
+        return { texto: `Hecho, te he apuntado en la lista de espera para ${sv.nombre} ${cuandoHablado(g.pedido)}. Si se libera, te escribo y es tuyo si contestas la primera.`, via: "espera_apuntada" };
+      }
+    }
+  }
 
   // 1) Elige una de las que se le ofrecieron → se reserva esa, sin pasar por la IA.
   const elegido = g.fase === "ofrecido" ? eligeOpcion(o.texto, g.ofrecidos) : null;

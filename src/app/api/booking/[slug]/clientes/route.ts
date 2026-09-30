@@ -41,6 +41,8 @@ const schema = z.object({
     preferencias: z.array(z.string().max(140)).max(12).optional(),
   }).optional(),
   olvidar: z.literal(true).optional(),
+  /** "MM-DD" o "" para quitarlo. */
+  cumpleanos: z.string().regex(/^(\d{2}-\d{2})?$/).optional(),
 });
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -60,6 +62,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     const tel = p.data.key.startsWith("t:") ? p.data.key.slice(2) : "";
     await olvidarClienta({ slug, tenantId: a.business.tenantId, telefono: tel || p.data.key });
     return NextResponse.json({ ok: true, olvidada: true });
+  }
+  if (p.data.cumpleanos !== undefined) {
+    await saveClienteMeta(slug, p.data.key, { cumpleanos: p.data.cumpleanos || undefined });
+    return NextResponse.json({ ok: true });
   }
   if (p.data.memoria) {
     const { rechazadas } = await editarMemoria(slug, p.data.key, p.data.memoria);

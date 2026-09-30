@@ -58,6 +58,8 @@ export type BookingService = {
   variantes?: Variante[];
   addons?: AddOn[];
   activo: boolean;
+  /** Tratamiento de varias sesiones: al reservar la primera se reservan todas (ver `citas-en-serie.ts`). */
+  sesiones?: { numero: number; cadaDias: number };
 };
 
 export type Franja = { desde: string; hasta: string }; // "09:00" – "14:00"
@@ -1675,6 +1677,10 @@ export type ClienteMeta = {
   notas?: string; etiquetas?: string[]; reactivacionEnviadaIso?: string;
   /** Lo que Pablo y Carmen recuerdan de ella (ver memoria-clienta.ts). */
   memoria?: import("./memoria-clienta").MemoriaGuardada;
+  /** Cumpleaños "MM-DD" (el año no hace falta y no se guarda). */
+  cumpleanos?: string;
+  /** Año en que ya se la felicitó (una vez al año). */
+  felicitadaAnio?: number;
 };
 export type ClienteAgg = {
   key: string;
@@ -1787,6 +1793,14 @@ export async function getClienteFicha(slug: string, key: string): Promise<Client
 
 export async function getClienteMeta(slug: string, key: string): Promise<ClienteMeta> {
   return (await readClientesMeta())[`${slug}|${key}`] || {};
+}
+
+/** Las fichas guardadas (notas, memoria, cumpleaños…) de un negocio, por clave de clienta. */
+export async function clientesMetaDe(slug: string): Promise<Record<string, ClienteMeta>> {
+  const m = await readClientesMeta();
+  const out: Record<string, ClienteMeta> = {};
+  for (const [k, v] of Object.entries(m)) if (k.startsWith(`${slug}|`)) out[k.slice(slug.length + 1)] = v;
+  return out;
 }
 
 export async function saveClienteMeta(slug: string, key: string, patch: ClienteMeta): Promise<void> {

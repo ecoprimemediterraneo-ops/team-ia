@@ -18,7 +18,7 @@ type Memoria = {
   ultimos: { servicio: string; fecha: string; profesional?: string }[];
   habitual?: { servicio: string; profesional?: string };
 };
-type Ficha = { cliente: ClienteAgg; historial: BookingRecord[]; meta: { notas?: string; etiquetas?: string[] }; memoria?: Memoria };
+type Ficha = { cliente: ClienteAgg; historial: BookingRecord[]; meta: { notas?: string; etiquetas?: string[]; cumpleanos?: string }; memoria?: Memoria };
 
 const ESTADO_LBL: Record<string, string> = { pendiente: "Pendiente", confirmada: "Confirmada", completada: "Completada", cancelada: "Cancelada", no_show: "No vino" };
 const EST_COLOR: Record<string, string> = { pendiente: "#8a7500", confirmada: "#5A6B3F", completada: "#111", cancelada: "#999", no_show: "#C8202A" };
@@ -208,6 +208,8 @@ function FichaCliente({ slug, ficha, onBack, palabra }: { slug: string; ficha: F
 
       {ficha.memoria && <MemoriaClienta slug={slug} clave={c.key} inicial={ficha.memoria} />}
 
+      <Cumpleanos slug={slug} clave={c.key} inicial={ficha.meta.cumpleanos} />
+
       <div className="mb-5">
         <div className="text-xs font-bold uppercase tracking-widest mb-1">Notas internas</div>
         <textarea value={notas} onChange={(e) => setNotas(e.target.value)} onBlur={() => guardar(etiquetas, notas)} rows={3} placeholder="Incidencias, cómo le gusta que la atiendan…" className="card-hard w-full px-3 py-2 bg-white text-sm" />
@@ -328,6 +330,36 @@ function ReactivarDormidas({ slug }: { slug: string }) {
           {msg && <p className={`text-xs font-bold mt-3 ${msg.startsWith("✓") ? "text-[color:var(--olive,#5A6B3F)]" : "text-[color:var(--red)]"}`}>{msg}</p>}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Cumpleaños de la clienta: día y mes. Se la felicita ese día por WhatsApp (si el negocio lo tiene encendido). */
+function Cumpleanos({ slug, clave, inicial }: { slug: string; clave: string; inicial?: string }) {
+  const [dia, setDia] = useState(inicial ? inicial.slice(3, 5) : "");
+  const [mes, setMes] = useState(inicial ? inicial.slice(0, 2) : "");
+  const [estado, setEstado] = useState("");
+  async function guardar(d: string, m: string) {
+    const valor = d && m ? `${m.padStart(2, "0")}-${d.padStart(2, "0")}` : "";
+    setEstado("guardando");
+    const r = await fetch(`/api/booking/${slug}/clientes`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: clave, cumpleanos: valor }) }).catch(() => null);
+    setEstado(r?.ok ? "ok" : "error");
+  }
+  const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  return (
+    <div className="mb-5">
+      <div className="text-xs font-bold uppercase tracking-widest mb-1">Cumpleaños</div>
+      <div className="flex gap-2 items-center">
+        <select aria-label="Día" value={dia} onChange={(e) => { setDia(e.target.value); guardar(e.target.value, mes); }} className="border-2 border-black px-2 py-1 text-sm bg-white">
+          <option value="">Día</option>
+          {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0")).map((d) => <option key={d} value={d}>{Number(d)}</option>)}
+        </select>
+        <select aria-label="Mes" value={mes} onChange={(e) => { setMes(e.target.value); guardar(dia, e.target.value); }} className="border-2 border-black px-2 py-1 text-sm bg-white">
+          <option value="">Mes</option>
+          {MESES.map((m, i) => <option key={m} value={String(i + 1).padStart(2, "0")}>{m}</option>)}
+        </select>
+        <span className="text-[11px] text-black/40">{estado === "guardando" ? "Guardando…" : estado === "ok" ? "✓ Guardado" : estado === "error" ? "No se ha guardado" : ""}</span>
+      </div>
     </div>
   );
 }

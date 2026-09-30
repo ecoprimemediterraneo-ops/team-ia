@@ -10,7 +10,7 @@ type AddOn = { id: string; nombre: string; durationMin: number; precioEUR: numbe
 type Categoria = { id: string; nombre: string };
 type Servicio = {
   id: string; nombre: string; descripcion?: string; fotoUrl?: string; categoriaId?: string;
-  durationMin: number; precioEUR?: number; paddingBeforeMin?: number; paddingAfterMin?: number;
+  durationMin: number; precioEUR?: number; paddingBeforeMin?: number; paddingAfterMin?: number; sesiones?: { numero: number; cadaDias: number };
   variantes?: Variante[]; addons?: AddOn[]; activo: boolean;
 };
 type Franja = { desde: string; hasta: string };
@@ -252,6 +252,13 @@ export default function OwnerConfig({ negocios }: { negocios: Negocio[] }) {
                         <input type="number" min={0} step={5} value={s.paddingBeforeMin ?? 0} onChange={(e) => setSvc(i, { paddingBeforeMin: Number(e.target.value) })} className={`w-full ${inp}`} /></label>
                       <label><span className="block text-black/50 mb-0.5">Padding después (min)</span>
                         <input type="number" min={0} step={5} value={s.paddingAfterMin ?? 0} onChange={(e) => setSvc(i, { paddingAfterMin: Number(e.target.value) })} className={`w-full ${inp}`} /></label>
+                    </div>
+                    {/* Tratamiento de varias sesiones: Pablo y Carmen reservan todas de una vez. */}
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <label><span className="block text-black/50 mb-0.5">Sesiones del tratamiento (1 = una sola)</span>
+                        <input type="number" min={1} max={24} value={s.sesiones?.numero ?? 1} onChange={(e) => { const n = Math.max(1, Number(e.target.value) || 1); setSvc(i, { sesiones: n > 1 ? { numero: n, cadaDias: s.sesiones?.cadaDias ?? 21 } : undefined }); }} className={`w-full ${inp}`} /></label>
+                      <label><span className="block text-black/50 mb-0.5">Cada cuántos días</span>
+                        <input type="number" min={1} max={180} disabled={!s.sesiones} value={s.sesiones?.cadaDias ?? 21} onChange={(e) => s.sesiones && setSvc(i, { sesiones: { ...s.sesiones, cadaDias: Math.max(1, Number(e.target.value) || 21) } })} className={`w-full ${inp} disabled:opacity-40`} /></label>
                     </div>
 
                     {/* Variantes */}

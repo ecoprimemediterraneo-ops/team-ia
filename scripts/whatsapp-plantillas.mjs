@@ -33,6 +33,9 @@ const P = [
   ["aiteam_pedir_resena", "en", "Hi {{1}}, thanks for visiting {{2}} yesterday. If you were happy with us, a Google review would help us a lot: {{3}} If anything wasn't right, just reply to this message and we'll look into it.", ["Laura", "Salón Marina", "https://g.page/r/ejemplo/review"], null, "MARKETING"],
   ["aiteam_urgencia_dueno", "es", "Urgencia en una llamada de Carmen. Cliente: {{1}}. Resumen: {{2}}. Llámale en cuanto puedas.", ["+34600000000", "dolor fuerte tras el tratamiento"]],
   ["aiteam_urgencia_dueno", "en", "Urgent call handled by Carmen. Customer: {{1}}. Summary: {{2}}. Please call them back as soon as possible.", ["+34600000000", "strong pain after the treatment"]],
+  ["aiteam_cumpleanos", "es", "Hola {{1}}, hoy es tu cumpleaños y en {{2}} queremos desearte un día precioso. Muchas felicidades de parte de todo el equipo.", ["Laura", "Salón Bella"], null, "MARKETING"],
+  ["aiteam_cumpleanos", "en", "Hi {{1}}, today is your birthday and everyone at {{2}} wants to wish you a wonderful day. Happy birthday from the whole team.", ["Laura", "Salón Bella"], null, "MARKETING"],
+  ["aiteam_resumen_diario", "es", "Buenos días. Este es el resumen de hoy en {{1}}. Citas de hoy ({{2}}): {{3}}. Huecos libres: {{4}}. Citas anuladas ayer: {{5}}. Que tengas un buen día.", ["Salón Bella", "3", "10:00 Laura · Corte · Ana; 12:00 Rosa · Manicura · Berta", "Ana: 16:00, 17:30", "ninguna"]],
 ];
 if (process.argv.includes("--crear")) {
   const solo = process.argv.find((a) => a.startsWith("--solo="))?.slice(7);

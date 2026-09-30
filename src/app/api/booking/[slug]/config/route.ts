@@ -35,6 +35,7 @@ const servicio = z.object({
   variantes: z.array(variante).max(12).optional(),
   addons: z.array(addon).max(12).optional(),
   activo: z.boolean(),
+  sesiones: z.object({ numero: z.number().int().min(2).max(24), cadaDias: z.number().int().min(1).max(180) }).optional(),
 });
 
 const empleado = z.object({

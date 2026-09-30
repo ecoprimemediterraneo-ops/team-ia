@@ -41,6 +41,7 @@ import { resolverSalonDeLlamada, MENSAJE_SIN_SALON } from "@/lib/carmen-salon";
 import { headers } from "next/headers";
 import { timingSafeEqual } from "node:crypto";
 import { normalizarFecha, PASADO } from "@/lib/fecha-es";
+import { completarSerie, textoSerie } from "@/lib/citas-en-serie";
 import { getBusinessBySlug, citaGuardada, servicioPedido } from "@/lib/booking";
 import { reservarSlot } from "@/lib/orchestrator";
 import { agenteContratado } from "@/lib/tenants";
@@ -371,11 +372,14 @@ async function agendarEnLlamada(o: {
     }
   }
   if (result.ok) {
+    // Tratamiento de varias sesiones: se reservan todas de una vez.
+    const serie = await completarSerie({ tenantId: salon.tenantId, primeraIso: startIso, motivo: motivo!, nombre: nombre!, telefono, empleadoId: emp?.id ?? profesionalHabitualId, agenteOrigen: "carmen" }).catch(() => null);
     return responder({
       success: true,
       confirmada: true,
       recordId: result.recordId,
-      message: L(`Perfecto, te he agendado ${formatoHumano(startIso)}. ¡Te esperamos!`, `Perfect, you're booked for ${startIso.slice(0, 10)} at ${startIso.slice(11, 16)}. See you then!`),
+      ...(serie ? { sesiones: serie.sesiones } : {}),
+      message: L(`Perfecto, te he agendado ${formatoHumano(startIso)}.${serie ? ` ${textoSerie(serie).replace(/\n/g, ". ")}` : ""} ¡Te esperamos!`, `Perfect, you're booked for ${startIso.slice(0, 10)} at ${startIso.slice(11, 16)}.${serie ? ` ${textoSerie(serie, "en").replace(/\n/g, ". ")}` : ""} See you then!`),
       eventId: result.eventId,
       htmlLink: result.htmlLink,
     });

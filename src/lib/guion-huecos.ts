@@ -188,6 +188,8 @@ export type EstadoGuion = {
   motivo: string;
   nombre?: string;
   empleadoId?: string;
+  /** La hora que pidió y estaba LLENA: se le ofrece apuntarse a la lista de espera. */
+  pedido?: string;
   ts: number;
 };
 
