@@ -215,5 +215,5 @@ test("P14. Queja tras pedir reseña: no insiste y avisa a la dueña", async () =
   expect(r.join(" ").toLowerCase()).not.toMatch(/reseña|google/);
   expect(await alDueno(), "aviso a la dueña").toBe(n0 + 1);
   const quejas = JSON.parse(fs.readFileSync(path.join(DATA, "resenas-quejas.json"), "utf-8"));
-  expect(quejas.demo?.[m], "no se le vuelve a pedir").toBeTruthy();
+  expect(quejas.demo?.[`+${m}`], "no se le vuelve a pedir (clave en E.164)").toBeTruthy();
 });

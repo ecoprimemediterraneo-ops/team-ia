@@ -20,6 +20,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 import { kvGet, kvSet, kvListByPrefix, supabaseEnabled } from "./supabase";
+import { aE164 } from "./telefono";
 import { sendWhatsAppText } from "./whatsapp-sender";
 import {
   listEspera,
@@ -103,6 +104,7 @@ async function writeOffersLocal(m: OfferMap): Promise<void> {
   await fs.writeFile(OFFERS_FILE, JSON.stringify(m, null, 2), "utf8");
 }
 async function saveOffer(o: WaitlistOffer): Promise<void> {
+  if (o.clienteTelefono) o = { ...o, clienteTelefono: aE164(o.clienteTelefono) };
   if (supabaseEnabled()) {
     await kvSet(KV_OFFER + o.id, o);
     return;

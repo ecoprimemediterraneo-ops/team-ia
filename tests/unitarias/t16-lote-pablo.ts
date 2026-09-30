@@ -46,18 +46,18 @@ await B.crearEspera({ slug, serviceId: "sv_color", fecha: DIA, horaPedida: "10:3
 await B.crearEspera({ slug, serviceId: "sv_color", fecha: DIA, horaPedida: "17:00", cliente: { nombre: "Tarde", telefono: "34611100004" } });
 await B.crearEspera({ slug, serviceId: "sv_color", fecha: sumar(hoyM(), -1), cliente: { nombre: "Caducada", telefono: "34611100005" } });
 process.env.WAITLIST_SEND_ENABLED = "true";
-const cita = (await B.listRecords()).find((r: any) => r.slug === slug && r.cliente.telefono === "34611100001" && r.estado !== "cancelada");
+const cita = (await B.listRecords()).find((r: any) => r.slug === slug && r.cliente.telefono === "+34611100001" && r.estado !== "cancelada");
 await B.cambiarEstadoRecord(cita.id, "cancelada", REDIR, slug);
 const lista = await W.ofrecerALaLista(slug, { startIso: cita.startIso, serviceId: cita.serviceId, servicioNombre: cita.servicioNombre, empleadoId: cita.empleadoId }, REDIR, { ahora: a11() });
 const telOf = lista.ofrecidas.map((o: any) => o.clienteTelefono);
-assert(lista.ofrecidas.length === 2 && telOf[0] === "34611100002" && telOf[1] === "34611100003", `se escribe POR ORDEN a las de la mañana (${telOf.join(", ")})`);
+assert(lista.ofrecidas.length === 2 && telOf[0] === "+34611100002" && telOf[1] === "+34611100003", `se escribe POR ORDEN a las de la mañana (${telOf.join(", ")})`);
 assert(!telOf.includes("34611100004"), "no a la que pidió por la tarde (otra franja)");
 assert(lista.caducadas >= 1 && !(await B.listEspera(slug)).some((e: any) => e.cliente.nombre === "Caducada" && e.estado === "esperando"), "la lista caduca el día del hueco");
 assert(lista.ofrecidas.every((o: any) => o.estado === "ofrecida"), "ofertas enviadas (simulado)");
 const siOpts = { esSi: H.esSi, esNo: H.esNo };
 const gana = await W.responderHuecoPorWhatsapp(slug, "34611100003", "sí", REDIR, siOpts);
 assert(!!gana && gana.via === "espera_acepta", "la primera que dice sí se lo queda");
-assert((await B.listRecords()).some((r: any) => r.slug === slug && r.cliente.telefono === "34611100003" && r.startIso === cita.startIso && r.estado !== "cancelada"), "y la cita queda en la agenda");
+assert((await B.listRecords()).some((r: any) => r.slug === slug && r.cliente.telefono === "+34611100003" && r.startIso === cita.startIso && r.estado !== "cancelada"), "y la cita queda en la agenda");
 const tarde = await W.responderHuecoPorWhatsapp(slug, "34611100002", "si", REDIR, siOpts);
 assert(!!tarde && /ya lo ha cogido|ya no|cogido/.test(tarde.texto) || (tarde === null), "a la otra se le dice que ya está cogido");
 const ofs = (await W.listOffers(slug)).filter((o: any) => o.huecoStartIso === cita.startIso);
@@ -82,10 +82,10 @@ await PD.ordenDeLaDuena(TEN, "sigue");
 assert(!(await PD.pabloEnPausa(TEN, "34611299999")), "«sigue» → vuelve");
 resp = await PD.ordenDeLaDuena(TEN, `mueve la cita de Laura Pausa al ${["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"][new Date(`${sumar(DIA, 1)}T12:00:00Z`).getUTCDay()]} a las 17:00`);
 assert(/Contesta sí o no/.test(resp || ""), `pide confirmación antes de mover: ${resp}`);
-let laura = (await B.listRecords()).find((r: any) => r.cliente.telefono === "34611200001" && r.estado !== "cancelada");
+let laura = (await B.listRecords()).find((r: any) => r.cliente.telefono === "+34611200001" && r.estado !== "cancelada");
 assert(laura.startIso.slice(11, 16) === "12:00", "sin confirmar, no se mueve");
 resp = await PD.ordenDeLaDuena(TEN, "sí");
-laura = (await B.listRecords()).find((r: any) => r.cliente.telefono === "34611200001" && r.estado !== "cancelada");
+laura = (await B.listRecords()).find((r: any) => r.cliente.telefono === "+34611200001" && r.estado !== "cancelada");
 assert(laura.startIso.slice(11, 16) === "17:00", `con «sí», movida: ${resp}`);
 assert((await PD.ordenDeLaDuena(TEN, "hola, qué tal")) === null, "un mensaje normal de la dueña no es una orden");
 
@@ -131,7 +131,7 @@ assert(!!serie && serie.sesiones.length === 2, "se reservan las otras 2 de una v
 assert(serie!.sesiones[0].ok && serie!.sesiones[0].iso === `${sumar(DIA, 21)}T16:00:00`, "la 2ª, 21 días después a la misma hora");
 assert(serie!.sesiones[1].ok && serie!.sesiones[1].movida, `la 3ª no tenía hueco: la más cercana (${serie!.sesiones[1].iso})`);
 assert(/3 en total/.test(S.textoSerie(serie!)), "y se le dice a la clienta");
-const deEva = (await B.listRecords()).filter((r: any) => r.cliente.telefono === "34611500001" && r.estado !== "cancelada");
+const deEva = (await B.listRecords()).filter((r: any) => r.cliente.telefono === "+34611500001" && r.estado !== "cancelada");
 assert(deEva.length === 3, "3 citas en la agenda");
 assert((await S.completarSerie({ tenantId: TEN, primeraIso: primera, motivo: "corte", nombre: "X", agenteOrigen: "pablo" })) === null, "un servicio de una sola sesión no reserva nada más");
 

@@ -133,6 +133,9 @@ async function registrar(rastro: Rastro | undefined, r: WhatsAppSendResult, tipo
 }
 
 async function postGraph(payload: unknown, rastro?: Rastro, tipo = "texto"): Promise<WhatsAppSendResult> {
+  // En la agenda se guarda E.164 (+34…); a Meta se le manda como wa_id, solo cifras.
+  const p0 = payload as { to?: string } | null;
+  if (p0?.to) payload = { ...p0, to: p0.to.replace(/\D/g, "") };
   // FRENO DE LAS DEMOS: un número de demostración no recibe nada, ni en local ni
   // en producción, tengan los interruptores el valor que tengan. Es el último
   // candado y el único que no depende de que nadie se acuerde de otro.

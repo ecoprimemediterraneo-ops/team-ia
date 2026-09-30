@@ -21,6 +21,7 @@ import { kvGet, kvSet, supabaseEnabled } from "./supabase";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { BookingRecord, BusinessBooking } from "./booking";
+import { aE164 } from "./telefono";
 
 /** Envío real. FAIL-CLOSED, igual que el resto de interruptores del sistema. */
 export const resenaSendEnabled = (): boolean =>
@@ -51,15 +52,22 @@ const KV_KEY = (slug: string) => `resenas:pedidas:${slug}`;
 /** teléfono normalizado → ISO de la última petición. */
 type Pedidas = Record<string, string>;
 
-const soloDigitos = (t: string) => (t || "").replace(/\D/g, "");
+/** Clave de la clienta: E.164, igual venga por voz o por WhatsApp. */
+const soloDigitos = (t: string) => aE164(t);
+/** Los registros viejos se guardaron con solo dígitos: se leen normalizados. */
+const normalizarClaves = (p: Pedidas): Pedidas => {
+  const out: Pedidas = {};
+  for (const [k, v] of Object.entries(p)) { const n = aE164(k); if (!out[n] || out[n] < v) out[n] = v; }
+  return out;
+};
 
 export async function listarPedidas(slug: string): Promise<Pedidas> {
-  if (supabaseEnabled()) return (await kvGet<Pedidas>(KV_KEY(slug))) ?? {};
+  if (supabaseEnabled()) return normalizarClaves((await kvGet<Pedidas>(KV_KEY(slug))) ?? {});
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
     const raw = await fs.readFile(FILE, "utf-8").catch(() => "{}");
     const all = raw.trim() ? (JSON.parse(raw) as Record<string, Pedidas>) : {};
-    return all[slug] ?? {};
+    return normalizarClaves(all[slug] ?? {});
   } catch {
     return {};
   }
@@ -85,9 +93,9 @@ const FILE_QUEJAS = path.join(DATA_DIR, "resenas-quejas.json");
 const KV_QUEJAS = (slug: string) => `resenas:quejas:${slug}`;
 
 export async function listarQuejas(slug: string): Promise<Pedidas> {
-  if (supabaseEnabled()) return (await kvGet<Pedidas>(KV_QUEJAS(slug))) ?? {};
+  if (supabaseEnabled()) return normalizarClaves((await kvGet<Pedidas>(KV_QUEJAS(slug))) ?? {});
   const raw = await fs.readFile(FILE_QUEJAS, "utf-8").catch(() => "{}");
-  return ((raw.trim() ? JSON.parse(raw) : {}) as Record<string, Pedidas>)[slug] ?? {};
+  return normalizarClaves(((raw.trim() ? JSON.parse(raw) : {}) as Record<string, Pedidas>)[slug] ?? {});
 }
 
 /** Contestó a la petición con una queja: no se le vuelve a pedir reseña en un año. */
@@ -126,6 +134,7 @@ export type PeticionResena = { record: BookingRecord; telefono: string; texto: s
 
 /** ¿Han pasado ya los 90 días desde la última petición (y el año desde una queja)? */
 export function puedePedirse(pedidas: Pedidas, telefono: string, ahora = new Date(), quejas: Pedidas = {}): boolean {
+  pedidas = normalizarClaves(pedidas); quejas = normalizarClaves(quejas);
   const q = quejas[soloDigitos(telefono)];
   if (q && ahora.getTime() - Date.parse(q) < DIAS_TRAS_QUEJA * 86_400_000) return false;
   const ultima = pedidas[soloDigitos(telefono)];

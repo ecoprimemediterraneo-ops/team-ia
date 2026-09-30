@@ -216,9 +216,10 @@ export async function olvidarClienta(o: { slug: string; tenantId: string; telefo
   await B.saveClienteMeta(o.slug, key, { memoria: { olvidadaEn: ahora, actualizadaEn: ahora } });
   try {
     const { resetConversation } = await import("./conversation-store");
-    const d = o.telefono.replace(/\D/g, "");
-    // Desde el panel solo se conocen las 9 cifras; el chat se guarda con prefijo.
-    for (const id of new Set([d, d.length === 9 ? `34${d}` : d])) await resetConversation("pablo", o.tenantId, id);
+    const { aE164 } = await import("./telefono");
+    const e164 = aE164(o.telefono);
+    // Se borra la conversación con cualquiera de las formas en que pudo guardarse.
+    for (const id of new Set([e164, e164.replace(/^\+/, ""), e164.slice(-9)])) await resetConversation("pablo", o.tenantId, id);
   } catch (e) {
     console.error("[memoria] no se pudo borrar la conversación guardada:", e instanceof Error ? e.message : e);
   }

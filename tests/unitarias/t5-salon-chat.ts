@@ -83,7 +83,7 @@ for (let i = 0; i < 3; i++) await B.saveRecord({ id: `bk_old_${i}`, token: `t${i
 const dorm = await B.listClientasDormidasCompleto(negocio.slug);
 const c = dorm.find((d: any) => d.nombre === "Carmen Dormida");
 assert(!!c && c.visitas === 3 && c.profesionalHabitual === "Ana" && c.servicioHabitual === "Corte y peinado" && c.diasSinVenir >= 90, "la dormida sale con visitas, su profesional habitual y su servicio");
-assert(c && c.puedeEnviar === false && c.telefono === "099000033", "sin email: no hay envío automático, sí teléfono");
+assert(c && c.puedeEnviar === false && c.telefono === "+34099000033", "sin email: no hay envío automático, sí teléfono (en E.164)");
 assert(!dorm.some((d: any) => d.nombre === "Marta Ruiz"), "las que tienen cita próxima o vinieron hace poco no salen");
 const fichas = await B.listClientes(negocio.slug);
 assert(fichas.find((f: any) => f.nombre === "Carmen Dormida")?.profesionalHabitual === "Ana", "la ficha de la clienta trae su profesional habitual");

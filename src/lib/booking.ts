@@ -18,6 +18,7 @@
 // BusinessBooking apuntando a su tenant/cuenta Google.
 // =============================================================================
 
+import { aE164 } from "./telefono";
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -476,6 +477,7 @@ export async function getBusinessesForOwner(email: string): Promise<BusinessBook
 }
 
 export async function saveRecord(rec: BookingRecord): Promise<void> {
+  if (rec.cliente?.telefono) rec = { ...rec, cliente: { ...rec.cliente, telefono: aE164(rec.cliente.telefono) } };
   if (supabaseEnabled()) {
     await kvSetEstricto(KV_REC_PREFIX + rec.id, rec);
   } else {
@@ -2046,6 +2048,7 @@ const KV_ESP_PREFIX = "booking:espera:";
 type EsperaMap = Record<string, EsperaEntry>;
 
 async function saveEspera(e: EsperaEntry): Promise<void> {
+  if (e.cliente?.telefono) e = { ...e, cliente: { ...e.cliente, telefono: aE164(e.cliente.telefono) } };
   if (supabaseEnabled()) { await kvSet(KV_ESP_PREFIX + e.id, e); return; }
   const m = await readLocal<EsperaMap>(ESPERA_FILE);
   m[e.id] = e;
