@@ -169,7 +169,8 @@ async function claimMessageOnce(msgId: string): Promise<boolean> {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 /**
- * 60 segundos, que es el techo del plan Hobby.
+ * 300 segundos (con Fluid Compute es el techo del plan Hobby; el cron de
+ * publicación de Marta ya pasaba de 60, así que el proyecto lo tiene).
  *
  * NO es para contestarle a Meta —eso tarda milisegundos— sino para el trabajo
  * que queda corriendo DESPUÉS de contestar: leer el documento con la IA. Ese
@@ -179,8 +180,11 @@ export const dynamic = "force-dynamic";
  * blanco. Justo el fallo que la lectura automática venía a arreglar, movido de
  * sitio. Si aun así se corta (un mensaje con varios PDF), el documento sigue
  * guardado y se recupera con el botón "Leer los que faltan".
+ *
+ * Subió de 60 a 300 con los vídeos de Marta: aprobar un Reel por WhatsApp es
+ * esperar a que Meta lo procese (minutos), y pedir cambios es renderizarlo otra vez.
  */
-export const maxDuration = 60;
+export const maxDuration = 300; // aprobar un Reel = esperar a que Meta lo procese; rehacerlo = renderizar
 
 const GRAPH_VERSION = "v21.0";
 
@@ -661,7 +665,7 @@ export async function POST(req: Request) {
                   const isVid = proposal.mediaType === "REELS" || proposal.mediaType === "STORIES_VIDEO";
                   if (isVid) await sendWhatsAppVideo(from, regen.imageUrl, regen.caption);
                   else await sendWhatsAppImage(from, regen.imageUrl, regen.caption);
-                  const partes = [regen.changedFoto ? "imagen" : null, regen.changedCaption ? "texto" : null]
+                  const partes = [regen.changedFoto ? (isVid ? "vídeo" : "imagen") : null, regen.changedCaption ? "texto" : null]
                     .filter(Boolean)
                     .join(" y ");
                   await responder(

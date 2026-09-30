@@ -34,6 +34,7 @@ export default function IdentidadVisual({
   logoUrl: logoIni,
   plantilla: plantillaIni,
   cta: ctaIni,
+  tipografia: tipografiaIni,
 }: {
   tenantId: string;
   nombre: string;
@@ -43,6 +44,7 @@ export default function IdentidadVisual({
   logoUrl?: string;
   plantilla: "marcada" | "suave";
   cta: string;
+  tipografia?: "impacto" | "elegante" | "moderna";
 }) {
   const router = useRouter();
   const logoRef = useRef<HTMLInputElement>(null);
@@ -53,6 +55,7 @@ export default function IdentidadVisual({
   const [logoUrl, setLogoUrl] = useState<string>(logoIni || "");
   const [plantilla, setPlantilla] = useState<"marcada" | "suave">(plantillaIni);
   const [cta, setCta] = useState<string>(ctaIni);
+  const [tipografia, setTipografia] = useState<"impacto" | "elegante" | "moderna">(tipografiaIni || (plantillaIni === "marcada" ? "impacto" : "elegante"));
   const [subiendoLogo, setSubiendoLogo] = useState(false);
   const [analizando, setAnalizando] = useState(false);
   const [drag, setDrag] = useState(false);
@@ -102,7 +105,7 @@ export default function IdentidadVisual({
   function onGuardar() {
     setMsg(null);
     startGuardar(async () => {
-      const res = await guardarMarcaAction(tenantId, { fondo, acento, texto, plantilla, cta, logoUrl: logoUrl || undefined });
+      const res = await guardarMarcaAction(tenantId, { fondo, acento, texto, plantilla, cta, tipografia, logoUrl: logoUrl || undefined });
       setState(res);
       if (res.variant === "ok") router.refresh();
     });
@@ -168,6 +171,28 @@ export default function IdentidadVisual({
                 >
                   <span className="block text-sm font-bold uppercase tracking-widest">{label}</span>
                   <span className={`block text-[10px] ${plantilla === val ? "text-white/70" : "text-black/50"}`}>{hint}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tipografía (vídeos) */}
+          <div>
+            <span className="block text-[11px] font-mono uppercase tracking-widest text-black/50 mb-1">Letra de los vídeos</span>
+            <div className="flex flex-wrap gap-2">
+              {([
+                ["elegante", "Elegante", "Serif con carácter", "'Playfair Display', Georgia, serif"],
+                ["impacto", "Impacto", "Condensada, muy grande", "Anton, Impact, sans-serif"],
+                ["moderna", "Moderna", "Sans pesada", "Montserrat, Arial Black, sans-serif"],
+              ] as const).map(([val, label, hint, ff]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setTipografia(val)}
+                  className={`border-[3px] border-black px-3 py-2 text-left ${tipografia === val ? "bg-black text-white" : "bg-white hover:bg-[color:var(--cream)]"}`}
+                >
+                  <span className="block text-lg font-black" style={{ fontFamily: ff }}>{label}</span>
+                  <span className={`block text-[10px] ${tipografia === val ? "text-white/70" : "text-black/50"}`}>{hint}</span>
                 </button>
               ))}
             </div>

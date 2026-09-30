@@ -25,6 +25,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { kvGet, kvSet, supabaseEnabled } from "./supabase";
+import { put } from "@vercel/blob";
 
 type StoredImage = {
   bytes: Buffer;
@@ -182,7 +183,7 @@ export function imageUrlFor(id: string, baseUrl?: string): string {
 // -----------------------------------------------------------------------------
 
 /**
- * Sube a @vercel/blob si el paquete está instalado y hay BLOB_READ_WRITE_TOKEN.
+ * Sube a Vercel Blob si el almacén está enlazado (BLOB_READ_WRITE_TOKEN o BLOB_STORE_ID).
  * Devuelve una URL pública PERMANENTE (sin caducidad) o null si no está listo.
  * Extraído de /api/booking/[slug]/upload para no duplicar el mecanismo.
  */
@@ -191,18 +192,18 @@ export async function putPublicBlob(
   mimeType: string,
   prefix = "marta",
 ): Promise<string | null> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) return null;
-  const mod = (await import(/* webpackIgnore: true */ "@vercel/blob" as string).catch(() => null)) as
-    | { put?: (name: string, body: Buffer, opts: Record<string, unknown>) => Promise<{ url?: string }> }
-    | null;
-  if (!mod?.put) return null;
-  const ext = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
+  // Dos formas de enlazar el almacén: el token de siempre, o la nueva de Vercel
+  // (BLOB_STORE_ID + token OIDC que pone la propia plataforma). Producción usa la
+  // segunda: con solo mirar el token, nada llegaba nunca a Blob.
+  if (!process.env.BLOB_READ_WRITE_TOKEN && !process.env.BLOB_STORE_ID) return null;
+  const ext = mimeType === "video/mp4" ? "mp4" : mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
   // Nombre por hash → subir dos veces lo mismo no crea copias distintas.
   const nombre = `${prefix}/${idFor(bytes)}.${ext}`;
-  const res = await mod.put(nombre, bytes, {
+  const res = await put(nombre, bytes, {
     access: "public",
     contentType: mimeType,
     addRandomSuffix: false,
+    allowOverwrite: true,
   });
   return res?.url ?? null;
 }

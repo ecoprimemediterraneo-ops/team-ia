@@ -18,6 +18,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { kvGet, kvSet } from "./supabase";
 import type { ProposalMediaType } from "./marta-proposals";
+import type { VideoSpec } from "./marta-video";
 
 export type CalendarStatus =
   | "scheduled"        // programado, aún no enviado
@@ -55,6 +56,8 @@ export type CalendarEntry = {
    * verdad (removeCalendarEntry), así que este flag es solo para publicados.
    */
   hidden?: boolean;
+  /** Vídeo de plantilla (Remotion): para rehacerlo desde el calendario. */
+  video?: VideoSpec;
 };
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -178,6 +181,7 @@ export async function scheduleAtDates(
     temaLabel?: string;
     mediaType?: ProposalMediaType;
     scheduledAt: string; // ISO (UTC)
+    video?: VideoSpec;
   }>,
 ): Promise<CalendarEntry[]> {
   const now = Date.now();
@@ -191,6 +195,7 @@ export async function scheduleAtDates(
     tema: d.tema,
     temaLabel: d.temaLabel,
     status: "scheduled",
+    ...(d.video ? { video: d.video } : {}),
   }));
   const current = await readAll(tenantId);
   const merged = [...current, ...entries].sort((a, b) => (a.scheduledAt < b.scheduledAt ? -1 : 1));
@@ -264,7 +269,7 @@ export async function markCalendarEntryPublished(
 export async function actualizarContenidoEntry(
   tenantId: string,
   id: string,
-  patch: { caption?: string; imageUrl?: string },
+  patch: { caption?: string; imageUrl?: string; video?: VideoSpec },
 ): Promise<CalendarEntry | null> {
   const actual = await findEntryById(tenantId, id);
   if (!actual) return null;
@@ -272,6 +277,7 @@ export async function actualizarContenidoEntry(
   const limpio: Partial<CalendarEntry> = {};
   if (typeof patch.caption === "string") limpio.caption = patch.caption;
   if (typeof patch.imageUrl === "string") limpio.imageUrl = patch.imageUrl;
+  if (patch.video) limpio.video = patch.video;
   return updateEntry(tenantId, id, limpio); // conserva status y scheduledAt
 }
 

@@ -218,6 +218,15 @@ export async function regenerarImagenAction(tenantId: string, entryId: string): 
   const entry = await findEntryById(tid, entryId);
   if (!entry) return { ts: Date.now(), variant: "error", mensaje: "Entrada no encontrada" };
   if (entry.status === "published") return { ts: Date.now(), variant: "error", mensaje: "Ya publicada: no se regenera." };
+  // Vídeo de plantilla: se rehace (otras fotos del banco, textos nuevos). Cuenta para el límite del mes.
+  if (entry.video) {
+    const { rehacerVideo } = await import("@/lib/marta-video");
+    const v = await rehacerVideo(entry.video, { tenantId: tid, baseUrl: await baseUrlFromHeaders() });
+    if (!v.ok) return { ts: Date.now(), variant: "error", mensaje: `No se pudo rehacer el vídeo: ${v.detail}` };
+    await actualizarContenidoEntry(tid, entryId, { imageUrl: v.url, video: v.spec });
+    revalidatePath("/dashboard/marta");
+    return { ts: Date.now(), variant: "ok", mensaje: `Vídeo rehecho (${v.usados}/${v.limite} este mes).` };
+  }
   if ((entry.tema || "") === TEMA_MANUAL) {
     return { ts: Date.now(), variant: "error", mensaje: "La imagen de un post subido a mano es tuya; no se regenera." };
   }

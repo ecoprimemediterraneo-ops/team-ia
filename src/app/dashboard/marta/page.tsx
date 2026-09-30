@@ -19,6 +19,8 @@ import MartaLivePanel from "./MartaLivePanel";
 import CalendarioMes from "./calendario/CalendarioMes";
 
 export const dynamic = "force-dynamic";
+// Las acciones del panel renderizan vídeos (~1 min en el VPS) y publican Reels.
+export const maxDuration = 300;
 
 export default async function MartaPage({
   searchParams,

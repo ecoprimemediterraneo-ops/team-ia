@@ -100,7 +100,10 @@ const libresTrasCarrera = await B.computeFreeSlots(negocio, selCorte, diaSig, RE
 assert(libresTrasCarrera.ok && libresTrasCarrera.slots.includes(`${diaSig}T09:30:00`), "y la hora a la que se intentaba mover queda libre");
 
 console.log("\n--- D. Recordatorio: WhatsApp y, sin respuesta en 3 h, una sola llamada ---");
-const hace4h = new Date(Date.now() - 4 * 3600_000).toISOString();
+// A una hora de llamar (11:00 en España): la prueba no puede depender de a qué hora se lance.
+// El "hace 4 h" se mide desde ESAS 11:00, no desde la hora real (a partir de las 15 h fallaba).
+const once = new Date(`${new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" })}T11:00:00+02:00`);
+const hace4h = new Date(once.getTime() - 4 * 3600_000).toISOString();
 const mkCita = async (n: string, hora: string) => {
   const r = await web(`${diaSig}T${hora}:00`, n, { empleadoId: "cris" });
   await B.actualizarRecord(r.record.id, "test", (x: any) => ({ ...x, recordatorioEnviado: true, recordatorioEnviadoEn: hace4h }));
@@ -111,8 +114,6 @@ const confirmo = await mkCita("32", "11:00");
 const cancelo = await mkCita("33", "12:00");
 await B.actualizarRecord(confirmo, "test", (x: any) => ({ ...x, confirmadaPorClienteEn: new Date().toISOString() }));
 await B.cambiarEstadoRecord(cancelo, "cancelada", REDIR, slug);
-// A una hora de llamar (11:00 en España): la prueba no puede depender de a qué hora se lance.
-const once = new Date(`${new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" })}T11:00:00+02:00`);
 const [p1, p2] = await Promise.all([L.pasadaLlamadasRecordatorio(once), L.pasadaLlamadasRecordatorio(once)]);
 const llamadas = p1.prueba + p1.llamadas + p2.prueba + p2.llamadas;
 assert(llamadas === 1, `dos pasadas a la vez → Carmen llama UNA vez (${llamadas}); en local, en modo prueba`);

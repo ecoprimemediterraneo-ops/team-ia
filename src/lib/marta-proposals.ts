@@ -22,6 +22,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { kvGet, kvSet, kvListByPrefix } from "./supabase";
+import type { VideoSpec } from "./marta-video";
 
 export type ProposalStatus = "pending" | "published" | "expired" | "cancelled";
 
@@ -40,7 +41,9 @@ export type MartaProposal = {
   mediaType: ProposalMediaType;
   status: ProposalStatus;
   // Auditoría del origen de la imagen.
-  imageSource?: "generada_ia" | "subida_estilizada" | "subida" | "video_subido";
+  imageSource?: "generada_ia" | "subida_estilizada" | "subida" | "video_subido" | "video_plantilla";
+  /** Vídeo de plantilla (Remotion): lo necesario para rehacerlo si piden cambios. */
+  video?: VideoSpec;
   imagePrompt?: string;    // prompt de DALL·E si la imagen se generó con IA
   // Para regenerar manteniendo el asunto + limitar el bucle de ediciones.
   tema?: string;
@@ -143,6 +146,7 @@ export async function createProposal(input: {
   contexto?: string;
   fotoBrief?: string;
   regenCount?: number;
+  video?: VideoSpec;
 }): Promise<MartaProposal> {
   const now = new Date().toISOString();
   const proposal: MartaProposal = {
@@ -159,6 +163,7 @@ export async function createProposal(input: {
     ...(input.contexto ? { contexto: input.contexto } : {}),
     ...(input.fotoBrief ? { fotoBrief: input.fotoBrief } : {}),
     ...(typeof input.regenCount === "number" ? { regenCount: input.regenCount } : {}),
+    ...(input.video ? { video: input.video } : {}),
     createdAt: now,
   };
   await writeOne(proposalKey(proposal), proposal);

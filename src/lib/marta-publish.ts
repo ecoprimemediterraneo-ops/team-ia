@@ -77,9 +77,18 @@ function G(): string {
   return base;
 }
 
-// Máximo tiempo esperando a que Meta procese vídeo/Reel antes de publicar.
-const VIDEO_PROCESS_TIMEOUT_MS = 60_000;
-const VIDEO_POLL_INTERVAL_MS = 3_000;
+// Máximo tiempo esperando a que Meta procese el media antes de publicar. Un
+// Reel de 12 s suele tardar 20-60 s, pero en horas punta Meta pasa del minuto:
+// con 60 s fijos se daban por fallidos Reels que habrían salido bien.
+const IMAGE_PROCESS_TIMEOUT_MS = 60_000;
+const VIDEO_PROCESS_TIMEOUT_MS = 240_000;
+// Sondeo con espera creciente: 3 s, 4,5 s, 6,75 s… hasta 15 s.
+const POLL_INICIAL_MS = 3_000;
+const POLL_MAX_MS = 15_000;
+/** Errores de Meta que significan "todavía no está listo", no "está mal". */
+const NO_LISTO = new Set([9007, 2207027]);
+const esVideo = (t: PublishMediaType) => t === "VIDEO" || t === "REELS" || t === "STORIES_VIDEO";
+const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // -----------------------------------------------------------------------------
 // Tipos públicos
@@ -243,12 +252,22 @@ async function createMediaContainer(
   return data.id;
 }
 
-async function waitForContainerReady(creationId: string, token: string): Promise<void> {
-  const deadline = Date.now() + VIDEO_PROCESS_TIMEOUT_MS;
-  const url = `${G()}/${creationId}?fields=status_code`;
-  // eslint-disable-next-line no-constant-condition
+async function waitForContainerReady(creationId: string, token: string, video = false): Promise<void> {
+  const deadline = Date.now() + (video ? VIDEO_PROCESS_TIMEOUT_MS : IMAGE_PROCESS_TIMEOUT_MS);
+  const url = `${G()}/${creationId}?fields=status_code,status`;
+  let espera = POLL_INICIAL_MS;
+  let fallosRed = 0;
   while (true) {
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    let res: Response;
+    try {
+      res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    } catch (e) {
+      // Un corte de red al PREGUNTAR no es un fallo del vídeo: se reintenta.
+      if (++fallosRed > 3 || Date.now() >= deadline) throw Object.assign(new Error(`status check: ${(e as Error).message}`), { reason: "network_error" as PublishErrorReason });
+      await dormir(espera);
+      continue;
+    }
+    if (!res.ok && res.status >= 500 && ++fallosRed <= 3 && Date.now() < deadline) { await dormir(espera); continue; }
     if (!res.ok) {
       const err = await readGraphError(res);
       const e = new Error(`status check failed: ${err.message}`) as Error & {
@@ -270,11 +289,30 @@ async function waitForContainerReady(creationId: string, token: string): Promise
       e.reason = "processing_timeout";
       throw e;
     }
-    await new Promise((r) => setTimeout(r, VIDEO_POLL_INTERVAL_MS));
+    await dormir(espera);
+    espera = Math.min(POLL_MAX_MS, Math.round(espera * 1.5));
   }
 }
 
 async function publishContainer(
+  igUserId: string,
+  token: string,
+  creationId: string,
+): Promise<string> {
+  // Meta a veces dice FINISHED y aún contesta 9007 al publicar: unos reintentos.
+  for (let intento = 1; ; intento++) {
+    try {
+      return await publishContainerUnaVez(igUserId, token, creationId);
+    } catch (e) {
+      const code = (e as { metaCode?: number }).metaCode;
+      if (intento >= 4 || code === undefined || !NO_LISTO.has(code)) throw e;
+      console.warn(`[marta/publish] media_publish aún no listo (código ${code}), reintento ${intento}`);
+      await dormir(5_000 * intento);
+    }
+  }
+}
+
+async function publishContainerUnaVez(
   igUserId: string,
   token: string,
   creationId: string,
@@ -321,8 +359,12 @@ async function publishContainer(
  *  - Cualquier fallo de Meta se devuelve como `{ ok: false, reason, detail, metaCode? }`
  *    — NO lanza excepciones hacia arriba.
  */
-export async function publishToInstagram(input: PublishInput): Promise<PublishResult> {
-  if (!isEnabled()) {
+export async function publishToInstagram(
+  input: PublishInput,
+  /** Solo para la prueba única de /api/admin/marta-video-prueba: publica aunque MARTA_PUBLISH_ENABLED esté apagado. */
+  opts: { forzar?: boolean } = {},
+): Promise<PublishResult> {
+  if (!isEnabled() && !opts.forzar) {
     console.log(
       "[marta/publish] desactivado — pendiente App Review (instagram_content_publish). " +
         "Pon MARTA_PUBLISH_ENABLED=true para activar.",
@@ -365,7 +407,7 @@ export async function publishToInstagram(input: PublishInput): Promise<PublishRe
   // Publicar antes de tiempo devuelve 9007 "Media ID is not available".
   // El polling para imagen termina en 1-2 vueltas; para vídeo/Reel tarda más.
   try {
-    await waitForContainerReady(creationId, token);
+    await waitForContainerReady(creationId, token, esVideo(input.mediaType));
   } catch (err) {
     return errorToResult(err, "container no llegó a FINISHED");
   }

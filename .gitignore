@@ -52,3 +52,8 @@ next-env.d.ts
 /tests/.data-antes-de-e2e/
 .env.produccion.local
 /docs/carmen-retell-backup.json
+
+# Render de vídeos: dependencias y pruebas locales
+render-video/node_modules
+render-video/prueba
+render-video/hoja.png

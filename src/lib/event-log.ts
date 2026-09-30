@@ -36,6 +36,9 @@ export type EventType =
   // "Publicar ahora" del panel. Queda en el bucket del mes de publicación, con
   // el permalink en meta → lo consume la sección "contenido" del informe.
   | "post_published"
+  // Vídeo de Marta renderizado (Remotion). meta: plantilla, renderMs, costeUSD…
+  // También es el contador del límite de vídeos por tenant y mes.
+  | "video_rendered"
   // Recall dental: se avisó a un paciente de que le toca revisión. Cruzado con
   // `appointment_set` da la "revisión recuperada" (le avisamos y volvió).
   | "recall_enviado"
@@ -232,6 +235,7 @@ export async function getMonthCounts(
     review_replied: 0,
     orchestrator_decision: 0,
     post_published: 0,
+    video_rendered: 0,
     recall_enviado: 0,
     presupuesto_creado: 0,
     presupuesto_aceptado: 0,

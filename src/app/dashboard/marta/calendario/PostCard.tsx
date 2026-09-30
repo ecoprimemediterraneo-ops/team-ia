@@ -30,6 +30,7 @@ const CHIP: Record<string, { clase: string; label: string }> = {
 export default function PostCard({
   scheduledAt,
   imageUrl,
+  esVideo,
   texto,
   hashtags,
   temaLabel,
@@ -43,6 +44,8 @@ export default function PostCard({
 }: {
   scheduledAt: string;
   imageUrl: string;
+  /** Reel o historia de vídeo: la miniatura es el propio vídeo. */
+  esVideo?: boolean;
   texto: string;
   hashtags: string[];
   temaLabel?: string;
@@ -67,7 +70,10 @@ export default function PostCard({
       )}
 
       {/* Miniatura */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {esVideo ? (
+        <video src={imageUrl} controls muted playsInline preload="metadata" className="w-[110px] aspect-[9/16] object-cover border-2 border-black shrink-0 bg-black" />
+      ) : (
+      /* eslint-disable-next-line @next/next/no-img-element */
       <img
         src={imageUrl}
         alt={`Imagen del post del ${cuando}`}
@@ -75,6 +81,7 @@ export default function PostCard({
         height={110}
         className="w-[110px] h-[110px] object-cover border-2 border-black shrink-0 bg-[color:var(--cream)]"
       />
+      )}
 
       <div className="flex-1 min-w-0 space-y-1.5">
         <div className="flex items-center gap-2 flex-wrap pr-7">
@@ -117,6 +124,7 @@ export default function PostCard({
             defaultHora={defaultHora}
             estado={estado}
             esManual={temaLabel === TEMA_MANUAL}
+            esVideo={!!esVideo && (temaLabel || "").startsWith("Vídeo")}
           />
         )}
       </div>

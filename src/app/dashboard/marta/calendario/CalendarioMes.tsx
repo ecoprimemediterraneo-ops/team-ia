@@ -17,6 +17,10 @@ import AutomaticoForm from "./AutomaticoForm";
 import SubirPost from "./SubirPost";
 import IdentidadVisual from "./IdentidadVisual";
 import Acordeon from "./Acordeon";
+import VideoNuevo, { type NegocioVideo } from "../video/VideoNuevo";
+import { martaVideoEnabled, limiteVideosMes, videosDelMes, fotosDelBanco } from "@/lib/marta-video";
+import { listBusinesses } from "@/lib/booking";
+import { headers } from "next/headers";
 
 export default async function CalendarioMes({
   tenantId = DEFAULT_TENANT_ID,
@@ -33,6 +37,22 @@ export default async function CalendarioMes({
   const pauta = await getPautaPublicacion(tenantId);
   const marca = await getMarcaVisual(tenantId);
   const nombreNegocio = tenant?.ficha?.nombreNegocio || tenant?.name || "AI-Team";
+
+  // Vídeos: negocios de la cuenta con sus servicios y su banco de fotos.
+  const videoOn = martaVideoEnabled();
+  const h = await headers();
+  const hostV = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
+  const baseV = `${h.get("x-forwarded-proto") || (hostV.startsWith("localhost") ? "http" : "https")}://${hostV}`;
+  const negociosVideo: NegocioVideo[] = [];
+  for (const b of (await listBusinesses()).filter((x) => x.tenantId === tenantId)) {
+    negociosVideo.push({
+      slug: b.slug,
+      nombre: b.nombre,
+      servicios: b.servicios.filter((x) => x.activo).map((x) => ({ id: x.id, nombre: x.nombre, precio: x.precioEUR ?? x.variantes?.[0]?.precioEUR })),
+      fotos: await fotosDelBanco(tenantId, b, baseV),
+    });
+  }
+  const videosUsados = await videosDelMes(tenantId);
 
   // Solo el mes en curso (es lo que genera el orquestador).
   const ahora = new Date();
@@ -53,6 +73,7 @@ export default async function CalendarioMes({
         ["MARTA_AUTO_ENABLED", autoEnabled, "generar el mes solo"],
         ["MARTA_AUTO_PUBLISH_ENABLED", autoPublish, "publicar solo a su hora"],
         ["MARTA_PUBLISH_ENABLED", publishOn, "publicador real de Instagram"],
+        ["MARTA_VIDEO_ENABLED", videoOn, "vídeos para Reels e historias"],
       ] as const).map(([nombre, on, que]) => (
         <span
           key={nombre}
@@ -121,11 +142,23 @@ export default async function CalendarioMes({
           logoUrl={marca.logoUrl}
           plantilla={marca.plantilla}
           cta={marca.cta}
+          tipografia={marca.tipografia}
         />
       </Acordeon>
 
-      <Acordeon titulo="Subir post propio">
+      <Acordeon titulo="Crear post: imagen">
         <SubirPost tenantId={tenantId} defaultFecha={defaultFecha} defaultHora={defaultHora} />
+      </Acordeon>
+
+      <Acordeon titulo="Crear post: vídeo (Reel o historia)" badge={videoOn ? `${videosUsados}/${limiteVideosMes()}` : "apagado"}>
+        <VideoNuevo
+          negocios={negociosVideo}
+          habilitado={videoOn}
+          usados={videosUsados}
+          limite={limiteVideosMes()}
+          defaultFecha={defaultFecha}
+          defaultHora={defaultHora}
+        />
       </Acordeon>
 
       <Acordeon titulo="Programado este mes" badge={`${delMes.length} posts`}>
@@ -144,6 +177,7 @@ export default async function CalendarioMes({
                   key={e.id}
                   scheduledAt={e.scheduledAt}
                   imageUrl={e.imageUrl}
+                  esVideo={e.mediaType === "REELS" || e.mediaType === "STORIES_VIDEO"}
                   texto={texto}
                   hashtags={hashtags}
                   temaLabel={e.tema}

@@ -46,6 +46,27 @@ export async function regenerateProposal(opts: {
   const already = p.regenCount ?? 0;
   if (already >= MAX_REGEN) return { kind: "limit" };
 
+  // Vídeo de PLANTILLA (lo hizo Marta): se rehace con lo que pide el cliente.
+  if (isVideo(p.mediaType) && p.video && (opts.changeFoto || opts.changeCaption)) {
+    const { rehacerVideo } = await import("./marta-video");
+    const v = opts.changeFoto
+      ? await rehacerVideo(p.video, { tenantId: p.tenantId, feedback: opts.feedback, baseUrl: opts.baseUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://aiteam.marketing" })
+      : null;
+    if (v && !v.ok) return v.kind === "limite" ? { kind: "limit" } : { kind: "error", detail: `vídeo: ${v.detail}` };
+    let caption = v && v.ok ? v.caption : p.caption;
+    if (opts.changeCaption && !(v && v.ok && v.caption)) {
+      const cap = await generarCaption({ tenantId: p.tenantId, tema: p.tema, contexto: [p.contexto, `Cambios pedidos por el cliente: ${opts.feedback}`].filter(Boolean).join("\n") });
+      if (!cap.ok) return { kind: "error", detail: `caption: [${cap.reason}] ${cap.detail}` };
+      caption = cap.caption;
+    }
+    const nueva = await createProposal({
+      tenantId: p.tenantId, recipientWhatsapp: p.recipientWhatsapp, imageUrl: v && v.ok ? v.url : p.imageUrl, caption,
+      mediaType: p.mediaType, imageSource: "video_plantilla", tema: p.tema, contexto: p.contexto,
+      regenCount: already + 1, video: v && v.ok ? v.spec : p.video,
+    });
+    return { kind: "ok", proposal: nueva, imageUrl: nueva.imageUrl, caption, changedFoto: !!(v && v.ok), changedCaption: opts.changeCaption };
+  }
+
   // Si pide cambiar la imagen pero el media es vídeo, no se puede regenerar.
   if (opts.changeFoto && isVideo(p.mediaType)) {
     // Aún así podemos regenerar el caption si lo pidió; pero el vídeo lo sube él.

@@ -21,6 +21,7 @@ export default function AccionesPost({
   defaultHora,
   estado,
   esManual,
+  esVideo = false,
 }: {
   entryId: string;
   tenantId: string;
@@ -28,6 +29,8 @@ export default function AccionesPost({
   defaultHora: string;
   estado: string;
   esManual: boolean;
+  /** Vídeo de plantilla: "Imagen" pasa a ser "Rehacer vídeo" (cuenta para el límite del mes). */
+  esVideo?: boolean;
 }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState<PublicarState, FormData>(
@@ -106,10 +109,10 @@ export default function AccionesPost({
             type="button"
             disabled={regen || publicada}
             onClick={() => correr(() => regenerarImagenAction(tenantId, entryId))}
-            title="Nueva imagen con tu marca y plantilla (mantiene texto y fecha)"
+            title={esVideo ? "Rehace el vídeo con otras fotos y textos (cuenta para el límite del mes)" : "Nueva imagen con tu marca y plantilla (mantiene texto y fecha)"}
             className="text-[10px] font-bold uppercase tracking-widest border-2 border-black bg-white px-2 py-1.5 hover:bg-black hover:text-[color:var(--mustard)] disabled:opacity-35 disabled:hover:bg-white disabled:hover:text-black"
           >
-            {regen ? "…" : "🖼 Imagen"}
+            {regen ? "…" : esVideo ? "🎬 Vídeo" : "🖼 Imagen"}
           </button>
         )}
       </div>

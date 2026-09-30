@@ -31,7 +31,7 @@ import { publicarVencidos } from "@/lib/marta-auto-publish";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120; // subir media a Meta puede tardar
+export const maxDuration = 300; // un Reel: Meta puede tardar minutos en procesarlo
 
 export async function GET(req: Request) {
   const authErr = cronAuthError(req);

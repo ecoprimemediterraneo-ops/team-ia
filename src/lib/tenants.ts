@@ -77,7 +77,10 @@ export type MarcaVisual = {
   plantilla: PlantillaMarca; // composición
   cta: string;               // texto de la cinta inferior ("" = sin CTA)
   logoUrl?: string;          // logo del negocio (URL pública durable)
+  /** Letra de los vídeos de Marta: impacto (Anton), elegante (serif), moderna (sans pesada). */
+  tipografia?: TipografiaMarca;
 };
+export type TipografiaMarca = "impacto" | "elegante" | "moderna";
 
 // OJO: estos valores son los que /api/og/post tiene hoy hardcodeados. No cambiar
 // sin cambiar también el renderizador, o AI-Team dejaría de verse idéntico.
@@ -482,6 +485,7 @@ export function normalizarMarca(raw: unknown, base: MarcaVisual = MARCA_DEFECTO)
     plantilla: m.plantilla === "suave" || m.plantilla === "marcada" ? m.plantilla : base.plantilla,
     cta: typeof m.cta === "string" ? m.cta.trim().slice(0, 60) : base.cta,
     ...(logo ? { logoUrl: logo } : {}),
+    ...(m.tipografia === "impacto" || m.tipografia === "elegante" || m.tipografia === "moderna" ? { tipografia: m.tipografia } : base.tipografia ? { tipografia: base.tipografia } : {}),
   };
 }
 

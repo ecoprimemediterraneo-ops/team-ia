@@ -101,6 +101,12 @@ export type BusinessBooking = {
   logoUrl?: string; // logo del negocio (mini-web); si falta se muestra el nombre en Anton
   heroImageUrl?: string; // foto de portada/hero a todo el ancho; si falta se usa una de stock
   galeria?: string[]; // URLs de fotos (mini-web)
+  /**
+   * Identidad propia del negocio para los vídeos de Marta cuando la cuenta tiene
+   * varios (Salón Bella vive en la cuenta de AI-Team y no se viste de AI-Team).
+   * Lo que falte sale de la identidad visual del tenant.
+   */
+  marca?: { fondo?: string; acento?: string; texto?: string; tipografia?: "impacto" | "elegante" | "moderna" };
   direccion?: string; // dirección física (ficha + mapa)
   lat?: number; // coordenadas (para el mapa OSM); se autocompletan al guardar la dirección
   lng?: number;

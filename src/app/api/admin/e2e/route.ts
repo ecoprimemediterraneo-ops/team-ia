@@ -56,7 +56,12 @@ async function leer<T>(f: string): Promise<T | null> {
   try { return JSON.parse(await fs.readFile(path.join(DATA, f), "utf-8")) as T; } catch { return null; }
 }
 async function escribir(f: string, d: unknown): Promise<void> {
-  await fs.writeFile(path.join(DATA, f), JSON.stringify(d, null, 2));
+  // Atómico, como el resto de data/: dos escrituras a la vez sin temporal dejaban
+  // el JSON con basura al final (events.json se rompió así el 30/09/2026).
+  const dest = path.join(DATA, f);
+  const tmp = `${dest}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
+  await fs.writeFile(tmp, JSON.stringify(d, null, 2));
+  await fs.rename(tmp, dest);
 }
 
 /** Borra de un mapa JSON las claves (o entradas) que mencionan el tenant/slug de pruebas. */

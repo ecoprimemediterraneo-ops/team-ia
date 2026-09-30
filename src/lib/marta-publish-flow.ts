@@ -22,12 +22,12 @@ export type PublishFlowResult =
   | { ok: false; kind: "disabled"; detail: string }   // MARTA_PUBLISH_ENABLED != true
   | { ok: false; kind: "error"; detail: string };
 
-export async function publishProposal(proposal: MartaProposal): Promise<PublishFlowResult> {
+export async function publishProposal(proposal: MartaProposal, opts: { forzar?: boolean } = {}): Promise<PublishFlowResult> {
   const pub = await publishToInstagram({
     mediaType: proposal.mediaType,
     mediaUrl: proposal.imageUrl,
     caption: proposal.caption,
-  });
+  }, opts);
 
   if ("ok" in pub && pub.ok) {
     let permalink: string | undefined;

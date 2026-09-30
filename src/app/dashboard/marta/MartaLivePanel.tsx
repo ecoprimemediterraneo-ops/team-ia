@@ -479,6 +479,10 @@ function HistorialBlock({ proposals }: { proposals: MartaProposal[] }) {
             <span className="text-black/40">·</span>
             <span className="text-[11px] text-black/45">{new Date(p.createdAt).toLocaleString("es-ES")}</span>
           </div>
+          {/* Vídeo: se revisa entero antes de aprobar */}
+          {p.imageUrl && (p.mediaType === "REELS" || p.mediaType === "STORIES_VIDEO") && (
+            <video src={p.imageUrl} controls playsInline preload="metadata" className="w-full max-w-[220px] aspect-[9/16] border-2 border-black mb-2 bg-black" />
+          )}
           {/* Miniatura de la imagen (no para vídeo) */}
           {p.imageUrl && p.mediaType !== "REELS" && p.mediaType !== "STORIES_VIDEO" && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -498,6 +502,8 @@ function HistorialBlock({ proposals }: { proposals: MartaProposal[] }) {
                     ? "🖼️ FOTO + ESTILO FICHA"
                     : p.imageSource === "video_subido"
                       ? "🎬 VÍDEO SUBIDO"
+                      : p.imageSource === "video_plantilla"
+                        ? `🎬 VÍDEO DE MARTA · ${(p.video?.plantilla || "").replace("_", " ").toUpperCase()}`
                       : "🖼️ FOTO SUBIDA"}
               </span>
               {p.imagePrompt && (

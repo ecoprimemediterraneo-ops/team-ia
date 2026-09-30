@@ -1,0 +1,25 @@
+{
+  "name": "aiteam-render-video",
+  "private": true,
+  "type": "module",
+  "description": "Servicio de render de vídeos de Marta (Remotion). Corre en el VPS; en local, en el 3900.",
+  "scripts": {
+    "servidor": "node servidor.mjs",
+    "musica": "node musica/generar.mjs",
+    "studio": "remotion studio src/index.ts"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.530",
+    "@remotion/cli": "^4.0.530",
+    "@remotion/google-fonts": "^4.0.530",
+    "@remotion/media-utils": "^4.0.530",
+    "@remotion/renderer": "^4.0.530",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "remotion": "^4.0.530"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "typescript": "^7.0.2"
+  }
+}
