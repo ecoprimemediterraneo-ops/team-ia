@@ -19,14 +19,13 @@
 import "server-only";
 import {
   getBusinessesForTenant,
-  computeFreeSlots,
-  resolverServicio,
   listRecords,
   listEspera,
   crearEspera,
   reprogramarRecord,
   cambiarEstadoRecord,
   empleadosDeServicio,
+  emparejarServicio,
   listClientasDormidasCompleto,
   type BookingRecord,
   type BusinessBooking,
@@ -36,6 +35,7 @@ import {
 import { textoFalloReserva } from "./reserva-texto";
 import { avisarHuecoLiberado } from "./booking-liberado";
 import { textoReactivacion } from "./salon-textos";
+import { pegaDeHueco, citaGuardada, TEXTO_NO_GUARDADA } from "./hueco-panel";
 
 const FOUNDER_EMAIL_FALLBACK = "ecoprimemediterraneo@gmail.com";
 const REDIRECT_URI = "https://aiteam.marketing/api/lucia/callback";
@@ -117,39 +117,21 @@ async function negocioDe(tenantId: string): Promise<BusinessBooking | null> {
 // -----------------------------------------------------------------------------
 
 
-const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+// La comprobación de hora (pasada, cerrado, fuera de horario) vive en
+// `hueco-panel.ts`, compartida con dental y estética.
 
 /**
- * ¿Se puede pedir esa hora? Pasado y día cerrado se dicen ANTES de proponer, con
- * el siguiente hueco. Ocupado / cabe / antelación los decide luego `reservarSlot`.
- * Devuelve el motivo (para el dueño) o null si no hay pega a la vista.
+ * Del texto de la dueña al servicio, SIN cambiarlo por otro parecido: igual →
+ * ese; parecidos → se pregunta (aunque sea uno); ninguno → catálogo. Ver
+ * `emparejarServicio` en booking.ts.
  */
-async function pegaDeHueco(negocio: BusinessBooking, servicio: BookingService, prof: Empleado | undefined, startIso: string): Promise<string | null> {
-  const tz = negocio.timezone || "Europe/Madrid";
-  const ahora = new Date().toLocaleString("sv-SE", { timeZone: tz }).replace(" ", "T").slice(0, 16);
-  const fecha = startIso.slice(0, 10);
-  const dia = (prof?.horario ?? negocio.horario)[new Date(`${fecha}T12:00:00Z`).getUTCDay()];
-  const siguiente = async (): Promise<string> => {
-    const sel = resolverServicio(servicio, {});
-    for (let i = 0; i < 8; i++) {
-      const d = new Date(`${fecha}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + i);
-      const f = d.toISOString().slice(0, 10);
-      if (f < ahora.slice(0, 10)) continue;
-      const r = await computeFreeSlots(negocio, sel, f, REDIRECT_URI, undefined, prof?.id).catch(() => null);
-      const libre = r && r.ok ? r.slots.find((x) => x.slice(0, 16) > ahora) : undefined;
-      if (libre) return ` El siguiente hueco libre${prof ? ` con ${prof.nombre}` : ""} es el ${cuando(libre)}.`;
-    }
-    return " No veo huecos libres en los próximos días.";
-  };
-  if (startIso.slice(0, 16) <= ahora) return `Esa hora (${cuando(startIso)}) ya ha pasado, no se puede reservar.${await siguiente()}`;
-  if (!dia || !dia.abierto || dia.franjas.length === 0) {
-    return `El salón${prof ? ` (${prof.nombre})` : ""} no abre el ${DIAS[new Date(`${fecha}T12:00:00Z`).getUTCDay()]}.${await siguiente()}`;
+function servicioDe(negocio: BusinessBooking, texto: string): { servicio: BookingService } | { r: Preparada } {
+  const e = emparejarServicio(negocio, texto);
+  if (e.tipo === "exacto") return { servicio: e.servicio };
+  if (e.tipo === "varios") {
+    return { r: { tipo: "ambiguo", pregunta: `"${texto}" no es exactamente ningún servicio del salón. ¿Cuál de estos es? No prepares nada hasta que lo diga.`, opciones: e.opciones.map((s) => s.nombre) } };
   }
-  const h = startIso.slice(11, 16);
-  if (!dia.franjas.some((f) => h >= f.desde && h < f.hasta)) {
-    return `A las ${h} está fuera de horario ese día (${dia.franjas.map((f) => `${f.desde}–${f.hasta}`).join(", ")}).${await siguiente()}`;
-  }
-  return null;
+  return { r: { tipo: "nada", motivo: `No tengo ningún servicio que se llame "${texto}". Los del salón son: ${e.catalogo.map((s) => s.nombre).join(", ")}.` } };
 }
 
 /** "ponle a Marta Ruiz un corte con Ana el jueves a las 10" */
@@ -167,14 +149,9 @@ export async function prepararCrearCita(
   const negocio = await negocioDe(tenantId);
   if (!negocio) return { tipo: "nada", motivo: "Este salón todavía no tiene una agenda conectada." };
 
-  const { encontrados } = buscarServicio(negocio, args.servicio!);
-  if (encontrados.length === 0) {
-    return { tipo: "nada", motivo: `No tengo ningún servicio que encaje con "${args.servicio}". Los del salón son: ${negocio.servicios.filter((s) => s.activo).map((s) => s.nombre).join(", ")}.` };
-  }
-  if (encontrados.length > 1) {
-    return { tipo: "ambiguo", pregunta: `"${args.servicio}" puede ser varios servicios. ¿Cuál?`, opciones: encontrados.map((s) => s.nombre) };
-  }
-  const servicio = encontrados[0];
+  const sv = servicioDe(negocio, args.servicio!);
+  if ("r" in sv) return sv.r;
+  const servicio = sv.servicio;
 
   let prof: Empleado | undefined;
   const equipo = (negocio.empleados || []).filter((e) => e.activo);
@@ -192,7 +169,7 @@ export async function prepararCrearCita(
   }
 
   const startIso = `${args.fecha}T${args.hora}:00`;
-  const pega = await pegaDeHueco(negocio, servicio, prof, startIso);
+  const pega = await pegaDeHueco(negocio, startIso, { servicio, prof });
   if (pega) return { tipo: "nada", motivo: pega };
   const nombre = args.nombre!.trim();
   const telefono = (args.telefono || "").trim();
@@ -223,7 +200,7 @@ export async function prepararMoverCita(
   const svM = negocio.servicios.find((x) => x.id === r.serviceId);
   const profM = r.empleadoId ? (negocio.empleados || []).find((e) => e.id === r.empleadoId) : undefined;
   if (svM) {
-    const pegaM = await pegaDeHueco(negocio, svM, profM, nuevoStartIso);
+    const pegaM = await pegaDeHueco(negocio, nuevoStartIso, { servicio: svM, prof: profM });
     if (pegaM) return { tipo: "nada", motivo: pegaM };
   }
   if (r.startIso.slice(0, 16) === nuevoStartIso.slice(0, 16)) return { tipo: "nada", motivo: "Esa cita ya está a esa hora. No hay nada que mover." };
@@ -257,10 +234,9 @@ export async function prepararApuntarEspera(
 
   const negocio = await negocioDe(tenantId);
   if (!negocio) return { tipo: "nada", motivo: "Este salón todavía no tiene una agenda conectada." };
-  const { encontrados } = buscarServicio(negocio, args.servicio!);
-  if (encontrados.length === 0) return { tipo: "nada", motivo: `No tengo ningún servicio que encaje con "${args.servicio}".` };
-  if (encontrados.length > 1) return { tipo: "ambiguo", pregunta: `"${args.servicio}" puede ser varios servicios. ¿Cuál?`, opciones: encontrados.map((s) => s.nombre) };
-  const servicio = encontrados[0];
+  const sv = servicioDe(negocio, args.servicio!);
+  if ("r" in sv) return sv.r;
+  const servicio = sv.servicio;
 
   let prof: Empleado | undefined;
   if (args.profesional?.trim()) {
@@ -323,6 +299,12 @@ export async function ejecutar(tenantId: string, accion: AccionPendiente): Promi
   if (!negocio) return { ok: false, texto: "Este salón todavía no tiene una agenda conectada." };
 
   if (accion.clase === "crear_cita") {
+    // Se vuelve a mirar al CONFIRMAR: la propuesta pudo quedarse en pantalla y
+    // la hora pasar mientras tanto.
+    const sv = negocio.servicios.find((x) => x.id === accion.servicioId);
+    const prof = accion.profesionalId ? (negocio.empleados || []).find((e) => e.id === accion.profesionalId) : undefined;
+    const pega = await pegaDeHueco(negocio, accion.startIso, { servicio: sv, prof });
+    if (pega) return { ok: false, texto: `No se ha creado la cita. ${pega}` };
     const { reservarSlot } = await import("./orchestrator");
     const res = await reservarSlot({
       tenantId,
@@ -334,14 +316,27 @@ export async function ejecutar(tenantId: string, accion: AccionPendiente): Promi
       agenteOrigen: "dashboard",
       customerPhone: accion.telefono || undefined,
       empleadoId: accion.profesionalId,
+      // El servicio que se confirmó, por id: no se vuelve a deducir del texto.
+      serviceId: accion.servicioId,
     });
-    if (res.ok) return { ok: true, texto: `Hecho. Cita creada: ${accion.etiqueta}.` };
-    return { ok: false, texto: textoFalloReserva(res) };
+    if (!res.ok) return { ok: false, texto: textoFalloReserva(res) };
+    // «Creada» SOLO si está en la agenda: el texto sale de lo guardado.
+    const g = await citaGuardada(res, negocio.slug);
+    if (!g) return { ok: false, texto: TEXTO_NO_GUARDADA };
+    return { ok: true, texto: `Hecho. Cita creada: ${accion.etiqueta}. Ya está en la agenda.` };
   }
 
   if (accion.clase === "mover_cita") {
+    const pegaM = await pegaDeHueco(negocio, accion.nuevoStartIso);
+    if (pegaM) return { ok: false, texto: `No se ha movido la cita. ${pegaM}` };
     const r = await reprogramarRecord(accion.recordId, accion.nuevoStartIso, undefined, REDIRECT_URI, negocio.slug);
-    if (r.ok) return { ok: true, texto: `Hecho. Cita movida: ${accion.etiqueta}.` };
+    if (r.ok) {
+      const ya = (await listRecords()).find((x) => x.id === accion.recordId);
+      if (!ya || ya.startIso.slice(0, 16) !== accion.nuevoStartIso.slice(0, 16)) {
+        return { ok: false, texto: "La agenda no ha guardado el cambio, así que la cita NO se ha movido. Inténtalo otra vez desde la Agenda." };
+      }
+      return { ok: true, texto: `Hecho. Cita movida: ${accion.etiqueta}.` };
+    }
     return { ok: false, texto: textoFalloMover(r) };
   }
 

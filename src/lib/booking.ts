@@ -2441,6 +2441,10 @@ export function servicioPedido(business: BusinessBooking, texto: string): Bookin
   // "Extensiones de pestañas pelo a pelo"; "un TRATAMIENTO" no es cualquiera).
   const GENERICAS = new Set(["pelo", "cita", "servicio", "servicios", "tratamiento", "tratamientos", "sesion", "sesiones", "quiero", "para", "hacer", "algo", "cuanto", "cuesta", "precio", "treatment", "session", "book", "appointment"]);
   const palabras = q.split(/[^a-z0-9]+/).filter((w) => w.length > 3 && !GENERICAS.has(w));
+  // Primero el nombre IGUAL: con «Corte» y «Corte y peinado» en el catálogo,
+  // «corte» es «Corte», no el primero que lo contenga.
+  const igual = activos.find((s) => norm(s.nombre).trim() === q);
+  if (igual) return igual;
   const exacto = activos.find((s) => norm(s.nombre).includes(q) || q.includes(norm(s.nombre)));
   if (exacto) return exacto;
   const parecida = (w: string, x: string) =>
@@ -2448,6 +2452,40 @@ export function servicioPedido(business: BusinessBooking, texto: string): Bookin
   // Palabra a palabra, también con una o dos letras de diferencia: "manicure",
   // "pedicure", "massage" (quien escribe en inglés) o una errata.
   return activos.find((s) => palabras.some((w) => norm(s.nombre).split(/[^a-z0-9]+/).some((x) => parecida(w, x))));
+}
+
+export type Emparejado =
+  | { tipo: "exacto"; servicio: BookingService }
+  | { tipo: "varios"; opciones: BookingService[] }
+  | { tipo: "ninguno"; catalogo: BookingService[] };
+
+/**
+ * Emparejado ESTRICTO para los chats del panel, donde quien escribe es la dueña
+ * y lo que se guarda cambia duración y precio. Nunca cambia un servicio por otro
+ * parecido sin preguntar:
+ *   · igual (sin mayúsculas ni tildes) a UN servicio → ese;
+ *   · si no, los que se le parecen (contienen la palabra, o casi) → hay que
+ *     preguntar cuál, AUNQUE sea uno solo («corte» ≠ «Corte y peinado»);
+ *   · ninguno → se dice y se enseña el catálogo.
+ */
+export function emparejarServicio(business: BusinessBooking, texto: string): Emparejado {
+  const activos = business.servicios.filter((s) => s.activo);
+  const norm = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+  const q = norm(texto || "");
+  if (!q) return { tipo: "ninguno", catalogo: activos };
+  const iguales = activos.filter((s) => norm(s.nombre) === q);
+  if (iguales.length === 1) return { tipo: "exacto", servicio: iguales[0] };
+  if (iguales.length > 1) return { tipo: "varios", opciones: iguales };
+  const GENERICAS = new Set(["pelo", "cita", "servicio", "tratamiento", "sesion", "para", "hacer", "algo", "consulta"]);
+  const palabras = q.split(/[^a-z0-9]+/).filter((w) => w.length > 3 && !GENERICAS.has(w));
+  const parecida = (w: string, x: string) =>
+    x.length > 3 && (x.startsWith(w) || w.startsWith(x) || (w.length >= 6 && x.length >= 6 && distancia(w, x) <= 2));
+  const candidatos = activos.filter((s) => {
+    const n = norm(s.nombre);
+    return n.includes(q) || q.includes(n) || palabras.some((w) => n.split(/[^a-z0-9]+/).some((x) => parecida(w, x)));
+  });
+  if (candidatos.length) return { tipo: "varios", opciones: candidatos };
+  return { tipo: "ninguno", catalogo: activos };
 }
 
 /** Distancia de edición (Levenshtein) entre dos palabras cortas. */

@@ -9,6 +9,7 @@
 // se guarda en el turno del chat y solo se ejecuta al confirmar (ver
 // `salon-acciones.ts` y el `body.confirmar` de `/api/salon/preguntar`).
 
+import { esPegaDeHora, calendarioProximo } from "./hueco-panel";
 import "server-only";
 import { sinInventar, pideConfirmarEnTexto, NUDGE } from "./chat-honesto";
 import { anthropic, MODELS } from "./claude";
@@ -157,7 +158,7 @@ const HERRAMIENTAS = [
 ] as const;
 
 type Args = Record<string, unknown>;
-type SalidaHerramienta = { texto: string; propuesta?: { resumen: string; accion: AccionPendiente } };
+type SalidaHerramienta = { texto: string; propuesta?: { resumen: string; accion: AccionPendiente }; bloqueo?: string };
 
 const str = (args: Args, k: string): string | undefined => {
   const v = args[k];
@@ -197,7 +198,7 @@ async function prepararAccion(tenantId: string, nombre: string, args: Args): Pro
   if (r.tipo === "ambiguo") {
     return { texto: `NO ESTÁ CLARO. Pregúntaselo: ${r.pregunta}\nOpciones:\n- ${r.opciones.join("\n- ")}` };
   }
-  return { texto: `NO SE PUEDE: ${r.motivo}` };
+  return { texto: `NO SE PUEDE: ${r.motivo}`, ...(esPegaDeHora(r.motivo) ? { bloqueo: r.motivo } : {}) };
 }
 
 async function ejecutarConsulta(tenantId: string, nombre: string, args: Args): Promise<string> {
@@ -296,7 +297,7 @@ En un salón el dinero se pierde en el hueco vacío y en la clienta que deja de 
 Estilo: cercana y directa, frases cortas, sin emojis, sin fórmulas de asistente ("¿en qué puedo ayudarte?"). Tuteo, como una compañera de mostrador.
 
 CUANDO TE PIDEN HACER ALGO (crear, mover o cancelar una cita, apuntar en la lista de espera, preparar un mensaje):
-- Si te falta un dato imprescindible, PREGÚNTALO tú antes de llamar a la herramienta. No la llames a medias ni inventes el dato que falta. Para CREAR o MOVER una cita: nombre, servicio, día y hora. Para la LISTA DE ESPERA: nombre, teléfono, servicio y día — la hora es opcional, no la pidas.
+- Si te falta un dato imprescindible, PREGÚNTALO tú antes de llamar a la herramienta. No la llames a medias ni inventes el dato que falta. Para CREAR o MOVER una cita: nombre, servicio, día y hora. El nombre de pila basta ("Laura"): NO pidas apellido. El teléfono NO es obligatorio para una cita: no lo pidas. El servicio pásalo tal como lo dicen ("corte"): la herramienta lo busca en la lista y, si hay varios, te dice cuáles. Para la LISTA DE ESPERA: nombre, teléfono, servicio y día — la hora es opcional, no la pidas.
 - Cuando tengas todo, usa la herramienta "preparar_…" que toque. Esas herramientas NO hacen nada: dejan la acción propuesta.
 - Después, di en una línea qué vas a hacer y pide que lo confirmen. Tal cual te lo devuelve la herramienta.
 - NUNCA digas que ya está hecho, ni "listo", ni "creada", ni "cancelada": no lo está. Está esperando confirmación, y se da con un botón.
@@ -323,6 +324,15 @@ export async function preguntarSalon(opts: {
   let forzar = false;
   let reintentado = false;
 
+  // Hora pasada / cerrado / fuera de horario: se dice tal cual y se corta (ver esPegaDeHora).
+  let bloqueo: string | null = null;
+  // Los servicios y el equipo REALES, para que «corte» sea «Corte y peinado» sin
+  // tener que preguntarlo (antes preguntaba «¿corte o corte y peinado?» aunque
+  // el salón solo tiene uno).
+  const neg = (await getBusinessesForTenant(opts.tenantId).catch(() => []))[0];
+  const ficha = neg
+    ? `\n\nSERVICIOS DEL SALÓN (usa estos nombres): ${neg.servicios.filter((x) => x.activo).map((x) => x.nombre).join(", ")}.\nEQUIPO: ${(neg.empleados || []).filter((e) => e.activo).map((e) => e.nombre).join(", ") || "sin profesionales"}.\nSi lo que dicen encaja claramente con UNO de estos servicios, úsalo sin preguntar.`
+    : "";
   let pendiente: { resumen: string; accion: AccionPendiente } | null = null;
 
   try {
@@ -331,7 +341,7 @@ export async function preguntarSalon(opts: {
         {
           model: MODELS.fast,
           max_tokens: 900,
-          system: SISTEMA(hoyISO()),
+          system: SISTEMA(hoyISO()) + ficha + calendarioProximo(hoyISO()),
           tools: HERRAMIENTAS as never,
           ...(forzar ? { tool_choice: { type: "any" as const } } : {}),
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -359,7 +369,7 @@ export async function preguntarSalon(opts: {
           continue;
         }
         return {
-          texto: sinInventar(texto || "No he sabido contestar a eso.", !!pendiente),
+          texto: sinInventar(texto || "No he sabido contestar a eso.", !!pendiente, opts.pregunta),
           acciones: pendiente ? [] : accionesDe(`${opts.pregunta} ${texto}`),
           pendiente,
         };
@@ -375,6 +385,7 @@ export async function preguntarSalon(opts: {
         );
         if (preparada) {
           if (preparada.propuesta && !pendiente) pendiente = preparada.propuesta;
+          if (preparada.bloqueo && !bloqueo) bloqueo = preparada.bloqueo;
           resultados.push({ type: "tool_result", tool_use_id: uu.id, content: preparada.texto });
           continue;
         }
@@ -390,6 +401,9 @@ export async function preguntarSalon(opts: {
       // otra vuelta al modelo. Dársela dejaba que redactara un "Hecho. Cita
       // creada (id inventado)" sin que `ejecutar()` se hubiera llamado ni una vez.
       // `pendiente` es la única fuente de verdad de si algo quedó por confirmar.
+      if (!pendiente && bloqueo) {
+        return { texto: bloqueo, acciones: [], pendiente: null };
+      }
       if (pendiente) {
         return { texto: pendiente.resumen, acciones: [], pendiente };
       }

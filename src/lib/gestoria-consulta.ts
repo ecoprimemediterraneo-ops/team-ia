@@ -429,7 +429,7 @@ export async function preguntar(opts: {
           // ÚLTIMO FILTRO. Da igual quién haya escrito la fecha —una función de
           // consulta, una de acción, o el propio modelo copiando algo mal—: por
           // aquí pasa todo lo que va a leer el gestor, y aquí no salen guiones.
-          texto: fechasEnCristiano(sinInventar(texto || "No he sabido contestar a eso.", !!pendiente)),
+          texto: fechasEnCristiano(sinInventar(texto || "No he sabido contestar a eso.", !!pendiente, opts.pregunta)),
           // Con una propuesta encima de la mesa NO se ofrecen atajos a otras
           // pantallas: lo único que toca es decir sí o no.
           acciones: pendiente ? [] : accionesDe(opts.pregunta, texto),
@@ -463,6 +463,13 @@ export async function preguntar(opts: {
         resultados.push({ type: "tool_result", tool_use_id: uu.id, content: salida });
       }
       mensajes.push({ role: "user", content: resultados });
+
+      // CORTE OBLIGATORIO (el de dental, estética y salón; aquí faltaba): con
+      // una propuesta sobre la mesa se devuelve YA. Dar otra vuelta al modelo le
+      // dejaba redactar «Hecho» junto al botón sin que nada se hubiera ejecutado.
+      if (pendiente) {
+        return { texto: pendiente.resumen, acciones: [], consultas, pendiente };
+      }
     }
 
     return {

@@ -7,8 +7,9 @@
 // central —mismo motor, mismo candado que usan Pablo y Marta, nunca un camino
 // paralelo— y los leads contra `estetica-leads.ts`.
 
+import { pegaDeHueco, citaGuardada, TEXTO_NO_GUARDADA } from "./hueco-panel";
 import "server-only";
-import { getBusinessesForTenant } from "./booking";
+import { getBusinessesForTenant, emparejarServicio } from "./booking";
 import { textoFalloReserva } from "./reserva-texto";
 import {
   registrarLead,
@@ -29,7 +30,7 @@ export type Preparada =
 
 /** La acción ya resuelta, lista para ejecutarse en cuanto se diga que sí. */
 export type AccionPendiente =
-  | { clase: "crear_cita"; tenantId: string; nombre: string; telefono: string; tratamiento: string; startIso: string; etiqueta: string }
+  | { clase: "crear_cita"; tenantId: string; nombre: string; telefono: string; tratamiento: string; startIso: string; etiqueta: string ; servicioId?: string }
   | { clase: "crear_lead"; tenantId: string; nombre: string; telefono: string; instagram?: string; tratamientoInteres?: string; caliente: boolean; motivoCaliente?: string; etiqueta: string }
   | { clase: "cambiar_estado_lead"; tenantId: string; leadId: string; estado: EstadoLead; etiqueta: string };
 
@@ -72,16 +73,28 @@ export async function prepararCrearCita(
     return { tipo: "nada", motivo: "Esta clínica todavía no tiene una agenda conectada." };
   }
 
+  // El tratamiento del CATÁLOGO, sin cambiarlo por otro parecido sin preguntar.
+  const emp = emparejarServicio(negocios[0], args.tratamiento!);
+  if (emp.tipo === "varios") {
+    return { tipo: "ambiguo", pregunta: `"${args.tratamiento}" no es exactamente ningún tratamiento de la clínica. ¿Cuál de estos es? No prepares nada hasta que lo diga.`, opciones: emp.opciones.map((x) => x.nombre) };
+  }
+  if (emp.tipo === "ninguno") {
+    return { tipo: "nada", motivo: `No hay ningún tratamiento que se llame "${args.tratamiento}". Los de la clínica son: ${emp.catalogo.map((x) => x.nombre).join(", ")}.` };
+  }
+  const servicioCat = emp.servicio;
   const startIso = `${args.fecha}T${args.hora}:00`;
+  // Hora pasada, día cerrado o fuera de horario: se dice ANTES de proponer.
+  const pega = await pegaDeHueco(negocios[0], startIso, { servicio: servicioCat });
+  if (pega) return { tipo: "nada", motivo: pega };
   const nombre = args.nombre!.trim();
   const telefono = (args.telefono || "").trim();
-  const tratamiento = args.tratamiento!.trim();
+  const tratamiento = servicioCat.nombre;
   const etiqueta = `${tratamiento} de ${nombre} el ${fechaNatural(args.fecha!)} a las ${args.hora}`;
 
   return {
     tipo: "propuesta",
     resumen: `Crear cita: ${etiqueta}.`,
-    accion: { clase: "crear_cita", tenantId, nombre, telefono, tratamiento, startIso, etiqueta },
+    accion: { clase: "crear_cita", tenantId, nombre, telefono, tratamiento, servicioId: servicioCat.id, startIso, etiqueta },
   };
 }
 
@@ -181,6 +194,11 @@ export async function ejecutar(tenantId: string, accion: AccionPendiente): Promi
   }
 
   if (accion.clase === "crear_cita") {
+    const negocio = (await getBusinessesForTenant(tenantId))[0];
+    if (!negocio) return { ok: false, texto: "Esta clínica todavía no tiene una agenda conectada." };
+    // Se vuelve a mirar al CONFIRMAR: la hora pudo pasar con la propuesta en pantalla.
+    const pega = await pegaDeHueco(negocio, accion.startIso, { motivo: accion.tratamiento });
+    if (pega) return { ok: false, texto: `No se ha creado la cita. ${pega}` };
     const { reservarSlot } = await import("./orchestrator");
     const founderEmail = process.env.FOUNDER_EMAIL || FOUNDER_EMAIL_FALLBACK;
     const res = await reservarSlot({
@@ -192,9 +210,12 @@ export async function ejecutar(tenantId: string, accion: AccionPendiente): Promi
       startIso: accion.startIso,
       agenteOrigen: "dashboard",
       customerPhone: accion.telefono || undefined,
+      serviceId: accion.servicioId,
     });
-    if (res.ok) return { ok: true, texto: `Hecho. Cita creada: ${accion.etiqueta}.` };
-    return { ok: false, texto: textoFalloReserva(res) };
+    if (!res.ok) return { ok: false, texto: textoFalloReserva(res) };
+    // «Creada» SOLO si está en la agenda: el texto sale de lo guardado.
+    if (!(await citaGuardada(res, negocio.slug))) return { ok: false, texto: TEXTO_NO_GUARDADA };
+    return { ok: true, texto: `Hecho. Cita creada: ${accion.etiqueta}. Ya está en la agenda.` };
   }
 
   if (accion.clase === "crear_lead") {

@@ -128,6 +128,9 @@ const NEGOCIOS: Record<SectorNegocio, PlantillaNegocio> = {
     ],
     servicios: [
       { id: "sv_corte", nombre: "Corte y peinado", categoriaId: "cat_pelo", durationMin: 45, precioEUR: 25 },
+      // «Corte» a secas, distinto de «Corte y peinado»: la dueña pide «corte» y no
+      // puede guardarse como el otro (cambia duración y precio).
+      { id: "sv_corte_solo", nombre: "Corte", categoriaId: "cat_pelo", durationMin: 30, precioEUR: 18 },
       { id: "sv_color", nombre: "Color", categoriaId: "cat_pelo", durationMin: 90, precioEUR: 55 },
       { id: "sv_mechas", nombre: "Mechas", categoriaId: "cat_pelo", durationMin: 120, precioEUR: 75 },
       { id: "sv_manicura", nombre: "Manicura", categoriaId: "cat_unas", durationMin: 45, precioEUR: 20 },
@@ -141,9 +144,9 @@ const NEGOCIOS: Record<SectorNegocio, PlantillaNegocio> = {
     // Tres profesionales trabajando a la vez: es lo que distingue al salón de las
     // clínicas, y lo que enseña la agenda por columnas.
     empleados: [
-      { id: "emp_ana", nombre: "Ana", color: "#C8202A", activo: true, serviceIds: ["sv_corte", "sv_color", "sv_mechas"] },
+      { id: "emp_ana", nombre: "Ana", color: "#C8202A", activo: true, serviceIds: ["sv_corte", "sv_corte_solo", "sv_color", "sv_mechas"] },
       { id: "emp_berta", nombre: "Berta", color: "#2F6FDE", activo: true, serviceIds: ["sv_manicura", "sv_pedicura"] },
-      { id: "emp_carla", nombre: "Carla", color: "#2E9E5B", activo: true, serviceIds: ["sv_corte", "sv_manicura"] },
+      { id: "emp_carla", nombre: "Carla", color: "#2E9E5B", activo: true, serviceIds: ["sv_corte", "sv_corte_solo", "sv_manicura"] },
     ],
   },
 
@@ -269,7 +272,15 @@ async function sembrarNegocio(d: TenantDemo): Promise<string> {
     leadTimeMin: plantilla.leadTimeMin,
     cancelAntelacionMin: plantilla.cancelAntelacionMin,
     // Se conservan empleados y fotos si ya existían (por si alguien los tocó).
-    empleados: previo?.empleados ?? plantilla.empleados,
+    // A los que ya estaban se les SUMAN los servicios nuevos de la plantilla
+    // (p. ej. «Corte» el 01/10/2026): si no, la demo ya sembrada tendría el
+    // servicio en el catálogo y nadie que lo hiciera.
+    empleados: previo?.empleados
+      ? previo.empleados.map((e) => {
+          const p = plantilla.empleados?.find((x) => x.id === e.id);
+          return p ? { ...e, serviceIds: [...new Set([...(e.serviceIds || []), ...(p.serviceIds || [])])] } : e;
+        })
+      : plantilla.empleados,
     logoUrl: previo?.logoUrl,
     heroImageUrl: previo?.heroImageUrl,
     // Config de restauración solo donde aplica. Si ya la habían tocado a mano,

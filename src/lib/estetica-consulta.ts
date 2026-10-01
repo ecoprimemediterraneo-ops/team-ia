@@ -10,6 +10,7 @@
 // explícitamente (ver `estetica-acciones.ts` y el `body.confirmar` de
 // `/api/estetica/preguntar`).
 
+import { esPegaDeHora, calendarioProximo } from "./hueco-panel";
 import "server-only";
 import { sinInventar, pideConfirmarEnTexto, NUDGE } from "./chat-honesto";
 import { anthropic, MODELS } from "./claude";
@@ -142,7 +143,7 @@ const HERRAMIENTAS = [
 type Args = Record<string, unknown>;
 
 /** Lo que una herramienta le devuelve al modelo, más la acción si la preparó. */
-type SalidaHerramienta = { texto: string; propuesta?: { resumen: string; accion: AccionPendiente } };
+type SalidaHerramienta = { texto: string; propuesta?: { resumen: string; accion: AccionPendiente }; bloqueo?: string };
 
 const str = (args: Args, k: string): string | undefined => {
   const v = args[k];
@@ -194,7 +195,7 @@ async function prepararAccion(tenantId: string, nombre: string, args: Args): Pro
   if (r.tipo === "ambiguo") {
     return { texto: `NO ESTÁ CLARO A QUIÉN SE REFIERE. Pregúntaselo: ${r.pregunta}\nOpciones:\n- ${r.opciones.join("\n- ")}` };
   }
-  return { texto: `NO SE PUEDE: ${r.motivo}` };
+  return { texto: `NO SE PUEDE: ${r.motivo}`, ...(esPegaDeHora(r.motivo) ? { bloqueo: r.motivo } : {}) };
 }
 
 async function ejecutarConsulta(tenantId: string, nombre: string, args: Args): Promise<string> {
@@ -306,6 +307,8 @@ export async function preguntarEstetica(opts: {
   let forzar = false;
   let reintentado = false;
 
+  // Hora pasada / cerrado / fuera de horario: se dice tal cual y se corta (ver esPegaDeHora).
+  let bloqueo: string | null = null;
   let pendiente: { resumen: string; accion: AccionPendiente } | null = null;
 
   try {
@@ -314,7 +317,7 @@ export async function preguntarEstetica(opts: {
         {
           model: MODELS.fast,
           max_tokens: 900,
-          system: SISTEMA(hoyISO()),
+          system: SISTEMA(hoyISO()) + calendarioProximo(hoyISO()),
           tools: HERRAMIENTAS as never,
           ...(forzar ? { tool_choice: { type: "any" as const } } : {}),
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -342,7 +345,7 @@ export async function preguntarEstetica(opts: {
           continue;
         }
         return {
-          texto: sinInventar(texto || "No he sabido contestar a eso.", !!pendiente),
+          texto: sinInventar(texto || "No he sabido contestar a eso.", !!pendiente, opts.pregunta),
           // Con una propuesta encima de la mesa no se ofrecen atajos a otras
           // pantallas: lo único que toca es decir sí o no.
           acciones: pendiente ? [] : accionesDe(`${opts.pregunta} ${texto}`),
@@ -361,6 +364,7 @@ export async function preguntarEstetica(opts: {
         );
         if (preparada) {
           if (preparada.propuesta && !pendiente) pendiente = preparada.propuesta;
+          if (preparada.bloqueo && !bloqueo) bloqueo = preparada.bloqueo;
           resultados.push({ type: "tool_result", tool_use_id: uu.id, content: preparada.texto });
           continue;
         }
@@ -383,6 +387,9 @@ export async function preguntarEstetica(opts: {
       // llegaba a existir. `pendiente` es la única fuente de verdad de si algo
       // quedó de verdad pendiente de confirmar: en cuanto existe, la respuesta
       // es su resumen — ni una palabra más generada por el modelo.
+      if (!pendiente && bloqueo) {
+        return { texto: bloqueo, acciones: [], pendiente: null };
+      }
       if (pendiente) {
         return { texto: pendiente.resumen, acciones: [], pendiente };
       }

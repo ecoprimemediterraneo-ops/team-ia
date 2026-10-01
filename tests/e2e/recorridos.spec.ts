@@ -47,7 +47,9 @@ test("1. WhatsApp: pide cita, Pablo ofrece huecos reales, reserva y sale en el p
   expect(r1[0].ruta, "responde desde el número del negocio").toContain(E2E.waPhoneId);
   const ofrecidas = horas(r1.map((x) => x.texto).join(" ")).filter((h) => h !== "11:00");
   expect(ofrecidas.length, `ofrece dos huecos reales: «${r1.at(-1)?.texto}»`).toBeGreaterThanOrEqual(2);
-  const libres = await huecos("sv_corte", D);
+  // «un corte» es el servicio «Corte» (sv_corte_solo, 30 min), no «Corte y
+  // peinado»: desde el 01/10/2026 el servicio con el nombre igual gana.
+  const libres = await huecos("sv_corte_solo", D);
   for (const h of ofrecidas.slice(0, 2)) expect(libres, `el hueco ofrecido ${h} está libre de verdad`).toContain(h);
   expect((await citasActivas()).some((c) => c.cliente.telefono.includes(movil)), "todavía no ha reservado nada").toBeFalsy();
 

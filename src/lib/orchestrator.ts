@@ -91,6 +91,12 @@ export type ReservaInput = {
   /** Profesional pedida (negocios con personal). Sin ella se asigna la primera libre que haga el servicio. */
   empleadoId?: string;
   /**
+   * El servicio YA ELEGIDO (id del catálogo). Lo pasan los chats del panel, que
+   * ya han confirmado con la dueña cuál es: sin esto se volvía a deducir del
+   * texto y «Corte» podía guardarse como «Corte y peinado».
+   */
+  serviceId?: string;
+  /**
    * Cita cogida EN UNA LLAMADA de Carmen: la confirmación al cliente (WhatsApp
    * con plantilla) no sale ahora, sino al colgar, desde el webhook de fin de
    * llamada, junto con cualquier cambio o anulación de esa misma llamada. El
@@ -315,7 +321,8 @@ async function reservarConNegocio(input: ReservaInput, tenantId: string): Promis
   let pB = input.paddingBeforeMin ?? 0;
   let pA = input.paddingAfterMin ?? 0;
   // El servicio PEDIDO; si el negocio no lo tiene, ninguno (nunca el primero de la lista).
-  const svPedido = servicioPedido(business, input.motivo);
+  const svPorId = input.serviceId ? business.servicios.find((x) => x.id === input.serviceId && x.activo) : undefined;
+  const svPedido = svPorId ?? servicioPedido(business, input.motivo);
   let asignado: { id: string; nombre: string } | undefined;
   if (!durationMin) {
     const sv = svPedido;
