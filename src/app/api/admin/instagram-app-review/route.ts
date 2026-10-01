@@ -33,6 +33,7 @@
 import { NextResponse } from "next/server";
 import { requireFounder } from "@/lib/admin-auth";
 import { estadoToken, tokenParaInstagramLogin, SCOPES } from "@/lib/instagram-login";
+import { DEFAULT_TENANT_ID } from "@/lib/tenants";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,14 +50,9 @@ const PAGE_ID = process.env.FACEBOOK_PAGE_ID || "1110804952118807";
 const IMAGEN =
   "https://wsrv.nl/?url=aiteam.marketing/api/og/post%3Ffrase%3DTu%2520equipo%2520de%2520IA%252C%2520trabajando%26rol%3DAI-TEAM&output=jpg&w=1080&h=1080";
 
-// Sin emojis, como el resto de lo que escribe la casa.
-const PIE = `En AI-Team montamos agentes de IA que trabajan por tu negocio: contestan el WhatsApp, cuadran las citas y llevan las redes.
-
-Menos tareas repetidas, mas tiempo para lo que importa.
-
-Mas en aiteam.marketing
-
-#IA #Automatizacion #PYMES #InteligenciaArtificial`;
+// Pie NEUTRO: es una publicación de prueba técnica para que Meta registre la
+// llamada de instagram_business_content_publish, y se borra después. Sin emojis.
+const PIE = "Publicación de prueba técnica. Se eliminará en breve.";
 
 /** Devuelve una función que tapa este token y todos los secretos del entorno. */
 function taparCon(token: string) {
@@ -89,7 +85,12 @@ export async function GET(req: Request) {
   const llamarDeVerdad = new URL(req.url).searchParams.get("llamar") === "1";
 
   // --- Qué token se usa -----------------------------------------------------
-  const deLogin = await tokenParaInstagramLogin();
+  // EL TOKEN DE LA CUENTA PROPIA, no el global. Desde que cada tenant guarda el
+  // suyo (`instagram_login_token:<tenantId>`), la clave global se quedó con el
+  // token antiguo: el 01/10/2026 estaba invalidado por Meta mientras el panel ya
+  // tenía uno nuevo, y esta ruta seguía leyendo el viejo. leerToken cae al
+  // global si el tenant no tiene el suyo.
+  const deLogin = await tokenParaInstagramLogin(DEFAULT_TENANT_ID);
   const deSystemUser = process.env.INSTAGRAM_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN || "";
   const token = deLogin || deSystemUser;
   const esDeLogin = Boolean(deLogin);
@@ -119,7 +120,7 @@ export async function GET(req: Request) {
     ].filter(Boolean).join(" · ");
   };
 
-  const estado = await estadoToken();
+  const estado = await estadoToken(DEFAULT_TENANT_ID);
   const info: Record<string, unknown> = {
     tokenQueSeUsa: esDeLogin
       ? "Instagram Business Login (el bueno para los permisos business_*)"
