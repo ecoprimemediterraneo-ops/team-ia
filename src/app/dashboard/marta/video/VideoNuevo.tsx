@@ -30,6 +30,8 @@ export default function VideoNuevo({
   habilitado,
   usados,
   limite,
+  hoy = 0,
+  limiteDia = 3,
   defaultFecha,
   defaultHora,
 }: {
@@ -37,6 +39,8 @@ export default function VideoNuevo({
   habilitado: boolean;
   usados: number;
   limite: number;
+  hoy?: number;
+  limiteDia?: number;
   defaultFecha: string;
   defaultHora: string;
 }) {
@@ -94,7 +98,7 @@ export default function VideoNuevo({
     return (
       <div className="card-hard bg-white p-5 text-sm text-black/60 space-y-1">
         <p><strong>Los vídeos están apagados.</strong> Se encienden con <code>MARTA_VIDEO_ENABLED=true</code>.</p>
-        <p className="text-xs">Límite previsto: {limite} vídeos al mes por negocio.</p>
+        <p className="text-xs">Límite previsto: {limiteDia} vídeos al día y {limite} al mes por negocio.</p>
       </div>
     );
   }
@@ -107,7 +111,7 @@ export default function VideoNuevo({
           escribe los textos y monta el vídeo.
         </p>
         <span className="text-[10px] font-mono uppercase tracking-widest border-2 border-black px-2 py-1 font-bold">
-          {usados}/{limite} este mes
+          hoy {hoy}/{limiteDia} · mes {usados}/{limite}
         </span>
       </div>
 

@@ -74,6 +74,22 @@ export function limiteVideosMes(): number {
 export async function videosDelMes(tenantId: string, ahora = new Date()): Promise<number> {
   return (await getMonthEvents(tenantId, monthKey(ahora.toISOString()))).filter((e) => e.type === "video_rendered").length;
 }
+/** Vídeos por negocio y DÍA (hora de España). Por defecto 3. */
+export function limiteVideosDia(): number {
+  const n = parseInt(process.env.MARTA_VIDEO_MAX_DIA || "3", 10);
+  return Number.isFinite(n) && n >= 0 ? n : 3;
+}
+export async function videosDeHoy(tenantId: string, ahora = new Date()): Promise<number> {
+  const dia = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+  const hoy = dia(ahora);
+  return (await getMonthEvents(tenantId, monthKey(ahora.toISOString()))).filter((e) => e.type === "video_rendered" && dia(new Date(e.ts)) === hoy).length;
+}
+/**
+ * Tiempo TOTAL que se espera al render, reintentos incluidos. Si se pasa, Marta
+ * lo dice en el panel y sigue: nunca se queda colgada esperando (un render normal
+ * en el VPS son 60-90 s; la función de Vercel tiene 300).
+ */
+export const PLAZO_RENDER_MS = 200_000;
 const renderUrl = () => (process.env.MARTA_RENDER_URL || "http://localhost:3900").replace(/\/$/, "");
 
 // ─── Coste ──────────────────────────────────────────────────────────────────
@@ -87,11 +103,26 @@ const usd = (modelo: string, entrada: number, salida: number) => {
 };
 
 // ─── Marca y fotos ──────────────────────────────────────────────────────────
+/** ¿El render corre en esta misma máquina? Si no (VPS), no ve nada de localhost. */
+const renderEsLocal = () => /\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(renderUrl());
+const SITIO_PUBLICO = "https://aiteam.marketing";
+/**
+ * URL absoluta que el RENDER pueda abrir. Con el render en el VPS y la app en
+ * local, "http://localhost:3000/img/logo.svg" no existe para él: los ficheros
+ * públicos del repo (/img/…) se piden a la web publicada, y lo que solo vive en
+ * el almacén local (/api/admin/marta-image/…) se descarta.
+ */
 function absoluta(u: string | undefined, baseUrl: string): string | undefined {
   if (!u) return undefined;
-  if (/^https?:\/\//.test(u)) return u;
-  if (u.startsWith("/")) return `${baseUrl.replace(/\/$/, "")}${u}`;
-  return undefined;
+  let abs: string;
+  if (/^https?:\/\//.test(u)) abs = u;
+  else if (u.startsWith("/")) abs = `${baseUrl.replace(/\/$/, "")}${u}`;
+  else return undefined;
+  if (renderEsLocal()) return abs;
+  const x = new URL(abs);
+  if (!/^(localhost|127\.0\.0\.1)$/.test(x.hostname)) return abs;
+  if (x.pathname.startsWith("/api/")) return undefined;
+  return `${SITIO_PUBLICO}${x.pathname}${x.search}`;
 }
 /** Fotos de Unsplash a tamaño vertical; el resto tal cual. */
 function aVertical(u: string): string {
@@ -359,34 +390,46 @@ export async function prepararVideo(i: PrepararInput): Promise<PrepararResult> {
 }
 
 // ─── Render ─────────────────────────────────────────────────────────────────
-export async function renderizar(props: PropsVideo): Promise<{ ok: true; bytes: Buffer; renderMs: number; duracionS: number } | { ok: false; detail: string }> {
+export async function renderizar(props: PropsVideo, plazoMs = PLAZO_RENDER_MS): Promise<{ ok: true; bytes: Buffer; renderMs: number; duracionS: number; urlPublica?: string } | { ok: false; detail: string }> {
   const secreto = process.env.MARTA_RENDER_SECRET || "";
+  const fin = Date.now() + plazoMs;
   let ultimo = "";
   for (let intento = 1; intento <= 3; intento++) {
+    const queda = fin - Date.now();
+    if (queda < 1_000) { ultimo = ultimo || `el render ha tardado más de ${Math.round(plazoMs / 1000)} s`; break; }
     try {
       const r = await fetch(`${renderUrl()}/render`, {
         method: "POST",
         headers: { "content-type": "application/json", ...(secreto ? { authorization: `Bearer ${secreto}` } : {}) },
         body: JSON.stringify(props),
-        signal: AbortSignal.timeout(280_000),
+        signal: AbortSignal.timeout(queda),
       });
       if (r.ok) {
-        return { ok: true, bytes: Buffer.from(await r.arrayBuffer()), renderMs: Number(r.headers.get("x-render-ms") || 0), duracionS: Number(r.headers.get("x-duracion-s") || 0) };
+        return {
+          ok: true, bytes: Buffer.from(await r.arrayBuffer()), renderMs: Number(r.headers.get("x-render-ms") || 0),
+          duracionS: Number(r.headers.get("x-duracion-s") || 0), urlPublica: r.headers.get("x-video-url") || undefined,
+        };
       }
       ultimo = `render ${r.status}: ${(await r.text()).slice(0, 200)}`;
       // 503 = cola llena: se espera y se reintenta. Un 4xx no se arregla reintentando.
       if (r.status !== 503 && r.status < 500) break;
     } catch (err) {
-      ultimo = `servicio de render no responde (${renderUrl()}): ${err instanceof Error ? err.message : err}`;
+      const e = err instanceof Error ? err : new Error(String(err));
+      ultimo = e.name === "TimeoutError" || e.name === "AbortError"
+        ? `el render ha tardado más de ${Math.round(plazoMs / 1000)} s`
+        : `servicio de render no responde (${renderUrl()}): ${e.message}`;
     }
-    if (intento < 3) await new Promise((res) => setTimeout(res, 5_000 * intento));
+    if (intento < 3 && fin - Date.now() > 10_000) await new Promise((res) => setTimeout(res, Math.min(5_000 * intento, fin - Date.now() - 5_000)));
   }
   return { ok: false, detail: ultimo };
 }
 
-async function guardarMp4(bytes: Buffer, baseUrl: string): Promise<{ url: string; host: "vercel-blob" | "marta-image-store" }> {
+async function guardarMp4(bytes: Buffer, baseUrl: string, urlPublica?: string): Promise<{ url: string; host: "vercel-blob" | "render-vps" | "marta-image-store" }> {
   const blob = await putPublicBlob(bytes, "video/mp4", "marta-video").catch((e) => { console.error("[marta-video] Blob:", e); return null; });
   if (blob) return { url: blob, host: "vercel-blob" };
+  // El Blob del proyecto es privado (no da URLs públicas): se usa la copia que
+  // guarda el propio servicio de render, servida por HTTPS 45 días.
+  if (urlPublica && /^https:\/\//.test(urlPublica)) return { url: urlPublica, host: "render-vps" };
   const id = await storeImage(bytes, "video/mp4");
   return { url: imageUrlFor(id, baseUrl), host: "marta-image-store" };
 }
@@ -401,12 +444,15 @@ export async function generarVideo(i: PrepararInput & { conCaption?: boolean }):
   const limite = limiteVideosMes();
   const usados = await videosDelMes(i.tenantId, i.ahora);
   if (usados >= limite) return { ok: false, kind: "limite", detail: `Ya se han hecho ${usados} vídeos este mes (límite ${limite}).` };
+  const limiteDia = limiteVideosDia();
+  const hoy = await videosDeHoy(i.tenantId, i.ahora);
+  if (hoy >= limiteDia) return { ok: false, kind: "limite", detail: `Ya se han hecho ${hoy} vídeos hoy (límite ${limiteDia} al día). Mañana puedes hacer más.` };
 
   const prep = await prepararVideo(i);
   if (!prep.ok) return { ok: false, kind: "datos", detail: prep.detail };
   const r = await renderizar(prep.props);
   if (!r.ok) return { ok: false, kind: "render", detail: r.detail };
-  const mp4 = await guardarMp4(r.bytes, i.baseUrl);
+  const mp4 = await guardarMp4(r.bytes, i.baseUrl, r.urlPublica);
 
   let caption = "";
   let usdCaption = 0;

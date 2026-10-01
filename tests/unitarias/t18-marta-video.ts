@@ -11,13 +11,16 @@ delete process.env.VERCEL; delete process.env.ANTHROPIC_API_KEY; delete process.
 type Pedido = { props: Record<string, any>; auth?: string };
 const pedidos: Pedido[] = [];
 let respuestas: number[] = []; // códigos a devolver en orden (vacío = 200)
+let urlPublicaMock = ""; // cabecera x-video-url (copia pública del VPS)
+let esperaMs = 0;        // para simular un render que tarda demasiado
 const render = http.createServer((req, res) => {
   let b = ""; req.on("data", (c) => (b += c)); req.on("end", () => {
     const code = respuestas.shift() ?? 200;
     pedidos.push({ props: JSON.parse(b), auth: req.headers.authorization });
     if (code !== 200) { res.writeHead(code, { "content-type": "application/json" }); res.end('{"ok":false}'); return; }
     const mp4 = Buffer.from(`MP4FALSO-${pedidos.length}-${"x".repeat(2000)}`);
-    res.writeHead(200, { "content-type": "video/mp4", "x-render-ms": "31000", "x-duracion-s": "12.05" }); res.end(mp4);
+    const enviar = () => { res.writeHead(200, { "content-type": "video/mp4", "x-render-ms": "31000", "x-duracion-s": "12.05", ...(urlPublicaMock ? { "x-video-url": urlPublicaMock } : {}) }); res.end(mp4); };
+    if (esperaMs) setTimeout(enviar, esperaMs); else enviar();
   });
 });
 await new Promise<void>((r) => render.listen(0, r));
@@ -142,6 +145,33 @@ console.log("\n--- Registro roto: falla cerrado ---");
   assert(!roto.ok && /registro/.test(roto.detail), "si el vídeo no se puede apuntar (y contar), no se entrega");
   fs.writeFileSync(f, bueno);
 }
+
+console.log("\n--- Límite por día (3 por defecto) ---");
+assert(V.limiteVideosDia() === 3, "por defecto, 3 vídeos al día por negocio");
+process.env.MARTA_VIDEO_MAX_DIA = String(await V.videosDeHoy(TEN));
+const dia = await V.generarVideo({ tenantId: TEN, plantilla: "oferta", baseUrl: BASE });
+assert(!dia.ok && dia.kind === "limite" && /hoy/.test(dia.detail), `al llegar al límite del día se para y lo dice (${dia.ok ? "" : dia.detail})`);
+delete process.env.MARTA_VIDEO_MAX_DIA;
+
+console.log("\n--- Copia pública del VPS (el Blob es privado) ---");
+urlPublicaMock = "https://api.aiteam.marketing:8790/v/abc.mp4";
+const pub1 = await V.generarVideo({ tenantId: TEN, plantilla: "oferta", servicioId: "sv_corte", baseUrl: BASE });
+assert(pub1.ok && pub1.url === urlPublicaMock, `sin Blob, el MP4 es la copia pública HTTPS del render (${pub1.ok ? pub1.url : pub1.detail})`);
+urlPublicaMock = "";
+
+console.log("\n--- Render que tarda demasiado: no se queda colgada ---");
+esperaMs = 6_000;
+const t0r = Date.now();
+const lento = await V.renderizar(p1 as any, 2_000);
+assert(!lento.ok && /tardado/.test(lento.detail) && Date.now() - t0r < 5_000, `corta a su plazo y lo dice (${lento.ok ? "" : lento.detail}, ${Date.now() - t0r} ms)`);
+esperaMs = 0;
+
+console.log("\n--- Recursos locales con el render en el VPS ---");
+const antesUrl = process.env.MARTA_RENDER_URL;
+process.env.MARTA_RENDER_URL = "https://api.aiteam.marketing:8790";
+const marcaVps = await V.marcaDelVideo(TEN, await B.getBusinessBySlug(slug), BASE);
+assert(marcaVps.logoUrl === "https://aiteam.marketing/img/logo.svg", `el logo de localhost se pide a la web publicada (${marcaVps.logoUrl})`);
+process.env.MARTA_RENDER_URL = antesUrl;
 
 console.log("\n--- Límite por mes ---");
 process.env.MARTA_VIDEO_MAX_MES = String((await eventos()).length);

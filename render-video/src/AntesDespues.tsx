@@ -69,7 +69,7 @@ export const AntesDespues: React.FC<{ marca: MarcaVideo; fotos: string[]; textos
           const y = interpolate(f, [t0, t0 + 8], [700, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.back(1.4)) });
           return (
             <div key={i} style={{ position: "absolute", bottom: 170, left: i ? 540 : 60, width: 480, height: 660, transform: `translateY(${y}px) rotate(${i ? 3 : -3}deg)`, border: `12px solid ${i ? fuerte : "#FFFFFF"}`, boxShadow: "0 20px 50px rgba(0,0,0,.3)", overflow: "hidden", background: fuerte }}>
-              {src ? <Img src={src} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : null}
+              {src ? <Img src={src} onError={() => { /* foto rota: queda el marco de color */ }} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : null}
               <div style={{ position: "absolute", left: 0, bottom: 0, background: i ? fuerte : "#FFFFFF", color: i ? enFuerte : "#111", fontFamily: L.apoyo, fontWeight: 800, fontSize: 30, letterSpacing: "0.14em", padding: "10px 18px" }}>{i ? "DESPUÉS" : "ANTES"}</div>
             </div>
           );

@@ -18,7 +18,7 @@ import SubirPost from "./SubirPost";
 import IdentidadVisual from "./IdentidadVisual";
 import Acordeon from "./Acordeon";
 import VideoNuevo, { type NegocioVideo } from "../video/VideoNuevo";
-import { martaVideoEnabled, limiteVideosMes, videosDelMes, fotosDelBanco } from "@/lib/marta-video";
+import { martaVideoEnabled, limiteVideosMes, videosDelMes, limiteVideosDia, videosDeHoy, fotosDelBanco } from "@/lib/marta-video";
 import { listBusinesses } from "@/lib/booking";
 import { headers } from "next/headers";
 
@@ -53,6 +53,7 @@ export default async function CalendarioMes({
     });
   }
   const videosUsados = await videosDelMes(tenantId);
+  const videosHoy = await videosDeHoy(tenantId);
 
   // Solo el mes en curso (es lo que genera el orquestador).
   const ahora = new Date();
@@ -150,12 +151,14 @@ export default async function CalendarioMes({
         <SubirPost tenantId={tenantId} defaultFecha={defaultFecha} defaultHora={defaultHora} />
       </Acordeon>
 
-      <Acordeon titulo="Crear post: vídeo (Reel o historia)" badge={videoOn ? `${videosUsados}/${limiteVideosMes()}` : "apagado"}>
+      <Acordeon titulo="Crear post: vídeo (Reel o historia)" badge={videoOn ? `hoy ${videosHoy}/${limiteVideosDia()}` : "apagado"}>
         <VideoNuevo
           negocios={negociosVideo}
           habilitado={videoOn}
           usados={videosUsados}
           limite={limiteVideosMes()}
+          hoy={videosHoy}
+          limiteDia={limiteVideosDia()}
           defaultFecha={defaultFecha}
           defaultHora={defaultHora}
         />

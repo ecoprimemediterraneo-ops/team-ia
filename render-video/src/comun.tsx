@@ -3,7 +3,7 @@
 //   · Cortes secos en el pulso. Nada de fundidos largos ni zooms lentos: una foto
 //     entra con un "punch" de 6 fotogramas y se queda quieta.
 //   · Colores y letra del cliente. El acento se usa en bloques, no en adornos.
-import React from "react";
+import React, { useState } from "react";
 import { AbsoluteFill, Img, interpolate, spring, useCurrentFrame, useVideoConfig, Easing } from "remotion";
 import { loadFont as anton } from "@remotion/google-fonts/Anton";
 import { loadFont as playfair } from "@remotion/google-fonts/PlayfairDisplay";
@@ -58,10 +58,11 @@ export function golpe(frame: number, desde: number, fps: number, fuerza = 0.35) 
 /** Foto a sangre con "punch" al entrar (6 fotogramas) y QUIETA después. */
 export const Foto: React.FC<{ src?: string; desde?: number; posicion?: string; oscurecer?: number; color: string }> = ({ src, desde = 0, posicion = "center", oscurecer = 0, color }) => {
   const f = useCurrentFrame();
+  const [rota, setRota] = useState(false); // foto que no carga → queda el bloque de color
   const k = interpolate(f - desde, [0, 6], [1.12, 1.0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
   return (
     <AbsoluteFill style={{ backgroundColor: color, overflow: "hidden" }}>
-      {src ? <Img src={src} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: posicion, transform: `scale(${k})` }} /> : null}
+      {src && !rota ? <Img src={src} onError={() => setRota(true)} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: posicion, transform: `scale(${k})` }} /> : null}
       {oscurecer > 0 ? <AbsoluteFill style={{ background: `linear-gradient(180deg, rgba(0,0,0,${oscurecer * 0.55}) 0%, rgba(0,0,0,${oscurecer * 0.15}) 40%, rgba(0,0,0,${oscurecer}) 100%)` }} /> : null}
     </AbsoluteFill>
   );
@@ -152,7 +153,8 @@ const IconoWhatsApp: React.FC<{ size: number; color: string }> = ({ size, color 
 export const Boton: React.FC<{ texto: string; desde: number; fpb: number; fondo: string; color: string; font: string; size?: number; toque?: number }> = ({ texto, desde, fpb, fondo, color, font, size = 50, toque }) => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const g = golpe(f, desde, fps, 0.5);
+  // Golpe suave: con más fuerza el botón (casi del ancho del vídeo) se salía por los lados al entrar.
+  const g = golpe(f, desde, fps, 0.2);
   const fase = ((f - desde) % fpb) / fpb;
   const late = f > desde + fpb ? 1 + 0.035 * Math.max(0, 1 - fase * 4) : 1;
   const pulsado = toque !== undefined && f >= toque && f < toque + 6 ? 0.93 : 1;
@@ -171,18 +173,23 @@ export const Cierre: React.FC<{ marca: MarcaVideo; desde: number; fpb: number; c
   const L = letras(marca.tipografia);
   const tinta = sobre(marca.fondo, marca);
   const fuerte = bloque(marca);
+  const [sinLogo, setSinLogo] = useState(false);
   const barra = interpolate(f - desde, [0, fpb], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.exp) });
   return (
     <AbsoluteFill style={{ backgroundColor: marca.fondo, alignItems: "center", justifyContent: "center", gap: 56 }}>
       <AbsoluteFill style={{ background: fuerte, transform: `translateY(${(1 - barra) * 100}%)`, top: "72%" }} />
       <div style={golpe(f, desde, fps, 0.25)}>
-        {marca.logoUrl ? (
-          <Img src={marca.logoUrl} style={{ width: 920, height: 400, objectFit: "contain" }} />
+        {marca.logoUrl && !sinLogo ? (
+          // Un logo que no carga NO rompe el vídeo: se pone el nombre del negocio.
+          <Img src={marca.logoUrl} onError={() => setSinLogo(true)} style={{ width: 920, height: 400, objectFit: "contain" }} />
         ) : (
           <div style={{ fontFamily: L.titular, fontWeight: L.peso, fontSize: 130, color: tinta, textTransform: L.mayus ? "uppercase" : "none", textAlign: "center", lineHeight: 0.95 }}>{marca.nombre}</div>
         )}
       </div>
-      {linea ? <div style={{ ...golpe(f, desde + Math.round(fpb), fps, 0.2), fontFamily: L.apoyo, fontWeight: 700, fontSize: 40, letterSpacing: "0.18em", color: tinta, textTransform: "uppercase" }}>{linea}</div> : null}
+      {linea ? (
+        // Línea de apoyo: cabe SIEMPRE (se encoge y, si hace falta, parte en dos). "LIMPIEZA FACIAL PROFUNDA · 45 MIN" se salía por los lados.
+        <div style={{ ...golpe(f, desde + Math.round(fpb), fps, 0.2), maxWidth: 940, textAlign: "center", fontFamily: L.apoyo, fontWeight: 700, fontSize: Math.min(40, Math.floor(1800 / Math.max(1, linea.length))), lineHeight: 1.3, letterSpacing: "0.14em", color: tinta, textTransform: "uppercase" }}>{linea}</div>
+      ) : null}
       <div style={{ position: "absolute", top: "76%" }}>
         <Boton texto={cta} desde={desde + Math.round(fpb * 2)} fpb={fpb} fondo={marca.fondo} color={sobre(marca.fondo, marca)} font={L.apoyo} size={54} />
       </div>

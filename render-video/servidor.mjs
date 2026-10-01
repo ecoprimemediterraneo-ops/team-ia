@@ -3,7 +3,9 @@
 //
 //   GET  /salud             → { ok, cola }
 //   POST /render  (Bearer MARTA_RENDER_SECRET)  body: PropsVideo (src/tipos.ts)
-//        → 200 video/mp4 (cabeceras X-Render-Ms, X-Duracion-S) · 4xx/5xx JSON
+//        → 200 video/mp4 (cabeceras X-Render-Ms, X-Duracion-S y, con
+//          PUBLIC_BASE_URL, X-Video-Url: copia pública 45 días) · 4xx/5xx JSON
+//   GET  /v/<sha1>.mp4      → la copia pública (sin secreto: el nombre es el hash)
 //
 // Variables: PORT (3900), MARTA_RENDER_SECRET (obligatoria fuera de local),
 // TLS_CERT/TLS_KEY (si están, sirve HTTPS y recarga el certificado cada día).
@@ -22,6 +24,40 @@ const PORT = Number(process.env.PORT || 3900);
 const SECRETO = process.env.MARTA_RENDER_SECRET || "";
 const PLANTILLAS = new Set(["oferta", "antes_despues", "hueco_libre"]);
 const MAX_BODY = 200_000;
+// Copia pública de cada MP4: Meta e Instagram tienen que poder DESCARGARLO por
+// HTTPS, y el Blob del proyecto es privado. Nombre = hash (no se adivina) y se
+// borra a los 45 días (cubre un mes de calendario programado + margen).
+const DIR_VIDEOS = process.env.VIDEOS_DIR || path.join(os.tmpdir(), "marta-videos");
+const URL_PUBLICA = (process.env.PUBLIC_BASE_URL || "").replace(/\/$/, "");
+const DIAS_VIDEO = 45;
+fs.mkdirSync(DIR_VIDEOS, { recursive: true });
+function podarVideos() {
+  const limite = Date.now() - DIAS_VIDEO * 86_400_000;
+  for (const f of fs.readdirSync(DIR_VIDEOS)) {
+    const p = path.join(DIR_VIDEOS, f);
+    try { if (fs.statSync(p).mtimeMs < limite) fs.rmSync(p); } catch { /* ya no está */ }
+  }
+}
+podarVideos();
+setInterval(podarVideos, 6 * 3600_000);
+
+function servirVideo(req, res, nombre) {
+  if (!/^[a-f0-9]{40}\.mp4$/.test(nombre)) return json(res, 404, { ok: false });
+  const p = path.join(DIR_VIDEOS, nombre);
+  if (!fs.existsSync(p)) return json(res, 404, { ok: false });
+  const total = fs.statSync(p).size;
+  const m = (req.headers.range || "").match(/bytes=(\d*)-(\d*)/);
+  if (m) {
+    const ini = m[1] ? Number(m[1]) : Math.max(0, total - Number(m[2] || 0));
+    const fin = m[1] && m[2] ? Math.min(Number(m[2]), total - 1) : total - 1;
+    if (ini >= total || ini > fin) { res.writeHead(416, { "content-range": `bytes */${total}` }); return res.end(); }
+    res.writeHead(206, { "content-type": "video/mp4", "accept-ranges": "bytes", "content-range": `bytes ${ini}-${fin}/${total}`, "content-length": fin - ini + 1, "cache-control": "public, max-age=86400" });
+    return fs.createReadStream(p, { start: ini, end: fin }).pipe(res);
+  }
+  res.writeHead(200, { "content-type": "video/mp4", "accept-ranges": "bytes", "content-length": total, "cache-control": "public, max-age=86400" });
+  if (req.method === "HEAD") return res.end();
+  fs.createReadStream(p).pipe(res);
+}
 const TIMEOUT_MS = 240_000;
 
 if (!SECRETO && process.env.NODE_ENV === "production") { console.error("Falta MARTA_RENDER_SECRET"); process.exit(1); }
@@ -63,6 +99,7 @@ const json = (res, code, obj) => { res.writeHead(code, { "content-type": "applic
 
 async function manejar(req, res) {
   if (req.method === "GET" && req.url === "/salud") return json(res, 200, { ok: true, cola: pendientes });
+  if ((req.method === "GET" || req.method === "HEAD") && req.url?.startsWith("/v/")) return servirVideo(req, res, req.url.slice(3).split("?")[0]);
   if (req.method !== "POST" || req.url !== "/render") return json(res, 404, { ok: false });
   const auth = req.headers.authorization || "";
   const esperado = `Bearer ${SECRETO}`;
@@ -80,7 +117,13 @@ async function manejar(req, res) {
   try {
     const r = await trabajo;
     console.log(`[render] ${props.plantilla} ${Math.round(r.bytes.length / 1024)} KB en ${r.ms} ms`);
-    res.writeHead(200, { "content-type": "video/mp4", "content-length": r.bytes.length, "x-render-ms": String(r.ms), "x-duracion-s": r.duracionS.toFixed(2) });
+    let urlPublica = "";
+    if (URL_PUBLICA) {
+      const nombre = `${crypto.createHash("sha1").update(r.bytes).digest("hex")}.mp4`;
+      fs.writeFileSync(path.join(DIR_VIDEOS, nombre), r.bytes);
+      urlPublica = `${URL_PUBLICA}/v/${nombre}`;
+    }
+    res.writeHead(200, { "content-type": "video/mp4", "content-length": r.bytes.length, "x-render-ms": String(r.ms), "x-duracion-s": r.duracionS.toFixed(2), ...(urlPublica ? { "x-video-url": urlPublica } : {}) });
     res.end(r.bytes);
   } catch (e) {
     console.error("[render] fallo:", e?.message || e);

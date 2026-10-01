@@ -8,4 +8,7 @@ docker run -d --name aiteam-render --restart unless-stopped \
   -e TLS_CERT=/etc/letsencrypt/live/api.aiteam.marketing/fullchain.pem \
   -e TLS_KEY=/etc/letsencrypt/live/api.aiteam.marketing/privkey.pem \
   -v /etc/letsencrypt:/etc/letsencrypt:ro \
+  -v /opt/aiteam-render/videos:/data/videos \
+  -e VIDEOS_DIR=/data/videos \
+  -e PUBLIC_BASE_URL=https://api.aiteam.marketing:8790 \
   -p 8790:3900 aiteam-render
