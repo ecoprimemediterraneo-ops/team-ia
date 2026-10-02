@@ -2,3 +2,8 @@
 # Nada del código que sí se despliega los referencia.
 src/app/abogados
 src/app/inmobiliarias
+
+# Datos locales y salidas de pruebas: nunca a Vercel
+data/
+render-video/
+e2e-resultados/
